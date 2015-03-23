@@ -465,12 +465,12 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                     if (tmp.textId[i] && !sSpellStore.LookupEntry(uint32(tmp.textId[i])))
                     {
                         sLog.outErrorDb("Table `%s` using nonexistent spell (id: %u) in SCRIPT_COMMAND_CAST_SPELL for script id %u, dataint%u",
-                                        tablename, uint32(tmp.textId[i]), tmp.id, i + 1);
+                            tablename, uint32(tmp.textId[i]), tmp.id, i + 1);
                         hasErrored = true;
                     }
                 }
                 if (hasErrored)
-                    continue;
+                    { continue; }
                 break;
             }
             case SCRIPT_COMMAND_PLAY_SOUND:                 // 16
@@ -1485,7 +1485,7 @@ bool ScriptAction::HandleScriptStep()
             if (pSource && pSource->GetTypeId() == TYPEID_GAMEOBJECT)
             {
                 ((Unit*)pTarget)->CastSpell(((Unit*)pTarget), spell, true, NULL, NULL, pSource->GetObjectGuid());
-                break;
+                { break; }
             }
 
             if (LogIfNotUnit(pSource))
