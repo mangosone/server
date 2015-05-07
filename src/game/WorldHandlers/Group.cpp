@@ -197,7 +197,7 @@ bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant)
 
     member.group     = subgroup;
     member.assistant = assistant;
-	member.joinTime = time(NULL);
+    member.joinTime = time(NULL);
     m_memberSlots.push_back(member);
 
     SubGroupCounterIncrease(subgroup);

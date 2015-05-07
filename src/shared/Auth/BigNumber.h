@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_AUTH_BIGNUMBER
 #define MANGOS_H_AUTH_BIGNUMBER
 
-#include "Common.h"
+#include "Common/Common.h"
 
 struct bignum_st;
 
@@ -241,7 +241,7 @@ class BigNumber
          * @return uint8
          */
         uint8* AsByteArray(int minSize = 0);
-
+        uint8* AsByteArray(int minSize, bool reverse);
         /**
          * @brief
          *

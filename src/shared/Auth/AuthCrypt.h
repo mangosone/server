@@ -25,60 +25,60 @@
 #ifndef MANGOS_H_AUTHCRYPT
 #define MANGOS_H_AUTHCRYPT
 
-#include "Common.h"
+#include "Common/Common.h"
 #include <vector>
 
 class BigNumber;
 
 /**
- * @brief
- *
- */
+* @brief
+*
+*/
 class AuthCrypt
 {
-    public:
-        /**
-         * @brief
-         *
-         */
-        AuthCrypt();
-        /**
-         * @brief
-         *
-         */
-        ~AuthCrypt();
+public:
+    /**
+    * @brief
+    *
+    */
+    AuthCrypt();
+    /**
+    * @brief
+    *
+    */
+    ~AuthCrypt();
 
 
-        /**
-         * @brief
-         *
-         */
-        void Init(BigNumber* K);
-        /**
-         * @brief
-         *
-         * @param
-         * @param size_t
-         */
-        void DecryptRecv(uint8*, size_t);
-        /**
-         * @brief
-         *
-         * @param
-         * @param size_t
-         */
-        void EncryptSend(uint8*, size_t);
+    /**
+    * @brief
+    *
+    */
+    void Init(BigNumber* K);
+    /**
+    * @brief
+    *
+    * @param
+    * @param size_t
+    */
+    void DecryptRecv(uint8*, size_t);
+    /**
+    * @brief
+    *
+    * @param
+    * @param size_t
+    */
+    void EncryptSend(uint8*, size_t);
 
-        /**
-         * @brief
-         *
-         * @return bool
-         */
-        bool IsInitialized() { return _initialized; }
+    /**
+    * @brief
+    *
+    * @return bool
+    */
+    bool IsInitialized() { return _initialized; }
 
-    private:
-        std::vector<uint8> _key; /**< TODO */
-        uint8 _send_i, _send_j, _recv_i, _recv_j; /**< TODO */
-        bool _initialized; /**< TODO */
+private:
+    std::vector<uint8> _key; /**< TODO */
+    uint8 _send_i, _send_j, _recv_i, _recv_j; /**< TODO */
+    bool _initialized; /**< TODO */
 };
 #endif

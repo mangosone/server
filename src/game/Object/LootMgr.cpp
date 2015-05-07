@@ -442,7 +442,7 @@ LootSlotType LootItem::GetSlotTypeForSharedLoot(PermissionTypes permission, Play
         case GROUP_PERMISSION:
         {
             /// The roll for this item has been done.
-			if (is_underthreshold || winner || viewer->GetGroup()->IsRollDoneForItem((Creature *)lootTarget, this))
+            if (is_underthreshold || winner || viewer->GetGroup()->IsRollDoneForItem((Creature *)lootTarget, this))
                 { return LOOT_SLOT_NORMAL; }
             
             return LOOT_SLOT_VIEW;            

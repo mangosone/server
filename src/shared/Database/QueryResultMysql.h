@@ -27,14 +27,13 @@
 #if !defined(QUERYRESULTMYSQL_H)
 #define QUERYRESULTMYSQL_H
 
-#include "Common.h"
+#include "Common/Common.h"
 
 #ifdef WIN32
 #include <winsock2.h>
-#include <mysql/mysql.h>
-#else
-#include <mysql.h>
 #endif
+
+#include <mysql.h>
 
 /**
  * @brief

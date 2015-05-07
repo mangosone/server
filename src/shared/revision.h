@@ -24,8 +24,8 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-#define REVISION_NR "20002"
-#define REVISION_DB_CHARACTERS "required_20001_02_dbdocs_Update"
-#define REVISION_DB_MANGOS "required_20000_33_Tortured_skeleton_issue_fix"
-#define REVISION_DB_REALMD "required_20150409_Playerbot_and_Warden"
+#define REVISION_NR "21000"
+#define REVISION_DB_CHARACTERS "required_21000_01_warden_action"
+#define REVISION_DB_MANGOS "required_21000_02_warden_checks"
+#define REVISION_DB_REALMD "required_20150420_warden_db_log"
 #endif // __REVISION_H__

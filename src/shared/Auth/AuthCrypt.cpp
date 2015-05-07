@@ -24,7 +24,7 @@
 
 #include "AuthCrypt.h"
 #include "HMACSHA1.h"
-#include "Log.h"
+#include "Log/Log.h"
 #include "BigNumber.h"
 
 const static size_t CRYPTED_SEND_LEN = 4;
@@ -38,9 +38,9 @@ AuthCrypt::AuthCrypt()
 void AuthCrypt::DecryptRecv(uint8* data, size_t len)
 {
     if (!_initialized)
-        {
-            return;
-        }
+    {
+        return;
+    }
     if (len < CRYPTED_RECV_LEN) { return; }
 
     for (size_t t = 0; t < CRYPTED_RECV_LEN; t++)
@@ -56,9 +56,9 @@ void AuthCrypt::DecryptRecv(uint8* data, size_t len)
 void AuthCrypt::EncryptSend(uint8* data, size_t len)
 {
     if (!_initialized)
-        {
-            return;
-        }
+    {
+        return;
+    }
 
     if (len < CRYPTED_SEND_LEN) { return; }
 

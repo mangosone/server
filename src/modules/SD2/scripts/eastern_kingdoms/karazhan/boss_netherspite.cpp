@@ -126,13 +126,13 @@ enum PortalProperties
 static const uint32 auiPortalVector[MAX_PORTAL_PROPERTIES][MAX_PORTALS] =
 {
     //      0 - GREEN               1 - BLUE                2 - RED
-    { NPC_PORTAL_GREEN, NPC_PORTAL_BLUE, NPC_PORTAL_RED },	// 0 - portal entries
-    { SPELL_GREEN_PORTAL, SPELL_BLUE_PORTAL, SPELL_RED_PORTAL },	// 1 - visual spells for portals
+    { NPC_PORTAL_GREEN, NPC_PORTAL_BLUE, NPC_PORTAL_RED },    // 0 - portal entries
+    { SPELL_GREEN_PORTAL, SPELL_BLUE_PORTAL, SPELL_RED_PORTAL },    // 1 - visual spells for portals
     { SPELL_BEAM_SER, SPELL_BEAM_DOM, SPELL_BEAM_PER },  // 2 - visual spells for players
-    { SPELL_BEAM_GREEN, SPELL_BEAM_BLUE, SPELL_BEAM_RED },	// 3 - visual spells for netherspite
+    { SPELL_BEAM_GREEN, SPELL_BEAM_BLUE, SPELL_BEAM_RED },    // 3 - visual spells for netherspite
     { SPELL_SERENITY_PLR, SPELL_DOMINANCE_PLR, SPELL_PERSEVERENCE_PLR },  // 4 - buffs for players
     { SPELL_SERENITY_NS, SPELL_DOMINANCE_NS, SPELL_PERSEVERENCE_NS },  // 5 - buffs for netherspite
-    { SPELL_EXHAUSTION_SER, SPELL_EXHAUSTION_DOM, SPELL_EXHAUSTION_PER },	// 6 - debuffs	
+    { SPELL_EXHAUSTION_SER, SPELL_EXHAUSTION_DOM, SPELL_EXHAUSTION_PER },    // 6 - debuffs    
 };
 
 //adjust how easy it is to catch the beam
