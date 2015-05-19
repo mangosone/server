@@ -49,6 +49,11 @@
 
 enum
 {
+    BLUE_OGRE_BREW = 32783,
+    RED_OGRE_BREW = 32784,
+    TRANCHANTES = 3522,
+    OGRE_BREW_MANA = 41304,
+    OGRE_BREW_LIFE = 41306
 };
 
 bool ItemUse_item_ogre_brew(Player* pPlayer, Item* pItem, const SpellCastTargets&)
