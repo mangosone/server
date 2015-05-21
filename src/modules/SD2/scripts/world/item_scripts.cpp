@@ -37,6 +37,7 @@
  * item_arcane_charges                 Prevent use if player is not flying (cannot cast while on ground)
  * item_flying_machine(i34060,i34061)  Engineering crafted flying machines
  * item_gor_dreks_ointment(i30175)     Protecting Our Own(q10488)
+ * item_ogre_brew					   Prevent use if player not in 3522 area
  * EndContentData
  */
 
@@ -49,9 +50,11 @@
 
 enum
 {
-    BLUE_OGRE_BREW = 32783,
-    RED_OGRE_BREW = 32784,
-    TRANCHANTES = 3522
+    BLUE_OGRE_BREW  = 32783,
+    RED_OGRE_BREW   = 32784,
+    TRANCHANTES     = 3522,
+    OGRE_BREW_MANA  = 41304,
+    OGRE_BREW_LIFE  = 41306
 };
 
 struct item_ogre_brew : public ItemScript
@@ -71,8 +74,14 @@ struct item_ogre_brew : public ItemScript
             }
 
             debug_log("SD2: Player attempt to use item %u, but did not meet zone requirement : %u", itemId, pZoneId);
-            if (const SpellEntry* pSpellInfo = GetSpellStore()->LookupEntry(pItem->GetProto()->Spells[0].SpellId))
+            if (itemId == BLUE_OGRE_BREW)
             {
+                const SpellEntry* pSpellInfo = GetSpellStore()->LookupEntry(OGRE_BREW_LIFE);
+                Spell::SendCastResult(pPlayer, pSpellInfo, 1, SPELL_FAILED_NOT_HERE);
+            }
+            if (itemId == RED_OGRE_BREW)
+            {
+                const SpellEntry* pSpellInfo = GetSpellStore()->LookupEntry(OGRE_BREW_MANA);
                 Spell::SendCastResult(pPlayer, pSpellInfo, 1, SPELL_FAILED_NOT_HERE);
             }
         }
@@ -175,8 +184,8 @@ struct item_gor_dreks_ointment : public ItemScript
 
 void AddSC_item_scripts()
 {
-    Script* s;
-
+<<<<<<< HEAD
+    
     s = new item_ogre_brew();
     s->RegisterSelf();
     s = new item_arcane_charges();
