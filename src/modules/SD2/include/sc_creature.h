@@ -171,12 +171,10 @@ struct ScriptedAI : public CreatureAI
         // *************
 
         /**
-         * This is a SD2 internal function, that every AI must implement
-         * Usally used to reset combat variables
-         * Called by default on creature evade and respawn
-         * In most scripts also called in the constructor of the AI
+         * Usually used to reset combat variables
+         * Called by default on creature evade, spawn and respawn
          */
-        virtual void Reset() = 0;
+        void Reset() override {}
 
         /// Called at creature EnterCombat with an enemy
         /**

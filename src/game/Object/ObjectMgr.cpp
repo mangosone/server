@@ -527,7 +527,7 @@ void ObjectMgr::LoadCreatureTemplates()
                 continue;
             }
 
-            if (heroicInfo->ScriptID)
+            if (sScriptMgr.GetBoundScriptId(SCRIPTED_UNIT, heroicInfo->Entry))
             {
                 sLog.outErrorDb("Heroic mode creature (Entry: %u) has `ScriptName`, but in any case will used normal mode creature (Entry: %u) ScriptName.", cInfo->HeroicEntry, i);
                 continue;
@@ -3206,7 +3206,6 @@ CreatureDataAddon const* ObjectMgr::GetCreatureAddon(uint32 lowguid) { return sC
 CreatureDataAddon const* ObjectMgr::GetCreatureTemplateAddon(uint32 entry) { return sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(entry); }
 ItemPrototype const* ObjectMgr::GetItemPrototype(uint32 id) { return sItemStorage.LookupEntry<ItemPrototype>(id); }
 InstanceTemplate const* ObjectMgr::GetInstanceTemplate(uint32 map) { return sInstanceTemplate.LookupEntry<InstanceTemplate>(map); }
-WorldTemplate const* ObjectMgr::GetWorldTemplate(uint32 map) { return sWorldTemplate.LookupEntry<WorldTemplate>(map); }
 
 /* ********************************************************************************************* */
 /* *                                Loading Functions                                            */
@@ -4588,36 +4587,36 @@ struct SQLWorldLoader : public SQLStorageLoaderBase<SQLWorldLoader, SQLStorage>
     }
 };
 
-void ObjectMgr::LoadWorldTemplate()
-{
-    SQLWorldLoader loader;
-    loader.Load(sWorldTemplate, false);
-
-    for (uint32 i = 0; i < sWorldTemplate.GetMaxEntry(); ++i)
-    {
-        WorldTemplate const* temp = GetWorldTemplate(i);
-        if (!temp)
-            { continue; }
-
-        MapEntry const* mapEntry = sMapStore.LookupEntry(temp->map);
-        if (!mapEntry)
-        {
-            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: bad mapid %d for template!", temp->map);
-            sWorldTemplate.EraseEntry(i);
-            continue;
-        }
-
-        if (mapEntry->Instanceable())
-        {
-            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: instanceable mapid %d for template!", temp->map);
-            sWorldTemplate.EraseEntry(i);
-            continue;
-        }
-    }
-
-    sLog.outString(">> Loaded %u World Template definitions", sWorldTemplate.GetRecordCount());
-    sLog.outString();
-}
+//void ObjectMgr::LoadWorldTemplate()
+//{
+//    SQLWorldLoader loader;
+//    loader.Load(sWorldTemplate, false);
+//
+//    for (uint32 i = 0; i < sWorldTemplate.GetMaxEntry(); ++i)
+//    {
+//        WorldTemplate const* temp = GetWorldTemplate(i);
+//        if (!temp)
+//            { continue; }
+//
+//        MapEntry const* mapEntry = sMapStore.LookupEntry(temp->map);
+//        if (!mapEntry)
+//        {
+//            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: bad mapid %d for template!", temp->map);
+//            sWorldTemplate.EraseEntry(i);
+//            continue;
+//        }
+//
+//        if (mapEntry->Instanceable())
+//        {
+//            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: instanceable mapid %d for template!", temp->map);
+//            sWorldTemplate.EraseEntry(i);
+//            continue;
+//        }
+//    }
+//
+//    sLog.outString(">> Loaded %u World Template definitions", sWorldTemplate.GetRecordCount());
+//    sLog.outString();
+//}
 
 void ObjectMgr::LoadConditions()
 {

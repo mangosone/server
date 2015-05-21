@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
@@ -373,7 +373,7 @@ struct GameObjectInfo
 
     uint32 MinMoneyLoot;
     uint32 MaxMoneyLoot;
-    uint32 ScriptId;
+    //uint32 ScriptId;
 
     // helpers
     bool IsDespawnAtAction() const
@@ -721,6 +721,8 @@ class GameObject : public WorldObject
 
         void SetCapturePointSlider(float value, bool isLocked);
         float GetCapturePointSliderValue() const { return m_captureSlider; }
+
+        uint32 GetScriptId();
 
         GridReference<GameObject>& GetGridRef() { return m_gridRef; }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
@@ -920,9 +920,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Script Names...");
     sScriptMgr.LoadScriptNames();
 
-    sLog.outString("Loading WorldTemplate...");
-    sObjectMgr.LoadWorldTemplate();
-
     sLog.outString("Loading InstanceTemplate...");
     sObjectMgr.LoadInstanceTemplate();
 
@@ -1096,11 +1093,19 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Tavern Area Triggers...");
     sObjectMgr.LoadTavernAreaTriggers();
 
-    sLog.outString("Loading AreaTrigger script names...");
-    sScriptMgr.LoadAreaTriggerScripts();
+    //sLog.outString("Loading AreaTrigger script names...");
+    //sScriptMgr.LoadAreaTriggerScripts();
 
-    sLog.outString("Loading event id script names...");
-    sScriptMgr.LoadEventIdScripts();
+    //sLog.outString("Loading event id script names...");
+    //sScriptMgr.LoadEventIdScripts();
+
+    //sLog.outString("Loading spell script names...");
+    //sScriptMgr.LoadSpellIdScripts();
+
+#ifdef ENABLE_SD2
+    sLog.outString("Loading all script bindings...");
+    sScriptMgr.LoadScriptBinding();
+#endif /* ENABLE_SD2 */
 
     sLog.outString("Loading Graveyard-zone links...");
     sObjectMgr.LoadGraveyardZones();

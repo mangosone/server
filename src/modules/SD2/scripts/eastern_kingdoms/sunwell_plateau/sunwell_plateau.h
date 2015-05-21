@@ -36,6 +36,10 @@ enum
     TYPE_EREDAR_TWINS           = 3,
     TYPE_MURU                   = 4,
     TYPE_KILJAEDEN              = 5,
+    TYPE_FELMYST_TRIGGER_RIGHT  = MAX_ENCOUNTER,
+    TYPE_FELMYST_TRIGGER_LEFT   = MAX_ENCOUNTER+1,
+    TYPE_FELMYST_TRIGGER        = MAX_ENCOUNTER+2,
+    TYPE_KALECGOS_EJECT_SPECTRAL= MAX_ENCOUNTER+3,
 
     NPC_KALECGOS_DRAGON         = 24850,            // kalecgos blue dragon hostile
     NPC_KALECGOS_HUMAN          = 24891,            // kalecgos human form in spectral realm
@@ -113,62 +117,4 @@ static const EventLocations aMadrigosaLoc[] =
     {1463.82f, 661.212f, 39.234f},                  // fly loc during the cinematig
 };
 
-static const EventLocations aKalecLoc[] =
-{
-    {1573.146f, 755.2025f, 99.524f, 3.59f},         // spawn loc
-    {1474.235f, 624.0703f, 29.325f},                // first move
-    {1511.655f, 550.7028f, 25.510f},                // open door
-    {1648.255f, 519.377f, 165.848f},                // fly away
-};
-
-class instance_sunwell_plateau : public ScriptedInstance, private DialogueHelper
-{
-    public:
-        instance_sunwell_plateau(Map* pMap);
-        ~instance_sunwell_plateau() {}
-
-        void Initialize() override;
-        bool IsEncounterInProgress() const override;
-
-        void OnPlayerEnter(Player* pPlayer) override;
-        void OnObjectCreate(GameObject* pGo) override;
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnCreatureDeath(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        void Update(uint32 uiDiff) override;
-
-        ObjectGuid SelectFelmystFlightTrigger(bool bLeftSide, uint8 uiIndex);
-
-        void AddToSpectralRealm(ObjectGuid playerGuid) { m_spectralRealmPlayers.insert(playerGuid); }
-        void RemoveFromSpectralRealm(ObjectGuid playerGuid) { m_spectralRealmPlayers.erase(playerGuid); }
-        void DoEjectSpectralPlayers();
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    protected:
-        void JustDidDialogueStep(int32 iEntry) override;
-        void DoSortFlightTriggers();
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        // Misc
-        uint8 m_uiDeceiversKilled;
-        uint32 m_uiSpectralRealmTimer;
-        uint32 m_uiKalecRespawnTimer;
-        uint32 m_uiMuruBerserkTimer;
-        uint32 m_uiKiljaedenYellTimer;
-
-        GuidSet m_spectralRealmPlayers;
-        GuidVector m_vRightFlightTriggersVect;
-        GuidVector m_vLeftFlightTriggersVect;
-        GuidList m_lAllFlightTriggersList;
-        GuidList m_lBackdoorTriggersList;
-        GuidList m_lDeceiversGuidList;
-};
 #endif
