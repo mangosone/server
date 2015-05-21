@@ -184,7 +184,7 @@ struct item_gor_dreks_ointment : public ItemScript
 
 void AddSC_item_scripts()
 {
-<<<<<<< HEAD
+    Script* s;
     
     s = new item_ogre_brew();
     s->RegisterSelf();
