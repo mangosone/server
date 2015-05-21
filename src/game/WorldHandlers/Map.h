@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
@@ -274,7 +274,7 @@ class Map : public GridRefManager<NGridType>
 
         void CreateInstanceData(bool load);
         InstanceData* GetInstanceData() const { return i_data; }
-        uint32 GetScriptId() const { return i_script_id; }
+        virtual uint32 GetScriptId() const { return sScriptMgr.GetBoundScriptId(SCRIPTED_MAP, GetId()); }
 
         void MonsterYellToMap(ObjectGuid guid, int32 textId, Language language, Unit const* target) const;
         void MonsterYellToMap(CreatureInfo const* cinfo, int32 textId, Language language, Unit const* target, uint32 senderLowGuid = 0) const;
@@ -385,7 +385,6 @@ class Map : public GridRefManager<NGridType>
         ScriptScheduleMap m_scriptSchedule;
 
         InstanceData* i_data;
-        uint32 i_script_id;
 
         // Map local low guid counters
         ObjectGuidGenerator<HIGHGUID_UNIT> m_CreatureGuids;
@@ -437,6 +436,8 @@ class DungeonMap : public Map
         void SendResetWarnings(uint32 timeLeft) const;
         void SetResetSchedule(bool on);
 
+        uint32 GetScriptId() const override { return sScriptMgr.GetBoundScriptId(SCRIPTED_INSTANCE, GetId()); }
+
         // can't be NULL for loaded map
         DungeonPersistentState* GetPersistanceState() const;
 
@@ -464,6 +465,8 @@ class BattleGroundMap : public Map
         virtual void InitVisibilityDistance() override;
         BattleGround* GetBG() { return m_bg; }
         void SetBG(BattleGround* bg) { m_bg = bg; }
+
+        uint32 GetScriptId() const override { return sScriptMgr.GetBoundScriptId(SCRIPTED_BATTLEGROUND, GetId()); } //TODO bind BG scripts through script_binding, now these are broken!
 
         // can't be NULL for loaded map
         BattleGroundPersistentState* GetPersistanceState() const;

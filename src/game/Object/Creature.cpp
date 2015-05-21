@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
@@ -1227,7 +1227,7 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask)
     WorldDatabase.CommitTransaction();
 }
 
-void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 100.0f*/)
+void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 100.0f*/, float percentMana /*= 100.0f*/)
 {
     uint32 rank = IsPet() ? 0 : cinfo->Rank;    // TODO :: IsPet probably not needed here
 
@@ -1313,7 +1313,7 @@ void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 10
 
         // Mana requires an extra field to be set
         if (i == POWER_MANA)
-            SetCreateMana(value);
+            SetCreateMana(uint32(value * percentMana));
 
         // Do not use the wrappers for setting power, to avoid side-effects
         SetStatInt32Value(UNIT_FIELD_MAXPOWER1 + i , maxValue);
@@ -2418,7 +2418,8 @@ std::string Creature::GetScriptName() const
 
 uint32 Creature::GetScriptId() const
 {
-    return ObjectMgr::GetCreatureTemplate(GetEntry())->ScriptID;
+    // scripts bound to DB guid have priority over ones bound to creature entry
+    return sScriptMgr.GetBoundScriptId(SCRIPTED_UNIT, -int32(GetGUIDLow())) ? sScriptMgr.GetBoundScriptId(SCRIPTED_UNIT, -int32(GetGUIDLow())) : sScriptMgr.GetBoundScriptId(SCRIPTED_UNIT, GetEntry());
 }
 
 VendorItemData const* Creature::GetVendorItems() const
