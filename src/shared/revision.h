@@ -26,6 +26,6 @@
 #define MANGOS_H_REVISION
 #define REVISION_NR "21000"
 #define REVISION_DB_CHARACTERS "required_21000_01_warden_action"
-#define REVISION_DB_MANGOS "required_21000_04_script_binding"
+#define REVISION_DB_MANGOS "required_21000_07_Bloodfury_Ambusher_missing_record"
 #define REVISION_DB_REALMD "required_20150420_warden_db_log"
 #endif // __REVISION_H__

@@ -38,7 +38,7 @@ DisplayHeader()
 	echo "                                       "
 	echo " For help and support please visit:    "
 	echo " Website: https://getmangos.eu         "
-	echo "    Wiki: http://github.com/mangoswiki "
+	echo "    Wiki: https://getmangos.eu/wiki     "
 	echo "======================================="
 
 }
