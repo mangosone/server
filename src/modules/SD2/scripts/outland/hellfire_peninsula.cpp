@@ -973,6 +973,120 @@ struct spell_just_release_darkness : public SpellScript
     }
 };
 
+/*######
+## npc_caretaker_dilandrus
+######*/
+
+static const float aGraveYardLocation[11][4] =
+{
+    {-807.52f, 2694.01f, 105.149f, 2.58f},     // spawn point
+    {-807.922f, 2692.816f, 104.837f, 2.76f},   // grave location
+    {-805.451f, 2696.972f, 105.671f, 2.42f},   // grave location
+    {-802.575f, 2702.187f, 106.645f, 2.64f},   // grave location
+    {-811.831f, 2699.465f, 106.544f, 2.84f},   // grave location
+    {-806.366f, 2708.088f, 108.162f, 2.79f},   // grave location
+    {-820.038f, 2701.316f, 107.491f, 2.82f},   // grave location
+    {-818.042f, 2705.911f, 108.371f, 2.69f},   // grave location
+    {-815.989f, 2709.199f, 108.973f, 2.59f},   // grave location
+    {-814.213f, 2712.847f, 109.612f, 2.26f},   // grave location
+    {-810.533f, 2718.717f, 110.509f, 2.78f}    // grave location
+};
+
+struct npc_caretaker_dilandrus : public CreatureScript
+{        
+	   npc_caretaker_dilandrus() : CreatureScript("npc_caretaker_dilandrus") {}
+
+    struct npc_caretaker_dilandrusAI : public ScriptedAI
+    {
+        npc_caretaker_dilandrusAI(Creature* pCreature) : ScriptedAI(pCreature) 
+        { 
+            Reset(); 
+        }
+        
+        uint32 uVisitGraveTimer, uCurrentStage, uLastGraveVisited;
+
+        void Reset() override 
+        {
+            uVisitGraveTimer = 0; 
+            uCurrentStage = 1;    
+            uLastGraveVisited = 0;
+        }
+
+        void UpdateAI(const uint32 uiDiff)
+        {
+            if (uVisitGraveTimer <= uiDiff)
+            {
+                uint32 uGraveNumber;
+                if (uCurrentStage == 1) // walk to grave
+                {
+                    // time to visit grave
+                    uGraveNumber = rand() % 9 + 1;
+                    m_creature->GetMotionMaster()->MovePoint(0, aGraveYardLocation[uGraveNumber][0], aGraveYardLocation[uGraveNumber][1], aGraveYardLocation[uGraveNumber][2]);
+                    uLastGraveVisited = uGraveNumber;
+                    uCurrentStage = 2;
+                    uVisitGraveTimer = 10000;
+                }
+                else if (uCurrentStage == 2) // face gravestone
+                {
+                    m_creature->SetFacingTo(aGraveYardLocation[uGraveNumber][3]);
+                    uCurrentStage = 3;
+                    uVisitGraveTimer = 3000;
+                }
+                else if (uCurrentStage == 3) // kneel for a few second
+                {
+                    if (rand() % 3 == 0)
+                    {
+                        m_creature->SetStandState(UNIT_STAND_STATE_KNEEL);
+                        uVisitGraveTimer = 5000;
+                    }
+                    else uVisitGraveTimer = 0;
+                    uCurrentStage = 4;
+                }
+                else if (uCurrentStage == 4)
+                {
+                    // lay wreath - spawn it
+
+                    m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                    uCurrentStage = 5;
+                    uVisitGraveTimer = 5000;
+                }
+                else if (uCurrentStage == 5)
+                {
+                    if (rand() % 3 == 0)
+                    {
+                        m_creature->HandleEmote(EMOTE_ONESHOT_SALUTE);
+                    }
+                    else if (rand() % 6 == 0)
+                    {
+                        m_creature->HandleEmote(EMOTE_ONESHOT_CRY);
+                    }
+                    else uVisitGraveTimer = 5000;
+                    uCurrentStage = 6;
+                }
+                else if (uCurrentStage == 6) // go back to start
+                {
+                    m_creature->GetMotionMaster()->MovePoint(0, aGraveYardLocation[0][0], aGraveYardLocation[0][1], aGraveYardLocation[0][2]);
+                    m_creature->SetFacingTo(aGraveYardLocation[0][3]);
+                    uVisitGraveTimer = 900000; // visit a grave every 15 minutes
+                    uCurrentStage = 1;
+                }
+
+            }
+            else
+            {
+                uVisitGraveTimer -= uiDiff;
+            }
+
+        }
+
+    };
+		
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_caretaker_dilandrusAI(pCreature);
+    }
+};
+
 void AddSC_hellfire_peninsula()
 {
     Script* s;
@@ -992,6 +1106,8 @@ void AddSC_hellfire_peninsula()
     s = new npc_colonel_jules();
     s->RegisterSelf();
     s = new spell_just_release_darkness();
+    s->RegisterSelf();
+    s = new npc_caretaker_dilandrus();
     s->RegisterSelf();
 
     //pNewScript = new Script;
