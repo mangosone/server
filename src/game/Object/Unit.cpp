@@ -7238,35 +7238,18 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     // special cases for always overwrite invisibility/stealth
     if (invisible || m_Visibility == VISIBILITY_GROUP_STEALTH)
     {
-        // non-hostile case
-        if (!u->IsHostileTo(this))
-        {
-            // player see other player with stealth/invisibility only if he in same group or raid or same team (raid/team case dependent from conf setting)
-            if (GetTypeId() == TYPEID_PLAYER && u->GetTypeId() == TYPEID_PLAYER)
-            {
-                if (((Player*)this)->IsGroupVisibleFor(((Player*)u)))
-                    { return true; }
-
-                // else apply same rules as for hostile case (detecting check for stealth)
-            }
-        }
-        // hostile case
-        else
+        if (u->IsHostileTo(this))
         {
             // Hunter mark functionality
             AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_STALKED);
             for (AuraList::const_iterator iter = auras.begin(); iter != auras.end(); ++iter)
                 if ((*iter)->GetCasterGuid() == u->GetObjectGuid())
                     { return true; }
-
-            // else apply detecting check for stealth
         }
 
         // none other cases for detect invisibility, so invisible
         if (invisible)
             { return false; }
-
-        // else apply stealth detecting check
     }
 
     // unit got in stealth in this moment and must ignore old detected state
