@@ -804,7 +804,6 @@ bool ChatHandler::HandleReloadBattleEventCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadEventAITextsCommand(char* /*args*/)
 {
-
     sLog.outString("Re-Loading Texts from `creature_ai_texts`...");
     sEventAIMgr.LoadCreatureEventAI_Texts(true);
     SendGlobalSysMessage("DB table `creature_ai_texts` reloaded.");
@@ -6784,10 +6783,7 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
 
     if (radius < 0.1f)
     {
-        if (unit->GetTypeId() == TYPEID_UNIT)
-            PSendSysMessage("Provided spawn radius in table for %s is too small. using 5.0f instead.");
-        else
-            PSendSysMessage("Provided spawn radius is too small. using 5.0f instead.");
+        PSendSysMessage("Provided spawn radius for %s is too small. Using 5.0f instead.", unit->GetGuidStr().c_str());
         radius = 5.0f;
     }
 
@@ -6796,22 +6792,22 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
 
     Creature* summoned = unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz + 0.5f, 0, TEMPSUMMON_TIMED_DESPAWN, 20000);
     summoned->CastSpell(summoned, 8599, false);
-    uint32 tryed = 1;
-    uint32 succeed = 0;
+    uint32 tries = 1;
+    uint32 successes = 0;
     uint32 startTime = WorldTimer::getMSTime();
-    for (; tryed < 500; ++tryed)
+    for (; tries < 500; ++tries)
     {
         unit->GetPosition(gx, gy, gz);
         if (unit->GetMap()->GetReachableRandomPosition(unit, gx, gy, gz, radius))
         {
             unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSUMMON_TIMED_DESPAWN, 15000);
-            ++succeed;
-            if (succeed >= 100)
+            ++successes;
+            if (successes >= 100)
                 break;
         }
     }
     uint32 genTime = WorldTimer::getMSTimeDiff(startTime, WorldTimer::getMSTime());
-    PSendSysMessage("Generated %u valid points for %u try in %ums.", succeed, tryed, genTime);
+    PSendSysMessage("Generated %u valid points for %u try in %ums.", successes, tries, genTime);
     return true;
 }
 
