@@ -438,6 +438,7 @@ LootSlotType LootItem::GetSlotTypeForSharedLoot(PermissionTypes permission, Play
     switch (permission)
     {
         case ALL_PERMISSION:
+        case OWNER_PERMISSION:
             return LOOT_SLOT_NORMAL;
         case GROUP_PERMISSION:
         {
