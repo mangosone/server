@@ -30,8 +30,8 @@
 
 #include <string>
 #include <set>
-#include <loadlib.h>
 #include "vec3d.h"
+#include <ml\loadlib.h>
 
 // MOPY flags
 #define WMO_MATERIAL_NOCAMCOLLIDE    0x01
