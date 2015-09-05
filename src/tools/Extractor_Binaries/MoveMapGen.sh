@@ -159,10 +159,8 @@ DisplayHeader()
 	echo " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   "
 	echo "                                         "
 	echo " For help and support please visit:      "
-	echo " Website/Forum: https://getmangos.eu     "
-	echo "          Wiki: https://getmangos.eu/wiki"
-	echo "======================================="
-
+	echo " Website/Forum/Wiki: https://getmangos.eu"
+	echo "=========================================="
 }
 
 
