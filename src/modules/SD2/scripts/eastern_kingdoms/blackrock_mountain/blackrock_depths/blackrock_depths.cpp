@@ -1253,8 +1253,6 @@ void AddSC_blackrock_depths()
     s->RegisterSelf();
     s = new npc_kharan_mighthammer();
     s->RegisterSelf();
-    s = new npc_kharan_mighthammer();
-    s->RegisterSelf();
     s = new npc_rocknot();
     s->RegisterSelf();
     s = new npc_marshal_windsor();
