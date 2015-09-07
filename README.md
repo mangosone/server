@@ -1,6 +1,6 @@
 [![](https://www.getmangos.eu/images/primus/blue/misc/logo.png)](http://www.getmangos.eu)&nbsp;
 [![](/icons/FORUM.gif)](https://www.getmangos.eu/forum.php)
-[![](/icons/WIKI.gif)](http://github.com/mangoswiki/wiki/wiki)
+[![](/icons/WIKI.gif)](https://getmangos.eu/wiki)
 [![](/icons/TOOLS.gif)](http://github.com/mangostools)
 [![](/icons/TRACKER.gif)](https://www.getmangos.eu/project.php)
 [![Build status](https://travis-ci.org/mangosone/server.png)][16]
@@ -40,7 +40,7 @@ Operating systems
 -----------------
 Currently we support running *Mangos* on these operating systems:
 
-* **Windows**, 32 bit and 64 bit. [Windows][20] 7 or newer is recommended.
+* **Windows**, 32 bit and 64 bit. [Windows][20] Server 2008 (or newer) or Windows 7 (or newer) is recommended.
 * **Linux**, 32 bit and 64 bit. [Debian 7][21] and [Ubuntu 12.04 LTS][22] are
   recommended. Other distributions with similar package versions will work, too.
 * **BSD**, 32 bit and 64 bit. [FreeBSD][23], [NetBSD][24], [OpenBSD][25] and
@@ -131,7 +131,7 @@ Street, Fifth Floor, Boston, MA 02110-1301 USA.
 The full license is included in the file `License.md`.
 
 In addition, as a special exception, permission is granted to link the code of
-*MangosOne* with the OpenSSL project's [OpenSSL library][48] (or with modified
+*Mangos* with the OpenSSL project's [OpenSSL library][48] (or with modified
 versions of it that use the same license as the OpenSSL library), and distribute
 the linked executables. You must obey the GNU General Public License in all
 respects for all of the code used other than [OpenSSL][48].

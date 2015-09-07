@@ -4,20 +4,25 @@ language: cpp
 git:
   depth: 1
 
+# send notifications to stack as well as email
+notifications:
+  slack: getmangos:yRgNBSgRQVh8WdfGEbT08Hit
+  
 # only run travis on the master branch
 branches:
   only:
-    - master
-    - Rel20
+    - release20
+    - develop21
+
+# build on both Linux and OSX
+os:
+  - linux
+  - osx
 
 # build with both gcc and clang to ensure compatibility
 compiler:
   - gcc
-
-before_install:
-# Get Eluna
- - git submodule init
- - git submodule update
+  - clang
  
 script:
   - test -d _build || mkdir _build
