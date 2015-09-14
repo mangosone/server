@@ -1539,6 +1539,8 @@ void AddSC_bosses_opera()
     //Hood
     s = new npc_grandmother();
     s->RegisterSelf();
+    s = new boss_bigbadwolf();
+    s->RegisterSelf();
 
     // Romeo And Juliet
     s = new boss_julianne();

@@ -1410,8 +1410,8 @@ void AddSC_npcs_special()
     s->RegisterSelf();
     s = new npc_guardian();
     s->RegisterSelf();
-    s = new npc_innkeeper();
-    s->RegisterSelf();
+    //s = new npc_innkeeper();
+    //s->RegisterSelf();
     s = new npc_redemption_target();
     s->RegisterSelf();
     s = new spell_symbol_of_life();

@@ -331,6 +331,7 @@ void AddEasternKingdomsScripts()
 
 // kalimdor
 void AddSC_instance_blackfathom_deeps();             // blackfathom_deeps
+void AddSC_blackfathom_deeps();
 void AddSC_boss_aeonus();                            // COT, dark_portal
 void AddSC_boss_chrono_lord_deja();
 void AddSC_boss_temporus();
@@ -402,6 +403,7 @@ void AddSC_winterspring();
 void AddKalimdorScripts()
 {
     AddSC_instance_blackfathom_deeps();                     // blackfathom deeps
+    AddSC_blackfathom_deeps();
     AddSC_boss_aeonus();                                    // CoT, dark_portal
     AddSC_boss_chrono_lord_deja();
     AddSC_boss_temporus();

@@ -1107,8 +1107,10 @@ void AddSC_hellfire_peninsula()
     s->RegisterSelf();
     s = new spell_just_release_darkness();
     s->RegisterSelf();
-    s = new npc_caretaker_dilandrus();
+    s = new spell_inform_dog();
     s->RegisterSelf();
+    //s = new npc_caretaker_dilandrus();
+    //s->RegisterSelf();
 
     //pNewScript = new Script;
     //pNewScript->Name = "npc_aeranas";
