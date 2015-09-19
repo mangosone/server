@@ -441,6 +441,14 @@ int WMOGroup::ConvertToVMAPGroupWmo(FILE* output, WMORoot* rootWMO, bool pPrecis
             {
                 case 0:
                     liquidEntry = ((mogpFlags & 0x80000) != 0) + 1;
+                    if (liquidEntry == 1)   // water type
+                    {
+                        if (filename.find("coilfang_raid") != string::npos)
+                        {
+                            // set water type to special coilfang raid water
+                            liquidEntry = 41;
+                        }
+                    }
                     break;
                 case 1:
                     liquidEntry = 2;        // ocean
@@ -449,7 +457,7 @@ int WMOGroup::ConvertToVMAPGroupWmo(FILE* output, WMORoot* rootWMO, bool pPrecis
                     liquidEntry = 3;        // magma
                     break;
                 case 3:
-                    if (filename.find("Stratholme_raid") != string::npos)
+                    if (filename.find("stratholme_raid") != string::npos)
                     {
                         liquidEntry = 21;   // Naxxramas slime
                     }
