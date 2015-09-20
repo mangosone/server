@@ -7803,7 +7803,7 @@ bool Unit::IsSecondChoiceTarget(Unit* pTarget, bool checkThreatArea)
     return
         pTarget->IsImmunedToDamage(GetMeleeDamageSchoolMask()) ||
         pTarget->hasNegativeAuraWithInterruptFlag(AURA_INTERRUPT_FLAG_DAMAGE) ||
-        checkThreatArea && ((Creature*)this)->IsOutOfThreatArea(pTarget);
+        (checkThreatArea && ((Creature*)this)->IsOutOfThreatArea(pTarget));
 }
 
 //======================================================================
