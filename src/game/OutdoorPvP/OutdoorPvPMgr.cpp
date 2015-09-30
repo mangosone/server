@@ -33,6 +33,7 @@
 #include "OutdoorPvPSI.h"
 #include "OutdoorPvPTF.h"
 #include "OutdoorPvPZM.h"
+#include "DisableMgr.h"
 
 INSTANTIATE_SINGLETON_1(OutdoorPvPMgr);
 
@@ -49,7 +50,7 @@ OutdoorPvPMgr::~OutdoorPvPMgr()
 }
 
 #define LOAD_OPVP_ZONE(a)                                           \
-    if (sWorld.getConfig(CONFIG_BOOL_OUTDOORPVP_##a##_ENABLED))     \
+if (sWorld.getConfig(CONFIG_BOOL_OUTDOORPVP_##a##_ENABLED) && !DisableMgr::IsDisabledFor(DISABLE_TYPE_OUTDOORPVP, OPVP_ID_##a))     \
     {                                                               \
         m_scripts[OPVP_ID_##a] = new OutdoorPvP##a();               \
         ++counter;                                                  \

@@ -44,6 +44,7 @@
 #include "WorldPacket.h"
 #include "Language.h"
 #include "GameEventMgr.h"
+#include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -1606,6 +1607,9 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
             sLog.outError("Battleground ID %u not found in BattlemasterList.dbc. Battleground not created.", bgTypeID_);
             continue;
         }
+
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeID_))
+            continue;
 
         BattleGroundTypeId bgTypeID = BattleGroundTypeId(bgTypeID_);
 

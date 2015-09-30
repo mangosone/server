@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "match_client_limits"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 3
-    #define WORLD_DB_CONTENT_NR 8
-    #define WORLD_DB_UPDATE_DESCRIPTION "dbdocs updates"
+    #define WORLD_DB_STRUCTURE_NR 4
+    #define WORLD_DB_CONTENT_NR 1
+    #define WORLD_DB_UPDATE_DESCRIPTION "Add_Disables_table"
 #endif // __REVISION_H__

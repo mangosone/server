@@ -63,6 +63,7 @@
 #include "CreatureEventAIMgr.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
 #include "SQLStorages.h"
+#include "DisableMgr.h"
 
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
@@ -1076,6 +1077,15 @@ bool ChatHandler::HandleReloadMailLevelRewardCommand(char* /*args*/)
     sLog.outString("Re-Loading Player level dependent mail rewards...");
     sObjectMgr.LoadMailLevelRewards();
     SendGlobalSysMessage("DB table `mail_level_reward` reloaded.");
+    return true;
+}
+
+bool ChatHandler::HandleReloadDisablesCommand(char * /*args*/)
+{
+    sLog.outString("Re-loading Disables...");
+    DisableMgr::LoadDisables();
+    DisableMgr::CheckQuestDisables();
+    SendGlobalSysMessage("DB table `disables` reloaded.");
     return true;
 }
 

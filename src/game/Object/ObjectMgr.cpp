@@ -55,6 +55,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "DisableMgr.h"
 
 #include <limits>
 
@@ -1306,6 +1307,12 @@ void ObjectMgr::LoadCreatures()
         uint32 guid         = fields[ 0].GetUInt32();
         uint32 entry        = fields[ 1].GetUInt32();
 
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_CREATURE_SPAWN, guid))
+        {
+            sLog.outDebug("Creature guid %u (entry %u) spawning is disabled.", guid, entry);
+            continue;
+        }
+
         CreatureInfo const* cInfo = GetCreatureTemplate(entry);
         if (!cInfo)
         {
@@ -1505,6 +1512,12 @@ void ObjectMgr::LoadGameObjects()
 
         uint32 guid         = fields[ 0].GetUInt32();
         uint32 entry        = fields[ 1].GetUInt32();
+
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_GAMEOBJECT_SPAWN, guid))
+        {
+            sLog.outDebug("Gameobject guid %u (entry %u) spawning is disabled.", guid, entry);
+            continue;
+        }
 
         GameObjectInfo const* gInfo = GetGameObjectInfo(entry);
         if (!gInfo)
@@ -2079,6 +2092,13 @@ void ObjectMgr::LoadItemPrototypes()
         {
             for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; ++j)
             {
+                if (DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, proto->Spells[j].SpellId))
+                {
+                    DEBUG_LOG("Spell %u on item %u (%s) is disabled.", proto->Spells[j].SpellId, proto->ItemId, proto->Name1);
+                    const_cast<ItemPrototype*>(proto)->Spells[j].SpellId = 0;
+                    continue;
+                }
+
                 if (proto->Spells[j].SpellTrigger >= MAX_ITEM_SPELLTRIGGER || proto->Spells[j].SpellTrigger == ITEM_SPELLTRIGGER_LEARN_SPELL_ID)
                 {
                     sLog.outErrorDb("Item (Entry: %u) has wrong item spell trigger value in spelltrigger_%d (%u)", i, j + 1, proto->Spells[j].SpellTrigger);
@@ -3513,6 +3533,10 @@ void ObjectMgr::LoadQuests()
 
     for (QuestMap::iterator iter = mQuestTemplates.begin(); iter != mQuestTemplates.end(); ++iter)
     {
+        // skip post-loading checks for disabled quests
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_QUEST, iter->first))
+            continue;
+
         Quest* qinfo = iter->second;
 
         // additional quest integrity checks (GO, creature_template and item_template must be loaded already)
