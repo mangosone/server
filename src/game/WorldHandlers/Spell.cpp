@@ -983,6 +983,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             DoSpellHitOnUnit(m_caster, mask, true);
             unitTarget = m_caster;
+
+            if (m_caster->GetTypeId() == TYPEID_UNIT)
+                m_caster->ToCreature()->LowerPlayerDamageReq(target->damage);
         }
     }
     else if (missInfo == SPELL_MISS_MISS || missInfo == SPELL_MISS_RESIST)
