@@ -49,23 +49,30 @@ class WorldObject;
 
 enum ScriptedObjectType
 {
-    SCRIPTED_UNIT       = 0,    //CreatureScript
-    SCRIPTED_GAMEOBJECT = 1,    //GameObjectScript
-    SCRIPTED_ITEM       = 2,    //ItemScript
-    SCRIPTED_AREATRIGGER= 3,    //AreaTriggerScript
-    SCRIPTED_SPELL      = 4,    //SpellScript
-    SCRIPTED_AURASPELL  = 5,    //AuraScript
-    SCRIPTED_MAPEVENT   = 6,    //MapEventScript
-    SCRIPTED_MAP        = 7,    //ZoneScript
-    SCRIPTED_BATTLEGROUND= 8,    //BattleGroundScript
-    SCRIPTED_PVP_ZONE   = 9,    //OutdoorPvPScript
-    SCRIPTED_INSTANCE   = 10,   //InstanceScript
-    SCRIPTED_CONDITION  = 11,   //ConditionScript
-    SCRIPTED_ACHIEVEMENT= 12,   //AchievementScript
+    SCRIPTED_UNIT           = 0,    //CreatureScript
+    SCRIPTED_GAMEOBJECT     = 1,    //GameObjectScript
+    SCRIPTED_ITEM           = 2,    //ItemScript
+    SCRIPTED_AREATRIGGER    = 3,    //AreaTriggerScript
+    SCRIPTED_SPELL          = 4,    //SpellScript
+    SCRIPTED_AURASPELL      = 5,    //AuraScript
+    SCRIPTED_MAPEVENT       = 6,    //MapEventScript
+    SCRIPTED_MAP            = 7,    //ZoneScript
+    SCRIPTED_BATTLEGROUND   = 8,    //BattleGroundScript
+    SCRIPTED_PVP_ZONE       = 9,    //OutdoorPvPScript
+    SCRIPTED_INSTANCE       = 10,   //InstanceScript
+    SCRIPTED_CONDITION      = 11,   //ConditionScript
+    SCRIPTED_ACHIEVEMENT    = 12,   //AchievementScript
     SCRIPTED_MAX_TYPE
 };
 
-enum ScriptCommand                                          // resSource, resTarget are the resulting Source/ Target after buddy search is done
+enum ScriptImplementation
+{
+    SCRIPT_FROM_DATABASE    = 0,
+    SCRIPT_FROM_CORE        = 1,
+    SCRIPT_FROM_ELUNA       = 2,
+};
+
+enum DBScriptCommand                                        // resSource, resTarget are the resulting Source/ Target after buddy search is done
 {
     SCRIPT_COMMAND_TALK                     = 0,            // resSource = WorldObject, resTarget = Unit/none
                                                             // dataint = text entry from db_script_string -table. dataint2-4 optional for random selected texts.
@@ -122,7 +129,7 @@ enum ScriptCommand                                          // resSource, resTar
                                                             // dataint=diff to change a waittime of current Waypoint Movement
     SCRIPT_COMMAND_PAUSE_WAYPOINTS          = 32,           // resSource = Creature
                                                             // datalong = 0: unpause waypoint 1: pause waypoint
-    SCRIPT_COMMAND_RESERVED_1               = 33,           // reserved for 3.x and later
+    SCRIPT_COMMAND_JOIN_LFG                 = 33,           // datalong = zoneId; // Currently only implemented in Zero
     SCRIPT_COMMAND_TERMINATE_COND           = 34,           // datalong = condition_id, datalong2 = if != 0 then quest_id of quest that will be failed for player's group if the script is terminated
                                                             // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL terminate when condition is false ELSE terminate when condition is true
     SCRIPT_COMMAND_SEND_AI_EVENT_AROUND     = 35,           // resSource = Creature, resTarget = Unit, datalong = AIEventType, datalong2 = radius
@@ -137,6 +144,8 @@ enum ScriptCommand                                          // resSource, resTar
                                                             // datalong: Send mailTemplateId from resSource (if provided) to player resTarget
                                                             // datalong2: AlternativeSenderEntry. Use as sender-Entry
                                                             // dataint1: Delay (>= 0) in Seconds
+    SCRIPT_COMMAND_CHANGE_ENTRY             = 39,           // resSource = Creature, datalong=creature entry
+                                                            // dataint1 = entry
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -348,6 +357,11 @@ struct ScriptInfo
             uint32 empty;
         } pauseWaypoint;
 
+        struct                                              // SCRIPT_COMMAND_JOIN_LFG (33)
+        {
+            uint32 areaId;                                  // datalong
+        } joinLfg;
+
         struct                                              // SCRIPT_COMMAND_TERMINATE_COND (34)
         {
             uint32 conditionId;                             // datalong
@@ -377,6 +391,12 @@ struct ScriptInfo
             uint32 mailTemplateId;                          // datalong
             uint32 altSender;                               // datalong2;
         } sendMail;
+
+        struct                                              // SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL (23)
+        {
+            uint32 creatureEntry;                           // datalong
+            uint32 empty1;                                  // datalong2
+        } changeEntry;
 
         struct
         {
@@ -532,6 +552,8 @@ class ScriptMgr
         ScriptMgr();
         ~ScriptMgr();
 
+        std::string GenerateNameToId(ScriptedObjectType sot, uint32 id);
+
         void LoadGameObjectScripts();
         void LoadGameObjectTemplateScripts();
         void LoadQuestEndScripts();
@@ -546,6 +568,9 @@ class ScriptMgr
 
         void LoadScriptNames();
         void LoadScriptBinding();
+        void LoadAreaTriggerScripts();
+        void LoadEventIdScripts();
+        void LoadSpellIdScripts();
 
         bool ReloadScriptBinding();
 
@@ -564,7 +589,7 @@ class ScriptMgr
         void UnloadScriptLibrary();
         bool IsScriptLibraryLoaded() const
         {
-#ifdef ENABLE_SD2
+#ifdef ENABLE_SD3
             return true;
 #else
             return false;
@@ -630,7 +655,6 @@ class ScriptMgr
         // mutex allowing to reload the script binding table; TODO just do it AWAY from any map update, e.g. right after sessions update 
         ACE_RW_Thread_Mutex m_bindMutex;
 #endif /* _DEBUG */
-
         // atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
 };
