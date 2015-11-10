@@ -580,7 +580,7 @@ bool ChatHandler::HandleServerLogLevelCommand(char* args)
 
 /// @}
 
-#ifndef WIN32
+#if (PLATFORM == PLATFORM_APPLE) || (PLATFORM == PLATFORM_UNIX)
 // Non-blocking keypress detector, when return pressed, return 1, else always return 0
 int kb_hit_return()
 {
@@ -617,7 +617,7 @@ void CliRunnable::run()
     while (!World::IsStopped())
     {
         fflush(stdout);
-#ifndef WIN32
+#if (PLATFORM == PLATFORM_APPLE) || (PLATFORM == PLATFORM_UNIX)
         while (!kb_hit_return() && !World::IsStopped())
             // With this, we limit CLI to 10commands/second
             { usleep(100); }
