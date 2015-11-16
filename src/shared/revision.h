@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 3
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "missing_script_binds"
+    #define WORLD_DB_CONTENT_NR 3
+    #define WORLD_DB_UPDATE_DESCRIPTION "server_startup_fixes"
 #endif // __REVISION_H__
