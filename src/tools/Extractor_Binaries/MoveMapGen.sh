@@ -35,9 +35,9 @@ then
   if [ -f "$EXCLUDE_MAPS_FILE" ]
   then ## Yes, read the file
     read -d -r EXCLUDE_MAPS < $EXCLUDE_MAPS_FILE
-	echo "Excluded maps: $EXCLUDE_MAPS"
+    echo "Excluded maps: $EXCLUDE_MAPS"
   else ## No, remind the user that they can create the file
-	echo "Excluded maps: NONE (no file called '$EXCLUDE_MAPS_FILE' was found.)"
+    echo "Excluded maps: NONE (no file called '$EXCLUDE_MAPS_FILE' was found.)"
   fi
 fi
 
@@ -152,15 +152,15 @@ badParam()
 
 DisplayHeader()
 {
-##	clear
-	echo "  __  __      _  _  ___  ___  ___        "
-	echo " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|    "
-	echo " | |\\/| / _\` | .\` | (_ | (_) \\__ \\  "
-	echo " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   "
-	echo "                                         "
-	echo " For help and support please visit:      "
-	echo " Website/Forum/Wiki: https://getmangos.eu"
-	echo "=========================================="
+##    clear
+    echo "  __  __      _  _  ___  ___  ___        "
+    echo " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|    "
+    echo " | |\\/| / _\` | .\` | (_ | (_) \\__ \\  "
+    echo " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   "
+    echo "                                         "
+    echo " For help and support please visit:      "
+    echo " Website/Forum/Wiki: https://getmangos.eu"
+    echo "=========================================="
 }
 
 
@@ -179,11 +179,11 @@ if [ "$OFFMESH_FILE" != "" ]
 then
   if [ ! -f "$OFFMESH_FILE" ]
   then
-	echo "ERROR! Offmesh file $OFFMESH_FILE could not be found."
-	echo "Provide valid file or none. You need to edit the script"
-	exit 1
+    echo "ERROR! Offmesh file $OFFMESH_FILE could not be found."
+    echo "Provide valid file or none. You need to edit the script"
+    exit 1
   else
-	OFFMESH="--offMeshInput $OFFMESH_FILE"
+    OFFMESH="--offMeshInput $OFFMESH_FILE"
   fi
 fi
 
@@ -192,15 +192,15 @@ createMMaps()
 {
   for i in $@
   do
-	for j in $EXCLUDE_MAPS
-	do
-	  if [ "$i" = "$j" ]
-	  then
-		continue 2
-	  fi
-	done
-	./movemap-generator $PARAMS $OFFMESH $i | tee -a $DETAIL_LOG_FILE
-	echo "`date`: (Re)created map $i" | tee -a $LOG_FILE
+    for j in $EXCLUDE_MAPS
+    do
+      if [ "$i" = "$j" ]
+      then
+        continue 2
+      fi
+    done
+    ./movemap-generator $PARAMS $OFFMESH $i | tee -a $DETAIL_LOG_FILE
+    echo "`date`: (Re)created map $i" | tee -a $LOG_FILE
   done
 }
 
@@ -232,41 +232,41 @@ DisplayHeader
 
 createSummary()
 {
-	echo
-	echo "Build Summary:"
-	echo "==============="
-	case "$1" in
-	  "1" )
-		echo "1 CPU selected:"
-		echo "=============="
-		echo " All maps will be build using this CPU"
-		;;
-	  "2" )
-		echo "2 CPUs selected:"
-		echo "==============="
+    echo
+    echo "Build Summary:"
+    echo "==============="
+    case "$1" in
+      "1" )
+        echo "1 CPU selected:"
+        echo "=============="
+        echo " All maps will be build using this CPU"
+        ;;
+      "2" )
+        echo "2 CPUs selected:"
+        echo "==============="
 		echo " CPU 1: Maps: $MAP_Continent1 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium9 $MAP_Medium10 $MAP_Medium12 $MAP_Medium15 $MAP_Small1 $MAP_Small2 $MAP_Small5 $MAP_Small6 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
 		echo " CPU 2: Maps: $MAP_Continent2 $MAP_Continent3 $MAP_Medium7 $MAP_Medium8 $MAP_Medium11 $MAP_Medium13 $MAP_Medium14 $MAP_Medium16 $MAP_Medium17 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1"
-		;;
-	  "3" )
-		echo "3 CPUs selected:"
-		echo "==============="
+        ;;
+      "3" )
+        echo "3 CPUs selected:"
+        echo "==============="
 		echo " CPU 1: Maps: $MAP_Continent1 $MAP_Medium10 $MAP_Medium11 $MAP_Small5 $MAP_Small13 $MAP_LIST_Junk1 $MAP_LIST_Junk7"
 		echo " CPU 2: Maps: $MAP_Continent2 $MAP_Big4 $MAP_Big5 $MAP_Big8 $MAP_Medium1 $MAP_Medium2 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Small6 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk2"
 		echo " CPU 3: Maps: $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big6 $MAP_Big7 $MAP_Big9 $MAP_Medium3 $MAP_Medium9 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small19 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
-		;;
-	  "4" )
-		echo "4 CPUs selected:"
-		echo "==============="
+        ;;
+      "4" )
+        echo "4 CPUs selected:"
+        echo "==============="
 		echo " CPU 1: Maps: $MAP_Continent1"
 		echo " CPU 2: Maps: $MAP_Continent2 $MAP_LIST_Junk4 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
 		echo " CPU 3: Maps: $MAP_Continent3 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8"
 		echo " CPU 4: Maps: $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk7"
-		;;
-	  * )
-		badParam
-		exit 1
-		;;
-	esac
+        ;;
+      * )
+        badParam
+        exit 1
+        ;;
+    esac
 
   echo
   echo "Starting to create MoveMaps" | tee -a $DETAIL_LOG_FILE
@@ -281,44 +281,44 @@ fi
 # Param control
 case "$1" in
   "1" )
-	createHeader $1
-	createSummary $1
+    createHeader $1
+    createSummary $1
 	createMMaps $MAP_Continent1 $MAP_Continent2 $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
-	;;
+    ;;
   "2" )
-	createHeader $1
-	createSummary $1
+    createHeader $1
+    createSummary $1
     createMMaps $MAP_Continent1 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium9 $MAP_Medium10 $MAP_Medium12 $MAP_Medium15 $MAP_Small1 $MAP_Small2 $MAP_Small5 $MAP_Small6 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
     createMMaps $MAP_Continent2 $MAP_Continent3 $MAP_Medium7 $MAP_Medium8 $MAP_Medium11 $MAP_Medium13 $MAP_Medium14 $MAP_Medium16 $MAP_Medium17 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 &
-	;;
+    ;;
   "3" )
-	createHeader $1
-	createSummary $1
+    createHeader $1
+    createSummary $1
 	createMMaps $MAP_Continent1 $MAP_Medium10 $MAP_Medium11 $MAP_Small5 $MAP_Small13 $MAP_LIST_Junk1 $MAP_LIST_Junk7 &
 	createMMaps $MAP_Continent2 $MAP_Big4 $MAP_Big5 $MAP_Big8 $MAP_Medium1 $MAP_Medium2 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Small6 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk2 &
 	createMMaps $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big6 $MAP_Big7 $MAP_Big9 $MAP_Medium3 $MAP_Medium9 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small19 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
-	;;
+    ;;
   "4" )
-	createHeader $1
-	createSummary $1
+    createHeader $1
+    createSummary $1
 	createMMaps $MAP_Continent1 &
 	createMMaps $MAP_Continent2 $MAP_LIST_Junk4 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
 	createMMaps $MAP_Continent3 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 &
 	createMMaps $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk7 &
-	;;
+    ;;
   "offmesh" )
-	echo "`date`: Recreate offmeshs from file $OFFMESH_FILE" | tee -a $LOG_FILE
-	echo "Recreate offmeshs from file $OFFMESH_FILE" | tee -a $DETAIL_LOG_FILE
-	while read map tile line
-	do
-	  ./movemap-generator $PARAMS $OFFMESH $map --tile $tile | tee -a $DETAIL_LOG_FILE
-	  echo "`date`: Recreated $map $tile from $OFFMESH_FILE" | tee -a $LOG_FILE
-	done < $OFFMESH_FILE &
-	;;
+    echo "`date`: Recreate offmeshs from file $OFFMESH_FILE" | tee -a $LOG_FILE
+    echo "Recreate offmeshs from file $OFFMESH_FILE" | tee -a $DETAIL_LOG_FILE
+    while read map tile line
+    do
+      ./movemap-generator $PARAMS $OFFMESH $map --tile $tile | tee -a $DETAIL_LOG_FILE
+      echo "`date`: Recreated $map $tile from $OFFMESH_FILE" | tee -a $LOG_FILE
+    done < $OFFMESH_FILE &
+    ;;
   * )
-	badParam
-	exit 1
-	;;
+    badParam
+    exit 1
+    ;;
 esac
 
 wait
