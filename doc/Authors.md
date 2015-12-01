@@ -31,6 +31,14 @@ Authors
 -------
 For Authors prior to Release 0.19, please see the file [Historic Authors](Authors_historic.md)
 
+We are grateful to the following who contributed to Release 0.21:
+
+* Antzmangos/billy1arm
+* Chuck5ta
+* Foereaper
+* H0zen
+* Olion17
+
 
 * 249CAAFE40
 * Andrewmunro
