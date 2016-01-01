@@ -28,8 +28,8 @@
 
     #define REALMD_DB_VERSION_NR 21
     #define REALMD_DB_STRUCTURE_NR 1
-    #define REALMD_DB_CONTENT_NR 0
-    #define REALMD_DB_UPDATE_DESCRIPTION "revision_refactor"
+    #define REALMD_DB_CONTENT_NR 2
+    #define REALMD_DB_UPDATE_DESCRIPTION "dbdocs update"
 
     #define CHAR_DB_VERSION_NR 21
     #define CHAR_DB_STRUCTURE_NR 1
@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 3
-    #define WORLD_DB_CONTENT_NR 3
-    #define WORLD_DB_UPDATE_DESCRIPTION "server_startup_fixes"
+    #define WORLD_DB_CONTENT_NR 8
+    #define WORLD_DB_UPDATE_DESCRIPTION "dbdocs updates"
 #endif // __REVISION_H__
