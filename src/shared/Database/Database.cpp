@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2016  MaNGOS project <http://getmangos.eu>
+ * Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,8 +46,8 @@ struct DBVersion
 
 const DBVersion databaseVersions[COUNT_DATABASES] = {
     { "World", WORLD_DB_VERSION_NR, WORLD_DB_STRUCTURE_NR, WORLD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_WORLD
-    { "Realmd", REALMD_DB_VERSION_NR, REALMD_DB_STRUCTURE_NR, REALMD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_REALMD
-    { "Character", CHAR_DB_VERSION_NR, CHAR_DB_STRUCTURE_NR, CHAR_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_CHARACTER
+    { "Realmd", REALMD_DB_VERSION_NR, REALMD_DB_STRUCTURE_NR, REALMD_DB_CONTENT_NR, REALMD_DB_UPDATE_DESCRIPTION }, // DATABASE_REALMD
+    { "Character", CHAR_DB_VERSION_NR, CHAR_DB_STRUCTURE_NR, CHAR_DB_CONTENT_NR, CHAR_DB_UPDATE_DESCRIPTION }, // DATABASE_CHARACTER
 };
 
 //////////////////////////////////////////////////////////////////////////
