@@ -447,12 +447,12 @@ void Spell::FillTargetMap()
                         case TARGET_SCRIPT:                 // B-target only used with CheckCast here
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
-                        case TARGET_AREAEFFECT_INSTANT:     // use B case that not dependent from from A in fact
+                        case TARGET_AREAEFFECT_INSTANT:     // use B case that not dependent from A in fact
                             if ((m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION) == 0)
                                 { m_targets.setDestination(m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ()); }
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
-                        case TARGET_BEHIND_VICTIM:          // use B case that not dependent from from A in fact
+                        case TARGET_BEHIND_VICTIM:          // use B case that not dependent from A in fact
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
                         default:
@@ -654,7 +654,7 @@ void Spell::prepareDataForTriggerSystem()
 {
     //==========================================================================================
     // Now fill data for trigger system, need know:
-    // an spell trigger another or not ( m_canTrigger )
+    // a spell trigger another or not ( m_canTrigger )
     // Create base triggers flags for Attacker and Victim ( m_procAttacker and  m_procVictim)
     //==========================================================================================
     // Fill flag can spell trigger or not
@@ -4293,11 +4293,6 @@ SpellCastResult Spell::CheckCast(bool strict)
         {
             if (m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->IsInWorld())
             {
-                // Arcane Missile self cast forbidden
-                if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
-                    m_spellInfo->SpellFamilyFlags & UI64LIT(0x0200800))
-                       { return SPELL_FAILED_BAD_TARGETS; }
-
                 // Additional check for some spells
                 // If 0 spell effect empty - client not send target data (need use selection)
                 // TODO: check it on next client version
