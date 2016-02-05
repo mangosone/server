@@ -54,8 +54,9 @@ Compilers
 Building *Mangos* is currently possible with these compilers:
 
 * **Microsoft Visual Studio (Express[^1])**, 32 bit and 64 bit. Both
-  [Visual Studio][30] and the Express editions of [Visual Studio][31]
-  are supported.
+  [Visual Studio][30] and the Express editions of [Visual Studio][31] are
+  supported. Only Visual Studio 2012 and above are now officially supported.
+
 * **Microsoft Windows SDK**, 32 bit and 64 bit. The [Windows 7 SDK][32] is
   recommended, as older versions lack compiler features required to build
   the server.
