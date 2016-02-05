@@ -3,6 +3,17 @@ MaNGOS One Changelog
 This change log references the relevant changes (bug and security fixes) done
 in recent versions.
 
+0.21 (2016-04-01) - "The Battle for Outlands"
+--------------------------------------------
+Many Thanks to all the groups and individuals who contributed to this release.
+- 210+ Commits since the previous release.
+
+* Removed the old SD2 scripts and Added the new unified SD3 Submodule
+* Removed the individual extractor projects and added a unified Extractors Submodule
+
+* TODO: Add full list of fixes from Rel20 to 21 for both Server, Scripts and Database
+
+
 0.20 (2015-02-31) - Points of departure
 ---------------------------------------
 Many Thanks to all the groups and individuals who contributed to this release.
