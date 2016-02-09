@@ -13835,7 +13835,12 @@ void Player::ItemAddedQuestCheck(uint32 entry, uint32 count)
                     SendQuestUpdateAddItem(qInfo, j, additemcount);
                 }
                 if (CanCompleteQuest(questid))
-                    { CompleteQuest(questid); }
+                {
+                    CompleteQuest(questid);     // UpdateForQuestWorldObjects() inside
+                    return;
+                }
+                if (reqitemcount == q_status.m_itemcount[j])    // only 1 of several conditions is met
+                    UpdateForQuestWorldObjects();
                 return;
             }
         }
