@@ -3709,8 +3709,12 @@ void Spell::EffectLearnSpell(SpellEffectIndex eff_idx)
     }
 
     Player* player = (Player*)unitTarget;
-
     uint32 spellToLearn = (m_spellInfo->Id == SPELL_ID_GENERIC_LEARN) ? damage : m_spellInfo->EffectTriggerSpell[eff_idx];
+
+    // special case for paladin SoR 20154 (non-judgement version)
+    if (m_spellInfo->Id == 10321)
+        { player->removeSpell(20154, true, false); }
+
     player->learnSpell(spellToLearn, false);
 
     if (WorldObject const* caster = GetCastingObject())
