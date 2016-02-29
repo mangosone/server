@@ -115,11 +115,7 @@ void MovementInfo::Read(ByteBuffer& data)
         data >> s_pitch;
     }
 
-    /* This is never sent when we're on a taxi */
-    if (!HasMovementFlag(MOVEFLAG_ONTRANSPORT))
-    {
-        data >> fallTime;
-    }
+    data >> fallTime;
 
     if (HasMovementFlag(MOVEFLAG_FALLING))
     {
@@ -160,11 +156,7 @@ void MovementInfo::Write(ByteBuffer& data) const
         data << s_pitch;
     }
 
-    /* This is never sent when we're on a taxi */
-    if (!HasMovementFlag(MOVEFLAG_ONTRANSPORT))
-    {
-        data << fallTime;
-    }
+    data << fallTime;
 
     if (HasMovementFlag(MOVEFLAG_FALLING))
     {
