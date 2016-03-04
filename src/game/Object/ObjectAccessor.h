@@ -57,21 +57,28 @@ class HashMapHolder
 
         static void Insert(T* o)
         {
-            ACE_WRITE_GUARD(LockType, guard, i_lock)
-            m_objectMap[o->GetObjectGuid()] = o;
+            WriteGuard guard(i_lock, true);
+            if (guard.locked())
+                m_objectMap[o->GetObjectGuid()] = o;
         }
 
         static void Remove(T* o)
         {
-            ACE_WRITE_GUARD(LockType, guard, i_lock)
-            m_objectMap.erase(o->GetObjectGuid());
+            WriteGuard guard(i_lock, true);
+            if (guard.locked())
+                m_objectMap.erase(o->GetObjectGuid());
         }
 
         static T* Find(ObjectGuid guid)
         {
-            ACE_READ_GUARD_RETURN (LockType, guard, i_lock, NULL)
-            typename MapType::iterator itr = m_objectMap.find(guid);
-            return (itr != m_objectMap.end()) ? itr->second : NULL;
+            ReadGuard guard(i_lock, true);
+            if (guard.locked())
+            {
+                typename MapType::iterator itr = m_objectMap.find(guid);
+                return (itr != m_objectMap.end()) ? itr->second : NULL;
+            }
+            else
+                return NULL;
         }
 
         static MapType& GetContainer() { return m_objectMap; }
