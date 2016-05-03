@@ -1244,20 +1244,6 @@ void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 10
     uint32 health;
     uint32 mana;
 
-    // TODO: Remove cinfo->ArmorMultiplier test workaround to disable classlevelstats when DB is ready
-    CreatureClassLvlStats const* cCLS = sObjectMgr.GetCreatureClassLvlStats(level, cinfo->UnitClass,EXPANSION_TBC);
-    if (cinfo->ArmorMultiplier > 0 && cCLS) 
-    {
-        // Use Creature Stats to calculate stat values
-
-        // health
-        health = cCLS->BaseHealth * cinfo->HealthMultiplier;
-
-        // mana
-        mana = cCLS->BaseMana * cinfo->PowerMultiplier;
-    }
-    else
-    {
         // Use old style to calculate stat values
         float rellevel = maxlevel == minlevel ? 0 : (float(level - minlevel)) / (maxlevel - minlevel);
 
@@ -1270,7 +1256,6 @@ void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 10
         uint32 minmana = std::min(cinfo->MaxLevelMana, cinfo->MinLevelMana);
         uint32 maxmana = std::max(cinfo->MaxLevelMana, cinfo->MinLevelMana);
         mana = minmana + uint32(rellevel * (maxmana - minmana));
-    }
 
     health *= _GetHealthMod(rank); // Apply custom config setting
     if (health < 1)
