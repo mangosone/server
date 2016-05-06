@@ -16187,6 +16187,13 @@ void Player::SaveToDB()
 
     CharacterDatabase.BeginTransaction();
 
+
+#ifdef ENABLE_ELUNA
+    // Hack to check that this is not on create save
+    if (!HasAtLoginFlag(AT_LOGIN_FIRST))
+        sEluna->OnSave(this);
+#endif /* ENABLE_ELUNA */
+
     static SqlStatementID delChar ;
     static SqlStatementID insChar ;
 

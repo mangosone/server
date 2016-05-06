@@ -1,4 +1,4 @@
-[![](https://www.getmangos.eu/images/primus/blue/misc/logo.png)](http://www.getmangos.eu)&nbsp;
+[![](https://www.getmangos.eu/images/primus/blue/misc/logo.png)](https://getmangos.eu)&nbsp;
 [![](/icons/FORUM.gif)](https://www.getmangos.eu/forum.php)
 [![](/icons/WIKI.gif)](https://getmangos.eu/wiki)
 [![](/icons/TOOLS.gif)](http://github.com/mangostools)
@@ -94,7 +94,7 @@ their systems package management instead of source packages.*
   scripting environment, which allows us to make live changes to scripted
   content.
 
-*Recast*, *G3D* and *libmpq* are included in the *Mangos* distribution as
+*ACE*, *Recast*, *G3D* and *libmpq* are included in the *Mangos* distribution as
 we rely on specific versions.
 
 Optional dependencies
@@ -140,7 +140,7 @@ respects for all of the code used other than [OpenSSL][48].
 
 [^1]: Visual Studio Express versions prior to the 2012 release can only
       build 32 bit applications, unless you install the Windows SDK.
-[^2]: Clang support for Windows is experimental. Failure to compile MangosOne
+[^2]: Clang support for Windows is experimental. Failure to compile Mangos
       may also relate to the experimental state of the port.
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
@@ -149,7 +149,7 @@ respects for all of the code used other than [OpenSSL][48].
 [4]: http://www.wowpedia.org/Patch_2.4.3 "WoW The Burning Crusade · Patch 2.4.3 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
 
-[10]: http://getmangos.eu/ "mangos · project site"
+[10]: https://getmangos.eu/ "mangos · project site"
 [12]: http://github.com/mangosone "MaNGOS One · github organization"
 [13]: http://github.com/mangosone/server "MaNGOS One · server repository"
 [15]: http://github.com/mangosone/database "MaNGOS One · content database repository"

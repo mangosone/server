@@ -75,18 +75,18 @@ namespace MMAP
         {
             // always use mmaps for players
             if (unit->GetTypeId() == TYPEID_PLAYER)
-                return true;
+                { return true; }
 
             if (IsPathfindingForceDisabled(unit))
-                return false;
+                { return false; }
 
             if (IsPathfindingForceEnabled(unit))
-                return true;
+                { return true; }
 
             // always use mmaps for pets of players (can still be disabled by extra-flag for pet creature)
             if (unit->GetTypeId() == TYPEID_UNIT && ((Creature*)unit)->IsPet() && unit->GetOwner() &&
                 unit->GetOwner()->GetTypeId() == TYPEID_PLAYER)
-                return true;
+                { return true; }
         }
 
         return g_mmapDisabledIds->find(mapId) == g_mmapDisabledIds->end();
@@ -108,7 +108,7 @@ namespace MMAP
             if (const CreatureInfo* pInfo = pCreature->GetCreatureInfo())
             {
                 if (pInfo->ExtraFlags & CREATURE_EXTRA_FLAG_MMAP_FORCE_ENABLE)
-                    return true;
+                    { return true; }
             }
         }
 
@@ -122,7 +122,7 @@ namespace MMAP
             if (const CreatureInfo* pInfo = pCreature->GetCreatureInfo())
             {
                 if (pInfo->ExtraFlags & CREATURE_EXTRA_FLAG_MMAP_FORCE_DISABLE)
-                    return true;
+                    { return true; }
             }
         }
 
