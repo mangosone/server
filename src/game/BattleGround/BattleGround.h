@@ -1086,7 +1086,7 @@ class BattleGround
          * @param player
          * @param plr_guid
          */
-        void EventPlayerLoggedIn(Player* player, ObjectGuid plr_guid);
+        void EventPlayerLoggedIn(Player* player);
         /**
          * @brief
          *
