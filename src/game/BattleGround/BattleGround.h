@@ -1226,6 +1226,8 @@ class BattleGround
          */
         void DoorClose(ObjectGuid guid);
 
+        virtual Team GetPrematureWinner();
+
         /**
          * @brief
          *

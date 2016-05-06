@@ -510,6 +510,9 @@ class BattleGroundAV : public BattleGround
          * @return BattleGroundAVTeamIndex
          */
         static BattleGroundAVTeamIndex GetAVTeamIndexByTeamId(Team team) { return BattleGroundAVTeamIndex(GetTeamIndexByTeamId(team)); }
+
+        virtual Team GetPrematureWinner() override;
+
     private:
         /* Nodes occupying */
         /**
