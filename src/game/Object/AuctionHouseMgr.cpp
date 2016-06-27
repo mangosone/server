@@ -1023,6 +1023,10 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
     }
     else                                                    // buyout
     {
+        if (auction_owner)
+        {
+            auction_owner->GetSession()->SendAuctionOwnerNotification(this, false);
+        }
         AuctionBidWinning(newbidder);
         return false;
     }
