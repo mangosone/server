@@ -22,38 +22,43 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef _M_DELAY_EXECUTOR_H
-#define _M_DELAY_EXECUTOR_H
+#ifndef _MAP_UPDATER_H_INCLUDED
+#define _MAP_UPDATER_H_INCLUDED
 
-#include <ace/Task.h>
-#include <ace/Activation_Queue.h>
-#include <ace/Method_Request.h>
+#include <ace/Thread_Mutex.h>
+#include <ace/Condition_Thread_Mutex.h>
 
-class DelayExecutor : protected ACE_Task_Base
+#include "DelayExecutor.h"
+
+class Map;
+
+class MapUpdater
 {
     public:
 
-        DelayExecutor();
-        virtual ~DelayExecutor();
+        MapUpdater();
+        virtual ~MapUpdater();
 
-        static DelayExecutor* instance();
+        friend class MapUpdateRequest;
 
-        int execute(ACE_Method_Request* new_req);
+        int schedule_update(Map& map, ACE_UINT32 diff);
 
-        int activate(int num_threads = 1);
+        int wait();
+
+        int activate(size_t num_threads);
 
         int deactivate();
 
         bool activated();
 
-        virtual int svc();
-
     private:
 
-        ACE_Activation_Queue queue_;
-        bool activated_;
+        DelayExecutor m_executor;
+        ACE_Thread_Mutex m_mutex;
+        ACE_Condition_Thread_Mutex m_condition;
+        size_t pending_requests;
 
-        void activated(bool s);
+        void update_finished();
 };
 
-#endif // _M_DELAY_EXECUTOR_H
+#endif //_MAP_UPDATER_H_INCLUDED
