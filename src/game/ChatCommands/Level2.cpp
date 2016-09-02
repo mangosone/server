@@ -2394,7 +2394,7 @@ bool ChatHandler::HandleTicketAcceptCommand(char* args)
 
     // ticket<end>
     if (!px)
-    { return false; }
+        { return false; }
     
     // ticket accept on
     if (strncmp(px, "on", 3) == 0)
@@ -2409,7 +2409,7 @@ bool ChatHandler::HandleTicketAcceptCommand(char* args)
         SendSysMessage(LANG_COMMAND_TICKETS_SYSTEM_OFF);
     }
     else
-        return false;
+        { return false; }
 
     return true;
 }
@@ -2422,7 +2422,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     if (ExtractUInt32(&args, num))
     {
         if (num == 0)
-            return false;
+            { return false; }
 
         ticket = sTicketMgr.GetGMTicket(num);
 
@@ -2438,7 +2438,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         ObjectGuid target_guid;
         std::string target_name;
         if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
-            return false;
+            { return false; }
 
         // ticket respond $char_name
         ticket = sTicketMgr.GetGMTicket(target_guid);
@@ -2469,11 +2469,12 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     return true;
 }
 
+// del tickets
 bool ChatHandler::HandleTicketDeleteCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
     if (!px)
-        return false;
+        { return false; }
 
     // ticket delete all
     if (strncmp(px, "all", 4) == 0)
@@ -2485,11 +2486,11 @@ bool ChatHandler::HandleTicketDeleteCommand(char* args)
 
     uint32 num;
 
-    // ticket delete #id
+    // ticket delete #num
     if (ExtractUInt32(&px, num))
     {
         if (num == 0)
-            return false;
+            { return false; }
 
         // mgr numbering tickets start from 0
         GMTicket* ticket = sTicketMgr.GetGMTicket(num);
@@ -2522,13 +2523,14 @@ bool ChatHandler::HandleTicketDeleteCommand(char* args)
     ObjectGuid target_guid;
     std::string target_name;
     if (!ExtractPlayerTarget(&px, &target, &target_guid, &target_name))
-        return false;
+        { return false; }
 
+    // ticket delete $charName
     sTicketMgr.Delete(target_guid);
 
     // notify players about ticket deleting
     if (target)
-        target->GetSession()->SendGMTicketGetTicket(0x0A);
+        { target->GetSession()->SendGMTicketGetTicket(0x0A); }
 
     std::string nameLink = playerLink(target_name);
 
@@ -2543,9 +2545,9 @@ bool ChatHandler::HandleTicketInfoCommand(char *args)
     size_t count = sTicketMgr.GetTicketCount();
 
     if (m_session)
-        PSendSysMessage(LANG_COMMAND_TICKETCOUNT, count, GetOnOffStr(m_session->GetPlayer()->isAcceptTickets()));
+        { PSendSysMessage(LANG_COMMAND_TICKETCOUNT, count, GetOnOffStr(m_session->GetPlayer()->isAcceptTickets())); }
     else
-        PSendSysMessage(LANG_COMMAND_TICKETCOUNT_CONSOLE, count);
+        { PSendSysMessage(LANG_COMMAND_TICKETCOUNT_CONSOLE, count); }
 
     return true;
 }
@@ -2614,7 +2616,7 @@ bool ChatHandler::HandleTicketMeAcceptCommand(char* args)
         SendSysMessage(LANG_COMMAND_TICKETOFF);
     }
     else
-        return false;
+        { return false; }
 
     return true;
 }
@@ -2628,7 +2630,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     if (ExtractUInt32(&args, num))
     {
         if (num == 0)
-            return false;
+            { return false; }
 
         // mgr numbering tickets start from 0
         ticket = sTicketMgr.GetGMTicket(num);
@@ -2645,7 +2647,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
         ObjectGuid target_guid;
         std::string target_name;
         if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
-            return false;
+            { return false; }
 
         // ticket respond $char_name
         ticket = sTicketMgr.GetGMTicket(target_guid);
@@ -2660,7 +2662,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
 
     // no response text?
     if (!*args)
-        return false;
+        { return false; }
 
     ticket->SetResponseText(args);
 
@@ -2680,13 +2682,13 @@ bool ChatHandler::HandleTicketShowCommand(char *args)
     // ticket #num
     char* px = ExtractLiteralArg(&args);
     if (!px)
-        return false;
+        { return false; }
 
     uint32 num;
     if (ExtractUInt32(&px, num))
     {
         if (num == 0)
-            return false;
+            { return false; }
 
         // mgr numbering tickets start from 0
         GMTicket* ticket = sTicketMgr.GetGMTicket(num);
@@ -2704,7 +2706,7 @@ bool ChatHandler::HandleTicketShowCommand(char *args)
     ObjectGuid target_guid;
     std::string target_name;
     if (!ExtractPlayerTarget(&px, NULL, &target_guid, &target_name))
-        return false;
+        { return false; }
 
     // ticket $char_name
     GMTicket* ticket = sTicketMgr.GetGMTicket(target_guid);
@@ -2728,7 +2730,7 @@ bool ChatHandler::HandleTickerSurveyClose(char *args)
     if (ExtractUInt32(&args, num))
     {
         if (num == 0)
-            return false;
+            { return false; }
 
         ticket = sTicketMgr.GetGMTicket(num);
 
@@ -2744,7 +2746,7 @@ bool ChatHandler::HandleTickerSurveyClose(char *args)
         ObjectGuid target_guid;
         std::string target_name;
         if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
-            return false;
+            { return false; }
 
         // ticket respond $char_name
         ticket = sTicketMgr.GetGMTicket(target_guid);
