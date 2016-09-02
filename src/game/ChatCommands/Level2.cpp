@@ -2391,6 +2391,8 @@ void ChatHandler::ShowTicket(GMTicket const* ticket)
 bool ChatHandler::HandleTicketAcceptCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
+    if (!px)
+    { return false; }
 
     if (strncmp(px, "on", 3) == 0)
     {
