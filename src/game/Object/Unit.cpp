@@ -9191,16 +9191,9 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
          CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
 
          if (GetTypeId() == TYPEID_UNIT)
-<<<<<<< HEAD
-         {
-                 SetTargetGuid(ObjectGuid());
-                 GetMotionMaster()->MoveConfused();
-         }
-=======
              SetTargetGuid(ObjectGuid());
 
         GetMotionMaster()->MoveConfused();
->>>>>>> 1a36f1c... Fix Unit::SetConfused to work on players.
     }
     else
     {
