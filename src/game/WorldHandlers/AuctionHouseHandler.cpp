@@ -493,6 +493,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     CharacterDatabase.CommitTransaction();
     sAuctionMgr.RemoveAItem(auction->itemGuidLow);
     auctionHouse->RemoveAuction(auction->Id);
+
     // Used by Eluna
 #ifdef ENABLE_ELUNA
     sEluna->OnRemove(auctionHouse, auction);

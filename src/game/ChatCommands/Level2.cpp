@@ -3991,7 +3991,7 @@ bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
     {
         SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(i);
         if (!skillInfo)
-            { continue; }
+        { continue; }
 
         if (skillInfo->categoryId == SKILL_CATEGORY_PROFESSION || skillInfo->categoryId == SKILL_CATEGORY_SECONDARY)
         {
