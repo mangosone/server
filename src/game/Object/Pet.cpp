@@ -2109,40 +2109,40 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     if (!owner)
         return Unit::UpdateSpeed(mtype, forced, ratio);         // NPC pets are usual creatures
 
-    int32 main_speed_mod = 0;
-    float stack_bonus = 1.0f;
+    int32 main_speed_mod  = 0;
+    float stack_bonus     = 1.0f;
     float non_stack_bonus = 1.0f;
 
     switch (mtype)
     {
-    case MOVE_WALK:
-        break;
-    case MOVE_RUN:
-        if (!m_attacking && owner->HasAura(19596))   // Bestial Swiftness: prevent while following
-        {
-            AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
-            for (AuraList::const_iterator it = auras.begin(); it != auras.end(); ++it)
-                if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
-                    main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
-        }
-        else
-            main_speed_mod = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SPEED);
+        case MOVE_WALK:
+            break;
+        case MOVE_RUN:
+            if (!m_attacking && owner->HasAura(19596))   // Bestial Swiftness: prevent while following
+            {
+                AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
+                for (AuraList::const_iterator it = auras.begin(); it != auras.end(); ++it)
+                    if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
+                        main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
+            }
+            else
+                main_speed_mod = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SPEED);
 
-        stack_bonus = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
-        non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
-        break;
-    case MOVE_RUN_BACK:
-        return;
-    case MOVE_SWIM:
-    {
-        main_speed_mod = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SWIM_SPEED);
-        break;
-    }
-    case MOVE_SWIM_BACK:
-        return;
-    default:
-        sLog.outError("Pet::UpdateSpeed: Unsupported move type (%d)", mtype);
-        return;
+            stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
+            non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
+            break;
+        case MOVE_RUN_BACK:
+            return;
+        case MOVE_SWIM:
+        {
+            main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SWIM_SPEED);
+            break;
+        }
+        case MOVE_SWIM_BACK:
+            return;
+        default:
+            sLog.outError("Pet::UpdateSpeed: Unsupported move type (%d)", mtype);
+            return;
     }
 
     float bonus = non_stack_bonus > stack_bonus ? non_stack_bonus : stack_bonus;
@@ -2154,32 +2154,29 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
 
     switch (mtype)
     {
-    case MOVE_RUN:
-    case MOVE_SWIM:
-    {
-        // Normalize speed by 191 aura SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED if need
-        // TODO: possible affect only on MOVE_RUN
-        if (int32 normalization = GetMaxPositiveAuraModifier(SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED))
+        case MOVE_RUN:
+        case MOVE_SWIM:
         {
-            // Use speed from aura
-            float max_speed = normalization / baseMoveSpeed[mtype];
-            if (speed > max_speed)
+            // Normalize speed by 191 aura SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED if need
+            // TODO: possible affect only on MOVE_RUN
+            if (int32 normalization = GetMaxPositiveAuraModifier(SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED))
             {
-                speed = max_speed;
+                // Use speed from aura
+                float max_speed = normalization / baseMoveSpeed[mtype];
+                if (speed > max_speed)
+                    { speed = max_speed; }
             }
+            break;
         }
-        break;
-    }
-    default:
-        break;
+        default:
+            break;
     }
 
     // Apply strongest slow aura mod to speed
     int32 slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
     if (slow)
-    {
-        speed *= (100.0f + slow) / 100.0f;
-    }
+        { speed *= (100.0f + slow) / 100.0f; }
+
 
     SetSpeedRate(mtype, speed * ratio, forced);
 }
