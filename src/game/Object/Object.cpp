@@ -1338,8 +1338,6 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                 {
                     if (z > max_z)
                         { z = max_z; }
-                    else if (z < ground_z)
-                        { z = ground_z; }
                 }
             }
             else
@@ -1361,8 +1359,6 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                 {
                     if (z > max_z)
                         { z = max_z; }
-                    else if (z < ground_z)
-                        { z = ground_z; }
                 }
             }
             else
