@@ -65,11 +65,9 @@ if(WIN32)
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /wd4996 /wd4355 /wd4244 /wd4985 /wd4267 /MP")
         endif()
 
-        if(CMAKE_GENERATOR MATCHES "Visual Studio 14")
-            set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /fp:strict")
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /fp:strict")
-            set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /fp:strict")
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /fp:strict")
+        if(CMAKE_GENERATOR MATCHES "Visual Studio 14.*")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fp:strict")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:strict")
         endif()
 
         # Specify the maximum PreCompiled Header memory allocation limit
