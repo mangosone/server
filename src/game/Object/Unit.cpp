@@ -772,6 +772,10 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
                 player_tap->SendDirectMessage(&data);
             }
         }
+        else if (GetTypeId() == TYPEID_UNIT && this != pVictim)
+        {
+            ProcDamageAndSpell(pVictim, PROC_FLAG_KILL, PROC_FLAG_KILLED, PROC_EX_NONE, 0);
+        }
 
         // Reward player, his pets, and group/raid members
         if (isRewardAllowed && player_tap != pVictim)
@@ -2330,8 +2334,11 @@ void Unit::AttackerStateUpdate(Unit* pVictim, WeaponAttackType attType, bool ext
         return;
     }
 
+    RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MELEE_ATTACK);
+
     // attack can be redirected to another target
-    pVictim = SelectMagnetTarget(pVictim);
+    if (Unit* magnetTarget = SelectMagnetTarget(pVictim))
+        pVictim = magnetTarget;
 
     CalcDamageInfo damageInfo;
     CalculateMeleeDamage(pVictim, &damageInfo, attType);

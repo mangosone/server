@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
@@ -194,8 +194,7 @@ void Creature::AddToWorld()
     Unit::AddToWorld();
 
     // Make active if required
-    std::set<uint32> const* mapList = sWorld.getConfigForceLoadMapIds();
-    if ((mapList && mapList->find(GetMapId()) != mapList->end()) || (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE))
+    if (sWorld.isForceLoadMap(GetMapId()) || (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE))
         { SetActiveObjectState(true); }
 
 #ifdef ENABLE_ELUNA
@@ -769,7 +768,7 @@ void Creature::RegenerateHealth()
     if (curValue >= maxValue)
         { return; }
 
-    uint32 addvalue = 0;
+    uint32 addvalue;
 
     // Not only pet, but any controlled creature
     if (GetCharmerOrOwnerGuid())
@@ -1493,6 +1492,7 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
     // checked at creature_template loading
     m_defaultMovementType = MovementGeneratorType(data->movementType);
 
+    map->Add(this);
     AIM_Initialize();
 
     // Creature Linking, Initial load is handled like respawn
@@ -2628,8 +2628,7 @@ void Creature::AddToRemoveListInMaps(uint32 db_guid, CreatureData const* data)
 
 struct SpawnCreatureInMapsWorker
 {
-    SpawnCreatureInMapsWorker(uint32 guid, CreatureData const* data)
-        : i_guid(guid), i_data(data) {}
+    SpawnCreatureInMapsWorker(uint32 guid, CreatureData const* data) : i_guid(guid), i_data(data) {}
 
     void operator()(Map* map)
     {
@@ -2637,14 +2636,9 @@ struct SpawnCreatureInMapsWorker
         if (map->IsLoaded(i_data->posX, i_data->posY))
         {
             Creature* pCreature = new Creature;
-            // DEBUG_LOG("Spawning creature %u",*itr);
             if (!pCreature->LoadFromDB(i_guid, map))
             {
                 delete pCreature;
-            }
-            else
-            {
-                map->Add(pCreature);
             }
         }
     }

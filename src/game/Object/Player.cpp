@@ -968,7 +968,6 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
         default:
             return 0;
     }
-    return 0;
 }
 
 void Player::UpdateMirrorTimers()
@@ -2842,7 +2841,6 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
     PlayerSpellState state = learning ? PLAYERSPELL_NEW : PLAYERSPELL_UNCHANGED;
 
     bool disabled_case = false;
-    bool superceded_old = false;
 
     PlayerSpellMap::iterator itr = m_spells.find(spell_id);
     if (itr != m_spells.end())
@@ -2906,14 +2904,6 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
             {
                 if (next_active_spell_id)
                 {
-                    // update spell ranks in spellbook and action bar
-                    WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                    data << uint16(spell_id);
-                    data << uint16(next_active_spell_id);
-                    GetSession()->SendPacket(&data);
-                }
-                else
-                {
                     WorldPacket data(SMSG_REMOVED_SPELL, 4);
                     data << uint16(spell_id);
                     GetSession()->SendPacket(&data);
@@ -2956,6 +2946,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
     }
 
     TalentSpellPos const* talentPos = GetTalentSpellPos(spell_id);
+    bool canAddToSpellBook = true;
 
     if (!disabled_case) // skip new spell adding if spell already known (disabled spells case)
     {
@@ -2991,55 +2982,43 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         newspell.disabled  = disabled;
 
         // replace spells in action bars and spellbook to bigger rank if only one spell rank must be accessible
-        if (newspell.active && !newspell.disabled && sSpellMgr.IsRankedSpellNonStackableInSpellBook(spellInfo))
+        if (newspell.active && !newspell.disabled)
         {
-            for (PlayerSpellMap::iterator itr2 = m_spells.begin(); itr2 != m_spells.end(); ++itr2)
+            do
             {
-                PlayerSpell &playerSpell2 = itr2->second;
+                uint32 prev_spell_id = sSpellMgr.GetPrevSpellInChain(spell_id);  // get the previous spell in chain (if any)
+                if(!prev_spell_id)  //spell_id does not have ranks or is the first spell in chain; must add in spellbook
+                    continue;
 
-                if (playerSpell2.state == PLAYERSPELL_REMOVED) { continue; }
-                SpellEntry const* i_spellInfo = sSpellStore.LookupEntry(itr2->first);
-                if (!i_spellInfo) { continue; }
+                if ((m_spells.find(prev_spell_id) == m_spells.end()))
+                    continue;
 
-                if (sSpellMgr.IsRankSpellDueToSpell(spellInfo, itr2->first))
+                PlayerSpell* lowerRank = &m_spells[prev_spell_id];
+                if (lowerRank->state == PLAYERSPELL_REMOVED || !lowerRank->active)
+                    continue;
+
+                SpellEntry const *spell_old = sSpellStore.LookupEntry(prev_spell_id); 
+                SpellEntry const *spell_new = spellInfo;
+
+                if (sSpellMgr.IsRankedSpellNonStackableInSpellBook(spell_old))
                 {
-                    if (playerSpell2.active)
+                    if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
                     {
-                        if (sSpellMgr.IsHighRankOfSpell(spell_id, itr2->first))
-                        {
-                            if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
-                            {
-                                WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                                data << uint16(itr2->first);
-                                data << uint16(spell_id);
-                                GetSession()->SendPacket(&data);
-                            }
-
-                            // mark old spell as disable (SMSG_SUPERCEDED_SPELL replace it in client by new)
-                            playerSpell2.active = false;
-                            if (playerSpell2.state != PLAYERSPELL_NEW)
-                                { playerSpell2.state = PLAYERSPELL_CHANGED; }
-                            superceded_old = true;          // new spell replace old in action bars and spell book.
-                        }
-                        else if (sSpellMgr.IsHighRankOfSpell(itr2->first, spell_id))
-                        {
-                            if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
-                            {
-                                WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                                data << uint16(spell_id);
-                                data << uint16(itr2->first);
-                                GetSession()->SendPacket(&data);
-                            }
-
-                            // mark new spell as disable (not learned yet for client and will not learned)
-                            newspell.active = false;
-                            if (newspell.state != PLAYERSPELL_NEW)
-                                { newspell.state = PLAYERSPELL_CHANGED; }
-                        }
+                        WorldPacket data(SMSG_SUPERCEDED_SPELL, 4);
+                        data << uint16(spell_old->Id);
+                        data << uint16(spell_new->Id);
+                        GetSession()->SendPacket(&data);
                     }
+
+                    // mark lower rank disabled (SMSG_SUPERCEDED_SPELL replaced it in client by new)
+                    lowerRank->active = false;
+                    if (lowerRank->state != PLAYERSPELL_NEW)
+                        lowerRank->state = PLAYERSPELL_CHANGED;
+
+                    canAddToSpellBook = false;
                 }
-            }
-        }
+            } while(0);
+         }
 
         m_spells[spell_id] = newspell;
 
@@ -3157,7 +3136,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
     }
 
     // return true (for send learn packet) only if spell active (in case ranked spells) and not replace old spell
-    return active && !disabled && !superceded_old;
+    return active && !disabled && canAddToSpellBook;
 }
 
 bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) const
@@ -3364,18 +3343,18 @@ void Player::removeSpell(uint32 spell_id, bool disabled, bool learn_low_rank, bo
             PlayerSpellMap::iterator prev_itr = m_spells.find(prev_id);
             if (prev_itr != m_spells.end())
             {
-                PlayerSpell& playerSpell = prev_itr->second;
-                if (playerSpell.dependent != cur_dependent)
+                PlayerSpell& spell = prev_itr->second;
+                if (spell.dependent != cur_dependent)
                 {
-                    playerSpell.dependent = cur_dependent;
-                    if (playerSpell.state != PLAYERSPELL_NEW)
-                        { playerSpell.state = PLAYERSPELL_CHANGED; }
+                    spell.dependent = cur_dependent;
+                    if (spell.state != PLAYERSPELL_NEW)
+                        { spell.state = PLAYERSPELL_CHANGED; }
                 }
 
                 // now re-learn if need re-activate
-                if (cur_active && !playerSpell.active && learn_low_rank)
+                if (cur_active && !spell.active && learn_low_rank)
                 {
-                    if (addSpell(prev_id, true, false, playerSpell.dependent, playerSpell.disabled))
+                    if (addSpell(prev_id, true, false, spell.dependent, spell.disabled))
                     {
                         // downgrade spell ranks in spellbook and action bar
                         WorldPacket data(SMSG_SUPERCEDED_SPELL, 4);
@@ -19116,7 +19095,7 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
         case AREA_LOCKSTATUS_QUEST_NOT_COMPLETED:
             if (mapEntry->MapID == 269)                     // Exception for Black Morass
             {
-                GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_TELEREQ_QUEST_BLACK_MORASS));
+                GetSession()->SendAreaTriggerMessage("%s", GetSession()->GetMangosString(LANG_TELEREQ_QUEST_BLACK_MORASS));
                 break;
             }
             else if (mapEntry->IsContinent())               // do not report anything for quest areatrigge
@@ -19491,8 +19470,8 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
         if (abilityEntry->classmask && (abilityEntry->classmask & classmask) == 0)
             { continue; }
 
-        SkillRaceClassInfoMapBounds bounds = sSpellMgr.GetSkillRaceClassInfoMapBounds(abilityEntry->skillId);
-        for (SkillRaceClassInfoMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+        SkillRaceClassInfoMapBounds raceBounds = sSpellMgr.GetSkillRaceClassInfoMapBounds(abilityEntry->skillId);
+        for (SkillRaceClassInfoMap::const_iterator itr = raceBounds.first; itr != raceBounds.second; ++itr)
         {
             SkillRaceClassInfoEntry const* skillRCEntry = itr->second;
             if ((skillRCEntry->raceMask & racemask) && (skillRCEntry->classMask & classmask))
