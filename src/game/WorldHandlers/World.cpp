@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
@@ -129,8 +129,6 @@ World::World()
 
     for (int i = 0; i < CONFIG_BOOL_VALUE_COUNT; ++i)
         { m_configBoolValues[i] = false; }
-
-    m_configForceLoadMapIds = NULL;
 }
 
 /// World destructor
@@ -154,8 +152,6 @@ World::~World()
 
     VMAP::VMapFactory::clear();
     MMAP::MMapFactory::clear();
-
-    delete m_configForceLoadMapIds;
 }
 
 /// Cleanups before world stop
@@ -477,12 +473,11 @@ void World::LoadConfigSettings(bool reload)
     std::string forceLoadGridOnMaps = sConfig.GetStringDefault("LoadAllGridsOnMaps", "");
     if (!forceLoadGridOnMaps.empty())
     {
-        m_configForceLoadMapIds = new std::set<uint32>;
         unsigned int pos = 0;
         unsigned int id;
         VMAP::VMapFactory::chompAndTrim(forceLoadGridOnMaps);
         while (VMAP::VMapFactory::getNextId(forceLoadGridOnMaps, pos, id))
-            m_configForceLoadMapIds->insert(id);
+            m_configForceLoadMapIds.insert(id);
     }
 
     setConfig(CONFIG_UINT32_INTERVAL_SAVE, "PlayerSave.Interval", 15 * MINUTE * IN_MILLISECONDS);

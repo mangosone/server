@@ -236,6 +236,7 @@ class BattleGroundQueue
         class SelectionPool
         {
             public:
+                SelectionPool() : PlayerCount(0) {}
                 /**
                  * @brief
                  *
