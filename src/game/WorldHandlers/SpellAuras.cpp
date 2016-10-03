@@ -2901,18 +2901,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
     else
     {
         if (modelid > 0)
-        {
-            // workaround for tauren scale appear too big
-            if (target->getRace() == RACE_TAUREN)
-            {
-                if (target->getGender() == GENDER_MALE)
-                    target->SetObjectScale(DEFAULT_TAUREN_MALE_SCALE);
-                else
-                    target->SetObjectScale(DEFAULT_TAUREN_FEMALE_SCALE);
-            }
-
-            target->SetDisplayId(target->GetNativeDisplayId());
-        }
+            { target->SetDisplayId(target->GetNativeDisplayId()); }
 
         if (target->getClass() == CLASS_DRUID)
             { target->SetPowerType(POWER_MANA); }

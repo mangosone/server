@@ -18040,22 +18040,10 @@ void Player::InitDisplayIds()
     switch (gender)
     {
         case GENDER_FEMALE:
-            // workaround for tauren scale
-            if (getRace() == RACE_TAUREN)
-                SetObjectScale(DEFAULT_TAUREN_FEMALE_SCALE);
-            else
-                SetObjectScale(DEFAULT_OBJECT_SCALE);
-
             SetDisplayId(info->displayId_f);
             SetNativeDisplayId(info->displayId_f);
             break;
         case GENDER_MALE:
-            // workaround for tauren scale
-            if (getRace() == RACE_TAUREN)
-                SetObjectScale(DEFAULT_TAUREN_MALE_SCALE);
-            else
-                SetObjectScale(DEFAULT_OBJECT_SCALE);
-
             SetDisplayId(info->displayId_m);
             SetNativeDisplayId(info->displayId_m);
             break;
