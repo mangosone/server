@@ -25,7 +25,6 @@
 #pragma once
 
 #include "BIH.h"
-#include <G3D/Table.h>
 #include <G3D/Array.h>
 #include <G3D/Set.h>
 
@@ -94,13 +93,10 @@ class BIHWrap
          * @brief
          *
          */
-        typedef G3D::Array<const T*> ObjArray;
-
         BIH m_tree; /**< TODO */
-        ObjArray m_objects; /**< TODO */
-        G3D::Table<const T*, uint32> m_obj2Idx; /**< TODO */
+        G3D::Array<const T*>m_objects; /**< TODO */
         G3D::Set<const T*> m_objects_to_push; /**< TODO */
-        int unbalanced_times; /**< TODO */
+        bool unbalanced; /**< TODO */
 
     public:
 
@@ -108,7 +104,7 @@ class BIHWrap
          * @brief
          *
          */
-        BIHWrap() : unbalanced_times(0) {}
+        BIHWrap() : m_tree(), m_objects(), m_objects_to_push(), unbalanced(false) {}
 
         /**
          * @brief
@@ -117,7 +113,7 @@ class BIHWrap
          */
         void insert(const T& obj)
         {
-            ++unbalanced_times;
+            unbalanced = true;
             m_objects_to_push.insert(&obj);
         }
 
@@ -128,13 +124,8 @@ class BIHWrap
          */
         void remove(const T& obj)
         {
-            ++unbalanced_times;
-            uint32 Idx = 0;
-            const T* temp;
-            if (m_obj2Idx.getRemove(&obj, temp, Idx))
-                { m_objects[Idx] = NULL; }
-            else
-                { m_objects_to_push.remove(&obj); }
+            unbalanced = true;
+            m_objects_to_push.remove(&obj);
         }
 
         /**
@@ -143,14 +134,13 @@ class BIHWrap
          */
         void balance()
         {
-            if (unbalanced_times == 0)
+            if (!unbalanced)
                 { return; }
 
-            unbalanced_times = 0;
-            m_objects.fastClear();
-            m_obj2Idx.getKeys(m_objects);
-            m_objects_to_push.getMembers(m_objects);
+            unbalanced = false;
 
+            m_objects.fastClear();
+            m_objects_to_push.getMembers(m_objects);
             m_tree.build(m_objects, BoundsFunc::getBounds2);
         }
 
@@ -164,7 +154,6 @@ class BIHWrap
          */
         void intersectRay(const Ray& r, RayCallback& intersectCallback, float& maxDist)
         {
-            balance();
             MDLCallback<RayCallback> temp_cb(intersectCallback, m_objects.getCArray(), m_objects.size());
             m_tree.intersectRay(r, temp_cb, maxDist, true);
         }
@@ -178,7 +167,6 @@ class BIHWrap
          */
         void intersectPoint(const Vector3& p, IsectCallback& intersectCallback)
         {
-            balance();
             MDLCallback<IsectCallback> temp_cb(intersectCallback, m_objects.getCArray(), m_objects.size());
             m_tree.intersectPoint(p, temp_cb);
         }
