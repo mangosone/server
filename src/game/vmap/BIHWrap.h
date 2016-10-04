@@ -154,6 +154,7 @@ class BIHWrap
          */
         void intersectRay(const Ray& r, RayCallback& intersectCallback, float& maxDist)
         {
+            balance();
             MDLCallback<RayCallback> temp_cb(intersectCallback, m_objects.getCArray(), m_objects.size());
             m_tree.intersectRay(r, temp_cb, maxDist, true);
         }
@@ -167,6 +168,7 @@ class BIHWrap
          */
         void intersectPoint(const Vector3& p, IsectCallback& intersectCallback)
         {
+            balance();
             MDLCallback<IsectCallback> temp_cb(intersectCallback, m_objects.getCArray(), m_objects.size());
             m_tree.intersectPoint(p, temp_cb);
         }
