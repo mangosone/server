@@ -1894,7 +1894,7 @@ void GameObject::UpdateModel()
     delete m_model;
 
     m_model = GameObjectModel::construct(this);
-    if (m_model)
+    if (m_model && IsInWorld())
         { GetMap()->InsertGameObjectModel(*m_model); }
 }
 
