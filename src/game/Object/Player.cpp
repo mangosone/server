@@ -2902,7 +2902,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
             }
             else if (IsInWorld())
             {
-                if (next_active_spell_id)
+                if (!next_active_spell_id)
                 {
                     WorldPacket data(SMSG_REMOVED_SPELL, 4);
                     data << uint16(spell_id);
