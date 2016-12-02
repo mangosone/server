@@ -36,6 +36,6 @@ before_build:
  
 # Build core.
 build_script:
-  - cd c:\mzero\server
+  - cd c:\mone\server
   - cmake -DCMAKE_INSTALL_PREFIX="c:\mone\build\bin" -DCMAKE_SIZEOF_VOID_P=8 -DSOAP:BOOL=1 -DPLAYERBOTS:BOOL=1
   - msbuild /m MaNGOS.sln
