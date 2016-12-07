@@ -179,7 +179,6 @@ class Object
 
         void BuildValuesUpdateBlockForPlayer(UpdateData* data, Player* target) const;
         void BuildOutOfRangeUpdateBlock(UpdateData* data) const;
-        void BuildMovementUpdateBlock(UpdateData* data, uint8 flags = 0) const;
 
         virtual void DestroyForPlayer(Player* target) const;
 
