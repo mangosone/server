@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 4
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "Add_Disables_table"
+    #define WORLD_DB_CONTENT_NR 9
+    #define WORLD_DB_UPDATE_DESCRIPTION "Object_181011_hight_fix"
 #endif // __REVISION_H__
