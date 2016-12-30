@@ -53,6 +53,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_PRIEST].push_back(RACE_TROLL);
     availableRaces[CLASS_PRIEST].push_back(RACE_UNDEAD);
 #if !defined(CLASSIC)
+    availableRaces[CLASS_PRIEST].push_back(RACE_DRAENEI);
     availableRaces[CLASS_PRIEST].push_back(RACE_BLOODELF);
 #endif
     availableRaces[CLASS_MAGE].push_back(RACE_HUMAN);
@@ -63,6 +64,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_MAGE].push_back(RACE_UNDEAD);
     availableRaces[CLASS_MAGE].push_back(RACE_TROLL);
 #if !defined(CLASSIC)
+    availableRaces[CLASS_MAGE].push_back(RACE_DRAENEI);
     availableRaces[CLASS_MAGE].push_back(RACE_BLOODELF);
 #endif
 
@@ -80,7 +82,9 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_SHAMAN].push_back(RACE_ORC);
     availableRaces[CLASS_SHAMAN].push_back(RACE_TAUREN);
     availableRaces[CLASS_SHAMAN].push_back(RACE_TROLL);
-
+#if !defined(CLASSIC)
+    availableRaces[CLASS_SHAMAN].push_back(RACE_DRAENEI);
+#endif
     availableRaces[CLASS_HUNTER].push_back(RACE_DWARF);
     availableRaces[CLASS_HUNTER].push_back(RACE_NIGHTELF);
     availableRaces[CLASS_HUNTER].push_back(RACE_ORC);

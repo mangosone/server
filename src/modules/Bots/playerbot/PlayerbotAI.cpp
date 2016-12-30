@@ -1313,7 +1313,7 @@ bool IsAlliance(uint8 race)
 {
     return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF
 #if !defined(CLASSIC)
-        || race == RACE_DRAENEI
+        || race == RACE_DRAENEI || race == RACE_BLOODELF
 #endif
         || race == RACE_GNOME;
 }
