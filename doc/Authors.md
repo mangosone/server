@@ -3,7 +3,7 @@ Authors
 The **mangos server project** is the work of many awesome people, and contributors
 from all over the world, and is the result of quite a few predecessors.
 
-This files contains all the projects and people involved in the project and its'
+This file contains all the projects and people involved in the project and its'
 creation.
 
 History
@@ -12,8 +12,7 @@ The roots of *mangos* date back to 2004, many developers were anxious to get
 a working server for the [World of Warcraft][1] beta running at that time.
 
 Various projects such as *TeamPython*, *Wow Python* and *WoWd* produced GPL'd
-server code, and furthered the development of a few [World of Warcraft][1] servers
-for the community.
+server code, and furthered the development of a few [World of Warcraft][1] servers for the community.
 
 * **2004**: *TeamPython*, *Wow Python* and *WoWd* develop the predecessors for
   *mangos*.

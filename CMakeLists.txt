@@ -63,7 +63,7 @@ message(
   Options that can be used in order to configure the process:
    General:
     CMAKE_INSTALL_PREFIX    Path where the server should be installed to
-    CONF_DIR                Path to the configs, can be absolute or relative*
+    CONF_DIR                Path to the configs, can be absolute or relative.
     DEBUG                   Debug mode (strict compile, all warnings)
     ACE_USE_EXTERNAL        Use external ACE
     BUILD_MANGOSD           Build the main server
@@ -72,13 +72,13 @@ message(
     SOAP                    Enable remote access via SOAP
    Scripting engines:
     SCRIPT_LIB_ELUNA        Compile with support for Eluna scripts
-    SCRIPT_LIB_SD3          Compile with support for ScriptDev2 scripts
+    SCRIPT_LIB_SD3          Compile with support for ScriptDev3 scripts
 
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
   Also, you can specify the generator with -G. see 'cmake --help' for more details
   For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos
-
-  *Note: On UNIX systems, CONF_DIR is relative to the bin folder."
+  
+  Note: On UNIX systems, CONF_DIR is relative to the bin folder."
 )
 message("")
 
