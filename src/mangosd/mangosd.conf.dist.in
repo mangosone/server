@@ -3,7 +3,7 @@
 ################################################################################
 
 [MangosdConf]
-ConfVersion=2017021100
+ConfVersion=2017021400
 
 ################################################################################
 # CONNECTIONS AND DIRECTORIES
@@ -775,6 +775,11 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #    Motd
 #        Message of the Day. Displayed at worldlogin for every user ('@' for a newline).
 #
+#    AutoBroadcast
+#        Timer interval (in seconds) for automatic server announcements (autobroadcasts). Zero value means AB is disabled
+#                   0 (AB is disabled)
+#        Default: 600 (AB every 10 minutes)
+#                   N (>0, AB every N seconds)
 ################################################################################
 
 GameType                                  = 1
@@ -836,6 +841,7 @@ ShowProgressBars                          = 1
 WaitAtStartupError                        = 10
 PlayerCommands                            = 0
 Motd                                      = "Welcome to Mangos One"
+AutoBroadcast                             = 600
 
 ################################################################################
 # PLAYER INTERACTION
