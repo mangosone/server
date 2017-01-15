@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Remove field from dbDocs"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 4
-    #define WORLD_DB_CONTENT_NR 9
-    #define WORLD_DB_UPDATE_DESCRIPTION "Object_181011_hight_fix"
+    #define WORLD_DB_STRUCTURE_NR 5
+    #define WORLD_DB_CONTENT_NR 1
+    #define WORLD_DB_UPDATE_DESCRIPTION "dbscripts_refactor"
 #endif // __REVISION_H__
