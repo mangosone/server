@@ -40,7 +40,6 @@
 #include "GuildMgr.h"
 #include "World.h"
 #include "BattleGround/BattleGroundMgr.h"
-#include "MapManager.h"
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
