@@ -6850,7 +6850,7 @@ void Spell::DoSummonCritter(SpellEffectIndex eff_idx, uint32 forceFaction)
     critter->SetCreatorGuid(m_caster->GetObjectGuid());
     critter->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
     critter->setFaction(forceFaction ? forceFaction : m_caster->getFaction());
-    critter->SelectLevel();       // some summoned creaters have different from 1 DB data for level/hp
+    critter->SelectLevel(critter->GetCreatureInfo());       // some summoned creaters have different from 1 DB data for level/hp
     critter->SetUInt32Value(UNIT_NPC_FLAGS, critter->GetCreatureInfo()->NpcFlags);
     // some mini-pets have quests
 
