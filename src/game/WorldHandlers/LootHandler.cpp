@@ -32,7 +32,6 @@
 #include "LootMgr.h"
 #include "Object.h"
 #include "Group.h"
-#include "World.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
