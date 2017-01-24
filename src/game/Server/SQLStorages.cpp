@@ -43,8 +43,8 @@
 //     DBC_FF_LOGIC = 'l'                                      // Logical (boolean)
 // };
 //
-const char CreatureInfosrcfmt[] = "isssiiiiiiiiifiiiiliiiiiffiiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
-const char CreatureInfodstfmt[] = "isssiiiiiiiiifiiiiliiiiiffiiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
+const char CreatureInfosrcfmt[] = "isssiiiiiiiiifiiiiliiiiiffiiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
+const char CreatureInfodstfmt[] = "isssiiiiiiiiifiiiiliiiiiffiiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
 const char CreatureDataAddonInfofmt[] = "iiibbiis";
 const char CreatureModelfmt[] = "iffbii";
 const char CreatureInfoAddonInfofmt[] = "iiibbiis";

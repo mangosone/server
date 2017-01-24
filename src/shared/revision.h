@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "characters_pvpstats"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 5
+    #define WORLD_DB_STRUCTURE_NR 6
     #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "dbscripts_refactor"
+    #define WORLD_DB_UPDATE_DESCRIPTION "SchoolImmuneMask"
 #endif // __REVISION_H__
