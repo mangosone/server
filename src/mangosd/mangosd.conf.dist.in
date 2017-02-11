@@ -3,7 +3,7 @@
 ################################################################################
 
 [MangosdConf]
-ConfVersion=2016070401
+ConfVersion=2017021100
 
 ################################################################################
 # CONNECTIONS AND DIRECTORIES
@@ -1585,8 +1585,9 @@ OutdoorPvp.NAEnabled = 1
 # NETWORK CONFIG
 #
 #    Network.Threads
-#         Number of threads for network, recommend 1 thread per 1000 connections.
-#         Default: 1
+#         Number of threads for network queue handling, we recommend a minimum of 3,
+#         additional threads will assist with greater numbers of players.
+#         Default: 3
 #
 #    Network.OutKBuff
 #         The size of the output kernel buffer used ( SO_SNDBUF socket option, tcp manual ).
@@ -1608,7 +1609,7 @@ OutdoorPvp.NAEnabled = 1
 #
 ################################################################################
 
-Network.Threads         = 1
+Network.Threads         = 3
 Network.OutKBuff        = -1
 Network.OutUBuff        = 65536
 Network.TcpNodelay      = 1
