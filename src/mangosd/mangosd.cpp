@@ -272,24 +272,6 @@ static void usage(const char* prog)
                    , prog);
 }
 
-/// Print out the core banner
-static void print_banner()
-{
-    sLog.outString("<Ctrl-C> to stop.\n"
-                   "  __  __      _  _  ___  ___  ___                        \n"
-                   " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|     We Love the    \n"
-                   " | |\\/| / _` | .` | (_ | (_) \\__ \\   Burning Crusade  \n"
-                   " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/                   \n"
-                   "                                         ___             \n"
-                   " For help and support please visit:     / _ \\ _ _  ___  \n"
-                   "      Website: https://getmangos.eu    | (_) | ' \\/ -_) \n"
-                   " Forum / Wiki: https://getmangos.eu     \\___/|_||_\\___|\n"
-                  );
-
-}
-
-
-
 /// Launch the mangos server
 int main(int argc, char** argv)
 {
