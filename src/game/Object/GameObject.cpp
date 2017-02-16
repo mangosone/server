@@ -23,6 +23,7 @@
  */
 
 #include "GameObject.h"
+#include "G3D/Quat.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
 #include "PoolManager.h"
@@ -146,10 +147,38 @@ void GameObject::CleanupsBeforeDelete()
     WorldObject::CleanupsBeforeDelete();
 }
 
-bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state)
+bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
 {
-    MANGOS_ASSERT(map);
-    Relocate(x, y, z, ang);
+    if (!map)
+      { return false; }
+
+    GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(name_id);
+    if (!goinfo)
+    {
+        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u does not exist in `gameobject_template`", guidlow, name_id);
+        return false;
+    }
+
+    if (goinfo->type >= MAX_GAMEOBJECT_TYPE)
+    {
+        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u has invalid type %u in `gameobject_template`. It may crash client if created.", guidlow, name_id, goinfo->type);
+        return false;
+    }
+
+    Object::_Create(guidlow, goinfo->id, HIGHGUID_GAMEOBJECT);
+
+    // let's make sure we don't send the client invalid quaternion
+    if (r0 == 0.0f && r1 == 0.0f && r2 == 0.0f)
+    {
+        r2 = sin(ang/2);
+        r3 = cos(ang/2);
+    }
+
+    G3D::Quat q(r0, r1, r2, r3);
+    q.unitize();
+
+    float o = GetOrientationFromQuat(q);
+    Relocate(x, y, z, o);
     SetMap(map);
 
     if (!IsPositionValid())
@@ -158,45 +187,22 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         return false;
     }
 
-    GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(name_id);
-    if (!goinfo)
-    {
-        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u does not exist in `gameobject_template`. Map: %u  (X: %f Y: %f Z: %f) ang: %f rotation0: %f rotation1: %f rotation2: %f rotation3: %f", guidlow, name_id, map->GetId(), x, y, z, ang, rotation0, rotation1, rotation2, rotation3);
-        return false;
-    }
-
-    Object::_Create(guidlow, goinfo->id, HIGHGUID_GAMEOBJECT);
-
-    m_goInfo = goinfo;
-
-    if (goinfo->type >= MAX_GAMEOBJECT_TYPE)
-    {
-        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u has invalid type %u in `gameobject_template`. It may crash client if created.", guidlow, name_id, goinfo->type);
-        return false;
-    }
-
-    SetObjectScale(goinfo->size);
-
+    SetQuaternion(q);
+    SetGOInfo(goinfo);
+    SetObjectScale(m_goInfo->size);
     SetFloatValue(GAMEOBJECT_POS_X, x);
     SetFloatValue(GAMEOBJECT_POS_Y, y);
     SetFloatValue(GAMEOBJECT_POS_Z, z);
-
-    SetFloatValue(GAMEOBJECT_ROTATION + 0, rotation0);
-    SetFloatValue(GAMEOBJECT_ROTATION + 1, rotation1);
-
-    UpdateRotationFields(rotation2, rotation3);             // GAMEOBJECT_FACING, GAMEOBJECT_ROTATION+2/3
-
-    SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
-    SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
+    SetUInt32Value(GAMEOBJECT_FACTION, m_goInfo->faction);
+    SetUInt32Value(GAMEOBJECT_FLAGS, m_goInfo->flags);
 
     if (goinfo->type == GAMEOBJECT_TYPE_TRANSPORT)
         { SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN)); }
 
-    SetEntry(goinfo->id);
-    SetDisplayId(goinfo->displayId);
-
+    SetEntry(m_goInfo->id);
+    SetDisplayId(m_goInfo->displayId);
     SetGoState(go_state);
-    SetGoType(GameobjectTypes(goinfo->type));
+    SetGoType(GameobjectTypes(m_goInfo->type));
 
     SetGoAnimProgress(animprogress);
 
@@ -466,22 +472,22 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                             if (visualGO)
                                 visualGO->SetLootState(GO_JUST_DEACTIVATED);
                         }
-                        
+
                         if (!trapEntry)
                             break;
                         GameObjectInfo const* trapInfo = sGOStorage.LookupEntry<GameObjectInfo>(trapEntry);
                         if (!trapInfo || trapInfo->type != GAMEOBJECT_TYPE_TRAP)
                             break;
-                        
+
                         float range = 0.5f;
-                        
+
                         GameObject* trapGO = NULL;
 
                         MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*this, trapEntry, range);
                         MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(trapGO, go_check);
 
                         Cell::VisitGridObjects(this, checker, range);
-                        
+
                         // found correct GO
                         if (trapGO)
                             trapGO->SetLootState(GO_JUST_DEACTIVATED);
@@ -733,11 +739,6 @@ void GameObject::DeleteFromDB()
     WorldDatabase.PExecuteLog("DELETE FROM gameobject WHERE guid = '%u'", GetGUIDLow());
     WorldDatabase.PExecuteLog("DELETE FROM game_event_gameobject WHERE guid = '%u'", GetGUIDLow());
     WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", GetGUIDLow());
-}
-
-GameObjectInfo const* GameObject::GetGOInfo() const
-{
-    return m_goInfo;
 }
 
 /*********************************************************/
@@ -1680,18 +1681,30 @@ const char* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
     return GetName();
 }
 
-void GameObject::UpdateRotationFields(float rotation2 /*=0.0f*/, float rotation3 /*=0.0f*/)
+void GameObject::SetQuaternion(G3D::Quat const& q)
 {
-    SetFloatValue(GAMEOBJECT_FACING, GetOrientation());
+    SetFloatValue(GAMEOBJECT_ROTATION + 0, q.x);
+    SetFloatValue(GAMEOBJECT_ROTATION + 1, q.y);
+    SetFloatValue(GAMEOBJECT_ROTATION + 2, q.z);
+    SetFloatValue(GAMEOBJECT_ROTATION + 3, q.w);
 
-    if (rotation2 == 0.0f && rotation3 == 0.0f)
-    {
-        rotation2 = sin(GetOrientation() / 2);
-        rotation3 = cos(GetOrientation() / 2);
-    }
+    if (m_model)
+      { m_model->UpdateRotation(q); }
+}
 
-    SetFloatValue(GAMEOBJECT_ROTATION + 2, rotation2);
-    SetFloatValue(GAMEOBJECT_ROTATION + 3, rotation3);
+void GameObject::GetQuaternion(G3D::Quat& q) const
+{
+    q.x = GetFloatValue(GAMEOBJECT_ROTATION + 0);
+    q.y = GetFloatValue(GAMEOBJECT_ROTATION + 1);
+    q.z = GetFloatValue(GAMEOBJECT_ROTATION + 2);
+    q.w = GetFloatValue(GAMEOBJECT_ROTATION + 3);
+}
+
+float GameObject::GetOrientationFromQuat(G3D::Quat const& q)
+{
+    double t1 = +2.0f * (q.w * q.z + q.x * q.y);
+    double t2 = +1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+    return MapManager::NormalizeOrientation(std::atan2(t1, t2));
 }
 
 bool GameObject::IsHostileTo(Unit const* unit) const
@@ -1818,7 +1831,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
         case 2040: // Mithril can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
-                entrynew = 2047; 
+                entrynew = 2047;
                 if ((GetZoneId() == 46) || (GetZoneId() == 51)) // roll for darkiron spawn in burning steppes and searing gorge
                     {
                         if (urand (0,3) < 1)
@@ -1849,7 +1862,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
 
         default: //default case for copper or not listet special veins
             entrynew = entry;
-    }   
+    }
         return entrynew;
 }
 
@@ -1883,7 +1896,7 @@ void GameObject::UpdateCollisionState() const
     if (!m_model || !IsInWorld())
         { return; }
 
-    m_model->enable(IsCollisionEnabled() ? true : false);
+    m_model->SetCollidable(IsCollisionEnabled());
 }
 
 void GameObject::UpdateModel()
@@ -1892,7 +1905,7 @@ void GameObject::UpdateModel()
         { GetMap()->RemoveGameObjectModel(*m_model); }
     delete m_model;
 
-    m_model = GameObjectModel::construct(this);
+    m_model = GameObjectModel::Create(this);
     if (m_model && IsInWorld())
         { GetMap()->InsertGameObjectModel(*m_model); }
 }

@@ -25,6 +25,7 @@
 #pragma once
 
 #include "BIH.h"
+#include <G3D/Table.h>
 #include <G3D/Array.h>
 #include <G3D/Set.h>
 
@@ -93,10 +94,13 @@ class BIHWrap
          * @brief
          *
          */
+        typedef G3D::Array<const T*> ObjArray;
+
         BIH m_tree; /**< TODO */
-        G3D::Array<const T*>m_objects; /**< TODO */
+        ObjArray m_objects; /**< TODO */
+        G3D::Table<const T*, uint32> m_obj2Idx; /**< TODO */
         G3D::Set<const T*> m_objects_to_push; /**< TODO */
-        bool unbalanced; /**< TODO */
+        int unbalanced_times; /**< TODO */
 
     public:
 
@@ -104,7 +108,7 @@ class BIHWrap
          * @brief
          *
          */
-        BIHWrap() : m_tree(), m_objects(), m_objects_to_push(), unbalanced(false) {}
+        BIHWrap() : unbalanced_times(0) {}
 
         /**
          * @brief
@@ -113,7 +117,7 @@ class BIHWrap
          */
         void insert(const T& obj)
         {
-            unbalanced = true;
+            ++unbalanced_times;
             m_objects_to_push.insert(&obj);
         }
 
@@ -124,8 +128,13 @@ class BIHWrap
          */
         void remove(const T& obj)
         {
-            unbalanced = true;
-            m_objects_to_push.remove(&obj);
+            ++unbalanced_times;
+            uint32 Idx = 0;
+            const T* temp;
+            if (m_obj2Idx.getRemove(&obj, temp, Idx))
+                { m_objects[Idx] = NULL; }
+            else
+                { m_objects_to_push.remove(&obj); }
         }
 
         /**
@@ -134,13 +143,14 @@ class BIHWrap
          */
         void balance()
         {
-            if (!unbalanced)
+            if (unbalanced_times == 0)
                 { return; }
 
-            unbalanced = false;
-
+            unbalanced_times = 0;
             m_objects.fastClear();
+            m_obj2Idx.getKeys(m_objects);
             m_objects_to_push.getMembers(m_objects);
+
             m_tree.build(m_objects, BoundsFunc::getBounds2);
         }
 
