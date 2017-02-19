@@ -2405,7 +2405,7 @@ bool ChatHandler::HandleTicketAcceptCommand(char* args)
     // ticket<end>
     if (!px)
         { return false; }
-    
+
     // ticket accept on
     if (strncmp(px, "on", 3) == 0)
     {
@@ -2780,13 +2780,13 @@ bool ChatHandler::HandleTickerSurveyClose(char *args)
         SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
         return false;
     }
-        
+
     //This logic feels misplaced, but you can't have it in GMTicket?
     sTicketMgr.Delete(ticket->GetPlayerGuid());
     ticket = NULL;
-        
+
     PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer->GetName());
-        
+
     return true;
 }
 
