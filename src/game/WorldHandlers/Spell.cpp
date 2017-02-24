@@ -3488,6 +3488,9 @@ void Spell::SendSpellGo()
     if (IsRangedSpell())
         { castFlags |= CAST_FLAG_AMMO; }                        // arrows/bullets visual
 
+    if (m_triggeredByAuraSpell)
+        { castFlags |= CAST_FLAG_HIDDEN_COMBATLOG; }
+
     WorldPacket data(SMSG_SPELL_GO, 50);                    // guess size
 
     if (m_CastItem)
