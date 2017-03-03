@@ -1687,7 +1687,7 @@ void GameObject::SetQuaternion(G3D::Quat const& q)
     SetFloatValue(GAMEOBJECT_ROTATION + 1, q.y);
     SetFloatValue(GAMEOBJECT_ROTATION + 2, q.z);
     SetFloatValue(GAMEOBJECT_ROTATION + 3, q.w);
-
+    SetFloatValue(GAMEOBJECT_FACING, GetOrientationFromQuat(q));
     if (m_model)
       { m_model->UpdateRotation(q); }
 }
