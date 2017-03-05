@@ -24,7 +24,7 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "21007"
+    #define REVISION_NR "2107006"
 
     #define REALMD_DB_VERSION_NR 21
     #define REALMD_DB_STRUCTURE_NR 1
@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 7
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "AutoBroadcast"
+    #define WORLD_DB_CONTENT_NR 6
+    #define WORLD_DB_UPDATE_DESCRIPTION "Gossip_texts_updates"
 #endif // __REVISION_H__
