@@ -1559,7 +1559,7 @@ void World::showFooter()
         modules_.insert("                Warden : Disabled");
     }
 
-    std::string thisClientVersion = EXPECTED_MANGOSD_CLIENT_VERSION;
+    std::string thisClientVersion (EXPECTED_MANGOSD_CLIENT_VERSION);
     std::string thisClientBuilds = AcceptableClientBuildsListStr();
 
     std::string sModules;
