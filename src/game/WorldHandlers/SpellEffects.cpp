@@ -4677,7 +4677,12 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
 
                     // 25 * stack
                     unitTarget->AddThreat(m_caster, 25.0f * sunder->GetStackAmount(), false, GetSpellSchoolMask(m_spellInfo), m_spellInfo);
+					
+					//cast sunder armor
+					m_caster->CastSpell(unitTarget, 11597, true);
                 }
+                else
+					m_caster->CastSpell(unitTarget, 11597, true);
             }
             break;
         }
