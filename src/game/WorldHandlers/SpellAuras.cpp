@@ -3201,7 +3201,7 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
             { return; }
 
-        / Soul Shard (target req.)
+        // Soul Shard (target req.)
         if (spellInfo->EffectItemType[m_effIndex] == 6265)
         {
             // Only from non-grey units
