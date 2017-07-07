@@ -3201,13 +3201,15 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
             { return; }
 
-        // Soul Shard (target req.)
+        / Soul Shard (target req.)
         if (spellInfo->EffectItemType[m_effIndex] == 6265)
         {
             // Only from non-grey units
-            if (!((Player*)caster)->isHonorOrXPTarget(victim) ||
-                (victim->GetTypeId() == TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim)))
-                { return; }
+            if (!((Player*)caster)->isHonorOrXPTarget(victim))
+                return;
+            // Only if the creature is tapped by the player or his group
+            if (victim->GetTypeId() == TYPEID_UNIT && !((Creature*)victim)->IsTappedBy((Player*)caster))
+                return;
         }
 
         // Adding items
