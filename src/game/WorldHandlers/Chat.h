@@ -68,10 +68,10 @@ enum ChatCommandSearchResult
 
 enum PlayerChatTag
 {
-    CHAT_TAG_NONE               = 0,
-    CHAT_TAG_AFK                = 1,
-    CHAT_TAG_DND                = 2,
-    CHAT_TAG_GM                 = 3,
+    CHAT_TAG_NONE               = 0x0,
+    CHAT_TAG_AFK                = 0x1,
+    CHAT_TAG_DND                = 0x2,
+    CHAT_TAG_GM                 = 0x4,
 };
 typedef uint32 ChatTagFlags;
 
