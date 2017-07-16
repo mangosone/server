@@ -9,6 +9,7 @@
 <a href='https://travis-ci.org/mangosone/server/builds' target='MangosOne'><img src='https://travis-ci.org/mangosone/server.png' border=0></a>
  Windows 
 <a href='https://ci.appveyor.com/project/MaNGOS/server-80qcn/history' target='MangosOne'><img src='https://ci.appveyor.com/api/projects/status/github/mangosone/server?branch=develop21&svg=true' border=0></a>
+  Codacy Status <a href="https://www.codacy.com/app/MaNGOS/MangosOne?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mangosone/server&amp;utm_campaign=Badge_Grade"><img src="https://api.codacy.com/project/badge/Grade/789ade9bc10449c99d97b11bc7a2f83b"/></a>
 </td></tr></table>
 
 THE BURNING CRUSADE BRANCH
