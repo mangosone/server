@@ -3944,7 +3944,7 @@ void Spell::TakeCastItem()
 
 void Spell::TakePower()
 {
-    if (m_CastItem || m_triggeredByAuraSpell)
+    if (m_CastItem || m_triggeredByAuraSpell || m_IsTriggeredSpell)
         { return; }
 
     // health as power used
@@ -4737,6 +4737,7 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
     }
 
+    if (!m_IsTriggeredSpell)                                // triggered spell does not use power
     {
         SpellCastResult castResult = CheckPower();
         if (castResult != SPELL_CAST_OK)
