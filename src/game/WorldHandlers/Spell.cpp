@@ -2942,6 +2942,23 @@ void Spell::cast(bool skipCheck)
             break;
     }
 
+    // Linked spells (precast chain)
+    SpellLinkedSet linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->Id, SPELL_LINKED_TYPE_PRECAST);
+    if (linkedSet.size() > 0)
+    {
+        for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
+        { AddPrecastSpell(*itr); }
+    }
+
+    // Linked spells (triggered chain)
+    linkedSet.clear();
+    linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->Id, SPELL_LINKED_TYPE_TRIGGERED);
+    if (linkedSet.size() > 0)
+    {
+        for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
+        { AddTriggeredSpell(*itr); }
+    }
+
     // traded items have trade slot instead of guid in m_itemTargetGUID
     // set to real guid to be sent later to the client
     m_targets.updateTradeSlotItem();
@@ -3927,7 +3944,7 @@ void Spell::TakeCastItem()
 
 void Spell::TakePower()
 {
-    if (m_CastItem || m_triggeredByAuraSpell)
+    if (m_CastItem || m_triggeredByAuraSpell || m_IsTriggeredSpell)
         { return; }
 
     // health as power used
@@ -4720,6 +4737,7 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
     }
 
+    if (!m_IsTriggeredSpell)                                // triggered spell does not use power
     {
         SpellCastResult castResult = CheckPower();
         if (castResult != SPELL_CAST_OK)
