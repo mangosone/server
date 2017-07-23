@@ -1067,6 +1067,9 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Spell Proc Item Enchant...");
     sSpellMgr.LoadSpellProcItemEnchant();                   // must be after LoadSpellChains
 
+    sLog.outString("Loading Spell Linked definitions...");
+    sSpellMgr.LoadSpellLinked();                            // must be after LoadSpellChains
+
     sLog.outString("Loading Aggro Spells Definitions...");
     sSpellMgr.LoadSpellThreats();
 

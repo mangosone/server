@@ -1600,6 +1600,88 @@ void SpellMgr::LoadSpellBonuses()
     sLog.outString();
 }
 
+void SpellMgr::LoadSpellLinked()
+{
+    mSpellLinkedMap.clear();                          // need for reload case
+    uint32 count = 0;
+    //                                                0      1             2     3
+    QueryResult* result = WorldDatabase.Query("SELECT entry, linked_entry, type, effect_mask FROM spell_linked");
+    if (!result)
+    {
+        BarGoLink bar(1);
+        bar.step();
+        sLog.outString();
+        sLog.outString(">> Spell linked definition not loaded - table empty");
+        return;
+    }
+
+    BarGoLink bar(result->GetRowCount());
+    do
+    {
+        Field *fields = result->Fetch();
+        bar.step();
+        uint32 entry = fields[0].GetUInt32();
+        uint32 linkedEntry = fields[1].GetUInt32();
+
+        SpellEntry const* spell = sSpellStore.LookupEntry(entry);
+        SpellEntry const* spell1 = sSpellStore.LookupEntry(linkedEntry);
+        if (!spell || !spell1)
+        {
+            sLog.outErrorDb("Spells %u or %u listed in `spell_linked` does not exist", entry, linkedEntry);
+            continue;
+        }
+
+        if (entry == linkedEntry)
+        {
+            sLog.outErrorDb("Spell %u linked with self!", entry);
+            continue;
+        }
+
+        uint32 first_id = GetFirstSpellInChain(entry);
+
+        if (first_id != entry)
+        {
+            sLog.outErrorDb("Spell %u listed in `spell_linked` is not first rank (%u) in chain", entry, first_id);
+        }
+
+        SpellLinkedEntry data;
+
+        data.spellId = entry;
+        data.linkedId = linkedEntry;
+        data.type = fields[2].GetUInt32();
+        data.effectMask = fields[3].GetUInt32();
+
+        mSpellLinkedMap.insert(SpellLinkedMap::value_type(entry, data));
+
+        ++count;
+
+    } while (result->NextRow());
+
+    delete result;
+
+    sLog.outString();
+    sLog.outString(">> Loaded %u spell linked definitions", count);
+}
+
+SpellLinkedSet SpellMgr::GetSpellLinked(uint32 spell_id, SpellLinkedType type) const
+{
+    SpellLinkedSet result;
+
+    SpellLinkedMapBounds const& bounds = GetSpellLinkedMapBounds(spell_id);
+
+    if (type < SPELL_LINKED_TYPE_MAX && bounds.first != bounds.second)
+    {
+        for (SpellLinkedMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+        {
+            if (itr->second.type == type)
+            {
+                result.insert(itr->second.linkedId);
+            }
+        }
+    }
+    return result;
+}
+
 bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellProcEvent, uint32 EventProcFlag, SpellEntry const* procSpell, uint32 procFlags, uint32 procExtra)
 {
     // No extra req need
