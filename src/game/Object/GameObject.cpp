@@ -509,7 +509,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
             // burning flags in some battlegrounds, if you find better condition, just add it
             if (GetGOInfo()->IsDespawnAtAction() || GetGoAnimProgress() > 0)
             {
-                SendObjectDeSpawnAnim(GetObjectGuid());
+                SendObjectDeSpawnAnim();
                 // reset flags
                 if (GetMap()->Instanceable())
                 {
@@ -573,7 +573,7 @@ void GameObject::AddUniqueUse(Player* player)
 
 void GameObject::Delete()
 {
-    SendObjectDeSpawnAnim(GetObjectGuid());
+    SendObjectDeSpawnAnim();
 
     SetGoState(GO_STATE_READY);
     SetUInt32Value(GAMEOBJECT_FLAGS, GetGOInfo()->flags);
@@ -2286,5 +2286,12 @@ void GameObject::SendGameObjectCustomAnim(uint32 animId /*= 0*/)
     WorldPacket data(SMSG_GAMEOBJECT_CUSTOM_ANIM, 8 + 4);
     data << GetObjectGuid();
     data << uint32(animId);
+    SendMessageToSet(&data, true);
+}
+
+void GameObject::SendObjectDeSpawnAnim()
+{
+    WorldPacket data(SMSG_GAMEOBJECT_DESPAWN_ANIM, 8);
+    data << GetObjectGuid();
     SendMessageToSet(&data, true);
 }

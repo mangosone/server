@@ -130,7 +130,7 @@ void Totem::Summon(Unit* owner)
 
 void Totem::UnSummon()
 {
-    SendObjectDeSpawnAnim(GetObjectGuid());
+    SendObjectDeSpawnAnim();
 
     CombatStop();
     RemoveAurasDueToSpell(GetSpell());
@@ -233,4 +233,9 @@ bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex 
     }
 
     return Creature::IsImmuneToSpellEffect(spellInfo, index, castOnSelf);
+}
+
+void Totem::SendObjectDeSpawnAnim()
+{
+    // TODO find a way since SMSG_GAMEOBJECT_DESPAWN_ANIM does not fit
 }

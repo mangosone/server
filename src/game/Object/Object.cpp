@@ -1514,13 +1514,6 @@ void WorldObject::SendMessageToSetExcept(WorldPacket* data, Player const* skippe
     }
 }
 
-void WorldObject::SendObjectDeSpawnAnim(ObjectGuid guid)
-{
-    WorldPacket data(SMSG_GAMEOBJECT_DESPAWN_ANIM, 8);
-    data << ObjectGuid(guid);
-    SendMessageToSet(&data, true);
-}
-
 void WorldObject::SetMap(Map* map)
 {
     MANGOS_ASSERT(map);
