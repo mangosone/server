@@ -50,6 +50,7 @@ class Totem : public Creature
         void SetTypeBySummonSpell(SpellEntry const* spellProto);
         void SetDuration(uint32 dur) { m_duration = dur; }
         void SetOwner(Unit* owner);
+        void SendObjectDeSpawnAnim() override;
 
         bool UpdateStats(Stats /*stat*/) override { return true; }
         bool UpdateAllStats() override { return true; }

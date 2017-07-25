@@ -60,6 +60,7 @@ class DynamicObject : public WorldObject
         void AddAffected(Unit* unit) { m_affected.insert(unit->GetObjectGuid()); }
         void RemoveAffected(Unit* unit) { m_affected.erase(unit->GetObjectGuid()); }
         void Delay(int32 delaytime);
+        void SendObjectDeSpawnAnim() override;
 
         bool IsHostileTo(Unit const* unit) const override;
         bool IsFriendlyTo(Unit const* unit) const override;

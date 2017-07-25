@@ -606,7 +606,7 @@ class WorldObject : public Object
         void PlayDirectSound(uint32 sound_id, Player const* target = NULL) const;
         void PlayMusic(uint32 sound_id, Player const* target = NULL) const;
 
-        void SendObjectDeSpawnAnim(ObjectGuid guid);
+        virtual void SendObjectDeSpawnAnim() {}
 
         virtual bool IsHostileTo(Unit const* unit) const = 0;
         virtual bool IsFriendlyTo(Unit const* unit) const = 0;

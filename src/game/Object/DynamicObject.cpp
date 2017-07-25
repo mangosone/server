@@ -155,7 +155,7 @@ void DynamicObject::Update(uint32 /*update_diff*/, uint32 p_time)
 
 void DynamicObject::Delete()
 {
-    SendObjectDeSpawnAnim(GetObjectGuid());
+    SendObjectDeSpawnAnim();
     AddObjectToRemoveList();
 }
 
@@ -225,4 +225,9 @@ bool DynamicObject::IsFriendlyTo(Unit const* unit) const
         { return owner->IsFriendlyTo(unit); }
     else
         { return true; }
+}
+
+void DynamicObject::SendObjectDeSpawnAnim()
+{
+    //TODO find a way since SMSG_GAMEOBJECT_DESPAWN_ANIM does not fit
 }
