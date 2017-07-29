@@ -5734,6 +5734,10 @@ uint32 Spell::CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spel
 
 SpellCastResult Spell::CheckPower()
 {
+    // triggered spell use no power
+    if (m_IsTriggeredSpell)
+        return SPELL_CAST_OK;
+
     // item cast not used power
     if (m_CastItem)
         { return SPELL_CAST_OK; }
