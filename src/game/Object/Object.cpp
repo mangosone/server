@@ -49,17 +49,9 @@
 #include "ElunaEventMgr.h"
 #endif /* ENABLE_ELUNA */
 
-Object::Object()
-{
-    m_objectTypeId      = TYPEID_OBJECT;
-    m_objectType        = TYPEMASK_OBJECT;
-
-    m_uint32Values      = NULL;
-    m_valuesCount       = 0;
-
-    m_inWorld           = false;
-    m_objectUpdated     = false;
-}
+Object::Object() : m_objectTypeId(TYPEID_OBJECT), m_objectType(TYPEMASK_OBJECT), m_uint32Values(NULL), m_valuesCount(0),
+  m_inWorld(false), m_objectUpdated(false)
+{ }
 
 Object::~Object()
 {
@@ -913,16 +905,12 @@ void Object::MarkForClientUpdate()
     }
 }
 
-WorldObject::WorldObject() :
+WorldObject::WorldObject() : Object(), m_isActiveObject(false), 
 #ifdef ENABLE_ELUNA
     elunaEvents(NULL),
 #endif /* ENABLE_ELUNA */
-    m_transportInfo(NULL),
-    m_currMap(NULL),
-    m_mapId(0), m_InstanceId(0),
-    m_isActiveObject(false)
-{
-}
+    m_mapId(0), m_InstanceId(0), m_currMap(NULL), m_transportInfo(NULL), m_castCounter(0)
+{ }
 
 WorldObject::~WorldObject()
 {
@@ -1954,4 +1942,65 @@ void WorldObject::SetActiveObjectState(bool active)
             { GetMap()->AddToActive(this); }
     }
     m_isActiveObject = active;
+}
+
+void WorldObject::SendSpellNonMeleeDamageLog(SpellNonMeleeDamage* log)
+{
+    WorldPacket data(SMSG_SPELLNONMELEEDAMAGELOG, (16 + 4 + 4 + 1 + 4 + 4 + 1 + 1 + 4 + 4 + 1)); // we guess size
+    data << log->target->GetPackGUID();
+    data << log->attacker->GetPackGUID();
+    data << uint32(log->SpellID);
+    data << uint32(log->damage);                            // damage amount
+    data << uint8(log->schoolMask);                         // damage school
+    data << uint32(log->absorb);                            // AbsorbedDamage
+    data << uint32(log->resist);                            // resist
+    data << uint8(log->physicalLog);                        // if 1, then client show spell name (example: %s's ranged shot hit %s for %u school or %s suffers %u school damage from %s's spell_name
+    data << uint8(log->unused);                             // unused
+    data << uint32(log->blocked);                           // blocked
+    data << uint32(log->HitInfo);
+    data << uint8(0);                                       // flag to use extend data
+    SendMessageToSet(&data, true);
+}
+
+void WorldObject::SendSpellNonMeleeDamageLog(Unit* target, uint32 SpellID, uint32 Damage, SpellSchoolMask damageSchoolMask, uint32 AbsorbedDamage, uint32 Resist, bool PhysicalDamage, uint32 Blocked, bool CriticalHit)
+{
+    SpellNonMeleeDamage log(this, target, SpellID, damageSchoolMask);
+    log.damage = Damage - AbsorbedDamage - Resist - Blocked;
+    log.absorb = AbsorbedDamage;
+    log.resist = Resist;
+    log.physicalLog = PhysicalDamage;
+    log.blocked = Blocked;
+    log.HitInfo = SPELL_HIT_TYPE_UNK1 | SPELL_HIT_TYPE_UNK3 | SPELL_HIT_TYPE_UNK6;
+    if (CriticalHit)
+        log.HitInfo |= SPELL_HIT_TYPE_CRIT;
+    SendSpellNonMeleeDamageLog(&log);
+}
+
+void WorldObject::SendEnergizeSpellLog(ObjectGuid victimGUID, uint32 SpellID, uint32 Damage, Powers powertype)
+{
+    WorldPacket data(SMSG_SPELLENERGIZELOG, (8 + 8 + 4 + 4 + 4 + 1));
+    data << victimGUID.WriteAsPacked();
+    data << GetPackGUID();
+    data << uint32(SpellID);
+    data << uint32(powertype);
+    data << uint32(Damage);
+    SendMessageToSet(&data, true);
+}
+
+void WorldObject::EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers powertype)
+{
+    SendEnergizeSpellLog(pVictim->GetObjectGuid(), SpellID, Damage, powertype);
+    // needs to be called after sending spell log
+    pVictim->ModifyPower(powertype, Damage);
+}
+
+bool WorldObject::CheckAndIncreaseCastCounter()
+{
+    uint32 maxCasts = sWorld.getConfig(CONFIG_UINT32_MAX_SPELL_CASTS_IN_CHAIN);
+
+    if (maxCasts && m_castCounter >= maxCasts)
+        return false;
+
+    ++m_castCounter;
+    return true;
 }

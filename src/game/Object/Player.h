@@ -1585,7 +1585,7 @@ class Player : public Unit
         bool IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) const;
         bool IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const override;
 
-        void KnockBackFrom(Unit* target, float horizontalSpeed, float verticalSpeed);
+        void KnockBackFrom(WorldObject* target, float horizontalSpeed, float verticalSpeed);
 
         void SendProficiency(ItemClass itemClass, uint32 itemSubclassMask);
         void SendInitialSpells();
@@ -2303,6 +2303,8 @@ class Player : public Unit
         void RemoveAtLoginFlag(AtLoginFlags f, bool in_db_also = false);
 
         LookingForGroup m_lookingForGroup;
+
+        bool ActivateSpiritOfRedemption();      // true if talent was activated
 
         // Temporarily removed pet cache
         uint32 GetTemporaryUnsummonedPetNumber() const { return m_temporaryUnsummonedPetNumber; }

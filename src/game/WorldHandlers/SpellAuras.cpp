@@ -343,7 +343,7 @@ Aura::Aura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBas
         { damage = m_currentBasePoints; }
     else
     {
-        damage = caster->CalculateSpellDamage(target, spellproto, m_effIndex, &m_currentBasePoints);
+        damage = caster->CalculateSpellDamage(target->GetObjectGuid(), spellproto, m_effIndex, &m_currentBasePoints);
 
         if (!damage && castItem && castItem->GetItemSuffixFactor())
         {
@@ -2874,7 +2874,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
 
                             SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
                             if (spellInfo && spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && spellInfo->SpellIconID == 139)
-                                Rage_val += target->CalculateSpellDamage(target, spellInfo, EFFECT_INDEX_0) * 10;
+                                Rage_val += target->CalculateSpellDamage(target->GetObjectGuid(), spellInfo, EFFECT_INDEX_0) * 10;
                         }
                     }
 
@@ -5920,7 +5920,7 @@ void Aura::PeriodicTick()
                     {
                         uint32 percent =
                             GetEffIndex() < EFFECT_INDEX_2 && spellProto->Effect[GetEffIndex()] == SPELL_EFFECT_DUMMY ?
-                            pCaster->CalculateSpellDamage(target, spellProto, SpellEffectIndex(GetEffIndex() + 1)) :
+                            pCaster->CalculateSpellDamage(target->GetObjectGuid(), spellProto, SpellEffectIndex(GetEffIndex() + 1)) :
                             100;
                         if (target->GetHealth() * 100 >= target->GetMaxHealth() * percent)
                         {
@@ -6367,9 +6367,12 @@ void Aura::PeriodicTick()
             SpellNonMeleeDamage damageInfo(pCaster, target, spellProto->Id, SpellSchoolMask(spellProto->SchoolMask));
             pCaster->CalculateSpellDamage(&damageInfo, gain, spellProto);
 
-            damageInfo.target->CalculateAbsorbResistBlock(pCaster, &damageInfo, spellProto);
+            if (damageInfo.target->ToUnit())
+            {
+                damageInfo.target->ToUnit()->CalculateAbsorbResistBlock(pCaster, &damageInfo, spellProto);
 
-            pCaster->DealDamageMods(damageInfo.target, damageInfo.damage, &damageInfo.absorb);
+                pCaster->DealDamageMods(damageInfo.target->ToUnit(), damageInfo.damage, &damageInfo.absorb);
+            }
 
             pCaster->SendSpellNonMeleeDamageLog(&damageInfo);
 
@@ -6380,7 +6383,8 @@ void Aura::PeriodicTick()
             if (damageInfo.damage)
                 { procVictim |= PROC_FLAG_TAKEN_ANY_DAMAGE; }
 
-            pCaster->ProcDamageAndSpell(damageInfo.target, procAttacker, procVictim, procEx, damageInfo.damage, BASE_ATTACK, spellProto);
+            if (damageInfo.target->ToUnit())
+                pCaster->ProcDamageAndSpell(damageInfo.target->ToUnit(), procAttacker, procVictim, procEx, damageInfo.damage, BASE_ATTACK, spellProto);
 
             pCaster->DealSpellDamage(&damageInfo, true);
             break;
@@ -6690,7 +6694,7 @@ void Aura::PeriodicDummyTick()
                     // Regen amount is max (100% from spell) on 21% or less mana and min on 92.5% or greater mana (20% from spell)
                     int mana = target->GetPower(POWER_MANA);
                     int max_mana = target->GetMaxPower(POWER_MANA);
-                    int32 base_regen = caster->CalculateSpellDamage(target, GetSpellProto(), m_effIndex, &m_currentBasePoints);
+                    int32 base_regen = caster->CalculateSpellDamage(target->GetObjectGuid(), GetSpellProto(), m_effIndex, &m_currentBasePoints);
                     float regen_pct = 1.20f - 1.1f * mana / max_mana;
                     if (regen_pct > 1.0f) regen_pct = 1.0f;
                     else if (regen_pct < 0.2f) regen_pct = 0.2f;
@@ -7201,7 +7205,7 @@ void SpellAuraHolder::SetStackAmount(uint32 stackAmount)
             if (Aura* aur = m_auras[i])
             {
                 int32 bp = aur->GetBasePoints();
-                int32 amount = m_stackAmount * caster->CalculateSpellDamage(target, m_spellProto, SpellEffectIndex(i), &bp);
+                int32 amount = m_stackAmount * caster->CalculateSpellDamage(target->GetObjectGuid(), m_spellProto, SpellEffectIndex(i), &bp);
                 // Reapply if amount change
                 if (amount != aur->GetModifier()->m_amount)
                 {
@@ -7640,14 +7644,14 @@ void SpellAuraHolder::UpdateAuraApplication()
 void SpellAuraHolder::UpdateAuraDuration()
 {
     if (GetAuraSlot() >= MAX_AURAS || m_isPassive)
-        { return; }
+        return;
 
-    if (m_target->GetTypeId() == TYPEID_PLAYER)
+    if (Player* player = m_target->ToPlayer())
     {
         WorldPacket data(SMSG_UPDATE_AURA_DURATION, 5);
         data << uint8(GetAuraSlot());
         data << uint32(GetAuraDuration());
-        ((Player*)m_target)->SendDirectMessage(&data);
+        player->SendDirectMessage(&data);
 
         data.Initialize(SMSG_SET_EXTRA_AURA_INFO, (8 + 1 + 4 + 4 + 4));
         data << m_target->GetPackGUID();
@@ -7655,17 +7659,17 @@ void SpellAuraHolder::UpdateAuraDuration()
         data << uint32(GetId());
         data << uint32(GetAuraMaxDuration());
         data << uint32(GetAuraDuration());
-        ((Player*)m_target)->SendDirectMessage(&data);
-    }
+        player->SendDirectMessage(&data);
 
-    // not send in case player loading (will not work anyway until player not added to map), sent in visibility change code
-    if (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading())
-        { return; }
+        // not send in case player loading (will not work anyway until player not added to map), sent in visibility change code
+        if (player->GetSession()->PlayerLoading())
+            return;
+    }
 
     Unit* caster = GetCaster();
 
     if (caster && caster->GetTypeId() == TYPEID_PLAYER && caster != m_target)
-        { SendAuraDurationForCaster((Player*)caster); }
+        SendAuraDurationForCaster((Player*)caster);
 }
 
 void SpellAuraHolder::SendAuraDurationForCaster(Player* caster)

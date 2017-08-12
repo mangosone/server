@@ -740,6 +740,21 @@ class GameObject : public WorldObject
 
         GameObjectModel* m_model;
 
+        // object casting implementation
+        SpellMissInfo MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell) override;
+        SpellMissInfo SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool canReflect = false) override;
+        bool IsSpellCrit(WorldObject* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType /*attackType = BASE_ATTACK*/) override;
+        uint32 SpellCriticalDamageBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim) override;
+        int32 CalculateSpellDamage(ObjectGuid const targetGUID, SpellEntry const* spellProto, SpellEffectIndex effect_index, int32 const* basePoints = NULL) override;
+        void CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, SpellEntry const* spellInfo, WeaponAttackType attackType = BASE_ATTACK) override;
+        uint32 DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss) override;
+
+        void CastSpell(Unit* Victim, uint32 spellId, bool triggered = true, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid relatedObjectGUID = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
+        void CastSpell(Unit* Victim, SpellEntry const* spellInfo, bool triggered = true, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
+        void CastSpell(float x, float y, float z, uint32 spellId, bool triggered = true, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
+        void CastSpell(float x, float y, float z, SpellEntry const* spellInfo, bool triggered = true, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
+        void CastSpell(Unit* Victim, uint32 spellId, ObjectGuid relatedUnit = ObjectGuid());
+
     protected:
         uint32      m_spellId;
         time_t      m_respawnTime;                          // (secs) time of next respawn (or despawn if GO have owner()),

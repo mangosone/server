@@ -7446,8 +7446,7 @@ void Player::CastItemUseSpell(Item* item, SpellCastTargets const& targets, uint8
             return;
         }
 
-        Spell* spell = new Spell(this, spellInfo, false);
-        spell->m_CastItem = item;
+        Spell* spell = new Spell(this, spellInfo, false, item->GetObjectGuid());
         spell->m_cast_count = cast_count;                   // set count of casts
         spell->m_currentBasePoints[EFFECT_INDEX_0] = learning_spell_id;
         spell->prepare(&targets);
@@ -7477,8 +7476,7 @@ void Player::CastItemUseSpell(Item* item, SpellCastTargets const& targets, uint8
             continue;
         }
 
-        Spell* spell = new Spell(this, spellInfo, (count > 0));
-        spell->m_CastItem = item;
+        Spell* spell = new Spell(this, spellInfo, (count > 0), item->GetObjectGuid());
         spell->m_cast_count = cast_count;                   // set count of casts
         spell->prepare(&targets);
 
@@ -20948,7 +20946,7 @@ bool Player::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex
     return Unit::IsImmuneToSpellEffect(spellInfo, index, castOnSelf);
 }
 
-void Player::KnockBackFrom(Unit* target, float horizontalSpeed, float verticalSpeed)
+void Player::KnockBackFrom(WorldObject* target, float horizontalSpeed, float verticalSpeed)
 {
     float angle = this == target ? GetOrientation() + M_PI_F : target->GetAngle(this);
     GetSession()->SendKnockBack(angle, horizontalSpeed, verticalSpeed);
@@ -21086,4 +21084,42 @@ float Player::ComputeRest(time_t timePassed, bool offline /*= false*/, bool inRe
             bonus *= sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_WILDERNESS) / 4.0f; // bonus is reduced by 4 when not in rest place
     }
     return bonus;
+}
+
+bool Player::ActivateSpiritOfRedemption()
+{
+    if (getClass() != CLASS_PRIEST)
+        return false;
+
+    Aura* spiritOfRedemtionTalentReady = NULL;
+    AuraList const& vDummyAuras = GetAurasByType(SPELL_AURA_DUMMY);
+    for (AuraList::const_iterator itr = vDummyAuras.begin(); itr != vDummyAuras.end(); ++itr)
+    {
+        if ((*itr)->GetSpellProto()->SpellIconID == 1654)
+        {
+            spiritOfRedemtionTalentReady = *itr;
+            break;
+        }
+    }
+
+    if (spiritOfRedemtionTalentReady)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamage: Spirit of Redemtion ready");
+
+        // save value before aura remove
+        uint32 ressSpellId = GetUInt32Value(PLAYER_SELF_RES_SPELL);
+        if (!ressSpellId)
+            ressSpellId = GetResurrectionSpellId();
+
+        // Remove all expected to remove at death auras (most important negative case like DoT or periodic triggers)
+        RemoveAllAurasOnDeath();
+
+        // restore for use at real death
+        SetUInt32Value(PLAYER_SELF_RES_SPELL, ressSpellId);
+
+        // FORM_SPIRITOFREDEMPTION and related auras
+        CastSpell(this, 27827, true, NULL, spiritOfRedemtionTalentReady);
+    }
+
+    return spiritOfRedemtionTalentReady != NULL;
 }

@@ -830,33 +830,6 @@ struct DiminishingReturn
 };
 
 /**
- * At least some values expected fixed and used in auras field, other custom
- */
-enum MeleeHitOutcome
-{
-    MELEE_HIT_EVADE     = 0,
-    MELEE_HIT_MISS      = 1,
-    MELEE_HIT_DODGE     = 2,     ///< used as misc in SPELL_AURA_IGNORE_COMBAT_RESULT
-    MELEE_HIT_BLOCK     = 3,     ///< used as misc in SPELL_AURA_IGNORE_COMBAT_RESULT
-    MELEE_HIT_PARRY     = 4,     ///< used as misc in SPELL_AURA_IGNORE_COMBAT_RESULT
-    MELEE_HIT_GLANCING  = 5,
-    MELEE_HIT_CRIT      = 6,
-    MELEE_HIT_CRUSHING  = 7,
-    MELEE_HIT_NORMAL    = 8,
-    MELEE_HIT_BLOCK_CRIT = 9,
-};
-
-struct CleanDamage
-{
-    CleanDamage(uint32 _damage, WeaponAttackType _attackType, MeleeHitOutcome _hitOutCome) :
-        damage(_damage), attackType(_attackType), hitOutCome(_hitOutCome) {}
-
-    uint32 damage;
-    WeaponAttackType attackType;
-    MeleeHitOutcome hitOutCome;
-};
-
-/**
  * Struct for use in Unit::CalculateMeleeDamage
  * Need create structure like in SMSG_ATTACKERSTATEUPDATE opcode
  */
@@ -910,29 +883,6 @@ struct CalcDamageInfo
     uint32 cleanDamage;
     /// (Old comment) \todo remove this field (need use TargetState)
     MeleeHitOutcome hitOutCome;
-};
-
-/**
- * Spell damage info structure based on structure sending in SMSG_SPELLNONMELEEDAMAGELOG opcode
- */
-struct SpellNonMeleeDamage
-{
-    SpellNonMeleeDamage(Unit* _attacker, Unit* _target, uint32 _SpellID, SpellSchoolMask _schoolMask)
-        : target(_target), attacker(_attacker), SpellID(_SpellID), damage(0), schoolMask(_schoolMask),
-          absorb(0), resist(0), physicalLog(false), unused(false), blocked(0), HitInfo(0)
-    {}
-
-    Unit*   target;
-    Unit*   attacker;
-    uint32 SpellID;
-    uint32 damage;
-    SpellSchoolMask schoolMask;
-    uint32 absorb;
-    uint32 resist;
-    bool   physicalLog;
-    bool   unused;
-    uint32 blocked;
-    uint32 HitInfo;
 };
 
 /**
@@ -1943,7 +1893,7 @@ class Unit : public WorldObject
          * @return probably how much damage was actually dealt?
          * \todo Cleanup this function and split into smaller functions for readability
          */
-        uint32 DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss);
+        uint32 DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss) override;
         /**
          * Generally heals a target for addhealth health
          * @param pVictim the victim to heal
@@ -2076,7 +2026,7 @@ class Unit : public WorldObject
          * \see Unit::CalcArmorReducedDamage
          * \see SpellDmgClass
          */
-        void CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, SpellEntry const* spellInfo, WeaponAttackType attackType = BASE_ATTACK);
+        void CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, SpellEntry const* spellInfo, WeaponAttackType attackType = BASE_ATTACK) override;
         /**
          * Deals actual damage based on info given. Does some checking if the spell actually exists
          * and updates the Judgement aura duration if it's there. Then it calls the DealDamage with
@@ -2129,7 +2079,7 @@ class Unit : public WorldObject
          * \ref SpellMissInfo::SPELL_MISS_NONE
          * \todo Need use unit spell resistance in calculations (Old comment)
          */
-        SpellMissInfo MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell);
+        SpellMissInfo MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell) override;
         /**
          * This combined \ref Unit::MagicSpellHitResult and \ref Unit::MeleeSpellHitResult and also
          * does checks for if the victim is immune or if it is in evade mode etc. If it's a positive
@@ -2149,7 +2099,7 @@ class Unit : public WorldObject
          * @param canReflect whether or not this spell can be reflected
          * @return Whether or not the spell was resisted/blocked etc.
          */
-        SpellMissInfo SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool canReflect = false);
+        SpellMissInfo SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool canReflect = false) override;
 
         /**
          * Returns the units dodge chance
@@ -2662,7 +2612,7 @@ class Unit : public WorldObject
          * @param Damage how much was regenerated
          * @param powertype the power that was regenerated
          */
-        void SendEnergizeSpellLog(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers powertype);
+        // see WorldObject class
         /**
          * Regenerates/degenerates the given amount of "damage" for the given power and sends a
          * update to the combat log.
@@ -2672,7 +2622,7 @@ class Unit : public WorldObject
          * @param powertype the power that was increased/decreased
          * \see Unit::ModifyPower
          */
-        void EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers powertype);
+        // see WorldObject class
         /**
          * Will do damage to the victim calculating how much should be done with the help of
          * \ref SpellNonMeleeDamage, \ref Unit::CalculateSpellDamage, \ref Unit::DealDamageMods and
@@ -2698,7 +2648,7 @@ class Unit : public WorldObject
          * \see SpellCastTargets
          * \todo What's the original caster?
          */
-        void CastSpell(Unit* Victim, uint32 spellId, bool triggered, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL);
+        void CastSpell(Unit* Victim, uint32 spellId, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid relatedObjectGUID = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
         /**
          * Casts a spell simple and square, outputs some debugging info for some reasons, ie: if the
          * spellInfo is NULL it is logged and the function won't do anything. If the spell is triggered
@@ -2726,7 +2676,7 @@ class Unit : public WorldObject
          * \todo What's the original caster?
          * \todo Document the spell linked
          */
-        void CastSpell(Unit* Victim, SpellEntry const* spellInfo, bool triggered, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL);
+        void CastSpell(Unit* Victim, SpellEntry const* spellInfo, bool triggered, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
         /**
          * Does pretty much the same thing as \ref Unit::CastSpell but uses the three bp0-bp2 variables
          * to change the \ref Spell s \ref Spell::m_currentBasePoints for the different
@@ -2790,7 +2740,7 @@ class Unit : public WorldObject
          * @param originalCaster the original caster if any
          * @param triggeredBy the \ref SpellEntry that triggered this cast, if any
          */
-        void CastSpell(float x, float y, float z, uint32 spellId, bool triggered, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL);
+        void CastSpell(float x, float y, float z, uint32 spellId, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
         /**
          * Same idea as for \ref Unit::CastSpell, but with the parameters x, y, z telling the
          * destination and source of the \ref SpellCastTargets depending on if the
@@ -2809,7 +2759,7 @@ class Unit : public WorldObject
          * @param originalCaster the original caster if any
          * @param triggeredBy the \ref SpellEntry that triggered this cast, if any
          */
-        void CastSpell(float x, float y, float z, SpellEntry const* spellInfo, bool triggered, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL);
+        void CastSpell(float x, float y, float z, SpellEntry const* spellInfo, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) override;
 
         /**
          * Changes the display id for this \ref Unit to the native one that it usually has.
@@ -2849,7 +2799,7 @@ class Unit : public WorldObject
          * \see OpcodesList::SMSG_SPELLNONMELEEDAMAGELOG
          * \todo Is this actually for the combat log?
          */
-        void SendSpellNonMeleeDamageLog(SpellNonMeleeDamage* log);
+        // look in the Object class
         /**
          * Same idea as for \ref Unit::SendSpellNonMeleeDamageLog but without the helping
          * \ref SpellNonMeleeDamage. This will set the \ref SpellNonMeleeDamage::HitInfo member to
@@ -2877,7 +2827,7 @@ class Unit : public WorldObject
          * \see OpcodesList::SMSG_SPELLNONMELEEDAMAGELOG
          * \todo Is this actually for the combat log?
          */
-        void SendSpellNonMeleeDamageLog(Unit* target, uint32 SpellID, uint32 Damage, SpellSchoolMask damageSchoolMask, uint32 AbsorbedDamage, uint32 Resist, bool PhysicalDamage, uint32 Blocked, bool CriticalHit = false);
+        // look in the Object class
         /**
          * Sends some data to the combat log about the periodic effects of an \ref Aura, it might be
          * periodic healing/damage etc. Perhaps it increases the amount of power you have as a rogue
@@ -3398,6 +3348,7 @@ class Unit : public WorldObject
          * @param flags see \ref AuraInterruptFlags for possible flags
          */
         void RemoveAurasWithInterruptFlags(uint32 flags);
+        void RemoveAurasWithInterruptFlags(uint32 flags, uint32 exceptSpellId);
         /** 
          * Removes all \ref Aura s that have the given attributes
          * @param flags see \ref SpellAttributes for possible values
@@ -3478,9 +3429,6 @@ class Unit : public WorldObject
         Spell* GetCurrentSpell(CurrentSpellTypes spellType) const { return m_currentSpells[spellType]; }
         Spell* GetCurrentSpell(uint32 spellType) const { return m_currentSpells[spellType]; }
         Spell* FindCurrentSpellBySpellId(uint32 spell_id) const;
-
-        bool CheckAndIncreaseCastCounter();
-        void DecreaseCastCounter() { if (m_castCounter) { --m_castCounter; } }
 
         ObjectGuid m_ObjectSlotGuid[4];
         uint32 m_detectInvisibilityMask;
@@ -3645,7 +3593,7 @@ class Unit : public WorldObject
         int32 SpellBaseDamageBonusDone(SpellSchoolMask schoolMask);
         int32 SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask);
         uint32 SpellDamageBonusDone(Unit* pVictim, SpellEntry const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1);
-        uint32 SpellDamageBonusTaken(Unit* pCaster, SpellEntry const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1);
+        uint32 SpellDamageBonusTaken(WorldObject* pCaster, SpellEntry const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1);
         int32 SpellBaseHealingBonusDone(SpellSchoolMask schoolMask);
         int32 SpellBaseHealingBonusTaken(SpellSchoolMask schoolMask);
         uint32 SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, int32 healamount, DamageEffectType damagetype, uint32 stack = 1);
@@ -3654,8 +3602,8 @@ class Unit : public WorldObject
         uint32 MeleeDamageBonusTaken(Unit* pCaster, uint32 pdamage, WeaponAttackType attType, SpellEntry const* spellProto = NULL, DamageEffectType damagetype = DIRECT_DAMAGE, uint32 stack = 1);
 
         bool   IsSpellBlocked(Unit* pCaster, SpellEntry const* spellProto, WeaponAttackType attackType = BASE_ATTACK);
-        bool   IsSpellCrit(Unit* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType = BASE_ATTACK);
-        uint32 SpellCriticalDamageBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim);
+        bool   IsSpellCrit(WorldObject* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType = BASE_ATTACK) override;
+        uint32 SpellCriticalDamageBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim) override;
         uint32 SpellCriticalHealingBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim);
 
         bool IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, SpellEntry const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, SpellProcEventEntry const*& spellProcEvent);
@@ -3701,7 +3649,7 @@ class Unit : public WorldObject
         virtual bool IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const;
 
         uint32 CalcArmorReducedDamage(Unit* pVictim, const uint32 damage);
-        void CalculateDamageAbsorbAndResist(Unit* pCaster, SpellSchoolMask schoolMask, DamageEffectType damagetype, const uint32 damage, uint32* absorb, uint32* resist, bool canReflect = false);
+        void CalculateDamageAbsorbAndResist(WorldObject* pCaster, SpellSchoolMask schoolMask, DamageEffectType damagetype, const uint32 damage, uint32* absorb, uint32* resist, bool canReflect = false);
         void CalculateAbsorbResistBlock(Unit* pCaster, SpellNonMeleeDamage* damageInfo, SpellEntry const* spellProto, WeaponAttackType attType = BASE_ATTACK);
 
         virtual void  UpdateSpeed(UnitMoveType mtype, bool forced, float ratio = 1.0f);
@@ -3714,9 +3662,9 @@ class Unit : public WorldObject
         void _RemoveAllAuraMods();
         void _ApplyAllAuraMods();
 
-        int32 CalculateSpellDamage(Unit const* target, SpellEntry const* spellProto, SpellEffectIndex effect_index, int32 const* basePoints = NULL);
+        int32 CalculateSpellDamage(ObjectGuid const targetGUID, SpellEntry const* spellProto, SpellEffectIndex effect_index, int32 const* basePoints = NULL) override;
 
-        int32 CalculateAuraDuration(SpellEntry const* spellProto, uint32 effectMask, int32 duration, Unit const* caster);
+        int32 CalculateAuraDuration(SpellEntry const* spellProto, uint32 effectMask, int32 duration, ObjectGuid casterGUID);
 
         float CalculateLevelPenalty(SpellEntry const* spellProto) const;
 
@@ -3842,7 +3790,6 @@ class Unit : public WorldObject
         uint32 m_CombatTimer;
 
         Spell* m_currentSpells[CURRENT_MAX_SPELL];
-        uint32 m_castCounter;                               // count casts chain of triggered spells for prevent infinity cast crashes
 
         UnitVisibility m_Visibility;
         Position m_last_notified_position;

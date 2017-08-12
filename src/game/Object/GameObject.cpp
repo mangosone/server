@@ -150,7 +150,7 @@ void GameObject::CleanupsBeforeDelete()
 bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
 {
     if (!map)
-      { return false; }
+      return false;
 
     GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(name_id);
     if (!goinfo)
@@ -197,7 +197,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
     SetUInt32Value(GAMEOBJECT_FLAGS, m_goInfo->flags);
 
     if (goinfo->type == GAMEOBJECT_TYPE_TRANSPORT)
-        { SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN)); }
+        SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN));
 
     SetEntry(m_goInfo->id);
     SetDisplayId(m_goInfo->displayId);
@@ -215,6 +215,11 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         case GAMEOBJECT_TYPE_CHEST:
             RollIfMineralVein();
             break;
+        case GAMEOBJECT_TYPE_AURA_GENERATOR:
+            m_lootState = m_goInfo->auraGenerator.startOpen ? GO_READY : GO_NOT_READY;
+            if (SpellEntry const* si = sSpellStore.LookupEntry(m_goInfo->auraGenerator.auraID1))
+                m_cooldownTime = CalculateSpellDuration(si);
+            break;
         default:
             break;
     }
@@ -226,15 +231,15 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
 
     // Notify the battleground or outdoor pvp script
     if (map->IsBattleGroundOrArena())
-        { ((BattleGroundMap*)map)->GetBG()->HandleGameObjectCreate(this); }
+        ((BattleGroundMap*)map)->GetBG()->HandleGameObjectCreate(this);
     else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
-        { outdoorPvP->HandleGameObjectCreate(this); }
+        outdoorPvP->HandleGameObjectCreate(this);
 
     // Notify the map's instance data.
     // Only works if you create the object in it, not if it is moves to that map.
     // Normally non-players do not teleport to other maps.
     if (InstanceData* iData = map->GetInstanceData())
-        { iData->OnObjectCreate(this); }
+        iData->OnObjectCreate(this);
 
     return true;
 }
@@ -378,7 +383,23 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     MaNGOS::UnitSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> checker(enemy, u_check);
                     Cell::VisitAllObjects(this, checker, radius);
                     if (enemy)
-                        { Use(enemy); }
+                        Use(enemy);
+                }
+                else if (goInfo->type == GAMEOBJECT_TYPE_AURA_GENERATOR)
+                {
+                    if (m_cooldownTime <= update_diff)
+                    {
+                        if (SpellEntry const* si = sSpellStore.LookupEntry(goInfo->auraGenerator.auraID1))  // sSpellStore.LookupEntry(42490))//
+                        {
+                            CastSpell(GetPositionX(), GetPositionY(), GetPositionZ(), si);
+                            uint32 cd = CalculateSpellDuration(si);
+                            if (cd < 1 * IN_MILLISECONDS)       // a hacky way to avoid zero CDs paralleling the GCD
+                                cd = 2500;
+                            m_cooldownTime = cd + m_cooldownTime - update_diff;
+                        }
+                    }
+                    else
+                        m_cooldownTime -= update_diff;
                 }
 
                 if (uint32 max_charges = goInfo->GetCharges())
@@ -2294,4 +2315,486 @@ void GameObject::SendObjectDeSpawnAnim()
     WorldPacket data(SMSG_GAMEOBJECT_DESPAWN_ANIM, 8);
     data << GetObjectGuid();
     SendMessageToSet(&data, true);
+}
+
+void GameObject::CastSpell(Unit* Victim, uint32 spellId, ObjectGuid relatedObjGUID)
+{
+    //TODO
+}
+
+void GameObject::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, SpellEntry const* spellInfo, WeaponAttackType attackType)
+{
+    if (damageInfo->target->GetTypeId() != TYPEID_UNIT) // GO-GO cast is disallowed
+        return;
+
+    SpellSchoolMask damageSchoolMask = damageInfo->schoolMask;
+    Unit* pVictim = damageInfo->target->ToUnit();
+
+    if (damage < 0)
+        return;
+
+    // check for GO not in world (despawned) or in other inactive state?
+    // TODO
+
+    // Check spell crit chance
+    bool crit = IsSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType);
+
+    // damage bonus (per damage class)
+    switch (spellInfo->DmgClass)
+    {
+    // Melee and Ranged Spells: no such spell for GOs must be allowed
+    case SPELL_DAMAGE_CLASS_RANGED:
+    case SPELL_DAMAGE_CLASS_MELEE:
+        break;
+    // Magical Attacks
+    case SPELL_DAMAGE_CLASS_NONE:
+    case SPELL_DAMAGE_CLASS_MAGIC:
+        // Calculate damage bonus
+        damage = pVictim->SpellDamageBonusTaken(this, spellInfo, damage, SPELL_DIRECT_DAMAGE);
+
+        // If crit add critical bonus
+        if (crit)
+        {
+            damageInfo->HitInfo |= SPELL_HIT_TYPE_CRIT;
+            damage = SpellCriticalDamageBonus(spellInfo, damage, pVictim);
+            // Resilience - reduce crit damage
+            if (pVictim->GetTypeId() == TYPEID_PLAYER)
+                damage -= ((Player*)pVictim)->GetSpellCritDamageReduction(damage);
+        }
+        break;
+    }
+
+    if (damage > 0)
+        damageInfo->damage = damage;
+}
+
+bool GameObject::IsSpellCrit(WorldObject* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType /*attackType*/)
+{
+    if (pVictim->GetTypeId() != TYPEID_UNIT)    // GO-GO cast in not allowed
+        return false;
+    Unit* victim = pVictim->ToUnit();
+
+    // not critting spell
+    if (spellProto->HasAttribute(SPELL_ATTR_EX2_CANT_CRIT))
+        return false;
+
+    float crit_chance = 0.0f;       // Unit::m_baseSpellCritChance - should it be moved to the WordlObject? for now, 0 assumed here for GOs
+    
+    // the only cause of the crit from a GO is the presence of an aura on the victim
+    if (spellProto->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && !IsPositiveSpell(spellProto->Id))
+    {
+        // Modify critical chance by victim SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE
+        crit_chance += victim->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE, schoolMask);
+        // Modify critical chance by victim SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE
+        crit_chance += victim->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE);
+        // Modify by player victim resilience
+        if (victim->GetTypeId() == TYPEID_PLAYER)
+            crit_chance -= ((Player*)victim)->GetRatingBonusValue(CR_CRIT_TAKEN_SPELL);
+    }
+    else
+        return false;
+
+    crit_chance = crit_chance > 0.0f ? crit_chance : 0.0f;
+    return roll_chance_f(crit_chance);
+}
+
+uint32 GameObject::SpellCriticalDamageBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim)
+{
+    // Calculate critical bonus
+    int32 crit_bonus;
+    switch (spellProto->DmgClass)
+    {
+    case SPELL_DAMAGE_CLASS_MELEE:                      // no melee from GOs
+    case SPELL_DAMAGE_CLASS_RANGED:
+        return damage;
+    default:
+        crit_bonus = damage / 2;                        // for spells bonus is 50%
+        break;
+    }
+
+    if (!pVictim)
+        return damage += crit_bonus;
+
+    int32 critPctDamageMod = pVictim->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_DAMAGE, GetSpellSchoolMask(spellProto));
+
+    if (critPctDamageMod != 0)
+        crit_bonus = int32(crit_bonus * float((100.0f + critPctDamageMod) / 100.0f));
+
+    if (crit_bonus > 0)
+        damage += crit_bonus;
+
+    return damage;
+}
+
+int32 GameObject::CalculateSpellDamage(ObjectGuid targetGUID, SpellEntry const* spellProto, SpellEffectIndex effect_index, int32 const* effBasePoints)
+{
+    int32 baseDice = int32(spellProto->EffectBaseDice[effect_index]);
+    int32 basePoints = effBasePoints
+        ? *effBasePoints - baseDice
+        : spellProto->EffectBasePoints[effect_index];
+
+    int32 randomPoints = spellProto->EffectDieSides[effect_index];
+
+    switch (randomPoints)
+    {
+    case 0:                                             // not used
+    case 1: basePoints += baseDice; break;              // range 1..1
+    default:
+        // range can have positive (1..rand) and negative (rand..1) values, so order its for irand
+        basePoints += baseDice >= randomPoints ? irand(randomPoints, baseDice) : irand(baseDice, randomPoints);
+        break;
+    }
+
+    return basePoints;
+}
+
+SpellMissInfo GameObject::SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool CanReflect)
+{
+    // All positive spells can`t miss
+    // TODO: client not show miss log for this spells - so need find info for this in dbc and use it!
+    if (IsPositiveSpell(spell->Id))
+        return SPELL_MISS_NONE;
+
+    // Return evade for units in evade mode
+    if (pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
+        return SPELL_MISS_EVADE;
+
+    // Check for immune
+    if (pVictim->IsImmuneToSpell(spell, false) && !spell->HasAttribute(SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY))
+        return SPELL_MISS_IMMUNE;
+
+    // Check for immune (use charges)
+    if (pVictim->IsImmuneToDamage(GetSpellSchoolMask(spell)) && !spell->HasAttribute(SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY))
+        return SPELL_MISS_IMMUNE;
+
+    // Try victim reflect spell; TODO is such result possible for a GO caster?
+    if (CanReflect)
+    {
+        int32 reflectchance = pVictim->GetTotalAuraModifier(SPELL_AURA_REFLECT_SPELLS);
+        Unit::AuraList const& mReflectSpellsSchool = pVictim->GetAurasByType(SPELL_AURA_REFLECT_SPELLS_SCHOOL);
+        for (Unit::AuraList::const_iterator i = mReflectSpellsSchool.begin(); i != mReflectSpellsSchool.end(); ++i)
+            if ((*i)->GetModifier()->m_miscvalue & GetSpellSchoolMask(spell))
+                reflectchance += (*i)->GetModifier()->m_amount;
+
+        if (reflectchance > 0 && roll_chance_i(reflectchance))
+            return SPELL_MISS_REFLECT;
+    }
+
+    switch (spell->DmgClass)
+    {
+    case SPELL_DAMAGE_CLASS_NONE:
+        return SPELL_MISS_NONE;
+    case SPELL_DAMAGE_CLASS_MAGIC:
+        return MagicSpellHitResult(pVictim, spell);
+    case SPELL_DAMAGE_CLASS_MELEE:      // must not happen, the diagnostics can be added here
+    case SPELL_DAMAGE_CLASS_RANGED:
+        break;
+    }
+    return SPELL_MISS_NONE;
+}
+
+SpellMissInfo GameObject::MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell)
+{
+    // Can`t miss on dead target (on skinning for example)
+    if (!pVictim->IsAlive())
+        return SPELL_MISS_NONE;
+
+    if (spell->HasAttribute(SPELL_ATTR_EX3_CANT_MISS))
+        return SPELL_MISS_NONE;
+
+    // Chance hit from victim SPELL_AURA_MOD_ATTACKER_SPELL_HIT_CHANCE auras, negative buff spellvalues
+    int32 missChance = -100 * pVictim->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_HIT_CHANCE, GetSpellSchoolMask(spell));
+    // Decrease hit chance from victim rating bonus (positive bonus value)
+    if (pVictim->GetTypeId() == TYPEID_PLAYER)
+        missChance += int32(100 * pVictim->ToPlayer()->GetRatingBonusValue(CR_HIT_TAKEN_SPELL));
+
+    // Reduce spell hit chance for Area of effect spells from victim SPELL_AURA_MOD_AOE_AVOIDANCE aura, positive buff spellvalues
+    int32 avoidChance = 0;
+    if (IsAreaOfEffectSpell(spell))
+        avoidChance += pVictim->GetTotalAuraModifier(SPELL_AURA_MOD_AOE_AVOIDANCE);
+
+    int32 resistChance = 0;
+    // Chance resist mechanic (select max value from every mechanic spell effect), positive buff spellvalues
+    for (int eff = 0; eff < MAX_EFFECT_INDEX; ++eff)
+    {
+        int32 effect_mech = GetEffectMechanic(spell, SpellEffectIndex(eff));
+        if (effect_mech)
+        {
+            int32 temp = pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_MECHANIC_RESISTANCE, effect_mech);
+            if (resistChance < temp)
+                resistChance = temp;
+        }
+    }
+    // Reduce spell hit chance for dispel mechanic spells from victim SPELL_AURA_MOD_DISPEL_RESIST, positive buff spellvalue
+    if (IsDispelSpell(spell))
+        resistChance += pVictim->GetTotalAuraModifier(SPELL_AURA_MOD_DISPEL_RESIST);
+    // Chance resist debuff, positive buff spellvalues
+    resistChance += pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_DEBUFF_RESISTANCE, int32(spell->Dispel));
+
+    missChance = missChance > 0 ? missChance : 0;
+    avoidChance = avoidChance > 0 ? 100 * avoidChance : 0;
+    resistChance = resistChance > 0 ? 100 * resistChance : 0;
+
+    int32 rand = irand(0, 10000);
+    if (rand < missChance)
+        return SPELL_MISS_MISS;
+    else if (rand < missChance + avoidChance)
+        return SPELL_MISS_DODGE;
+    else if (rand < missChance + avoidChance + resistChance)
+        return SPELL_MISS_RESIST;
+
+    return SPELL_MISS_NONE;
+}
+
+uint32 GameObject::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss)
+{
+    // remove affects from attacker at any non-DoT damage (including 0 damage)
+    if (damagetype != DOT)
+        if (pVictim->GetTypeId() == TYPEID_PLAYER && !pVictim->IsStandState() && !pVictim->hasUnitState(UNIT_STAT_STUNNED))
+            pVictim->SetStandState(UNIT_STAND_STATE_STAND);
+
+    if (!damage)
+    {
+        // Rage from physical damage received .
+        if (cleanDamage && cleanDamage->damage && (damageSchoolMask & SPELL_SCHOOL_MASK_NORMAL) && pVictim->GetTypeId() == TYPEID_PLAYER && (pVictim->GetPowerType() == POWER_RAGE))
+            ((Player*)pVictim)->RewardRage(cleanDamage->damage, 0, false);
+
+        return 0;
+    }
+
+    DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageStart");
+
+    uint32 health = pVictim->GetHealth();
+    DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "deal dmg:%d to health:%d ", damage, health);
+
+    // no xp,health if type 8 /critters/
+    if (pVictim->GetTypeId() == TYPEID_UNIT && pVictim->GetCreatureType() == CREATURE_TYPE_CRITTER)
+    {
+        // TODO: fix this part
+        // Critter may not die of damage taken, instead expect it to run away (no fighting back)
+        // If (this) is TYPEID_PLAYER, (this) will enter combat w/victim, but after some time, automatically leave combat.
+        // It is unclear how it should work for other cases.
+
+        DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamage critter, critter dies");
+
+        ((Creature*)pVictim)->SetLootRecipient(NULL);
+        pVictim->SetHealth(0);
+
+        return damage;
+    }
+
+    if (Creature* victim = pVictim->ToCreature())
+    {
+        if (!victim->IsPet() && !victim->HasLootRecipient())
+            victim->SetLootRecipient(NULL);
+
+        if (IsControlledByPlayer()) // more narrow: IsPet(), IsGuardian() ?
+            victim->LowerPlayerDamageReq(health < damage ? health : damage);
+    }
+
+    if (health <= damage)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamage %s Killed %s", GetGuidStr().c_str(), pVictim->GetGuidStr().c_str());
+
+        /*
+        *                      Preparation: Who gets credit for killing whom, invoke SpiritOfRedemtion?
+        */
+        // for loot will be used only if group_tap == NULL
+        Player* player_tap = GetOwner() ? GetOwner()->ToPlayer() : NULL;
+        Group* group_tap = NULL;
+
+        // in creature kill case group/player tap stored for creature
+        if (pVictim->GetTypeId() == TYPEID_UNIT)
+        {
+            group_tap = ((Creature*)pVictim)->GetGroupLootRecipient();
+
+            if (Player* recipient = ((Creature*)pVictim)->GetOriginalLootRecipient())
+                player_tap = recipient;
+        }
+        // in player kill case group tap selected by player_tap (killer-player itself, or charmer, or owner, etc)
+        else
+        {
+            if (player_tap)
+                group_tap = player_tap->GetGroup();
+        }
+
+        /*
+        *                      Generic Actions (ProcEvents, Combat-Log, Kill Rewards, Stop Combat)
+        */
+        bool isRewardAllowed = true;
+        if (Creature* creature = pVictim->ToCreature())
+        {
+            isRewardAllowed = creature->IsDamageEnoughForLootingAndReward();
+            if (!isRewardAllowed)
+                creature->SetLootRecipient(NULL);
+        }
+
+        // Reward player, his pets, and group/raid members
+        if (isRewardAllowed && player_tap != pVictim)
+        {
+            if (group_tap)
+                group_tap->RewardGroupAtKill(pVictim, player_tap);
+            else if (player_tap)
+                player_tap->RewardSinglePlayerAtKill(pVictim);
+        }
+
+        // stop combat
+        DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageAttackStop");
+        pVictim->CombatStop();
+        pVictim->GetHostileRefManager().deleteReferences();
+
+        /*
+        *                      Actions for the killer
+        */
+        bool damageFromSpiritOfRedemtionTalent = spellProto && spellProto->Id == 27795;
+        bool spiritOfRedemtionTalentReady = false;
+        if (!damageFromSpiritOfRedemtionTalent && pVictim->GetTypeId() == TYPEID_PLAYER)
+        {
+            if (!(spiritOfRedemtionTalentReady = pVictim->ToPlayer()->ActivateSpiritOfRedemption()))
+                pVictim->SetHealth(0);
+        }
+        else
+            pVictim->SetHealth(0);
+
+        /*
+        *                      Actions for the victim
+        */
+        if (pVictim->GetTypeId() == TYPEID_PLAYER)          // Killed player
+        {
+            Player* playerVictim = (Player*)pVictim;
+
+            // remember victim PvP death for corpse type and corpse reclaim delay
+            // at original death (not at SpiritOfRedemtionTalent timeout)
+            if (!damageFromSpiritOfRedemtionTalent)
+                playerVictim->SetPvPDeath(player_tap != NULL);
+
+            // 10% durability loss on death
+            // only if not player and not controlled by player pet. And not at BG
+            if (durabilityLoss && !player_tap && !playerVictim->InBattleGround())
+            {
+                DEBUG_LOG("DealDamage: Killed %s, looing 10 percents durability", pVictim->GetGuidStr().c_str());
+                playerVictim->DurabilityLossAll(0.10f, false);
+                // durability lost message
+                WorldPacket data(SMSG_DURABILITY_DAMAGE_DEATH, 0);
+                playerVictim->SendDirectMessage(&data);
+            }
+
+            if (!spiritOfRedemtionTalentReady)              // Before informing Battleground
+            {
+                DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "SET JUST_DIED");
+                pVictim->SetDeathState(JUST_DIED);
+            }
+        }
+    }
+    else                                                    // if (health <= damage)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageAlive");
+
+        pVictim->ModifyHealth(-(int32)damage);
+
+        if (damagetype == DIRECT_DAMAGE || damagetype == SPELL_DIRECT_DAMAGE)
+        {
+            if (!spellProto || !(spellProto->AuraInterruptFlags & AURA_INTERRUPT_FLAG_DIRECT_DAMAGE))
+                pVictim->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_DIRECT_DAMAGE);
+        }
+
+        // Rage from damage received
+        if (pVictim->GetPowerType() == POWER_RAGE)
+        {
+            uint32 rage_damage = damage + (cleanDamage ? cleanDamage->damage : 0);
+            ((Player*)pVictim)->RewardRage(rage_damage, 0, false);
+        }
+
+        // random durability for items (HIT TAKEN)
+        if (roll_chance_f(sWorld.getConfig(CONFIG_FLOAT_RATE_DURABILITY_LOSS_DAMAGE)))
+        {
+            EquipmentSlots slot = EquipmentSlots(urand(0, EQUIPMENT_SLOT_END - 1));
+            ((Player*)pVictim)->DurabilityPointLossForEquipSlot(slot);
+        }
+
+        pVictim->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_DAMAGE, spellProto ? spellProto->Id : 0);
+
+        if (damagetype != NODAMAGE && damage && pVictim->GetTypeId() == TYPEID_PLAYER)
+        {
+            if (damagetype != DOT)
+            {
+                for (uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
+                {
+                    // skip channeled spell (processed differently below)
+                    if (i == CURRENT_CHANNELED_SPELL)
+                        continue;
+
+                    if (Spell* spell = pVictim->GetCurrentSpell(CurrentSpellTypes(i)))
+                    {
+                        if (spell->getState() == SPELL_STATE_PREPARING)
+                        {
+                            if (spell->m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_ABORT_ON_DMG)
+                                pVictim->InterruptSpell(CurrentSpellTypes(i));
+                            else
+                                spell->Delayed();
+                        }
+                    }
+                }
+            }
+
+            if (Spell* spell = pVictim->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+            {
+                if (spell->getState() == SPELL_STATE_CASTING)
+                {
+                    uint32 channelInterruptFlags = spell->m_spellInfo->ChannelInterruptFlags;
+                    if (channelInterruptFlags & CHANNEL_FLAG_DELAY)
+                        spell->DelayedChannel();
+                    else if ((channelInterruptFlags & (CHANNEL_FLAG_DAMAGE | CHANNEL_FLAG_DAMAGE2)))
+                    {
+                        DETAIL_LOG("Spell %u canceled at damage!", spell->m_spellInfo->Id);
+                        pVictim->InterruptSpell(CURRENT_CHANNELED_SPELL);
+                    }
+                }
+                else if (spell->getState() == SPELL_STATE_DELAYED)
+                    // break channeled spell in delayed state on damage
+                {
+                    DETAIL_LOG("Spell %u canceled at damage!", spell->m_spellInfo->Id);
+                    pVictim->InterruptSpell(CURRENT_CHANNELED_SPELL);
+                }
+            }
+        }
+    }
+
+    DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageEnd returned %d damage", damage);
+
+    return damage;
+}
+
+void GameObject::CastSpell(Unit* Victim, uint32 spellId, bool triggered, Item* castItem, Aura* triggeredByAura, ObjectGuid relatedObjectGUID, SpellEntry const* triggeredBy) {}
+void GameObject::CastSpell(Unit* Victim, SpellEntry const* spellInfo, bool triggered, Item* castItem, Aura* triggeredByAura, ObjectGuid originalCaster, SpellEntry const* triggeredBy) {}
+void GameObject::CastSpell(float x, float y, float z, uint32 spellId, bool triggered, Item* castItem, Aura* triggeredByAura, ObjectGuid originalCaster, SpellEntry const* triggeredBy) {}
+void GameObject::CastSpell(float x, float y, float z, SpellEntry const* spellInfo, bool triggered, Item* castItem, Aura* triggeredByAura, ObjectGuid originalCaster, SpellEntry const* triggeredBy)
+{
+    if (!spellInfo)
+    {
+        sLog.outError("CastSpell(x,y,z): unknown spell by caster: %s", GetGuidStr().c_str());
+        return;
+    }
+
+    if (castItem)
+    {
+        sLog.outError("CastSpell(x,y,z): GO %u cannot use casting item %u", GetEntry(), castItem->GetEntry());
+        return;
+    }
+
+    Spell* spell = new Spell(this, spellInfo, true, GetObjectGuid(), triggeredBy);
+
+    SpellCastTargets targets;
+
+    if (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+        targets.setDestination(x, y, z);
+    if (spellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
+        targets.setSource(x, y, z);
+
+    // Spell cast with x,y,z but without dbc target-mask, set destination
+    if (!(targets.m_targetMask & (TARGET_FLAG_DEST_LOCATION | TARGET_FLAG_SOURCE_LOCATION)))
+        targets.setDestination(x, y, z);
+
+    spell->prepare(&targets, triggeredByAura);
+    SendGameObjectCustomAnim();
 }
