@@ -206,8 +206,8 @@ class TypeUnorderedMapContainer
          */
         static SPECIFIC_TYPE* find(ContainerUnorderedMap<SPECIFIC_TYPE, KEY_TYPE>& elements, KEY_TYPE hdl, SPECIFIC_TYPE* /*obj*/)
         {
-            typename UNORDERED_MAP<KEY_TYPE, SPECIFIC_TYPE*>::iterator i = elements._element.find(hdl);
-            if (i == elements._element.end())
+            typename UNORDERED_MAP<KEY_TYPE, SPECIFIC_TYPE*>::const_iterator i = elements._element.find(hdl);
+            if (i == elements._element.cend())
                 { return NULL; }
             else
                 { return i->second; }

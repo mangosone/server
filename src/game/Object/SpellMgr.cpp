@@ -79,7 +79,7 @@ int32 GetSpellMaxDuration(SpellEntry const* spellInfo)
     return (du->Duration[2] == -1) ? -1 : abs(du->Duration[2]);
 }
 
-int32 CalculateSpellDuration(SpellEntry const* spellInfo, Unit const* caster)
+int32 CalculateSpellDuration(SpellEntry const* spellInfo, WorldObject const* caster)
 {
     int32 duration = GetSpellDuration(spellInfo);
 
@@ -87,15 +87,18 @@ int32 CalculateSpellDuration(SpellEntry const* spellInfo, Unit const* caster)
     {
         int32 maxduration = GetSpellMaxDuration(spellInfo);
 
-        if (duration != maxduration && caster->GetTypeId() == TYPEID_PLAYER)
-            { duration += int32((maxduration - duration) * ((Player*)caster)->GetComboPoints() / 5); }
-
-        if (Player* modOwner = caster->GetSpellModOwner())
+        if (caster->GetTypeId() == TYPEID_PLAYER)
         {
-            modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_DURATION, duration);
+            if (duration != maxduration)
+                duration += int32((maxduration - duration) * caster->ToPlayer()->GetComboPoints() / 5);
 
-            if (duration < 0)
-                { duration = 0; }
+            if (Player* modOwner = caster->ToPlayer()->GetSpellModOwner())
+            {
+                modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_DURATION, duration);
+
+                if (duration < 0)
+                    duration = 0;
+            }
         }
     }
 
@@ -126,9 +129,9 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
 
     int32 castTime = spellCastTimeEntry->CastTime;
 
-    if (spell)
+    if (spell && spell->CasterIsUnit())
     {
-        if (Player* modOwner = spell->GetCaster()->GetSpellModOwner())
+        if (Player* modOwner = spell->GetCaster()->ToUnit()->GetSpellModOwner())
             { modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_CASTING_TIME, castTime, spell); }
 
         if (!spellInfo->HasAttribute(SPELL_ATTR_UNK4) && !spellInfo->HasAttribute(SPELL_ATTR_TRADESPELL))
@@ -136,7 +139,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
         else
         {
             if (spell->IsRangedSpell() && !spell->IsAutoRepeat())
-                { castTime = int32(castTime * spell->GetCaster()->m_modAttackSpeedPct[RANGED_ATTACK]); }
+                { castTime = int32(castTime * spell->GetCaster()->ToUnit()->m_modAttackSpeedPct[RANGED_ATTACK]); }
         }
     }
 

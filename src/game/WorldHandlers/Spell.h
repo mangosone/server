@@ -107,8 +107,6 @@ class SpellCastTargets
             m_CorpseTargetGUID  = target.m_CorpseTargetGUID;
             m_itemTargetGUID    = target.m_itemTargetGUID;
 
-            m_itemTargetEntry  = target.m_itemTargetEntry;
-
             m_srcX = target.m_srcX;
             m_srcY = target.m_srcY;
             m_srcZ = target.m_srcZ;
@@ -143,22 +141,19 @@ class SpellCastTargets
         void setItemTarget(Item* item);
         ObjectGuid getItemTargetGuid() const { return m_itemTargetGUID; }
         Item* getItemTarget() const { return m_itemTarget; }
-        uint32 getItemTargetEntry() const { return m_itemTargetEntry; }
+        uint32 getItemTargetEntry() const { return m_itemTargetGUID.GetEntry(); }
 
         void setTradeItemTarget(Player* caster);
 
         void updateTradeSlotItem()
         {
             if (m_itemTarget && (m_targetMask & TARGET_FLAG_TRADE_ITEM))
-            {
                 m_itemTargetGUID = m_itemTarget->GetObjectGuid();
-                m_itemTargetEntry = m_itemTarget->GetEntry();
-            }
         }
 
         bool IsEmpty() const { return !m_GOTargetGUID && !m_unitTargetGUID && !m_itemTarget && !m_CorpseTargetGUID; }
 
-        void Update(Unit* caster);
+        void Update(WorldObject* caster);
 
         float m_srcX, m_srcY, m_srcZ;
         float m_destX, m_destY, m_destZ;
@@ -177,7 +172,6 @@ class SpellCastTargets
         ObjectGuid m_GOTargetGUID;
         ObjectGuid m_CorpseTargetGUID;
         ObjectGuid m_itemTargetGUID;
-        uint32 m_itemTargetEntry;
 };
 
 inline ByteBuffer& operator<< (ByteBuffer& buf, SpellCastTargets const& targets)
@@ -322,7 +316,7 @@ class Spell
         void EffectPlayMusic(SpellEffectIndex eff_idx);
         void EffectKnockBackFromPosition(SpellEffectIndex eff_idx);
 
-        Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), SpellEntry const* triggeredBy = NULL);
+        Spell(WorldObject* caster, SpellEntry const* info, bool triggered, ObjectGuid relatedUnitGUID = ObjectGuid(), SpellEntry const* triggeredBy = NULL);
         ~Spell();
 
         void prepare(SpellCastTargets const* targets, Aura* triggeredByAura = NULL);
@@ -352,7 +346,7 @@ class Spell
         SpellCastResult CheckPower();
         SpellCastResult CheckCasterAuras() const;
 
-        int32 CalculateDamage(SpellEffectIndex i, Unit* target) { return m_caster->CalculateSpellDamage(target, m_spellInfo, i, &m_currentBasePoints[i]); }
+        int32 CalculateDamage(SpellEffectIndex i, ObjectGuid targetGUID) { return m_caster->CalculateSpellDamage(targetGUID, m_spellInfo, i, &m_currentBasePoints[i]); }
         static uint32 CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spell const* spell = NULL, Item* castItem = NULL);
 
         bool HaveTargetsForEffect(SpellEffectIndex effect) const;
@@ -395,7 +389,7 @@ class Spell
         SpellEntry const* m_spellInfo;
         SpellEntry const* m_triggeredBySpellInfo;
         int32 m_currentBasePoints[MAX_EFFECT_INDEX];        // cache SpellEntry::CalculateSimpleValue and use for set custom base points
-        Item* m_CastItem;
+        //Item* m_CastItem;
         uint8 m_cast_count;
         SpellCastTargets m_targets;
 
@@ -408,10 +402,7 @@ class Spell
         {
             return m_spellInfo->HasAttribute(SPELL_ATTR_ON_NEXT_SWING_1) || m_spellInfo->HasAttribute(SPELL_ATTR_ON_NEXT_SWING_2);
         }
-        bool IsRangedSpell() const
-        {
-            return  m_spellInfo->HasAttribute(SPELL_ATTR_RANGED);
-        }
+        bool IsRangedSpell() const { return m_spellInfo->HasAttribute(SPELL_ATTR_RANGED); }
         bool IsChannelActive() const { return m_caster->GetUInt32Value(UNIT_CHANNEL_SPELL) != 0; }
         bool IsMeleeAttackResetSpell() const { return !m_IsTriggeredSpell && (m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_AUTOATTACK);  }
         bool IsRangedAttackResetSpell() const { return !m_IsTriggeredSpell && IsRangedSpell() && (m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_AUTOATTACK); }
@@ -430,11 +421,11 @@ class Spell
 
         // caster types:
         // formal spell caster, in game source of spell affects cast
-        Unit* GetCaster() const { return m_caster; }
+        Unit* GetUnitCaster() const { return m_unitCaster; }
         // real source of cast affects, explicit caster, or DoT/HoT applier, or GO owner, or wild GO itself. Can be NULL
         WorldObject* GetAffectiveCasterObject() const;
         // limited version returning NULL in cases wild gameobject caster object, need for Aura (auras currently not support non-Unit caster)
-        Unit* GetAffectiveCaster() const { return m_originalCasterGUID ? m_originalCaster : m_caster; }
+        Unit* GetAffectiveCaster() const;                   // may return NULL!
         // m_originalCasterGUID can store GO guid, and in this case this is visual caster
         WorldObject* GetCastingObject() const;
 
@@ -461,6 +452,15 @@ class Spell
         void SetSelfContainer(Spell** pCurrentContainer) { m_selfContainer = pCurrentContainer; }
         Spell** GetSelfContainer() { return m_selfContainer; }
 
+        inline bool CasterIsUnit() const { return m_casterGUID.IsUnit(); }      // may give false while m_unitCaster is not NULL still (owned GO cast)
+        inline bool CasterIsPlayer() const { return m_casterGUID.IsPlayer(); }
+        inline bool CasterIsGameObject() const { return m_casterGUID.IsGameObject(); }
+
+        GameObject* GetCastingGameObject() { return m_map->GetGameObject(m_casterGUID); }
+        Item* GetCastingItem() const;
+        Player* GetRelatedPlayer() const;
+        WorldObject* GetCaster() const { return m_caster; }
+
     protected:
         bool HasGlobalCooldown();
         void TriggerGlobalCooldown();
@@ -468,13 +468,19 @@ class Spell
 
         void SendLoot(ObjectGuid guid, LootType loottype, LockType lockType);
         bool IgnoreItemRequirements() const;                // some item use spells have unexpected reagent data
-        void UpdateOriginalCasterPointer();
+        void UpdateUnitCasterPointer();
+        void AddCasterAsTarget(UnitList& ul, std::list<GameObject*>& gl);
 
-        Unit* m_caster;
+        ObjectGuid const m_casterGUID;                      // (NOT 0) may have any type fitting to TYPEMASK_OBJECT (anything with a GUID)
+        ObjectGuid const m_relatedObjectGUID;               // if m_casterGUID is of GO type, this is GO owner (Unit); for item cast, m_caster is Player, this is Item
+        WorldObject* m_caster;                              // NOT NULL
+        Map* m_map;                                   // (NOT NULL) the map where the spell was started; m_unitCaster may change it during cast
 
-        ObjectGuid m_originalCasterGUID;                    // real source of cast (aura caster/etc), used for spell targets selection
-        // e.g. damage around area spell trigered by victim aura and da,age emeies of aura caster
-        Unit* m_originalCaster;                             // cached pointer for m_originalCaster, updated at Spell::UpdatePointers()
+        Unit* m_unitCaster;                                 // involved unit of (m_casterGUID, m_relatedObjectGUID); NULL for wild GO cast only
+
+        //ObjectGuid m_originalCasterGUID;                    // => m_casterGUID now! real source of cast (aura caster/etc), used for spell targets selection
+        // e.g. damage around area spell trigered by victim aura and damage enemies of aura caster
+        //Unit* m_originalCaster;                             // => m_unitCaster now! cached pointer for m_originalCaster, re-validated at Spell::UpdatePointers()
 
         Spell** m_selfContainer;                            // pointer to our spell container (if applicable)
 
@@ -514,7 +520,7 @@ class Spell
         DiminishingGroup m_diminishGroup;
 
         // -------------------------------------------
-        GameObject* focusObject;
+        GameObject const* focusObject;
 
         // Damage and healing in effects need just calculate
         int32 m_damage;                                     // Damage   in effects count here

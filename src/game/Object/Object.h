@@ -31,6 +31,7 @@
 #include "UpdateData.h"
 #include "ObjectGuid.h"
 #include "Camera.h"
+#include "DBCEnums.h"
 
 #include <set>
 
@@ -61,6 +62,23 @@ enum TempSummonType
     TEMPSUMMON_TIMED_OOC_OR_CORPSE_DESPAWN = 9,             // despawns after a specified time (OOC) OR when the creature dies
 };
 
+/**
+* At least some values expected fixed and used in auras field, other custom
+*/
+enum MeleeHitOutcome
+{
+    MELEE_HIT_EVADE = 0,
+    MELEE_HIT_MISS = 1,
+    MELEE_HIT_DODGE = 2,     ///< used as misc in SPELL_AURA_IGNORE_COMBAT_RESULT
+    MELEE_HIT_BLOCK = 3,     ///< used as misc in SPELL_AURA_IGNORE_COMBAT_RESULT
+    MELEE_HIT_PARRY = 4,     ///< used as misc in SPELL_AURA_IGNORE_COMBAT_RESULT
+    MELEE_HIT_GLANCING = 5,
+    MELEE_HIT_CRIT = 6,
+    MELEE_HIT_CRUSHING = 7,
+    MELEE_HIT_NORMAL = 8,
+    MELEE_HIT_BLOCK_CRIT = 9,
+};
+
 class WorldPacket;
 class UpdateData;
 class WorldSession;
@@ -68,6 +86,8 @@ class Creature;
 class GameObject;
 class Player;
 class Unit;
+class Item;
+class Aura;
 class Group;
 class Map;
 class UpdateMask;
@@ -78,6 +98,7 @@ class ElunaEventProcessor;
 #endif /* ENABLE_ELUNA */
 class TransportInfo;
 struct MangosStringLocale;
+struct SpellEntry;
 
 typedef UNORDERED_MAP<Player*, UpdateData> UpdateDataMapType;
 
@@ -121,6 +142,16 @@ class WorldUpdateCounter
 
     private:
         uint32 m_tmStart;
+};
+
+struct CleanDamage
+{
+    CleanDamage(uint32 _damage, WeaponAttackType _attackType, MeleeHitOutcome _hitOutCome) :
+        damage(_damage), attackType(_attackType), hitOutCome(_hitOutCome) {}
+
+    uint32 damage;
+    WeaponAttackType attackType;
+    MeleeHitOutcome hitOutCome;
 };
 
 class Object
@@ -446,6 +477,11 @@ class Object
 
 struct WorldObjectChangeAccumulator;
 
+/**
+* Spell damage info structure based on structure sending in SMSG_SPELLNONMELEEDAMAGELOG opcode
+*/
+struct SpellNonMeleeDamage;
+
 class WorldObject : public Object
 {
         friend struct WorldObjectChangeAccumulator;
@@ -651,6 +687,27 @@ class WorldObject : public Object
 
         virtual void StartGroupLoot(Group* /*group*/, uint32 /*timer*/) { }
 
+        // object casting implementation: here the methods are mostly placeholders
+        bool CheckAndIncreaseCastCounter();
+        void DecreaseCastCounter() { if (m_castCounter) { --m_castCounter; } }
+
+        void SendEnergizeSpellLog(ObjectGuid victimGUID, uint32 SpellID, uint32 Damage, Powers powertype);
+        void EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers powertype);
+        virtual void CastSpell(Unit* Victim, SpellEntry const* spellInfo, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) {}
+        virtual void CastSpell(Unit* Victim, uint32 spellId, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid relatedObjectGUID = ObjectGuid(), SpellEntry const* triggeredBy = NULL) {}
+        virtual void CastSpell(float x, float y, float z, uint32 spellId, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) {}
+        virtual void CastSpell(float x, float y, float z, SpellEntry const* spellInfo, bool triggered = false, Item* castItem = NULL, Aura* triggeredByAura = NULL, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredBy = NULL) {}
+
+        virtual SpellMissInfo MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell) { return SPELL_MISS_NONE; }
+        virtual SpellMissInfo SpellHitResult(Unit* pVictim, SpellEntry const* spell, bool CanReflect) { return SPELL_MISS_NONE; }
+        virtual bool IsSpellCrit(WorldObject* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType = BASE_ATTACK) { return false; }
+        virtual uint32 SpellCriticalDamageBonus(SpellEntry const* spellProto, uint32 damage, Unit* pVictim) { return 0; }
+        virtual int32 CalculateSpellDamage(ObjectGuid const targetGUID, SpellEntry const* spellProto, SpellEffectIndex effect_index, int32 const* basePoints) { return 0; }
+        virtual void CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, SpellEntry const* spellInfo, WeaponAttackType attackType = BASE_ATTACK) {}
+        virtual uint32 DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss) { return 0; }
+        void SendSpellNonMeleeDamageLog(SpellNonMeleeDamage* log);
+        void SendSpellNonMeleeDamageLog(Unit* target, uint32 SpellID, uint32 Damage, SpellSchoolMask damageSchoolMask, uint32 AbsorbedDamage, uint32 Resist, bool PhysicalDamage, uint32 Blocked, bool CriticalHit = false);
+
 #ifdef ENABLE_ELUNA
         ElunaEventProcessor* elunaEvents;
 #endif /* ENABLE_ELUNA */
@@ -669,6 +726,7 @@ class WorldObject : public Object
         std::string m_name;
 
         TransportInfo* m_transportInfo;
+        uint32 m_castCounter;                               // count casts chain of triggered spells for prevent infinity cast crashes
 
     private:
         Map* m_currMap;                                     // current object's Map location
@@ -680,6 +738,29 @@ class WorldObject : public Object
         ViewPoint m_viewPoint;
         WorldUpdateCounter m_updateTracker;
         bool m_isActiveObject;
+};
+
+struct SpellNonMeleeDamage
+{
+    SpellNonMeleeDamage(WorldObject* _attacker, WorldObject* _target, uint32 _SpellID, SpellSchoolMask _schoolMask)
+        : target(_target), attacker(_attacker), SpellID(_SpellID), damage(0), schoolMask(_schoolMask),
+        absorb(0), resist(0), physicalLog(false), unused(false), blocked(0), HitInfo(0)
+    {
+        // TODO at least one of the action participants must be a unit.  (_attacker->GetTypeId() == TYPEID_UNIT || _target->GetTypeId() == TYPEID_UNIT)
+        MANGOS_ASSERT(_attacker && _target);
+    }
+
+    WorldObject* target;
+    WorldObject* attacker;
+    uint32 SpellID;
+    uint32 damage;
+    SpellSchoolMask schoolMask;
+    uint32 absorb;
+    uint32 resist;
+    bool   physicalLog;
+    bool   unused;
+    uint32 blocked;
+    uint32 HitInfo;
 };
 
 #endif
