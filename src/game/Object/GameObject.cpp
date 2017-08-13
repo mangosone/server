@@ -2698,18 +2698,21 @@ uint32 GameObject::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* c
                 pVictim->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_DIRECT_DAMAGE);
         }
 
-        // Rage from damage received
-        if (pVictim->GetPowerType() == POWER_RAGE)
+        if (pVictim->GetTypeId() == TYPEID_PLAYER)
         {
-            uint32 rage_damage = damage + (cleanDamage ? cleanDamage->damage : 0);
-            ((Player*)pVictim)->RewardRage(rage_damage, 0, false);
-        }
+            // Rage from damage received
+            if (pVictim->GetPowerType() == POWER_RAGE)
+            {
+                uint32 rage_damage = damage + (cleanDamage ? cleanDamage->damage : 0);
+                ((Player*)pVictim)->RewardRage(rage_damage, 0, false);
+            }
 
-        // random durability for items (HIT TAKEN)
-        if (roll_chance_f(sWorld.getConfig(CONFIG_FLOAT_RATE_DURABILITY_LOSS_DAMAGE)))
-        {
-            EquipmentSlots slot = EquipmentSlots(urand(0, EQUIPMENT_SLOT_END - 1));
-            ((Player*)pVictim)->DurabilityPointLossForEquipSlot(slot);
+            // random durability for items (HIT TAKEN)
+            if (roll_chance_f(sWorld.getConfig(CONFIG_FLOAT_RATE_DURABILITY_LOSS_DAMAGE)))
+            {
+                EquipmentSlots slot = EquipmentSlots(urand(0, EQUIPMENT_SLOT_END - 1));
+                ((Player*)pVictim)->DurabilityPointLossForEquipSlot(slot);
+            }
         }
 
         pVictim->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_DAMAGE, spellProto ? spellProto->Id : 0);
