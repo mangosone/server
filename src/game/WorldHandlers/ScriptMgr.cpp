@@ -1561,11 +1561,13 @@ bool ScriptAction::HandleScriptStep()
         }
         case SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL:        // 23
         {
-            if (LogIfNotCreature(pSource))
+            if (LogIfNotUnit(pSource))
                 { break; }
+            if (pSource->GetTypeId() == TYPEID_PLAYER && m_script->morph.creatureOrModelEntry)  // only demorph to players
+                break;
 
             if (!m_script->morph.creatureOrModelEntry)
-                { ((Creature*)pSource)->DeMorph(); }
+                { ((Unit*)pSource)->DeMorph(); }
             else if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
                 { ((Creature*)pSource)->SetDisplayId(m_script->morph.creatureOrModelEntry); }
             else
