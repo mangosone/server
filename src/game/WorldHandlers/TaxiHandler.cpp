@@ -211,7 +211,9 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
     uint32 pathid = GetPlayer()->m_taxi.GetCurrentTaxiPath();
     TaxiPathNodeList const& nlist = sTaxiPathNodesByPath[pathid];
     if (uint32 eventid = nlist[nlist.size() - 1].arrivalEventID)
-        StartEvents_Event(GetPlayer()->GetMap(), eventid, GetPlayer(), GetPlayer());
+        if (!sScriptMgr.OnProcessEvent(eventid, GetPlayer(), GetPlayer(), false))
+            GetPlayer()->GetMap()->ScriptsStart(DBS_ON_EVENT, eventid, GetPlayer(), GetPlayer());
+
 
     // in taxi flight packet received in 2 case:
     // 1) end taxi path in far (multi-node) flight
