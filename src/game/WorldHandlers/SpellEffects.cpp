@@ -4857,6 +4857,14 @@ void Spell::EffectInterruptCast(SpellEffectIndex /*eff_idx*/)
             {
                 unitTarget->ProhibitSpellSchool(GetSpellSchoolMask(curSpellInfo), GetSpellDuration(m_spellInfo));
                 unitTarget->InterruptSpell(CurrentSpellTypes(i), false);
+                if (unitTarget->ToCreature())
+                {
+                    if (CreatureAI* ai = unitTarget->ToCreature()->AI())    // TODO setup a better way to inform AI
+                    {
+                        ai->SetCombatMovement(true, true);
+                        ai->AddCombatMovementFlags(COMBAT_MOVEMENT_SILENCE);
+                    }
+                }
             }
         }
     }
