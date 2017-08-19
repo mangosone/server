@@ -459,4 +459,18 @@ enum ECorpseFields
     CORPSE_FIELD_PAD                          = OBJECT_END + 0x0021, // Size: 1, Type: INT, Flags: NONE
     CORPSE_END                                = OBJECT_END + 0x0022,
 };
+
+// Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero
+static inline uint32 ffs(const uint32 x)
+{
+#ifdef WIN32
+    unsigned long r = 0;
+    if (_BitScanForward(&r, x))
+        return uint32(r + 1);
+    return 0;
+#elif
+    return __builtin_ffs(x);
+#endif
+}
+
 #endif
