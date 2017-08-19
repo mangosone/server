@@ -60,6 +60,10 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         // Check for power (also done by Spell::CheckCast())
         if (m_creature->GetPower((Powers)pSpell->powerType) < Spell::CalculatePowerCost(pSpell, m_creature))
             { return CAST_FAIL_POWER; }
+
+        // Spell school check; for the mobs, only non-triggered spells are affected
+        if (pSpell->SchoolMask && !m_creature->IsSchoolAllowed(SpellSchoolMask(pSpell->SchoolMask)))
+            return CAST_FAIL_STATE;
     }
 
     if (!m_creature->IsWithinLOSInMap(pTarget))

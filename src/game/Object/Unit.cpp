@@ -275,6 +275,11 @@ Unit::Unit() :
 
     m_isCreatureLinkingTrigger = false;
     m_isSpawningLinked = false;
+
+    // disabled spell school
+    uint32 rightnow = WorldTimer::getMSTime() - 1;
+    for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
+        m_schoolAllowedSince[i] = rightnow;
 }
 
 Unit::~Unit()
@@ -9959,4 +9964,28 @@ void Unit::DisableSpline()
 {
     m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD));
     movespline->_Interrupt();
+}
+
+bool Unit::IsSchoolAllowed(SpellSchoolMask mask) const
+{
+    uint32 now = WorldTimer::getMSTime();
+    uint32 imask = mask;
+    while (int i = ffs(imask))
+    {
+        if (m_schoolAllowedSince[i - 1] > now)
+            return false;
+        imask &= ~(1 << (i - 1));
+    }
+    return true;
+}
+
+void Unit::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
+{
+    uint32 when = WorldTimer::getMSTime() + unTimeMs;
+    uint32 imask = idSchoolMask;
+    while (int i = ffs(imask))
+    {
+        m_schoolAllowedSince[i - 1] = when;
+        imask &= ~(1 << (i - 1));
+    }
 }
