@@ -68,7 +68,8 @@ enum CombatMovementFlags
     COMBAT_MOVEMENT_SCRIPT      = 0x01,                      // Combat movement enforced by script
     COMBAT_MOVEMENT_LOS         = 0x02,                      // Combat movement triggered by LoS issues
     COMBAT_MOVEMENT_OOM         = 0x04,                      // Combat movement triggered by power exhaustion
-    COMBAT_MOVEMENT_DISTANCE    = 0x08                       // Combat movement triggered by distance checks
+    COMBAT_MOVEMENT_DISTANCE    = 0x08,                      // Combat movement triggered by distance checks
+    COMBAT_MOVEMENT_SILENCE     = 0x10                       // Combat movement of a caster while silenced
 };
 
 enum AIEventType
@@ -318,7 +319,7 @@ class CreatureAI
         CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
 
         /// Combat movement functions
-        void SetCombatMovement(bool enable, bool stopOrStartMovement = false);
+        void SetCombatMovement(bool enable, bool stopOrStartMovement = true);
         bool IsCombatMovement() const { return m_combatMovement != 0; }
         void AddCombatMovementFlags(uint32 cmFlags);
         void ClearCombatMovementFlags(uint32 cmFlags);
