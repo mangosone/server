@@ -3462,7 +3462,8 @@ class Unit : public WorldObject
         float GetCreateStat(Stats stat) const { return m_createStats[stat]; }
 
         void SetCurrentCastedSpell(Spell* pSpell);
-        virtual void ProhibitSpellSchool(SpellSchoolMask /*idSchoolMask*/, uint32 /*unTimeMs*/) { }
+        bool IsSchoolAllowed(SpellSchoolMask mask) const;
+        virtual void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs);
         void InterruptSpell(CurrentSpellTypes spellType, bool withDelayed = true);
         void FinishSpell(CurrentSpellTypes spellType, bool ok = true);
 
@@ -3820,6 +3821,7 @@ class Unit : public WorldObject
 
         MotionMaster i_motionMaster;
 
+        uint32 m_schoolAllowedSince[MAX_SPELL_SCHOOL];
         uint32 m_reactiveTimer[MAX_REACTIVE];
         uint32 m_regenTimer;
         uint32 m_lastManaUseTimer;
