@@ -4201,6 +4201,9 @@ SpellCastResult Spell::CheckCast(bool strict)
     // check global cooldown
     if (strict && !m_IsTriggeredSpell && HasGlobalCooldown())
         { return SPELL_FAILED_NOT_READY; }
+    // check disabled spell school; TODO how to handle triggered spells?
+    if (strict && GetSpellSchoolMask(m_spellInfo) && !m_caster->IsSchoolAllowed(GetSpellSchoolMask(m_spellInfo)))
+        return SPELL_FAILED_SILENCED;
 
     // only allow triggered spells if at an ended battleground
     if (!m_IsTriggeredSpell && m_caster->GetTypeId() == TYPEID_PLAYER)

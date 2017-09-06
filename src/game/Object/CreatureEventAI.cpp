@@ -680,6 +680,9 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 case CAST_FAIL_NO_LOS:
                     cmFlags |= COMBAT_MOVEMENT_LOS;
                     break;
+                case CAST_FAIL_STATE:
+                    cmFlags |= COMBAT_MOVEMENT_SILENCE;
+                    break;
                 default:
                     break;
             }
@@ -690,18 +693,20 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 if (!(action.cast.castFlags & CAST_NO_MELEE_IF_OOM))
                 {
                     AddCombatMovementFlags(cmFlags);
-                    SetCombatMovement(true,true);
+                    SetCombatMovement(true, true);
                 }
             }
             else
             {
-                if (m_combatMovement & (COMBAT_MOVEMENT_LOS | COMBAT_MOVEMENT_DISTANCE | COMBAT_MOVEMENT_OOM))
+                if (m_combatMovement & (COMBAT_MOVEMENT_LOS | COMBAT_MOVEMENT_DISTANCE | COMBAT_MOVEMENT_OOM | COMBAT_MOVEMENT_SILENCE))
                 {
-                    ClearCombatMovementFlags(COMBAT_MOVEMENT_LOS | COMBAT_MOVEMENT_DISTANCE | COMBAT_MOVEMENT_OOM);
+                    bool silenceOff = m_combatMovement & COMBAT_MOVEMENT_SILENCE;
+                    ClearCombatMovementFlags(COMBAT_MOVEMENT_LOS | COMBAT_MOVEMENT_DISTANCE | COMBAT_MOVEMENT_OOM | COMBAT_MOVEMENT_SILENCE);
 
-                    if (!IsCombatMovement() && m_creature->IsNonMeleeSpellCasted(false) && m_creature->IsInCombat() && m_creature->getVictim())
+                    if (m_creature->IsInCombat() && m_creature->getVictim() && 
+                        (silenceOff || (!IsCombatMovement() && m_creature->IsNonMeleeSpellCasted(false))))
                     {
-                        SetCombatMovement(false,true); 
+                        SetCombatMovement(true, true);      // resetting the same chase movegen
                         m_creature->SendMeleeAttackStop(m_creature->getVictim());
                     }
                 }

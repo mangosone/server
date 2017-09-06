@@ -205,6 +205,15 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
     recv_data >> movementInfo;
     recv_data >> Unused<uint32>();                          // unk
 
+    // a unit (player) path, like transport one, may contain arrive/departure events; signal the last node arrive here
+    // TODO find a way to send event for any path node? TODO is there a better way to get the last TaxiPathNodeEntry?
+    if (uint32 pathid = GetPlayer()->m_taxi.GetCurrentTaxiPath())
+    {
+        TaxiPathNodeList const& nlist = sTaxiPathNodesByPath[pathid];
+        if (uint32 eventid = nlist[nlist.size() - 1].arrivalEventID)
+            if (!sScriptMgr.OnProcessEvent(eventid, GetPlayer(), GetPlayer(), false))
+                GetPlayer()->GetMap()->ScriptsStart(DBS_ON_EVENT, eventid, GetPlayer(), GetPlayer());
+    }
 
     // in taxi flight packet received in 2 case:
     // 1) end taxi path in far (multi-node) flight
