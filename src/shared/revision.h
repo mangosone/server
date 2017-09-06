@@ -24,7 +24,7 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "2107018"
+    #define REVISION_NR "2108012"
 
     #define REALMD_DB_VERSION_NR 21
     #define REALMD_DB_STRUCTURE_NR 1
@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 8
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "spell_linked"
+    #define WORLD_DB_CONTENT_NR 12
+    #define WORLD_DB_UPDATE_DESCRIPTION "Commands_update"
 #endif // __REVISION_H__
