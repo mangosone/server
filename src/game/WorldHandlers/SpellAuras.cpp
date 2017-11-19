@@ -3398,6 +3398,9 @@ void Aura::HandleModPossess(bool apply, bool Real)
         {
             ((Creature*)target)->AIM_Initialize();
             target->AttackedBy(caster);
+
+            if (GetId() == 29989)       // dismiss Robotron 3000
+                ((Creature*)target)->ForcedDespawn();
         }
     }
 }
