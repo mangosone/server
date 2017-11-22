@@ -1050,8 +1050,8 @@ class Player : public Unit
         void SetGMVisible(bool on);
         void SetPvPDeath(bool on)
         {
-            if (on) { m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; } 
-            else { m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; } 
+            if (on) { m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; }
+            else { m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; }
         }
 
         // 0 = own auction, -1 = enemy auction, 1 = goblin auction
@@ -1136,12 +1136,12 @@ class Player : public Unit
         void Say(const std::string& text, const uint32 language);
         void Yell(const std::string& text, const uint32 language);
         void TextEmote(const std::string& text);
-        /** 
+        /**
          * This will log a whisper depending on the setting LogWhispers in mangosd.conf, for a list
          * of available levels please see \ref WhisperLoggingLevels. The logging is done to database
          * in the table characters.character_whispers and includes to/from, text and when the whisper
          * was sent.
-         * 
+         *
          * @param text the text that was sent
          * @param receiver guid of the receiver of the message
          * \see WhisperLoggingLevels
@@ -1355,7 +1355,7 @@ class Player : public Unit
         bool CanRewardQuest(Quest const* pQuest, bool msg) const;
         bool CanRewardQuest(Quest const* pQuest, uint32 reward, bool msg) const;
         void AddQuest(Quest const* pQuest, Object* questGiver);
-        void CompleteQuest(uint32 quest_id);
+        void CompleteQuest(uint32 quest_id, QuestStatus status = QUEST_STATUS_FORCE_COMPLETE);
         void IncompleteQuest(uint32 quest_id);
         void RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver, bool announce = true);
 
