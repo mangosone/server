@@ -810,6 +810,11 @@ class WorldSession
         void HandleSetGuildBankTabText(WorldPacket& recv_data);
 
         void HandleGetMirrorimageData(WorldPacket& recv_data);
+
+#ifdef ENABLE_PLAYERBOTS
+        void HandleBotPackets();
+#endif
+
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
