@@ -383,7 +383,7 @@ CleanCharacterDB                  = 1
 
 LogSQL                       = 1
 PidFile                      = ""
-LogLevel                     = 3
+LogLevel                     = 1
 LogTime                      = 0
 LogFile                      = "world-server.log"
 LogTimestamp                 = 0
