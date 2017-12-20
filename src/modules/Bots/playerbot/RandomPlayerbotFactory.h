@@ -20,7 +20,6 @@ class MANGOS_DLL_SPEC RandomPlayerbotFactory
 
     public:
         bool CreateRandomBot(uint8 cls);
-        static void CreateRandomBots();
         static void CreateRandomGuilds();
 
     private:
