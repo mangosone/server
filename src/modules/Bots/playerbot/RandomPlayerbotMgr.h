@@ -39,6 +39,7 @@ class MANGOS_DLL_SPEC RandomPlayerbotMgr : public PlayerbotHolder
         void SetLootAmount(Player* bot, uint32 value);
         uint32 GetTradeDiscount(Player* bot);
         void Refresh(Player* bot);
+        int GetMaxAllowedBotCount();		
 
     protected:
         virtual void OnBotLoginInternal(Player * const bot) {}
