@@ -562,10 +562,6 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_lastFallTime = 0;
     m_lastFallZ = 0;
-#ifdef ENABLE_PLAYERBOTS
-    m_playerbotAI = NULL;
-    m_playerbotMgr = NULL;
-#endif
 }
 
 Player::~Player()
