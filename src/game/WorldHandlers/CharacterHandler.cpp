@@ -158,18 +158,15 @@ class CharacterHandler
             }
 #ifdef ENABLE_PLAYERBOTS
             ObjectGuid guid = ((LoginQueryHolder*)holder)->GetGuid();
-#endif
             session->HandlePlayerLogin((LoginQueryHolder*)holder);
-#ifdef ENABLE_PLAYERBOTS
             Player* player = sObjectMgr.GetPlayer(guid, true);
             if (player && !player->GetPlayerbotAI())
             {
                 player->SetPlayerbotMgr(new PlayerbotMgr(player));
                 sRandomPlayerbotMgr.OnPlayerLogin(player);
             }
-#endif
         }
-#ifdef ENABLE_PLAYERBOTS
+
         void HandlePlayerBotLoginCallback(QueryResult * dummy, SqlQueryHolder * holder)
         {
             if (!holder)
@@ -808,10 +805,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 #ifdef ENABLE_PLAYERBOTS
     if (pCurrChar->GetSession()->GetRemoteAddress() != "bot")
     {
-#endif
-        stmt = LoginDatabase.CreateStatement(updAccount, "UPDATE account SET active_realm_id = ? WHERE id = ?");
-        stmt.PExecute(realmID, GetAccountId());
-#ifdef ENABLE_PLAYERBOTS
     }
 #endif
 

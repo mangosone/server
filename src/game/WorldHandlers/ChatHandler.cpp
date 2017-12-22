@@ -260,7 +260,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 #ifdef ENABLE_ELUNA
             sEluna->OnChat(GetPlayer(), type, lang, msg, player);
 #endif /* ENABLE_ELUNA */
-#ifdef ENABLE_PLAYERBOTS
             if (player->GetPlayerbotAI())
             {
                 player->GetPlayerbotAI()->HandleCommand(type, msg, *GetPlayer());
@@ -268,7 +267,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 GetPlayer()->m_speakCount = 0;
             }
             else
-#endif
                 GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
         } break;
 

@@ -393,8 +393,8 @@ UpdateMask Player::updateVisualBits;
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
 #ifdef ENABLE_PLAYERBOTS
-    m_playerbotAI = 0;
-    m_playerbotMgr = 0;
+    m_playerbotAI = nullptr;
+    m_playerbotMgr = nullptr;
 #endif
     m_transport = 0;
 
@@ -602,11 +602,11 @@ Player::~Player()
 #ifdef ENABLE_PLAYERBOTS
     if (m_playerbotAI) {
         delete m_playerbotAI;
-        m_playerbotAI = 0;
+        m_playerbotAI = nullptr;
     }
     if (m_playerbotMgr) {
         delete m_playerbotMgr;
-        m_playerbotMgr = 0;
+        m_playerbotMgr = nullptr;
     }
 #endif
 

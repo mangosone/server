@@ -544,10 +544,6 @@ void WorldSession::LogoutPlayer(bool Save)
         sSocialMgr.SendFriendStatus(_player, FRIEND_OFFLINE, _player->GetObjectGuid(), true);
         sSocialMgr.RemovePlayerSocial(_player->GetGUIDLow());
 
-#ifdef ENABLE_PLAYERBOTS
-        uint32 guid = GetPlayer()->GetGUIDLow();
-#endif
-
         ///- Used by Eluna
 #ifdef ENABLE_ELUNA
         sEluna->OnLogout(_player);
@@ -578,12 +574,11 @@ void WorldSession::LogoutPlayer(bool Save)
         // No SQL injection as AccountId is uint32
 
         static SqlStatementID updChars;
-#ifdef ENABLE_PLAYERBOTS
         SqlStatement stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE account = ?");
-#else
-        stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE account = ?");
-#endif
-        stmt.PExecute(GetAccountId());
+		{
+			stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE account = ?");
+			stmt.PExecute(uint32(0), GetAccountId());
+		}
 
         DEBUG_LOG("SESSION: Sent SMSG_LOGOUT_COMPLETE Message");
     }
