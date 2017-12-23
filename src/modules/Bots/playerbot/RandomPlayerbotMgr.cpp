@@ -226,29 +226,30 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         float y = loc.coord_y + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
         float z = loc.coord_z;
 
-        Map* map = sMapMgr.FindMap(loc.mapid);
+        Map* map = sMapMgr.FindMap(loc.mapid, 0);
         if (!map)
             continue;
 
-        const TerrainInfo * terrain = map->GetTerrain();
-        if (!terrain)
+		const TerrainInfo * terrain = map->GetTerrain();
+		if (!terrain)
+			continue;
+
+		AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
+		if (!area)
+			continue;
+
+		if (!terrain->IsOutdoors(x, y, z) ||
+			terrain->IsUnderWater(x, y, z) ||
+			terrain->IsInWater(x, y, z))
+			continue;
+
+        float ground = map->GetHeight(x, y, z + 0.5f);
+        if (ground <= INVALID_HEIGHT)
             continue;
 
-        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
-        if (!area)
-            continue;
-
-        if (!terrain->IsOutdoors(x, y, z) ||
-                terrain->IsUnderWater(x, y, z) ||
-                terrain->IsInWater(x, y, z))
-            continue;
-
-        sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->area_name[0], x, y, z);
-        float height = map->GetTerrain()->GetHeightStatic(x, y, 0.5f + z, true, MAX_HEIGHT);
-        if (height <= INVALID_HEIGHT)
-            continue;
-
-        z = 0.05f + map->GetTerrain()->GetHeightStatic(x, y, 0.05f + z, true, MAX_HEIGHT);
+        z = 0.05f + ground;
+        sLog.outString("Random teleporting bot %s to %s %f,%f,%f (%u/%u locations)",
+                bot->GetName(), area->area_name[0], x, y, z, attemtps, locs.size());
 
         bot->GetMotionMaster()->Clear();
         bot->TeleportTo(loc.mapid, x, y, z, 0);
@@ -336,35 +337,59 @@ void RandomPlayerbotMgr::PrepareTeleportCache()
 
 void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
 {
-    vector<WorldLocation> locs;
-    QueryResult* results = WorldDatabase.PQuery("select map, position_x, position_y, position_z "
-        "from (select map, position_x, position_y, position_z, avg(t.maxlevel), avg(t.minlevel), "
-        "%u - (avg(t.maxlevel) + avg(t.minlevel)) / 2 delta "
-        "from creature c inner join creature_template t on c.id = t.entry group by t.entry) q "
-        "where delta >= 0 and delta <= %u and map in (%s)",
-        bot->getLevel(), sPlayerbotAIConfig.randomBotTeleLevel, sPlayerbotAIConfig.randomBotMapsAsString.c_str());
-    if (results)
-    {
-        do
+    sLog.outString("Preparing location to random teleporting bot %s for level %u", bot->GetName(), bot->getLevel());
+
+    if (locsPerLevelCache[bot->getLevel()].empty()) {
+        QueryResult* results = WorldDatabase.PQuery("select map, position_x, position_y, position_z "
+            "from (select map, position_x, position_y, position_z, avg(t.maxlevel), avg(t.minlevel), "
+            "%u - (avg(t.maxlevel) + avg(t.minlevel)) / 2 delta "
+            "from creature c inner join creature_template t on c.id = t.entry group by t.entry) q "
+            "where delta >= 0 and delta <= %u and map in (%s) and not exists ( "
+            "select map, position_x, position_y, position_z from "
+            "("
+            "select map, c.position_x, c.position_y, c.position_z, avg(t.maxlevel), avg(t.minlevel), "
+            "%u - (avg(t.maxlevel) + avg(t.minlevel)) / 2 delta "
+            "from creature c "
+            "inner join creature_template t on c.id = t.entry group by t.entry "
+            ") q1 "
+            "where delta > %u and q1.map = q.map "
+            "and sqrt("
+            "(q1.position_x - q.position_x)*(q1.position_x - q.position_x) +"
+            "(q1.position_y - q.position_y)*(q1.position_y - q.position_y) +"
+            "(q1.position_z - q.position_z)*(q1.position_z - q.position_z)"
+            ") < %u) limit 50",
+            bot->getLevel(),
+            sPlayerbotAIConfig.randomBotTeleLevel,
+            sPlayerbotAIConfig.randomBotMapsAsString.c_str(),
+            bot->getLevel(),
+            sPlayerbotAIConfig.randomBotTeleLevel,
+            (uint32)sPlayerbotAIConfig.sightDistance
+            );
+        if (results)
         {
-            Field* fields = results->Fetch();
-            uint32 mapId = fields[0].GetUInt32();
-            float x = fields[1].GetFloat();
-            float y = fields[2].GetFloat();
-            float z = fields[3].GetFloat();
-            WorldLocation loc(mapId, x, y, z, 0);
-            locs.push_back(loc);
-        } while (results->NextRow());
-        delete results;
+            do
+            {
+                Field* fields = results->Fetch();
+                uint16 mapId = fields[0].GetUInt16();
+                float x = fields[1].GetFloat();
+                float y = fields[2].GetFloat();
+                float z = fields[3].GetFloat();
+                WorldLocation loc(mapId, x, y, z, 0);
+                locsPerLevelCache[bot->getLevel()].push_back(loc);
+            } while (results->NextRow());
+			delete results;
+        }
     }
 
-    RandomTeleport(bot, locs);
+    RandomTeleport(bot, locsPerLevelCache[bot->getLevel()]);
 }
 
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ)
 {
+    sLog.outString("Preparing location to random teleporting bot %s", bot->GetName());
+
     vector<WorldLocation> locs;
-    QueryResult* results = WorldDatabase.PQuery("select position_x, position_y, position_z from creature where map = '%u' and abs(position_x - '%f') < '%u' and abs(position_y - '%f') < '%u'",
+    QueryResult* results = WorldDatabase.PQuery("select position_x, position_y, position_z from creature where map = '%u' and abs(position_x - '%f') < '%u' and abs(position_y - '%f') < '%u' limit 50",
             mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
     if (results)
     {
@@ -377,7 +402,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
             WorldLocation loc(mapId, x, y, z, 0);
             locs.push_back(loc);
         } while (results->NextRow());
-        delete results;
+		delete results;
     }
 
     RandomTeleport(bot, locs);

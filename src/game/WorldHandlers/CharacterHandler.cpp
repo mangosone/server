@@ -158,15 +158,18 @@ class CharacterHandler
             }
 #ifdef ENABLE_PLAYERBOTS
             ObjectGuid guid = ((LoginQueryHolder*)holder)->GetGuid();
-            session->HandlePlayerLogin((LoginQueryHolder*)holder);
+#endif
+            session->HandlePlayerLogin((LoginQueryHolder*)holder);	
+#ifdef ENABLE_PLAYERBOTS
             Player* player = sObjectMgr.GetPlayer(guid, true);
             if (player && !player->GetPlayerbotAI())
             {
                 player->SetPlayerbotMgr(new PlayerbotMgr(player));
                 sRandomPlayerbotMgr.OnPlayerLogin(player);
             }
+#endif
         }
-
+#ifdef ENABLE_PLAYERBOTS
         void HandlePlayerBotLoginCallback(QueryResult * dummy, SqlQueryHolder * holder)
         {
             if (!holder)
