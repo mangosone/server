@@ -17,4 +17,3 @@ namespace ai
         virtual string getName() { return "hunter"; }
     };
 }
-

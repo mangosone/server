@@ -8,4 +8,3 @@ NextAction** StayStrategy::getDefaultActions()
 {
     return NextAction::array(0, new NextAction("stay", 1.0f), nullptr);
 }
-

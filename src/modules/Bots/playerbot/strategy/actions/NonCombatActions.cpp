@@ -3,4 +3,3 @@
 //#include "NonCombatActions.h"
 
 using namespace ai;
-

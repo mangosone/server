@@ -114,4 +114,3 @@ ActionNode* Strategy::GetAction(string name)
 {
     return actionNodeFactories.GetObject(name, ai);
 }
-

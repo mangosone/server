@@ -41,4 +41,3 @@ void FireMageAoeStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "living bomb",
         NextAction::array(0, new NextAction("living bomb", 25.0f), nullptr)));
 }
-

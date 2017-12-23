@@ -369,13 +369,13 @@ bool WorldSession::Update(PacketFilter& updater)
 #ifdef ENABLE_PLAYERBOTS
 void WorldSession::HandleBotPackets()
 {
-	WorldPacket* packet;
-	while (_recvQueue.next(packet))
-	{
-		OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
-		(this->*opHandle.handler)(*packet);
-		delete packet;
-	}
+        WorldPacket* packet;
+        while (_recvQueue.next(packet))
+        {
+                OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
+                (this->*opHandle.handler)(*packet);
+                delete packet;
+        }
 }
 #endif
 

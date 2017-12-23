@@ -61,4 +61,3 @@ void ArcaneMageStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("arcane missiles", 15.0f), nullptr)));
 
 }
-

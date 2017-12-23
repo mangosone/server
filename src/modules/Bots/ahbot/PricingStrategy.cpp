@@ -225,4 +225,3 @@ uint32 BuyOnlyRarePricingStrategy::GetBuyPrice(ItemPrototype const* proto, uint3
 
     return PricingStrategy::GetBuyPrice(proto, auctionHouse);
 }
-

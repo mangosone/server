@@ -34,4 +34,3 @@ uint8 AoeHealValue::Calculate()
 
     return count;
 }
-

@@ -10,4 +10,3 @@ void AttackWeakStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "not least hp target active",
         NextAction::array(0, new NextAction("attack least hp target", 60.0f), nullptr)));
 }
-

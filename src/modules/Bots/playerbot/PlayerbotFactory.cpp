@@ -80,7 +80,7 @@ void PlayerbotFactory::Prepare()
     if (sPlayerbotAIConfig.randomBotHideCloak)
     {
         bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
-        bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);    
+        bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);
     }
 }
 
@@ -118,7 +118,7 @@ void PlayerbotFactory::Randomize(bool incremental)
     InitPotions();
     InitSecondEquipmentSet();
     InitInventory();
-    InitGuild();    
+    InitGuild();
     bot->SetMoney(urand(level * 1000, level * 5 * 1000));
     bot->SaveToDB();
 

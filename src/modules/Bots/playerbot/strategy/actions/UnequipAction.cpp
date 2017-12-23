@@ -42,4 +42,3 @@ void UnequipAction::UnequipItem(Item& item)
     ostringstream out; out << chat->formatItem(item.GetProto()) << " unequipped";
     ai->TellMaster(out);
 }
-

@@ -13,4 +13,3 @@ NextAction** GuardStrategy::getDefaultActions()
 void GuardStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
 }
-

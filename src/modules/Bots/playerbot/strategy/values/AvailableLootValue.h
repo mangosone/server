@@ -4,18 +4,18 @@
 
 namespace ai
 {
-   
+
     class AvailableLootValue : public ManualSetValue<LootObjectStack*>
     {
     public:
-        AvailableLootValue(PlayerbotAI* ai) : ManualSetValue<LootObjectStack*>(ai, nullptr) 
+        AvailableLootValue(PlayerbotAI* ai) : ManualSetValue<LootObjectStack*>(ai, nullptr)
         {
             value = new LootObjectStack(ai->GetBot());
         }
 
         virtual ~AvailableLootValue()
         {
-            if (value) 
+            if (value)
                 delete value;
         }
     };

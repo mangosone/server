@@ -4,4 +4,3 @@
 #include "GenericWarriorNonCombatStrategy.h"
 
 using namespace ai;
-

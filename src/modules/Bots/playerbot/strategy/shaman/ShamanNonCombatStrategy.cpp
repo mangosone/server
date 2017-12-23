@@ -46,4 +46,3 @@ void ShamanNonCombatStrategy::InitMultipliers(std::list<Multiplier*> &multiplier
 {
     NonCombatStrategy::InitMultipliers(multipliers);
 }
-

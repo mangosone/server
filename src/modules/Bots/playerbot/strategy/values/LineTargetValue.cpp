@@ -30,4 +30,3 @@ Unit* LineTargetValue::Calculate()
 
     return master;
 }
-

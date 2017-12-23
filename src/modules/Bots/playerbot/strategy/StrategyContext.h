@@ -88,7 +88,7 @@ namespace ai
         static Strategy* ready_check(PlayerbotAI* ai) { return new ReadyCheckStrategy(ai); }
         static Strategy* pvp(PlayerbotAI* ai) { return new AttackEnemyPlayersStrategy(ai); }
         static Strategy* move_random(PlayerbotAI* ai) { return new MoveRandomStrategy(ai); }
-        static Strategy* custom(PlayerbotAI* ai) { return new CustomStrategy(ai); }        
+        static Strategy* custom(PlayerbotAI* ai) { return new CustomStrategy(ai); }
     };
 
     class MovementStrategyContext : public NamedObjectContext<Strategy>

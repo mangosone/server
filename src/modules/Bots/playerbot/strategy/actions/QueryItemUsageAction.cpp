@@ -165,4 +165,3 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTempl
         ai->TellMaster(chat->formatQuestObjective(chat->formatQuest(questTemplate), available, required));
     }
 }
-

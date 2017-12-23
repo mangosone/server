@@ -123,4 +123,3 @@ int GrindTargetValue::GetTargetingPlayerCount( Unit* unit )
 
     return count;
 }
-

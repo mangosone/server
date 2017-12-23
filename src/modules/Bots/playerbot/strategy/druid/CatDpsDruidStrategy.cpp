@@ -136,4 +136,3 @@ void CatAoeDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "medium aoe",
         NextAction::array(0, new NextAction("swipe (cat)", ACTION_HIGH + 2), nullptr)));
 }
-

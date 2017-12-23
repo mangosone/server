@@ -160,12 +160,12 @@ bool LootObject::IsLootPossible(Player* bot)
     uint32 skillValue = uint32(bot->GetPureSkillValue(skillId));
     if (reqSkillValue > skillValue)
         return false;
-    
+
     if (skillId == SKILL_MINING && !bot->HasItemCount(2901, 1))
         return false;
 
     if (skillId == SKILL_SKINNING && !bot->HasItemCount(7005, 1))
-        return false;    
+        return false;
 
     return true;
 }
@@ -232,4 +232,3 @@ vector<LootObject> LootObjectStack::OrderByDistance(float maxDistance)
         result.push_back(i->second);
     return result;
 }
-

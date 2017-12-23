@@ -62,4 +62,3 @@ bool ListSpellsAction::Execute(Event event)
 
     return true;
 }
-

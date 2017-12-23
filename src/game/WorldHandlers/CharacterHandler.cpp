@@ -159,7 +159,7 @@ class CharacterHandler
 #ifdef ENABLE_PLAYERBOTS
             ObjectGuid guid = ((LoginQueryHolder*)holder)->GetGuid();
 #endif
-            session->HandlePlayerLogin((LoginQueryHolder*)holder);	
+            session->HandlePlayerLogin((LoginQueryHolder*)holder);
 #ifdef ENABLE_PLAYERBOTS
             Player* player = sObjectMgr.GetPlayer(guid, true);
             if (player && !player->GetPlayerbotAI())

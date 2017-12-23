@@ -87,4 +87,3 @@ void FeralDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "critical health",
         NextAction::array(0, new NextAction("survival instincts", ACTION_EMERGENCY + 1), nullptr)));
 }
-

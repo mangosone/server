@@ -19,7 +19,7 @@ void Queue::Push(ActionBasket *action)
                     basket->setRelevance(action->getRelevance());
                 ActionNode *actionNode = action->getAction();
                 if (actionNode)
-                    delete actionNode;                
+                    delete actionNode;
                 delete action;
                 return;
             }

@@ -15,9 +15,9 @@ public:
 private:
     static ActionNode* lifeblood(PlayerbotAI* ai)
     {
-        return new ActionNode ("lifeblood",  
+        return new ActionNode ("lifeblood",
             /*P*/ nullptr,
-            /*A*/ NextAction::array(0, new NextAction("gift of the naaru"), nullptr), 
+            /*A*/ NextAction::array(0, new NextAction("gift of the naaru"), nullptr),
             /*C*/ nullptr);
     }
 };
@@ -25,11 +25,11 @@ private:
 void RacialsStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "low health", 
+        "low health",
         NextAction::array(0, new NextAction("lifeblood", 71.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
-        "low mana", 
+        "low mana",
         NextAction::array(0, new NextAction("arcane torrent", ACTION_EMERGENCY + 6), nullptr)));
 }
 

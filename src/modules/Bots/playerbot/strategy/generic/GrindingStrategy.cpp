@@ -17,4 +17,3 @@ void GrindingStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0,
         new NextAction("attack anything", 5.0f), nullptr)));
 }
-

@@ -104,4 +104,3 @@ uint8 BalancePercentValue::Calculate()
     float percent = playerLevel * 100 / attackerLevel;
     return percent <= 200 ? (uint8)percent : 200;
 }
-

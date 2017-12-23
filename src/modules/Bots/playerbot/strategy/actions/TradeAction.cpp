@@ -80,4 +80,3 @@ bool TradeAction::TradeItem(const Item& item, int8 slot)
     bot->GetSession()->QueuePacket(packet);
     return true;
 }
-

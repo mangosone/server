@@ -69,4 +69,3 @@ void PaladinBuffArmorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "devotion aura",
         NextAction::array(0, new NextAction("devotion aura", 90.0f), nullptr)));
 }
-

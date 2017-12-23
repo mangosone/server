@@ -10,4 +10,3 @@ void AttackEnemyPlayersStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "enemy player is attacking",
         NextAction::array(0, new NextAction("attack enemy player", 61.0f), nullptr)));
 }
-

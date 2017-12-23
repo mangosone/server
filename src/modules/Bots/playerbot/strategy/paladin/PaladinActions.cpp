@@ -3,4 +3,3 @@
 //#include "PaladinActions.h"
 
 using namespace ai;
-

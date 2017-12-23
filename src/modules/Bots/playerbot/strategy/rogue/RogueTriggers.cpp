@@ -4,4 +4,3 @@
 //#include "RogueActions.h"
 
 using namespace ai;
-

@@ -4,4 +4,3 @@
 //#include "WarriorActions.h"
 
 using namespace ai;
-

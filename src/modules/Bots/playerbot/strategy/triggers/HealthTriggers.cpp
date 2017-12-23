@@ -23,4 +23,3 @@ bool AoeHealTrigger::IsActive()
 {
     return AI_VALUE2(uint8, "aoe heal", type) >= count;
 }
-

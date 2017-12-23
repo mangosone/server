@@ -254,4 +254,3 @@ string CompositeChatFilter::Filter(string message)
 
     return message;
 }
-
