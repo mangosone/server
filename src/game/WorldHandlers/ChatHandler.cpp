@@ -266,9 +266,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 player->GetPlayerbotAI()->HandleCommand(type, msg, *GetPlayer());
                 GetPlayer()->m_speakTime = 0;
                 GetPlayer()->m_speakCount = 0;
+                break; // skip whisper
             }
-#endif          else
-                GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
+#endif
+            GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
         } break;
 
         case CHAT_MSG_PARTY:
@@ -612,6 +613,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     if (!sEluna->OnChat(GetPlayer(), type, lang, msg, chn))
                         return;
 #endif /* ENABLE_ELUNA */
+
 #ifdef ENABLE_PLAYERBOTS
                     if (_player->GetPlayerbotMgr() && chn->GetFlags() & 0x18)
                     {
