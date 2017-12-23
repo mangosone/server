@@ -23,7 +23,7 @@ Unit* PartyMemberValue::FindPartyMember(list<Player*>* party, FindPlayerPredicat
             return pet;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 Unit* PartyMemberValue::FindPartyMember(FindPlayerPredicate &predicate)
@@ -60,7 +60,7 @@ Unit* PartyMemberValue::FindPartyMember(FindPlayerPredicate &predicate)
             return target;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 bool PartyMemberValue::Check(Unit* player)

@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `ai_playerbot_guild_names`;
-CREATE TABLE `ai_playerbot_guild_names` (
+DROP TABLE IF EXISTS ai_playerbot_guild_names;
+CREATE TABLE ai_playerbot_guild_names (
   `name_id` mediumint(8) NOT NULL AUTO_INCREMENT UNIQUE,
   `name` varchar(24) NOT NULL UNIQUE,
   PRIMARY KEY (`name_id`)
@@ -7,8 +7,8 @@ CREATE TABLE `ai_playerbot_guild_names` (
 
 
 
-LOCK TABLES `ai_playerbot_guild_names` WRITE;
-INSERT INTO `ai_playerbot_guild_names` VALUES
+LOCK TABLES ai_playerbot_guild_names WRITE;
+INSERT INTO ai_playerbot_guild_names VALUES
 (NULL, 'Black Guard'),
 (NULL, 'Abyssal Kingdoms'),
 (NULL, 'Acid Evil'),

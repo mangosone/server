@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS `ai_playerbot_names`;
+DROP TABLE IF EXISTS ai_playerbot_names;
 
-CREATE TABLE `ai_playerbot_names` (
+CREATE TABLE ai_playerbot_names (
   `name_id` mediumint(8) NOT NULL,
   `name` varchar(12) DEFAULT NULL,
   `gender` tinyint(3) unsigned NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE `ai_playerbot_names` (
   UNIQUE KEY `name_id` (`name_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='PlayerbotAI RandomBot names';
 
-insert  into `ai_playerbot_names`(`name_id`,`name`,`gender`) values
+insert  into ai_playerbot_names(`name_id`,`name`,`gender`) values
 
 (1,'Aalart',0),
 (2,'Aalef',0),

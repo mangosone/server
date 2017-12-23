@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `ai_playerbot_tele_cache`;
-CREATE TABLE `ai_playerbot_tele_cache` (
+DROP TABLE IF EXISTS ai_playerbot_tele_cache;
+CREATE TABLE ai_playerbot_tele_cache (
   `id` mediumint(8) auto_increment,
   `level` mediumint(8) NOT NULL,
   `map_id` mediumint(8) NOT NULL,

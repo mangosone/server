@@ -9,7 +9,7 @@ using namespace ai;
 
 float ConserveManaMultiplier::GetValue(Action* action)
 {
-    if (action == NULL) return 1.0f;
+    if (action == nullptr) return 1.0f;
 
     uint8 health = AI_VALUE2(uint8, "health", "self target");
     uint8 targetHealth = AI_VALUE2(uint8, "health", "current target");
@@ -48,7 +48,7 @@ float ConserveManaMultiplier::GetValue(Action* action)
 
 float SaveManaMultiplier::GetValue(Action* action)
 {
-    if (action == NULL)
+    if (action == nullptr)
         return 1.0f;
 
     double saveLevel = AI_VALUE(double, "mana save level");

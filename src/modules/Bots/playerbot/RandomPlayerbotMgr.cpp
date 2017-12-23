@@ -729,7 +729,7 @@ bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)
     }
     else
     {
-        list<string> messages = sRandomPlayerbotMgr.HandlePlayerbotCommand(args, NULL);
+        list<string> messages = sRandomPlayerbotMgr.HandlePlayerbotCommand(args, nullptr);
         for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
         {
             sLog.outString(i->c_str());
@@ -757,7 +757,7 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
         PlayerbotAI* ai = bot->GetPlayerbotAI();
         if (player == ai->GetMaster())
         {
-            ai->SetMaster(NULL);
+            ai->SetMaster(nullptr);
             ai->ResetStrategies();
         }
     }
@@ -803,7 +803,7 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
 Player* RandomPlayerbotMgr::GetRandomPlayer()
 {
     if (players.empty())
-        return NULL;
+        return nullptr;
 
     uint32 index = urand(0, players.size() - 1);
     return players[index];

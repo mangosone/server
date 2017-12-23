@@ -16,7 +16,7 @@ NextAction* toNextAction(string action)
         return new NextAction(tokens[0], ACTION_NORMAL);
 
     sLog.outError("Invalid action '%s'", action);
-    return NULL;
+    return nullptr;
 }
 
 NextAction** toNextActionArray(string actions)
@@ -28,7 +28,7 @@ NextAction** toNextActionArray(string actions)
     {
         res[index++] = toNextAction(*i);
     }
-	res[index++] = NULL;
+	res[index++] = nullptr;
     return res;
 }
 
@@ -39,7 +39,7 @@ TriggerNode* toTriggerNode(string actionLine)
         return new TriggerNode(tokens[0], toNextActionArray(tokens[1]));
 
     sLog.outError("Invalid action line '%s'", actionLine);
-    return NULL;
+    return nullptr;
 }
 
 void CustomStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
@@ -64,7 +64,7 @@ void CustomStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         else
         {
             vector<string> tokens = split(actionLinesCache[qualifier], '\n');
-            regex tpl("\\(NULL,\\s*'.+',\\s*'(.+)'\\)(,|;)");
+            regex tpl("\\(nullptr,\\s*'.+',\\s*'(.+)'\\)(,|;)");
             for (vector<string>::iterator i = tokens.begin(); i != tokens.end(); ++i)
             {
                 string line = *i;

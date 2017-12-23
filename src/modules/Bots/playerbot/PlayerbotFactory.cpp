@@ -176,7 +176,7 @@ void PlayerbotFactory::InitPet()
             if (!pet->Create(guid, pos, co, 0))
             {
                 delete pet;
-                pet = NULL;
+                pet = nullptr;
                 continue;
             }
 
