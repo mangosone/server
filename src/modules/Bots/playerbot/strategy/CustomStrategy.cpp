@@ -28,7 +28,7 @@ NextAction** toNextActionArray(string actions)
     {
         res[index++] = toNextAction(*i);
     }
-	res[index++] = nullptr;
+    res[index++] = nullptr;
     return res;
 }
 
@@ -58,7 +58,7 @@ void CustomStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
                     this->actionLines.push_back(action);
                 } while (results->NextRow());
 
-				delete results;
+                delete results;
             }
         }
         else

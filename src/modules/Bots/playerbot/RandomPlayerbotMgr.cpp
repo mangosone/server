@@ -230,18 +230,18 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         if (!map)
             continue;
 
-		const TerrainInfo * terrain = map->GetTerrain();
-		if (!terrain)
-			continue;
+        const TerrainInfo * terrain = map->GetTerrain();
+        if (!terrain)
+            continue;
 
-		AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
-		if (!area)
-			continue;
+        AreaTableEntry const* area = sAreaStore.LookupEntry(terrain->GetAreaId(x, y, z));
+        if (!area)
+            continue;
 
-		if (!terrain->IsOutdoors(x, y, z) ||
-			terrain->IsUnderWater(x, y, z) ||
-			terrain->IsInWater(x, y, z))
-			continue;
+        if (!terrain->IsOutdoors(x, y, z) ||
+            terrain->IsUnderWater(x, y, z) ||
+            terrain->IsInWater(x, y, z))
+            continue;
 
         float ground = map->GetHeight(x, y, z + 0.5f);
         if (ground <= INVALID_HEIGHT)
@@ -377,7 +377,7 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
                 WorldLocation loc(mapId, x, y, z, 0);
                 locsPerLevelCache[bot->getLevel()].push_back(loc);
             } while (results->NextRow());
-			delete results;
+            delete results;
         }
     }
 
@@ -402,7 +402,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
             WorldLocation loc(mapId, x, y, z, 0);
             locs.push_back(loc);
         } while (results->NextRow());
-		delete results;
+        delete results;
     }
 
     RandomTeleport(bot, locs);

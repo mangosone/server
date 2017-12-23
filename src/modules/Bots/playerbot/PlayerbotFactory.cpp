@@ -80,7 +80,7 @@ void PlayerbotFactory::Prepare()
     if (sPlayerbotAIConfig.randomBotHideCloak)
     {
         bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
-        bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);	
+        bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);    
     }
 }
 
@@ -118,7 +118,7 @@ void PlayerbotFactory::Randomize(bool incremental)
     InitPotions();
     InitSecondEquipmentSet();
     InitInventory();
-    InitGuild();	
+    InitGuild();    
     bot->SetMoney(urand(level * 1000, level * 5 * 1000));
     bot->SaveToDB();
 
@@ -1051,9 +1051,9 @@ void PlayerbotFactory::InitAvailableSpells()
         if (!trainer_spells)
             continue;
 
-		for (TrainerSpellMap::const_iterator itr = trainer_spells->spellList.begin(); itr != trainer_spells->spellList.end(); ++itr)
-		{
-			TrainerSpell const* tSpell = &itr->second;
+        for (TrainerSpellMap::const_iterator itr = trainer_spells->spellList.begin(); itr != trainer_spells->spellList.end(); ++itr)
+        {
+            TrainerSpell const* tSpell = &itr->second;
 
             if (!tSpell)
                 continue;
@@ -1065,8 +1065,8 @@ void PlayerbotFactory::InitAvailableSpells()
             if (state != TRAINER_SPELL_GREEN)
                 continue;
 
-			bot->learnSpell(tSpell->spell, false);
-		}
+            bot->learnSpell(tSpell->spell, false);
+        }
     }
 }
 

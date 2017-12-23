@@ -205,7 +205,7 @@ bool Engine::DoNextAction(Unit* unit, int depth)
         if (queue.Peek() && depth < 2)
             return DoNextAction(unit, depth + 1);
     }
-	
+    
     if (time(0) - currentTime > 1) {
         LogAction("too long execution");
     }
@@ -259,7 +259,7 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
                 else
                 {
                     delete action;
-                }				
+                }                
 
                 delete nextAction;
             }

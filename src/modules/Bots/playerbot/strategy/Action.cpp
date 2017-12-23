@@ -81,7 +81,7 @@ void NextAction::destroy(NextAction** actions)
     for (int i=0; actions[i]; i++)
         delete actions[i];
 
-    delete actions;	
+    delete actions;    
 }
 
 Value<Unit*>* Action::GetTargetValue()

@@ -104,7 +104,7 @@ bool PlayerbotAIConfig::Initialize()
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
     randomBotTeleLevel = config.GetIntDefault("AiPlayerbot.RandomBotTeleLevel", 2);
-	randomBotHideCloak = config.GetIntDefault("AiPlayerbot.RandomBotHideCloak", false);
+    randomBotHideCloak = config.GetIntDefault("AiPlayerbot.RandomBotHideCloak", false);
 
     randomChangeMultiplier = config.GetFloatDefault("AiPlayerbot.RandomChangeMultiplier", 1.0);
 

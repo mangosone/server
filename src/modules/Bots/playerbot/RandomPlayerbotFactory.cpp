@@ -23,12 +23,12 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_WARRIOR].push_back(RACE_UNDEAD);
     availableRaces[CLASS_WARRIOR].push_back(RACE_TAUREN);
     availableRaces[CLASS_WARRIOR].push_back(RACE_TROLL);
-    availableRaces[CLASS_WARRIOR].push_back(RACE_DRAENEI);	
+    availableRaces[CLASS_WARRIOR].push_back(RACE_DRAENEI);    
 
     availableRaces[CLASS_PALADIN].push_back(RACE_HUMAN);
     availableRaces[CLASS_PALADIN].push_back(RACE_DWARF);
     availableRaces[CLASS_PALADIN].push_back(RACE_DRAENEI);
-    availableRaces[CLASS_PALADIN].push_back(RACE_BLOODELF);	
+    availableRaces[CLASS_PALADIN].push_back(RACE_BLOODELF);    
 
     availableRaces[CLASS_ROGUE].push_back(RACE_HUMAN);
     availableRaces[CLASS_ROGUE].push_back(RACE_DWARF);
@@ -36,7 +36,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_ROGUE].push_back(RACE_GNOME);
     availableRaces[CLASS_ROGUE].push_back(RACE_ORC);
     availableRaces[CLASS_ROGUE].push_back(RACE_TROLL);
-    availableRaces[CLASS_ROGUE].push_back(RACE_BLOODELF);	
+    availableRaces[CLASS_ROGUE].push_back(RACE_BLOODELF);    
 
     availableRaces[CLASS_PRIEST].push_back(RACE_HUMAN);
     availableRaces[CLASS_PRIEST].push_back(RACE_DWARF);
@@ -44,25 +44,25 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_PRIEST].push_back(RACE_TROLL);
     availableRaces[CLASS_PRIEST].push_back(RACE_UNDEAD);
     availableRaces[CLASS_PRIEST].push_back(RACE_DRAENEI);
-    availableRaces[CLASS_PRIEST].push_back(RACE_BLOODELF);	
+    availableRaces[CLASS_PRIEST].push_back(RACE_BLOODELF);    
 
     availableRaces[CLASS_MAGE].push_back(RACE_HUMAN);
     availableRaces[CLASS_MAGE].push_back(RACE_GNOME);
     availableRaces[CLASS_MAGE].push_back(RACE_UNDEAD);
     availableRaces[CLASS_MAGE].push_back(RACE_TROLL);
     availableRaces[CLASS_MAGE].push_back(RACE_DRAENEI);
-    availableRaces[CLASS_MAGE].push_back(RACE_BLOODELF);	
+    availableRaces[CLASS_MAGE].push_back(RACE_BLOODELF);    
 
     availableRaces[CLASS_WARLOCK].push_back(RACE_HUMAN);
     availableRaces[CLASS_WARLOCK].push_back(RACE_GNOME);
     availableRaces[CLASS_WARLOCK].push_back(RACE_UNDEAD);
     availableRaces[CLASS_WARLOCK].push_back(RACE_ORC);
-    availableRaces[CLASS_WARLOCK].push_back(RACE_BLOODELF);	
+    availableRaces[CLASS_WARLOCK].push_back(RACE_BLOODELF);    
 
     availableRaces[CLASS_SHAMAN].push_back(RACE_ORC);
     availableRaces[CLASS_SHAMAN].push_back(RACE_TAUREN);
     availableRaces[CLASS_SHAMAN].push_back(RACE_TROLL);
-    availableRaces[CLASS_SHAMAN].push_back(RACE_DRAENEI);	
+    availableRaces[CLASS_SHAMAN].push_back(RACE_DRAENEI);    
 
     availableRaces[CLASS_HUNTER].push_back(RACE_DWARF);
     availableRaces[CLASS_HUNTER].push_back(RACE_NIGHTELF);
@@ -70,7 +70,7 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_HUNTER].push_back(RACE_TAUREN);
     availableRaces[CLASS_HUNTER].push_back(RACE_TROLL);
     availableRaces[CLASS_HUNTER].push_back(RACE_DRAENEI);
-    availableRaces[CLASS_HUNTER].push_back(RACE_BLOODELF);	
+    availableRaces[CLASS_HUNTER].push_back(RACE_BLOODELF);    
 
     availableRaces[CLASS_DRUID].push_back(RACE_NIGHTELF);
     availableRaces[CLASS_DRUID].push_back(RACE_TAUREN);
@@ -116,11 +116,11 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     pair<uint8,uint8> face = faces[urand(0, faces.size() - 1)];
     pair<uint8,uint8> hair = hairs[urand(0, hairs.size() - 1)];
 
-	bool excludeCheck = (race == RACE_TAUREN) || (gender == GENDER_FEMALE && race != RACE_NIGHTELF && race != RACE_UNDEAD);
-	uint8 facialHair = excludeCheck ? 0 : facialHairTypes[urand(0, facialHairTypes.size() - 1)];
+    bool excludeCheck = (race == RACE_TAUREN) || (gender == GENDER_FEMALE && race != RACE_NIGHTELF && race != RACE_UNDEAD);
+    uint8 facialHair = excludeCheck ? 0 : facialHairTypes[urand(0, facialHairTypes.size() - 1)];
 
-	WorldSession* session = new WorldSession(accountId, NULL, SEC_PLAYER, 1, 0, LOCALE_enUS);
-	if (!session)
+    WorldSession* session = new WorldSession(accountId, NULL, SEC_PLAYER, 1, 0, LOCALE_enUS);
+    if (!session)
     {
         sLog.outError("Couldn't create session for random bot account %d", accountId);
         delete session;
@@ -128,12 +128,12 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     }
 
     Player *player = new Player(session);
-	if (!player->Create(sObjectMgr.GeneratePlayerLowGuid(), name, race, cls, gender,
-	        face.second, // skinColor,
-	        face.first,
-	        hair.first,
-	        hair.second, // hairColor,
-	        facialHair, 0))
+    if (!player->Create(sObjectMgr.GeneratePlayerLowGuid(), name, race, cls, gender,
+            face.second, // skinColor,
+            face.first,
+            hair.first,
+            hair.second, // hairColor,
+            facialHair, 0))
     {
         player->DeleteFromDB(player->GetObjectGuid(), accountId, true, true);
         delete session;
@@ -200,11 +200,11 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
                     uint32 guid = fields[0].GetUInt32();
                     randomBots.push_back(guid);
                 } while (results2->NextRow());
-				delete results2;
+                delete results2;
             }
 
         } while (results->NextRow());
-		delete results;
+        delete results;
     }
 
     if (sPlayerbotAIConfig.deleteRandomBotGuilds)
@@ -284,8 +284,8 @@ string RandomPlayerbotFactory::CreateRandomGuildName()
 
     Field *fields = result->Fetch();
     uint32 maxId = fields[0].GetUInt32();
-	uint8 gender = rand() % 2 ? GENDER_MALE : GENDER_FEMALE;
-    delete result;	
+    uint8 gender = rand() % 2 ? GENDER_MALE : GENDER_FEMALE;
+    delete result;    
 
     result = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name WHERE e.guid IS NULL and n.gender = '%u' order by rand() limit 1", gender);
     if (!result)
@@ -295,7 +295,7 @@ string RandomPlayerbotFactory::CreateRandomGuildName()
     }
 
     fields = result->Fetch();
-	delete result;
+    delete result;
     return fields[0].GetString();
 }
 

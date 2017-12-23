@@ -56,7 +56,7 @@ public:
     bool deleteRandomBotAccounts;
     uint32 randomBotGuildCount;
     bool deleteRandomBotGuilds;
-	bool randomBotHideCloak;
+    bool randomBotHideCloak;
     std::list<uint32> randomBotGuilds;
 
     uint32 iterationsPerTick;
