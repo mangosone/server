@@ -18,6 +18,7 @@ uint32 PlayerbotFactory::tradeSkills[] =
     SKILL_ALCHEMY,
     SKILL_ENCHANTING,
     SKILL_SKINNING,
+    SKILL_JEWELCRAFTING,
     SKILL_TAILORING,
     SKILL_LEATHERWORKING,
     SKILL_ENGINEERING,
@@ -142,7 +143,10 @@ void PlayerbotFactory::InitPet()
         for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
         {
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
-            if (!co || !co->isTameable())
+            if (!co)
+                continue;
+
+            if (!co->isTameable())
                 continue;
 
             if (co->MinLevel > bot->getLevel())
@@ -165,6 +169,8 @@ void PlayerbotFactory::InitPet()
         {
             int index = urand(0, ids.size() - 1);
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(ids[index]);
+            if (!co)
+                continue;
 
             PetLevelInfo const* petInfo = sObjectMgr.GetPetLevelInfo(co->Entry, bot->getLevel());
             if (!petInfo)
@@ -172,8 +178,9 @@ void PlayerbotFactory::InitPet()
 
             uint32 guid = map->GenerateLocalLowGuid(HIGHGUID_PET);
             CreatureCreatePos pos(map, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
+            uint32 pet_number = sObjectMgr.GeneratePetNumber();
             pet = new Pet(HUNTER_PET);
-            if (!pet->Create(guid, pos, co, 0))
+            if (!pet->Create(guid, pos, co, pet_number))
             {
                 delete pet;
                 pet = nullptr;
@@ -192,7 +199,7 @@ void PlayerbotFactory::InitPet()
             bot->SetPet(pet);
             bot->SetPetGuid(pet->GetObjectGuid());
 
-            sLog.outDetail("Bot %s: assign pet %d (%d level)", bot->GetName(), co->Entry, bot->getLevel());
+            sLog.outDebug(  "Bot %s: assign pet %d (%d level)", bot->GetName(), co->Entry, bot->getLevel());
             pet->SavePetToDB(PET_SAVE_AS_CURRENT);
             bot->PetSpellInitialize();
             break;
@@ -373,9 +380,9 @@ void PlayerbotFactory::AddItemStats(uint32 mod, uint8 &sp, uint8 &ap, uint8 &tan
     switch (mod)
     {
         //FOEREAPER
-    //case ITEM_MOD_HIT_RATING:
-    //case ITEM_MOD_CRIT_RATING:
-    //case ITEM_MOD_HASTE_RATING:
+    case ITEM_MOD_HIT_RATING:
+    case ITEM_MOD_CRIT_RATING:
+    case ITEM_MOD_HASTE_RATING:
     case ITEM_MOD_HEALTH:
     case ITEM_MOD_STAMINA:
     //case ITEM_MOD_HEALTH_REGEN:
@@ -385,36 +392,36 @@ void PlayerbotFactory::AddItemStats(uint32 mod, uint8 &sp, uint8 &ap, uint8 &tan
     //case ITEM_MOD_MANA_REGENERATION:
     //case ITEM_MOD_SPELL_POWER:
     //case ITEM_MOD_SPELL_PENETRATION:
-    //case ITEM_MOD_HIT_SPELL_RATING:
-    //case ITEM_MOD_CRIT_SPELL_RATING:
-    //case ITEM_MOD_HASTE_SPELL_RATING:
+    case ITEM_MOD_HIT_SPELL_RATING:
+    case ITEM_MOD_CRIT_SPELL_RATING:
+    case ITEM_MOD_HASTE_SPELL_RATING:
         sp++;
         break;
     }
 
     switch (mod)
     {
-    //case ITEM_MOD_HIT_RATING:
-    //case ITEM_MOD_CRIT_RATING:
-    //case ITEM_MOD_HASTE_RATING:
+    case ITEM_MOD_HIT_RATING:
+    case ITEM_MOD_CRIT_RATING:
+    case ITEM_MOD_HASTE_RATING:
     case ITEM_MOD_AGILITY:
     case ITEM_MOD_STRENGTH:
     case ITEM_MOD_HEALTH:
     case ITEM_MOD_STAMINA:
     //case ITEM_MOD_HEALTH_REGEN:
-    //case ITEM_MOD_DEFENSE_SKILL_RATING:
-    //case ITEM_MOD_DODGE_RATING:
-    //case ITEM_MOD_PARRY_RATING:
-    //case ITEM_MOD_BLOCK_RATING:
-    //case ITEM_MOD_HIT_TAKEN_MELEE_RATING:
-    //case ITEM_MOD_HIT_TAKEN_RANGED_RATING:
-    //case ITEM_MOD_HIT_TAKEN_SPELL_RATING:
-    //case ITEM_MOD_CRIT_TAKEN_MELEE_RATING:
-    //case ITEM_MOD_CRIT_TAKEN_RANGED_RATING:
-    //case ITEM_MOD_CRIT_TAKEN_SPELL_RATING:
-    //case ITEM_MOD_HIT_TAKEN_RATING:
-    //case ITEM_MOD_CRIT_TAKEN_RATING:
-    //case ITEM_MOD_RESILIENCE_RATING:
+    case ITEM_MOD_DEFENSE_SKILL_RATING:
+    case ITEM_MOD_DODGE_RATING:
+    case ITEM_MOD_PARRY_RATING:
+    case ITEM_MOD_BLOCK_RATING:
+    case ITEM_MOD_HIT_TAKEN_MELEE_RATING:
+    case ITEM_MOD_HIT_TAKEN_RANGED_RATING:
+    case ITEM_MOD_HIT_TAKEN_SPELL_RATING:
+    case ITEM_MOD_CRIT_TAKEN_MELEE_RATING:
+    case ITEM_MOD_CRIT_TAKEN_RANGED_RATING:
+    case ITEM_MOD_CRIT_TAKEN_SPELL_RATING:
+    case ITEM_MOD_HIT_TAKEN_RATING:
+    case ITEM_MOD_CRIT_TAKEN_RATING:
+    case ITEM_MOD_RESILIENCE_RATING:
     //case ITEM_MOD_BLOCK_VALUE:
         tank++;
         break;
@@ -427,16 +434,16 @@ void PlayerbotFactory::AddItemStats(uint32 mod, uint8 &sp, uint8 &ap, uint8 &tan
     //case ITEM_MOD_HEALTH_REGEN:
     case ITEM_MOD_AGILITY:
     case ITEM_MOD_STRENGTH:
-    //case ITEM_MOD_HIT_MELEE_RATING:
-    //case ITEM_MOD_HIT_RANGED_RATING:
-    //case ITEM_MOD_CRIT_MELEE_RATING:
-    //case ITEM_MOD_CRIT_RANGED_RATING:
-    //case ITEM_MOD_HASTE_MELEE_RATING:
-    //case ITEM_MOD_HASTE_RANGED_RATING:
-    //case ITEM_MOD_HIT_RATING:
-    //case ITEM_MOD_CRIT_RATING:
-    //case ITEM_MOD_HASTE_RATING:
-    //case ITEM_MOD_EXPERTISE_RATING:
+    case ITEM_MOD_HIT_MELEE_RATING:
+    case ITEM_MOD_HIT_RANGED_RATING:
+    case ITEM_MOD_CRIT_MELEE_RATING:
+    case ITEM_MOD_CRIT_RANGED_RATING:
+    case ITEM_MOD_HASTE_MELEE_RATING:
+    case ITEM_MOD_HASTE_RANGED_RATING:
+    case ITEM_MOD_HIT_RATING:
+    case ITEM_MOD_CRIT_RATING:
+    case ITEM_MOD_HASTE_RATING:
+    case ITEM_MOD_EXPERTISE_RATING:
     //case ITEM_MOD_ATTACK_POWER:
     //case ITEM_MOD_RANGED_ATTACK_POWER:
     //case ITEM_MOD_ARMOR_PENETRATION_RATING:
@@ -950,12 +957,12 @@ void PlayerbotFactory::InitTradeSkills()
     /*case 1:
         SetRandomSkill(SKILL_HERBALISM);
         SetRandomSkill(SKILL_INSCRIPTION);
-        break;
-    case 2:
+        break;*/
+    case 1:
         SetRandomSkill(SKILL_MINING);
         SetRandomSkill(SKILL_JEWELCRAFTING);
-        break;*/
-    case 1://3:
+        break;
+    case 2://3:
         SetRandomSkill(firstSkills[urand(0, firstSkills.size() - 1)]);
         SetRandomSkill(secondSkills[urand(0, secondSkills.size() - 1)]);
         break;
@@ -1411,10 +1418,10 @@ void PlayerbotFactory::InitInventorySkill()
     if (bot->HasSkill(SKILL_MINING)) {
         StoreItem(2901, 1); // Mining Pick
     }
-    /*if (bot->HasSkill(SKILL_JEWELCRAFTING)) {
+    if (bot->HasSkill(SKILL_JEWELCRAFTING)) {
         StoreItem(20815, 1); // Jeweler's Kit
         StoreItem(20824, 1); // Simple Grinder
-    }*/
+    }
     if (bot->HasSkill(SKILL_BLACKSMITHING) || bot->HasSkill(SKILL_ENGINEERING)) {
         StoreItem(5956, 1); // Blacksmith Hammer
     }
