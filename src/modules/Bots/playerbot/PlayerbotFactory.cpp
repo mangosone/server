@@ -948,7 +948,7 @@ void PlayerbotFactory::InitTradeSkills()
     SetRandomSkill(SKILL_FISHING);
     SetRandomSkill(SKILL_COOKING);
 
-    switch (urand(0, 1))
+    switch (urand(0, 2))
     {
     case 0:
         SetRandomSkill(SKILL_HERBALISM);
