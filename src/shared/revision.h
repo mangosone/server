@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "remove_dbdocs"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 8
-    #define WORLD_DB_CONTENT_NR 23
-    #define WORLD_DB_UPDATE_DESCRIPTION "revert_remove_templates"
+    #define WORLD_DB_STRUCTURE_NR 9
+    #define WORLD_DB_CONTENT_NR 1
+    #define WORLD_DB_UPDATE_DESCRIPTION "force_version_change"
 #endif // __REVISION_H__
