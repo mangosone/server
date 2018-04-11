@@ -18,21 +18,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 project(MaNGOS)
+cmake_minimum_required(VERSION 3.0)
+
 set(MANGOS_VERSION 0.21)
 set(MANGOS_EXP "TBC")
-add_definitions(-DTBC)
-# CMake policies
-cmake_minimum_required(VERSION 2.8)
-# Until CMake 3.0 is the standard
-# And a solution to set_directory_properties is found.
-if(POLICY CMP0043)
-    cmake_policy(SET CMP0043 OLD)
-endif()
-
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH "${LIBS_DIR}")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Set the correct macro directory path
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -50,8 +39,7 @@ option(BUILD_MANGOSD        "Build the main server"                         ON)
 option(BUILD_REALMD         "Build the login server"                        ON)
 option(BUILD_TOOLS          "Build the map/vmap/mmap extractors"            ON)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
-option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev2 scripts"   ON)
-#option(PLAYERBOTS           "Enable Player Bots"                            OFF)
+option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
 option(SOAP                 "Enable remote access via SOAP"                 OFF)
 # Hidden option to enable/disable PCH. DEV ONLY!
 set(PCH ON)
@@ -90,12 +78,6 @@ find_package(Git)
 find_package(PCHSupport)
 find_package(OpenSSL REQUIRED)
 
-# For Unix systems set the rpath so that libraries are found
-set(CMAKE_INSTALL_RPATH "${LIBS_DIR}")
-set(CMAKE_INSTALL_NAME_DIR "${LIBS_DIR}")
-# Run out of build tree
-set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
-
 if(ACE_USE_EXTERNAL)
     find_package(ACE)
     if(NOT ACE_FOUND)
@@ -103,14 +85,8 @@ if(ACE_USE_EXTERNAL)
             "This project requires ACE installed when ACE_USE_EXTERNAL is set. Please download the ACE Micro Release Kit from http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and it was correctly installed please set ACE_ROOT to the correct path."
         )
     endif()
-    if(EXISTS ${ACE_INCLUDE_DIR}/ace/Stack_Trace.h)
-        add_definitions(-DHAVE_ACE_STACK_TRACE_H)
-    endif()
 else()
     include(cmake/ImportACE.cmake)
-    if(NOT(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD"))
-        add_definitions(-DHAVE_ACE_STACK_TRACE_H)
-    endif()
 endif()
 
 if(POSTGRESQL)
@@ -127,7 +103,7 @@ endif()
 #Include platform/compiler-specific definitions
 include(${CMAKE_SOURCE_DIR}/cmake/SetDefinitions.cmake)
 
-set(DEFINITIONS ${DEFINITIONS} TBC)
+add_definitions(-DTBC)
 
 message(STATUS "Install server to     : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Install configs to    : ${CONF_INSTALL_DIR}")
@@ -157,13 +133,6 @@ if(SCRIPT_LIB_SD3)
 else()
     message(STATUS "Script engine SD3     : No")
 endif()
-
-#if(PLAYERBOTS)
-#    message(STATUS "Enable Player Bots    : Yes (default)")
-#    add_definitions(-DENABLE_PLAYERBOTS)
-#else()
-#    message(STATUS "Enable Player Bots    : No")
-#endif()
 
 if(BUILD_MANGOSD)
     message(STATUS "Build main server     : Yes (default)")
