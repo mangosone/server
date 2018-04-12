@@ -848,7 +848,6 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
             uint8 maxresul = 0;
             ObjectGuid maxguid = (*roll->playerVote.begin()).first;
             Player* player;
-            RollVote rollvote = ROLL_PASS;                  // Fixed: Using uninitialized memory 'rollvote'
 
             Roll::PlayerVote::iterator itr;
             for (itr = roll->playerVote.begin(); itr != roll->playerVote.end(); ++itr)
@@ -915,11 +914,10 @@ bool Group::IsRollDoneForItem(Creature * pCreature, const LootItem * pItem)
     if(RollId.empty())
         { return true; }
 
-    Roll * roll;
 
-    for(Rolls::iterator i = RollId.begin(); i != RollId.end(); i++)
+    for(Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
     {
-        roll = *i;
+        Roll *roll = *i;
         if(roll->lootedTargetGUID == pCreature->GetObjectGuid() && roll->itemid == pItem->itemid && roll->totalPlayersRolling > 1)
             { return false; }
     }
@@ -1010,11 +1008,9 @@ void Group::SendTargetIconList(WorldSession* session)
 
 void Group::SendUpdate()
 {
-    Player* player;
-
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
     {
-        player = sObjectMgr.GetPlayer(citr->guid);
+        Player* player = sObjectMgr.GetPlayer(citr->guid);
         if (!player || !player->GetSession() || player->GetGroup() != this)
             { continue; }
         // guess size
