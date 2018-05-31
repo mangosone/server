@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 9
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "force_version_change"
+    #define WORLD_DB_CONTENT_NR 24
+    #define WORLD_DB_UPDATE_DESCRIPTION "Quest_Teleport_This"
 #endif // __REVISION_H__
