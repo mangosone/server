@@ -36,11 +36,6 @@ CreatureAI::~CreatureAI()
 {
 }
 
-/**
-* Called for reaction at stopping attack at no attackers or targets
-* This is called usually in Unit::SelectHostileTarget, if no more target exists
-*/
-
 void CreatureAI::EnterEvadeMode()
 {
     m_creature->ResetPlayerDamageReq();
