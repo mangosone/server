@@ -2427,7 +2427,14 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         if (GetAccessLevel() >= security)
         {
-            email = fields[2].GetCppString();
+            if (security == SEC_ADMINISTRATOR)
+            {
+                email = fields[2].GetCppString();
+            }
+            else
+            {
+                email = "*hidden*";
+            }
             last_ip = fields[3].GetCppString();
             last_login = fields[4].GetCppString();
         }

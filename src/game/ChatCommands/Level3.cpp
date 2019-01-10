@@ -820,6 +820,7 @@ bool ChatHandler::HandleReloadBattleEventCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadEventAITextsCommand(char* /*args*/)
 {
+
     sLog.outString("Re-Loading Texts from `creature_ai_texts`...");
     sEventAIMgr.LoadCreatureEventAI_Texts(true);
     SendGlobalSysMessage("DB table `creature_ai_texts` reloaded.", SEC_MODERATOR);
@@ -6170,12 +6171,12 @@ bool ChatHandler::HandleInstanceUnbindCommand(char* args)
                                     save->GetDifficulty() == DUNGEON_DIFFICULTY_NORMAL ? "normal" : "heroic", save->CanReset() ? "yes" : "no", timeleft.c_str());
                 }
                 else
-                    PSendSysMessage("bound for a nonexistent map %u", itr->first);
+                    { PSendSysMessage("bound for a nonexistent map %u", itr->first); }
                 player->UnbindInstance(itr, Difficulty(i));
                 ++counter;
             }
             else
-                ++itr;
+                { ++itr; }
         }
     }
     PSendSysMessage("instances unbound: %d", counter);

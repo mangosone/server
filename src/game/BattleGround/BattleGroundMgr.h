@@ -236,6 +236,11 @@ class BattleGroundQueue
         class SelectionPool
         {
             public:
+                /**
+                 * @brief
+                 *
+                 * Constructor
+                 */
                 SelectionPool() : PlayerCount(0) {}
                 /**
                  * @brief
@@ -547,11 +552,22 @@ class BattleGroundMgr
         void ScheduleQueueUpdate(uint32 arenaRating, ArenaType arenaType, BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id);
         uint32 GetMaxRatingDifference() const;
         uint32 GetRatingDiscardTimer()  const;
+
+        /**
+         * @brief
+         *
+         * @return uint32
+         */
         uint32 GetPrematureFinishTime() const;
 
         void InitAutomaticArenaPointDistribution();
         void DistributeArenaPoints();
         void ToggleArenaTesting();
+
+        /**
+         * @brief
+         *
+         */
         void ToggleTesting();
 
         /**
@@ -606,11 +622,23 @@ class BattleGroundMgr
         }
 
         bool isArenaTesting() const { return m_ArenaTesting; }
+
+        /**
+         * @brief
+         *
+         * @return bool
+         */
         bool isTesting() const { return m_Testing; }
 
         static bool IsArenaType(BattleGroundTypeId bgTypeId);
         static bool IsBattleGroundType(BattleGroundTypeId bgTypeId) { return !IsArenaType(bgTypeId); }
         static BattleGroundQueueTypeId BGQueueTypeId(BattleGroundTypeId bgTypeId, ArenaType arenaType);
+        /**
+         * @brief
+         *
+         * @param bgQueueTypeId
+         * @return BattleGroundTypeId
+         */
         static BattleGroundTypeId BGTemplateId(BattleGroundQueueTypeId bgQueueTypeId);
         static ArenaType BGArenaType(BattleGroundQueueTypeId bgQueueTypeId);
 

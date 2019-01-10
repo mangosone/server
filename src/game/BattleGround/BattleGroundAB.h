@@ -298,6 +298,11 @@ class BattleGroundAB : public BattleGround
          */
         virtual void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
 
+        /* Premature finish */
+        /**
+         * @brief
+         *
+         */
         virtual Team GetPrematureWinner() override;
 
     private:

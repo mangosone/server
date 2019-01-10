@@ -624,9 +624,9 @@ Team BattleGroundWS::GetPrematureWinner()
     int32 allianceScore = m_TeamScores[TEAM_INDEX_ALLIANCE];
 
     if (hordeScore > allianceScore)
-        { return HORDE; }
+      { return HORDE; }
     if (allianceScore > hordeScore)
-        { return ALLIANCE; }
+      { return ALLIANCE; }
 
     // If the values are equal, fall back to number of players on each team
     return BattleGround::GetPrematureWinner();
