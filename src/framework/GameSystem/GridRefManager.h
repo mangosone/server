@@ -75,7 +75,7 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          *
          * @return iterator
          */
-        iterator end() { return iterator(nullptr); }
+        iterator end() { return iterator(NULL); }
         /**
          * @brief
          *
@@ -87,6 +87,6 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          *
          * @return iterator
          */
-        iterator rend() { return iterator(nullptr); }
+        iterator rend() { return iterator(NULL); }
 };
 #endif
