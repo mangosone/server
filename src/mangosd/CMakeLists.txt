@@ -36,22 +36,19 @@ endif()
 
 if(WIN32)
 include(generate_product_version)
-generate_product_version(
-    VersionFilesOutputVariable
-    NAME "mangosd.exe"
-    ICON ${CMAKE_SOURCE_DIR}/src/mangosd/mangosd.ico
-    VERSION_MAJOR 0
-    VERSION_MINOR 21
-    VERSION_PATH ${BUILD_COUNTER}
-    VERSION_REVISION ${BUILD_REVISION}
-	COMPANY_NAME "getmangos.eu"
-# Do not alter, remove or prevent COMPANY_COPYRIGHT from displaying
-	COMPANY_COPYRIGHT
-	FILE_DESCRIPTION "Mangos One Server Daemon"
-)
-endif()
-
-if(WIN32)
+    generate_product_version(
+        VersionFilesOutputVariable
+        NAME "mangosd.exe"
+        ICON ${CMAKE_SOURCE_DIR}/src/mangosd/mangosd.ico
+        VERSION_MAJOR 0
+        VERSION_MINOR 21
+        VERSION_PATH ${BUILD_COUNTER}
+        VERSION_REVISION ${BUILD_REVISION}
+        COMPANY_NAME "getmangos.eu"
+        # Do not alter, remove or prevent COMPANY_COPYRIGHT from displaying
+        COMPANY_COPYRIGHT
+        FILE_DESCRIPTION "Mangos One Server Daemon"
+    )
     # add resource file to windows build
     set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} VersionResource.rc)
 endif()

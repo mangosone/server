@@ -713,7 +713,6 @@ enum MangosStrings
     LANG_BG_QUEUE_ANNOUNCE_SELF         = 711,
     LANG_BG_QUEUE_ANNOUNCE_WORLD        = 712,
     LANG_YOUR_ARENA_LEVEL_REQ_ERROR     = 713,
-    // LANG_YOUR_ARENA_LEVEL_REQ_ERROR   = 713,
     LANG_BG_IS_DISABLED                 = 714,
     LANG_YOUR_BG_LEVEL_REQ_ERROR        = 715,
     //                                  = 716, not used
