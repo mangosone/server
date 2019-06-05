@@ -955,7 +955,7 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
             next = i; ++next;
             if (spellProto && spellProto->Id == se->Id) // Not drop auras added by self
                 { continue; }
-            if (!se->procFlags && (se->AuraInterruptFlags & AURA_INTERRUPT_FLAG_DAMAGE))
+            if (se->AuraInterruptFlags & AURA_INTERRUPT_FLAG_DAMAGE) // if !se->procFlags && is applied, Sap/Wyvern Sting/other abilities with interrupt & non-empty procmask fail to break.
             {
                 pVictim->RemoveAurasDueToSpell(i->second->GetId());
                 next = vAuras.begin();
@@ -1098,16 +1098,16 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
     if (InstanceData* mapInstance = victim->GetInstanceData())
         { mapInstance->OnCreatureDeath(victim); }
 
-    if (responsiblePlayer)                                  // killedby Player, inform BG
+    if (responsiblePlayer)
+    {                                // killedby Player, inform BG
         if (BattleGround* bg = responsiblePlayer->GetBattleGround())
-        {
             bg->HandleKillUnit(victim, responsiblePlayer);
 
-            // Used by Eluna
+        // Used by Eluna
 #ifdef ENABLE_ELUNA
-            sEluna->OnCreatureKill(responsiblePlayer, victim);
+        sEluna->OnCreatureKill(responsiblePlayer, victim);
 #endif /* ENABLE_ELUNA */
-        }
+    }
 
     // Notify the outdoor pvp script
     if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(responsiblePlayer ? responsiblePlayer->GetCachedZoneId() : GetZoneId()))
@@ -2247,6 +2247,9 @@ void Unit::CalculateDamageAbsorbAndResist(Unit* pCaster, SpellSchoolMask schoolM
 
             CleanDamage cleanDamage = CleanDamage(splitted, BASE_ATTACK, MELEE_HIT_NORMAL);
             pCaster->DealDamage(caster, splitted, &cleanDamage, DIRECT_DAMAGE, schoolMask, (*i)->GetSpellProto(), false);
+
+            // Break 'fear' and such - in MangosTwo but not MangosZero, was not originally in MangosOne. Leaving commented.
+            // pCaster->ProcDamageAndSpellFor(true, this, PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT, PROC_EX_NORMAL_HIT, BASE_ATTACK, (*i)->GetSpellProto(), splitted);
         }
     }
 
@@ -2340,9 +2343,9 @@ void Unit::AttackerStateUpdate(Unit* pVictim, WeaponAttackType attType, bool ext
         }
         return;
     }
-
+    
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MELEE_ATTACK);
-
+    
     // attack can be redirected to another target
     if (Unit* magnetTarget = SelectMagnetTarget(pVictim))
         pVictim = magnetTarget;
@@ -8990,6 +8993,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, 
             { continue; }
 
         SpellProcEventEntry const* spellProcEvent = NULL;
+        // check if that aura is triggered by proc event (then it will be managed by proc handler)
         if (!IsTriggeredAtSpellProcEvent(pTarget, itr->second, procSpell, procFlag, procExtra, attType, isVictim, spellProcEvent))
             { continue; }
 
@@ -9224,9 +9228,10 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
          CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
 
          if (GetTypeId() == TYPEID_UNIT)
-             SetTargetGuid(ObjectGuid());
-
-        GetMotionMaster()->MoveConfused();
+         {
+            SetTargetGuid(ObjectGuid());
+            GetMotionMaster()->MoveConfused();
+         }
     }
     else
     {
