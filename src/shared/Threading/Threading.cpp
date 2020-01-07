@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2019  MaNGOS project <https://getmangos.eu>
+ * Copyright (C) 2005-2020  MaNGOS project <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -131,7 +131,6 @@ Thread::~Thread()
 }
 
 // initialize Thread's class static member
-Thread::ThreadStorage *Thread::m_ThreadStorage = NULL;
 ThreadPriority Thread::m_TpEnum;
 
 bool Thread::start()
@@ -141,8 +140,6 @@ bool Thread::start()
 
     // incRef before spawing the thread, otherwise Thread::ThreadTask() might call decRef and delete m_task
     m_task->incReference();
-
-    m_ThreadStorage = new ACE_TSS<Thread>();
 
     bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
 
@@ -162,8 +159,6 @@ bool Thread::wait()
 
     m_iThreadId = 0;
     m_hThreadHandle = 0;
-    delete m_ThreadStorage;
-    m_ThreadStorage = NULL;
 
     return (_res == 0);
 }
@@ -178,8 +173,6 @@ void Thread::destroy()
 
     m_iThreadId = 0;
     m_hThreadHandle = 0;
-    delete m_ThreadStorage;
-    m_ThreadStorage = NULL;
 
     // reference set at ACE_Thread::spawn
     m_task->decReference();
@@ -206,35 +199,6 @@ ACE_THR_FUNC_RETURN Thread::ThreadTask(void* param)
     _task->decReference();
 
     return (ACE_THR_FUNC_RETURN)0;
-}
-
-ACE_thread_t Thread::currentId()
-{
-    return ACE_Thread::self();
-}
-
-ACE_hthread_t Thread::currentHandle()
-{
-    ACE_hthread_t _handle;
-    ACE_Thread::self(_handle);
-
-    return _handle;
-}
-
-Thread* Thread::current()
-{
-    Thread* _thread = (*m_ThreadStorage).ts_object();
-    if (!_thread)
-    {
-        _thread = new Thread();
-        _thread->m_iThreadId = Thread::currentId();
-        _thread->m_hThreadHandle = Thread::currentHandle();
-
-        Thread* _oldValue = (*m_ThreadStorage).ts_object(_thread);
-        delete _oldValue;
-    }
-
-    return _thread;
 }
 
 void Thread::setPriority(Priority type)

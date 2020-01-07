@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2019  MaNGOS project <https://getmangos.eu>
+ * Copyright (C) 2005-2020  MaNGOS project <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 #include "Cell.h"
 
 class ObjectWorldLoader;
+
+using GridLoaderType = GridLoader<Player, WorldTypeMapContainer, GridTypeMapContainer>;
 
 class ObjectGridLoader
 {
@@ -68,11 +70,11 @@ class ObjectGridUnloader
         void MoveToRespawnN();
         void UnloadN()
         {
+            GridLoaderType loader;
             for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
             {
                 for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
                 {
-                    GridLoader<Player, AllWorldObjectTypes, AllGridObjectTypes> loader;
                     loader.Unload(i_grid(x, y), *this);
                 }
             }
@@ -92,11 +94,11 @@ class ObjectGridStoper
         void MoveToRespawnN();
         void StopN()
         {
+            GridLoaderType loader;
             for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
             {
                 for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
                 {
-                    GridLoader<Player, AllWorldObjectTypes, AllGridObjectTypes> loader;
                     loader.Stop(i_grid(x, y), *this);
                 }
             }
@@ -110,6 +112,5 @@ class ObjectGridStoper
         NGridType& i_grid;
 };
 
-typedef GridLoader<Player, AllWorldObjectTypes, AllGridObjectTypes> GridLoaderType;
 
 #endif

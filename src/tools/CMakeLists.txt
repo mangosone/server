@@ -1,7 +1,7 @@
 # MaNGOS is a full featured server for World of Warcraft, supporting
 # the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
 #
-# Copyright (C) 2005-2019  MaNGOS project <https://getmangos.eu>
+# Copyright (C) 2005-2020 MaNGOS <https://getmangos.eu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,3 +18,17 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 add_subdirectory(Extractor_projects)
+
+#install documentation and generation scripts
+install(
+    FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/ExtractResources.sh"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/make_vmaps.bat"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/mmap_excluded.txt"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/MoveMapGen.sh"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/offmesh.txt"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/README.txt"
+    DESTINATION
+        "${BIN_DIR}/${TOOLS_DIR}"
+)
+

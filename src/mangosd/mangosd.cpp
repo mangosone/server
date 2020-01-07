@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2019  MaNGOS project <https://getmangos.eu>
+ * Copyright (C) 2005-2020  MaNGOS project <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -413,8 +413,6 @@ int main(int argc, char** argv)
     ///- Set Realm to Offline, if crash happens. Only used once.
     LoginDatabase.DirectPExecute("UPDATE realmlist SET realmflags = realmflags | %u WHERE id = '%u'", REALM_FLAG_OFFLINE, realmID);
 
-    initMTRandTSS();
-
     ///- Initialize the World
     sWorld.SetInitialWorldSettings();
 
@@ -546,8 +544,6 @@ int main(int argc, char** argv)
     CharacterDatabase.HaltDelayThread();
     WorldDatabase.HaltDelayThread();
     LoginDatabase.HaltDelayThread();
-
-    deleteMTRandTSS();
 
     // This is done to make sure that we cleanup our so file before it's 
     // unloaded automatically, since the ~ScriptMgr() is called to late 

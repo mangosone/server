@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2019  MaNGOS project <https://getmangos.eu>
+ * Copyright (C) 2005-2020  MaNGOS project <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,13 +35,6 @@
  * @{
  * \file
  */
-
-
-/**
- * Format is YYYYMMDDRR where RR is the change in the conf file
- * for that day.
- */
-#define AUCTIONHOUSEBOT_CONF_VERSION    2010102201
 
 #include "Policies/Singleton.h"
 
@@ -488,7 +481,7 @@ void AuctionBotConfig::setConfig(AuctionBotConfigBoolValues index, char const* f
 void AuctionBotConfig::GetConfigFromFile()
 {
     // Check config file version
-    if (m_AhBotCfg.GetIntDefault("ConfVersion", 0) != AUCTIONHOUSEBOT_CONF_VERSION)
+    if (m_AhBotCfg.GetIntDefault("ConfVersion", 0) != AHBOT_CONFIG_VERSION)
         { sLog.outError("AHBot: Configuration file version doesn't match expected version. Some config variables may be wrong or missing."); }
 
     setConfigMax(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO , "AuctionHouseBot.Alliance.Items.Amount.Ratio" , 100, 10000);
