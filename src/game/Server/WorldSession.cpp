@@ -39,6 +39,7 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "World.h"
+#include "ObjectAccessor.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
@@ -95,10 +96,10 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 /// WorldSession constructor
 WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
     LookingForGroup_auto_join(false), LookingForGroup_auto_add(false), m_muteTime(mute_time),
-    _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), m_expansion(expansion), _logoutTime(0),
+    _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), m_expansion(expansion), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
-    m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED)
+    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED)
 {
     if (sock)
     {
@@ -832,8 +833,10 @@ void WorldSession::SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit)
     SendPacket(&data);
 }
 
-void WorldSession::InitWarden(BigNumber* k, std::string const& os)
+void WorldSession::InitWarden(uint16 build, BigNumber* k, std::string const& os)
 {
+    _build = build;
+
     if (os == "Win" && sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED))
     {
         _warden = new WardenWin();
