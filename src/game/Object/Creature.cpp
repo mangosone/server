@@ -403,7 +403,7 @@ bool Creature::InitEntry(uint32 Entry, CreatureData const* data /*=NULL*/, GameE
 bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=NULL*/, GameEventCreatureData const* eventData /*=NULL*/, bool preserveHPAndPower /*=true*/)
 {
     if (!InitEntry(Entry, data, eventData))
-        { return false; }
+    { return false; }
 
     // creatures always have melee weapon ready if any
     SetSheath(SHEATH_STATE_MELEE);
@@ -419,9 +419,13 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
         SelectLevel();
 
     if (team == HORDE)
-        { setFaction(GetCreatureInfo()->FactionHorde);  }
+    {
+        setFaction(GetCreatureInfo()->FactionHorde);
+    }
     else
-        { setFaction(GetCreatureInfo()->FactionAlliance); }
+    {
+        setFaction(GetCreatureInfo()->FactionAlliance);
+    }
 
     SetUInt32Value(UNIT_NPC_FLAGS, GetCreatureInfo()->NpcFlags);
 
@@ -435,7 +439,9 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
 
     // we may need to append or remove additional flags
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT))
-        { unitFlags |= UNIT_FLAG_IN_COMBAT; }
+    {
+        unitFlags |= UNIT_FLAG_IN_COMBAT;
+    }
 
     SetUInt32Value(UNIT_FIELD_FLAGS, unitFlags);
 
@@ -458,22 +464,32 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
     if (FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(GetCreatureInfo()->FactionAlliance))
     {
         if (factionTemplate->factionFlags & FACTION_TEMPLATE_FLAG_PVP)
-            { SetPvP(true); }
+        {
+            SetPvP(true);
+        }
         else
-            { SetPvP(false); }
+            {
+                SetPvP(false);
+            }
     }
 
     // Try difficulty dependend version before falling back to base entry
     CreatureTemplateSpells const* templateSpells = sCreatureTemplateSpellsStorage.LookupEntry<CreatureTemplateSpells>(GetCreatureInfo()->Entry);
     if (!templateSpells)
-        { templateSpells = sCreatureTemplateSpellsStorage.LookupEntry<CreatureTemplateSpells>(GetEntry()); }
+    {
+        templateSpells = sCreatureTemplateSpellsStorage.LookupEntry<CreatureTemplateSpells>(GetEntry());
+    }
     if (templateSpells)
         for (int i = 0; i < CREATURE_MAX_SPELLS; ++i)
-            { m_spells[i] = templateSpells->spells[i]; }
+        {
+            m_spells[i] = templateSpells->spells[i];
+        }
 
     // if eventData set then event active and need apply spell_start
     if (eventData)
-        { ApplyGameEventSpells(eventData, true); }
+    {
+        ApplyGameEventSpells(eventData, true);
+    }
 
     return true;
 }
@@ -482,7 +498,9 @@ uint32 Creature::ChooseDisplayId(const CreatureInfo* cinfo, const CreatureData* 
 {
     // Use creature event model explicit, override any other static models
     if (eventData && eventData->modelid)
-        { return eventData->modelid; }
+    {
+        return eventData->modelid;
+    }
 
     // Use creature model explicit, override template (creature.modelid)
     if (data && data->modelid_override)
@@ -692,7 +710,7 @@ void Creature::RegenerateAll(uint32 update_diff)
         { return; }
 
     if (!IsInCombat() || IsPolymorphed())
-        { RegenerateHealth(); }
+      { RegenerateHealth(); }
 
     RegeneratePower();
 
@@ -747,7 +765,9 @@ void Creature::RegeneratePower()
     {
         Modifier const* modifier = (*i)->GetModifier();
         if (modifier->m_miscvalue == int32(powerType))
-            { addValue += modifier->m_amount; }
+        {
+            addValue += modifier->m_amount;
+        }
     }
 
     AuraList const& ModPowerRegenPCTAuras = GetAurasByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
@@ -755,7 +775,9 @@ void Creature::RegeneratePower()
     {
         Modifier const* modifier = (*i)->GetModifier();
         if (modifier->m_miscvalue == int32(powerType))
-            { addValue *= (modifier->m_amount + 100) / 100.0f; }
+        {
+            addValue *= (modifier->m_amount + 100) / 100.0f;
+        }
     }
 
     ModifyPower(powerType, int32(addValue));
@@ -772,21 +794,20 @@ void Creature::RegenerateHealth()
     if (curValue >= maxValue)
         { return; }
 
-    uint32 addvalue;
+    uint32 addvalue = 0;
 
     // Not only pet, but any controlled creature
     if (GetCharmerOrOwnerGuid())
     {
         float HealthIncreaseRate = sWorld.getConfig(CONFIG_FLOAT_RATE_HEALTH);
-        float Spirit = GetStat(STAT_SPIRIT);
-
+        float Spirit = GetStat(STAT_SPIRIT); //for charmed creatures, spirit = 0!
         if (GetPower(POWER_MANA) > 0)
             { addvalue = uint32(Spirit * 0.25 * HealthIncreaseRate); }
         else
             { addvalue = uint32(Spirit * 0.80 * HealthIncreaseRate); }
     }
     else
-        { addvalue = maxValue / 3; }
+      { addvalue = maxValue / 3; }
 
     ModifyHealth(addvalue);
 }
@@ -1033,12 +1054,12 @@ void Creature::PrepareBodyLootState()
     // if have normal loot then prepare it access
     if (!lootForBody)
     {
-      // have normal loot
-      if (GetCreatureInfo()->MaxLootGold > 0 || GetCreatureInfo()->LootId || (GetCreatureType() != CREATURE_TYPE_CRITTER && (GetCreatureInfo()->SkinningLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))))
-      {
-           SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
-           return;
-      }
+        // have normal loot
+        if (GetCreatureInfo()->MaxLootGold > 0 || GetCreatureInfo()->LootId || (GetCreatureType() != CREATURE_TYPE_CRITTER && (GetCreatureInfo()->SkinningLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))))
+        {
+            SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+            return;
+        }
     }
 
     lootForBody = true; // pass this loot mode
@@ -1173,6 +1194,8 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask)
     CreatureInfo const* cinfo = GetCreatureInfo();
     if (cinfo)
     {
+        // The following if-else assumes that there are 4 model fields and needs updating if this is changed.
+
         if (displayId != cinfo->ModelId[0] && displayId != cinfo->ModelId[1] &&
             displayId != cinfo->ModelId[2] && displayId != cinfo->ModelId[3])
         {
@@ -2031,19 +2054,24 @@ bool Creature::CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction /
 bool Creature::CanInitiateAttack()
 {
     if (hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED))
-        { return false; }
+    {
+        return false;
+    }
 
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE))
-        { return false; }
+    {
+        return false;
+    }
 
     if (isPassiveToHostile())
-        { return false; }
+    {
+        return false;
+    }
 
     if (m_aggroDelay != 0)
+    {
         return false;
-
-    if (m_aggroDelay != 0)
-        return false;
+    }
 
     return true;
 }
@@ -2122,7 +2150,6 @@ bool Creature::LoadCreatureAddon(bool reload)
         // 3 StandMiscFlags
 
         SetByteValue(UNIT_FIELD_BYTES_1, 0, uint8(cainfo->bytes1 & 0xFF));
-        // SetByteValue(UNIT_FIELD_BYTES_1, 1, uint8((cainfo->bytes1 >> 8) & 0xFF));
         SetByteValue(UNIT_FIELD_BYTES_1, 1, 0);
         SetByteValue(UNIT_FIELD_BYTES_1, 2, uint8((cainfo->bytes1 >> 16) & 0xFF));
         SetByteValue(UNIT_FIELD_BYTES_1, 3, uint8((cainfo->bytes1 >> 24) & 0xFF));
@@ -2333,7 +2360,9 @@ bool Creature::HasCategoryCooldown(uint32 spell_id) const
 {
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell_id);
     if (!spellInfo)
-        { return false; }
+    {
+        return false;
+    }
 
     CreatureSpellCooldowns::const_iterator itr = m_CreatureCategoryCooldowns.find(spellInfo->Category);
     return (itr != m_CreatureCategoryCooldowns.end() && time_t(itr->second + (spellInfo->CategoryRecoveryTime / IN_MILLISECONDS)) > time(NULL));
@@ -2475,8 +2504,8 @@ VendorItemData const* Creature::GetVendorItems() const
 
 VendorItemData const* Creature::GetVendorTemplateItems() const
 {
-    uint32 vendorId = GetCreatureInfo()->VendorTemplateId;
-    return vendorId ? sObjectMgr.GetNpcVendorTemplateItemList(vendorId) : NULL;
+    uint32 VendorTemplateId = GetCreatureInfo()->VendorTemplateId;
+    return VendorTemplateId ? sObjectMgr.GetNpcVendorTemplateItemList(VendorTemplateId) : NULL;
 }
 
 uint32 Creature::GetVendorItemCurrentCount(VendorItem const* vItem)
@@ -2553,8 +2582,8 @@ uint32 Creature::UpdateVendorItemCurrentCount(VendorItem const* vItem, uint32 us
 
 TrainerSpellData const* Creature::GetTrainerTemplateSpells() const
 {
-    uint32 trainerId = GetCreatureInfo()->TrainerTemplateId;
-    return trainerId ? sObjectMgr.GetNpcTrainerTemplateSpells(trainerId) : NULL;
+    uint32 TrainerTemplateId = GetCreatureInfo()->TrainerTemplateId;
+    return TrainerTemplateId ? sObjectMgr.GetNpcTrainerTemplateSpells(TrainerTemplateId) : NULL;
 }
 
 TrainerSpellData const* Creature::GetTrainerSpells() const
@@ -2721,11 +2750,12 @@ void Creature::SetVirtualItem(VirtualItemSlot slot, uint32 item_id)
     }
 
     SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY + slot, proto->DisplayInfoID);
-    SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_CLASS,    proto->Class);
-    SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_SUBCLASS, proto->SubClass);
+    SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_CLASS,         proto->Class);
+    SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_SUBCLASS,      proto->SubClass);
     SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_UNK0,     proto->Unk0);
-    SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_MATERIAL, proto->Material);
+    SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 0, VIRTUAL_ITEM_INFO_0_OFFSET_MATERIAL,      proto->Material);
     SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 1, VIRTUAL_ITEM_INFO_1_OFFSET_INVENTORYTYPE, proto->InventoryType);
+
     SetByteValue(UNIT_VIRTUAL_ITEM_INFO + (slot * 2) + 1, VIRTUAL_ITEM_INFO_1_OFFSET_SHEATH,        proto->Sheath);
 }
 

@@ -71,6 +71,9 @@
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
+#ifdef ENABLE_PLAYERBOTS
+#include "playerbot.h"
+#endif
 
 #include <cmath>
 
@@ -2996,14 +2999,14 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                 if (lowerRank->state == PLAYERSPELL_REMOVED || !lowerRank->active)
                     continue;
 
-                SpellEntry const *spell_old = sSpellStore.LookupEntry(prev_spell_id); 
+                SpellEntry const *spell_old = sSpellStore.LookupEntry(prev_spell_id);
                 SpellEntry const *spell_new = spellInfo;
 
                 if (sSpellMgr.IsRankedSpellNonStackableInSpellBook(spell_old))
                 {
                     if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
                     {
-                        WorldPacket data(SMSG_SUPERCEDED_SPELL, 4);
+                        WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
                         data << uint16(spell_old->Id);
                         data << uint16(spell_new->Id);
                         GetSession()->SendPacket(&data);
@@ -3017,7 +3020,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                     canAddToSpellBook = false;
                 }
             } while(0);
-         }
+        }
 
         m_spells[spell_id] = newspell;
 
@@ -4248,10 +4251,6 @@ void Player::BuildPlayerRepop()
         { CastSpell(this, 20584, true); }                       // auras SPELL_AURA_INCREASE_SPEED(+speed in wisp form), SPELL_AURA_INCREASE_SWIM_SPEED(+swim speed in wisp form), SPELL_AURA_TRANSFORM (to wisp form)
     CastSpell(this, 8326, true);                            // auras SPELL_AURA_GHOST, SPELL_AURA_INCREASE_SPEED(why?), SPELL_AURA_INCREASE_SWIM_SPEED(why?)
 
-    // there must be SMSG.FORCE_RUN_SPEED_CHANGE, SMSG.FORCE_SWIM_SPEED_CHANGE, SMSG.MOVE_WATER_WALK
-    // there must be SMSG.STOP_MIRROR_TIMER
-    // there we must send 888 opcode
-
     // the player can not have a corpse already, only bones which are not returned by GetCorpse
     if (GetCorpse())
     {
@@ -4312,8 +4311,6 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
     SetWaterWalk(false);
     SetRoot(false);
 
-    m_deathTimer = 0;
-
     // set health/powers (0- will be set in caller)
     if (restore_percent > 0.0f)
     {
@@ -4327,6 +4324,8 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
     uint32 newzone, newarea;
     GetZoneAndAreaId(newzone, newarea);
     UpdateZone(newzone, newarea);
+
+    m_deathTimer = 0;
 
     // update visibility of world around viewpoint
     m_camera.UpdateVisibilityForOwner();
@@ -6761,7 +6760,7 @@ void Player::DuelComplete(DuelCompleteType type)
     if (GameObject* obj = GetMap()->GetGameObject(GetGuidValue(PLAYER_DUEL_ARBITER)))
         duel->initiator->RemoveGameObject(obj, true);
 
-    /* remove auras */ 
+    /* remove auras */
     // TODO: Needs a simpler method
     std::vector<uint32> auras2remove;
     SpellAuraHolderMap const& vAuras = duel->opponent->GetSpellAuraHolderMap();
@@ -10542,7 +10541,7 @@ void Player::VisualizeItem(uint8 slot, Item* pItem)
     // check also  BIND_WHEN_PICKED_UP and BIND_QUEST_ITEM for .additem or .additemset case by GM (not binded at adding to inventory)
     ItemPrototype const* itemProto = pItem->GetProto();
     if (itemProto->Bonding == BIND_WHEN_EQUIPPED || itemProto->Bonding == BIND_WHEN_PICKED_UP || itemProto->Bonding == BIND_QUEST_ITEM)
-        { pItem->SetBinding(true); }
+    { pItem->SetBinding(true); }
 
     DEBUG_LOG("STORAGE: EquipItem slot = %u, item = %u", slot, pItem->GetEntry());
 
@@ -10566,7 +10565,8 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
     // note2: if removeitem is to be used for delinking
     // the item must be removed from the player's updatequeue
 
-    if (Item* pItem = GetItemByPos(bag, slot))
+    Item* pItem = GetItemByPos(bag, slot);
+    if (pItem)
     {
         DEBUG_LOG("STORAGE: RemoveItem bag = %u, slot = %u, item = %u", bag, slot, pItem->GetEntry());
 
@@ -11935,32 +11935,6 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
                             ApplyRatingMod(CR_CRIT_SPELL, enchant_amount, apply);
                             DEBUG_LOG("+ %u SPELL_CRIT", enchant_amount);
                             break;
-//                        Values from ITEM_STAT_MELEE_HA_RATING to ITEM_MOD_HASTE_RANGED_RATING are never used
-//                        in Enchantments
-//                        case ITEM_MOD_HIT_TAKEN_MELEE_RATING:
-//                            ApplyRatingMod(CR_HIT_TAKEN_MELEE, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_HIT_TAKEN_RANGED_RATING:
-//                            ApplyRatingMod(CR_HIT_TAKEN_RANGED, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_HIT_TAKEN_SPELL_RATING:
-//                            ApplyRatingMod(CR_HIT_TAKEN_SPELL, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_CRIT_TAKEN_MELEE_RATING:
-//                            ApplyRatingMod(CR_CRIT_TAKEN_MELEE, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_CRIT_TAKEN_RANGED_RATING:
-//                            ApplyRatingMod(CR_CRIT_TAKEN_RANGED, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_CRIT_TAKEN_SPELL_RATING:
-//                            ApplyRatingMod(CR_CRIT_TAKEN_SPELL, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_HASTE_MELEE_RATING:
-//                            ApplyRatingMod(CR_HASTE_MELEE, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_HASTE_RANGED_RATING:
-//                            ApplyRatingMod(CR_HASTE_RANGED, enchant_amount, apply);
-//                            break;
                         case ITEM_MOD_HASTE_SPELL_RATING:
                             ApplyRatingMod(CR_HASTE_SPELL, enchant_amount, apply);
                             break;
@@ -11974,17 +11948,6 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
                             ApplyRatingMod(CR_CRIT_RANGED, enchant_amount, apply);
                             DEBUG_LOG("+ %u CRITICAL", enchant_amount);
                             break;
-//                        Values ITEM_MOD_HIT_TAKEN_RATING and ITEM_MOD_CRIT_TAKEN_RATING are never used in Enchantment
-//                        case ITEM_MOD_HIT_TAKEN_RATING:
-//                            ApplyRatingMod(CR_HIT_TAKEN_MELEE, enchant_amount, apply);
-//                            ApplyRatingMod(CR_HIT_TAKEN_RANGED, enchant_amount, apply);
-//                            ApplyRatingMod(CR_HIT_TAKEN_SPELL, enchant_amount, apply);
-//                            break;
-//                        case ITEM_MOD_CRIT_TAKEN_RATING:
-//                            ApplyRatingMod(CR_CRIT_TAKEN_MELEE, enchant_amount, apply);
-//                            ApplyRatingMod(CR_CRIT_TAKEN_RANGED, enchant_amount, apply);
-//                            ApplyRatingMod(CR_CRIT_TAKEN_SPELL, enchant_amount, apply);
-//                            break;
                         case ITEM_MOD_RESILIENCE_RATING:
                             ApplyRatingMod(CR_CRIT_TAKEN_MELEE, enchant_amount, apply);
                             ApplyRatingMod(CR_CRIT_TAKEN_RANGED, enchant_amount, apply);
@@ -13811,16 +13774,22 @@ void Player::ItemAddedQuestCheck(uint32 entry, uint32 count)
     {
         uint32 questid = GetQuestSlotQuestId(i);
         if (questid == 0)
-            { continue; }
+        {
+            continue;
+        }
 
         QuestStatusData& q_status = mQuestStatus[questid];
 
         if (q_status.m_status != QUEST_STATUS_INCOMPLETE)
-            { continue; }
+        {
+            continue;
+        }
 
         Quest const* qInfo = sObjectMgr.GetQuestTemplate(questid);
         if (!qInfo || !qInfo->HasSpecialFlag(QUEST_SPECIAL_FLAG_DELIVER))
-            { continue; }
+        {
+            continue;
+        }
 
         for (int j = 0; j < QUEST_ITEM_OBJECTIVES_COUNT; ++j)
         {
@@ -15136,7 +15105,7 @@ bool Player::isAllowedToLoot(Creature* creature)
                     /* If the assigned looter's GUID is equal to ours */
                     else if (creature->assignedLooter == GetGUIDLow())
                         { return true; }
-                    /* If the creature already has an assigned looter and that looter isn't us */                    
+                    /* If the creature already has an assigned looter and that looter isn't us */
                     else if (creature->assignedLooter != 0 && !hasSharedLoot && !hasStartingQuestLoot)
                         { return false; }
 
@@ -15144,10 +15113,10 @@ bool Player::isAllowedToLoot(Creature* creature)
 
                     /* This is the player that will be given permission to loot */
                     Player* final_looter = recipient;
-                    
+
                     /* Iterate through the valid party members */
                     Group::MemberSlotList slots = plr_group->GetMemberSlots();
-                    
+
                     for (Group::MemberSlotList::iterator itr = slots.begin(); itr != slots.end(); ++itr)
                     {
                         /* Get the player data */
@@ -15170,18 +15139,17 @@ bool Player::isAllowedToLoot(Creature* creature)
 
                     /* We have our looter, update their loot time */
                     final_looter->lastTimeLooted = time(NULL);
-                    
+
                     /* Update the creature with the looter that has been assigned to them */
                     creature->assignedLooter = final_looter->GetGUIDLow();
                     final_looter->GetGroup()->SetLooterGuid(final_looter->GetGUID());
-                    
+
                     /* Finally, return if we are the assigned looter */
                     return (final_looter->GetGUIDLow() == GetGUIDLow() || hasSharedLoot || hasStartingQuestLoot);
                     /* End of switch statement */
                 }
                 default:
                     // Something went wrong, avoid crash
-                    
                     return false;
             }
         }
@@ -17214,24 +17182,24 @@ void Player::TextEmote(const std::string& text)
     SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE), true, !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT));
 }
 
-void Player::LogWhisper(const std::string& text, ObjectGuid receiver) 
+void Player::LogWhisper(const std::string& text, ObjectGuid receiver)
 {
     WhisperLoggingLevels loggingLevel = WhisperLoggingLevels(sWorld.getConfig(CONFIG_UINT32_LOG_WHISPERS));
 
     if (loggingLevel == WHISPER_LOGGING_NONE)
         return;
-    
+
     //Try to find ticket by either this player or the receiver
     GMTicket* ticket = sTicketMgr.GetGMTicket(GetObjectGuid());
     if (!ticket)
         ticket = sTicketMgr.GetGMTicket(receiver);
-    
+
     uint32 ticketId = 0;
     if (ticket)
         ticketId = ticket->GetId();
-    
+
     bool isSomeoneGM = false;
-    
+
     //Find out if at least one of them is a GM for ticket logging
     if (GetSession()->GetSecurity() >= SEC_GAMEMASTER)
         isSomeoneGM = true;
@@ -17241,7 +17209,7 @@ void Player::LogWhisper(const std::string& text, ObjectGuid receiver)
         if (pRecvPlayer && pRecvPlayer->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
             isSomeoneGM = true;
     }
-    
+
     if ((loggingLevel == WHISPER_LOGGING_TICKETS && ticket && isSomeoneGM)
         || loggingLevel == WHISPER_LOGGING_EVERYTHING)
     {
@@ -17426,7 +17394,7 @@ void Player::CharmSpellInitialize()
     if (charm->GetTypeId() != TYPEID_PLAYER)
         { data << uint8(charmInfo->GetReactState()) << uint8(charmInfo->GetCommandState()) << uint16(0); }
     else
-        { data << uint8(0) << uint8(0) << uint16(0); }
+        { data << uint8(0) << uint8(0) << uint16(0); }  // TODO it is exactly the same as uint32(PetModeFlags) from SMSG_PET_MODE
 
     charmInfo->BuildActionBar(&data);
 
@@ -17818,13 +17786,12 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     uint32 totalcost = 0;
 
     uint32 prevnode = sourcenode;
-    uint32 lastnode = 0;
 
     for (uint32 i = 1; i < nodes.size(); ++i)
     {
         uint32 path, cost;
 
-        lastnode = nodes[i];
+        uint32 lastnode = nodes[i];
         sObjectMgr.GetTaxiPath(prevnode, lastnode, path, cost);
 
         if (!path)
@@ -18980,12 +18947,8 @@ void Player::SendInitialPacketsBeforeAddToMap()
     data << (uint32) m_homebindAreaId;
     GetSession()->SendPacket(&data);
 
-    // SMSG_SET_PROFICIENCY
-    // SMSG_UPDATE_AURA_DURATION
-
     /* Tutorial data */
     GetSession()->SendTutorialsData();
-
     SendInitialSpells();
 
     data.Initialize(SMSG_SEND_UNLEARN_SPELLS, 4);
@@ -19789,6 +19752,7 @@ bool Player::isHonorOrXPTarget(Unit* pVictim) const
 void Player::RewardSinglePlayerAtKill(Unit* pVictim)
 {
     bool PvP = pVictim->IsCharmedOwnedByPlayerOrPlayer();
+
     uint32 xp = PvP ? 0 : MaNGOS::XP::Gain(this, pVictim);
 
     // honor can be in PvP and !PvP (racial leader) cases

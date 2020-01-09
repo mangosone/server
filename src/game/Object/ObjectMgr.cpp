@@ -153,8 +153,10 @@ ObjectMgr::~ObjectMgr()
         { delete[] playerClassInfo[class_].levelInfo; }
 
     for (int race = 0; race < MAX_RACES; ++race)
+    {
         for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
             { delete[] playerInfo[race][class_].levelInfo; }
+    }
 
     // free objects
     for (GroupMap::iterator itr = mGroupMap.begin(); itr != mGroupMap.end(); ++itr)
@@ -214,8 +216,9 @@ void ObjectMgr::AddLocaleString(std::string const& s, LocaleConstant locale, Str
     if (!s.empty())
     {
         if (data.size() <= size_t(locale))
+        {
             data.resize(locale + 1);
-
+        }
         data[locale] = s;
     }
 }
@@ -821,17 +824,25 @@ void ObjectMgr::LoadCreatureAddons()
 
     // check entry ids
     for (uint32 i = 1; i < sCreatureInfoAddonStorage.GetMaxEntry(); ++i)
+    {
         if (CreatureDataAddon const* addon = sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(i))
+        {
             if (!sCreatureStorage.LookupEntry<CreatureInfo>(addon->guidOrEntry))
                 { sLog.outErrorDb("Creature (Entry: %u) does not exist but has a record in `%s`", addon->guidOrEntry, sCreatureInfoAddonStorage.GetTableName()); }
+        }
+    }
 
     LoadCreatureAddons(sCreatureDataAddonStorage, "GUID", "creature addons");
 
     // check entry ids
     for (uint32 i = 1; i < sCreatureDataAddonStorage.GetMaxEntry(); ++i)
+    {
         if (CreatureDataAddon const* addon = sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(i))
+        {
             if (mCreatureDataMap.find(addon->guidOrEntry) == mCreatureDataMap.end())
                 { sLog.outErrorDb("Creature (GUID: %u) does not exist but has a record in `creature_addon`", addon->guidOrEntry); }
+        }
+    }
 }
 
 void ObjectMgr::LoadCreatureClassLvlStats()
@@ -920,7 +931,9 @@ CreatureClassLvlStats const* ObjectMgr::GetCreatureClassLvlStats(uint32 level, u
     CreatureClassLvlStats const* cCLS = &m_creatureClassLvlStats[level][classToIndex[unitClass]][expansion];
 
     if (cCLS->BaseHealth != 0 && cCLS->BaseDamage > 0.1f)
+    {
         return cCLS;
+    }
 
     return NULL;
 }
@@ -971,10 +984,13 @@ void ObjectMgr::LoadEquipmentTemplates()
 
     sEquipmentStorageRaw.Load(false);
     for (uint32 i = 1; i < sEquipmentStorageRaw.GetMaxEntry(); ++i)
+    {
         if (sEquipmentStorageRaw.LookupEntry<EquipmentInfoRaw>(i))
+        {
             if (sEquipmentStorage.LookupEntry<EquipmentInfo>(i))
                 { sLog.outErrorDb("Table 'creature_equip_template_raw` have redundant data for ID %u ('creature_equip_template` already have data)", i); }
-
+        }
+    }
     sLog.outString(">> Loaded %u equipment template (deprecated format)", sEquipmentStorageRaw.GetRecordCount());
     sLog.outString();
 }
@@ -1427,12 +1443,10 @@ void ObjectMgr::LoadCreatures()
         }
 
         if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
-        {
-            AddCreatureToGrid(guid, &data);
+        { AddCreatureToGrid(guid, &data); }
 
-            if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE)
-                m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
-        }
+        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE)
+        { m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid)); }
 
         ++count;
     }
@@ -1612,9 +1626,6 @@ void ObjectMgr::LoadGameObjects()
         if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
             { AddGameobjectToGrid(guid, &data); }
 
-        //uint32 zoneId, areaId;
-        //sTerrainMgr.LoadTerrain(data.mapid)->GetZoneAndAreaId(zoneId, areaId, data.posX, data.posY, data.posZ);
-        //sLog.outErrorDb("UPDATE gameobject SET zone_id=%u, area_id=%u WHERE guid=%u;", zoneId, areaId, guid);
 
         ++count;
     }
@@ -1622,8 +1633,8 @@ void ObjectMgr::LoadGameObjects()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " gameobjects", mGameObjectDataMap.size());
     sLog.outString();
+    sLog.outString(">> Loaded " SIZEFMTD " gameobjects", mGameObjectDataMap.size());
 }
 
 void ObjectMgr::AddGameobjectToGrid(uint32 guid, GameObjectData const* data)
@@ -4097,6 +4108,9 @@ void ObjectMgr::LoadQuests()
             {
                 sLog.outErrorDb("Spell (id: %u) have SPELL_EFFECT_QUEST_COMPLETE for quest %u , but quest does not have SpecialFlags QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT (2) set. Quest SpecialFlags should be corrected to enable this objective.", spellInfo->Id, quest_id);
 
+                // The below forced alteration has been disabled because of spell 33824 / quest 10162.
+                // A startup error will still occur with proper data in quest_template, but it will be possible to sucessfully complete the quest with the expected data.
+
                 // this will prevent quest completing without objective
                 const_cast<Quest*>(quest)->SetSpecialFlag(QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT);
             }
@@ -4607,37 +4621,6 @@ struct SQLWorldLoader : public SQLStorageLoaderBase<SQLWorldLoader, SQLStorage>
         dst = D(sScriptMgr.GetScriptId(src));
     }
 };
-
-//void ObjectMgr::LoadWorldTemplate()
-//{
-//    SQLWorldLoader loader;
-//    loader.Load(sWorldTemplate, false);
-//
-//    for (uint32 i = 0; i < sWorldTemplate.GetMaxEntry(); ++i)
-//    {
-//        WorldTemplate const* temp = GetWorldTemplate(i);
-//        if (!temp)
-//            { continue; }
-//
-//        MapEntry const* mapEntry = sMapStore.LookupEntry(temp->map);
-//        if (!mapEntry)
-//        {
-//            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: bad mapid %d for template!", temp->map);
-//            sWorldTemplate.EraseEntry(i);
-//            continue;
-//        }
-//
-//        if (mapEntry->Instanceable())
-//        {
-//            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: instanceable mapid %d for template!", temp->map);
-//            sWorldTemplate.EraseEntry(i);
-//            continue;
-//        }
-//    }
-//
-//    sLog.outString(">> Loaded %u World Template definitions", sWorldTemplate.GetRecordCount());
-//    sLog.outString();
-//}
 
 void ObjectMgr::LoadConditions()
 {
@@ -6837,7 +6820,7 @@ static LanguageType GetRealmLanguageType(bool create)
     }
 }
 
-bool isValidString(const std::wstring& wstr, uint32 strictMask, bool numericOrSpace, bool create = false)
+bool isValidString(const std::wstring &wstr, uint32 strictMask, bool numericOrSpace, bool create = false)
 {
     if (strictMask == 0)                                    // any language, ignore realm
     {
@@ -8400,7 +8383,7 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
         trainerSpell.reqLevel      = fields[5].GetUInt32();
 
         trainerSpell.isProvidedReqLevel = trainerSpell.reqLevel > 0;
-        
+
         if (trainerSpell.reqLevel)
         {
             if (trainerSpell.reqLevel == spellinfo->spellLevel)
@@ -9047,8 +9030,6 @@ void ObjectMgr::RemoveArenaTeam(uint32 Id)
 {
     mArenaTeamMap.erase(Id);
 }
-
-
 void ObjectMgr::GetCreatureLocaleStrings(uint32 entry, int32 loc_idx, char const** namePtr, char const** subnamePtr) const
 {
     if (loc_idx >= 0)

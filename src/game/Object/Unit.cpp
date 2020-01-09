@@ -1815,7 +1815,9 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
 
         // there is a newbie protection, at level 10 just 7% base chance; assuming linear function
         if (pVictim->getLevel() < 30)
-            { Probability = 0.65f * pVictim->getLevel() + 0.5f; }
+        {
+            Probability = 0.65f * pVictim->getLevel() + 0.5f;
+        }
 
         uint32 VictimDefense = pVictim->GetDefenseSkillValue();
         uint32 AttackerMeleeSkill = GetUnitMeleeSkill();
@@ -1823,10 +1825,15 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
         Probability *= AttackerMeleeSkill / (float)VictimDefense;
 
         if (Probability > 40.0f)
-            { Probability = 40.0f; }
+        {
+            Probability = 40.0f;
+        }
 
         if (roll_chance_f(Probability))
-            { CastSpell(pVictim, 1604, true); }
+        {
+            CastSpell(pVictim, 1604, true);
+        }
+
     }
 
     // update at damage Judgement aura duration that applied by attacker at victim
@@ -2343,7 +2350,7 @@ void Unit::AttackerStateUpdate(Unit* pVictim, WeaponAttackType attType, bool ext
         }
         return;
     }
-    
+
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MELEE_ATTACK);
     
     // attack can be redirected to another target
@@ -7100,8 +7107,6 @@ bool Unit::IsTargetableForAttack(bool inverseAlive /*=false*/) const
 
 int32 Unit::ModifyHealth(int32 dVal)
 {
-    int32 gain = 0;
-
     if (dVal == 0)
         { return 0; }
 
@@ -7116,6 +7121,7 @@ int32 Unit::ModifyHealth(int32 dVal)
 
     int32 maxHealth = (int32)GetMaxHealth();
 
+    int32 gain;
     if (val < maxHealth)
     {
         SetHealth(val);
@@ -7132,8 +7138,6 @@ int32 Unit::ModifyHealth(int32 dVal)
 
 int32 Unit::ModifyPower(Powers power, int32 dVal)
 {
-    int32 gain = 0;
-
     if (dVal == 0)
         { return 0; }
 
@@ -7148,6 +7152,7 @@ int32 Unit::ModifyPower(Powers power, int32 dVal)
 
     int32 maxPower = (int32)GetMaxPower(power);
 
+    int32 gain;
     if (val < maxPower)
     {
         SetPower(power, val);
@@ -7612,7 +7617,6 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
             ++((Player*)this)->m_forced_speed_changes[mtype];
 
             WorldPacket data(SetSpeed2Opc_table[mtype][0], 18);
-    //        WorldPacket data(Opcodes(SetSpeed2Opc_table[mtype][0]), 18);
             data << GetPackGUID();
             data << (uint32)0;                              // moveEvent, NUM_PMOVE_EVTS = 0x39
             if (mtype == MOVE_RUN)
@@ -7621,7 +7625,6 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
             ((Player*)this)->GetSession()->SendPacket(&data);
         }
         WorldPacket data(SetSpeed2Opc_table[mtype][1], 12);
-    //    WorldPacket data(Opcodes(SetSpeed2Opc_table[mtype][1]), 12);  // Travis throws up the error: "parameter may not have variably modified type"
         data << GetPackGUID();
         data << float(GetSpeed(mtype));
         SendMessageToSet(&data, false);
@@ -8590,6 +8593,7 @@ uint32 Unit::GetCreatePowers(Powers power) const
         case POWER_FOCUS:       return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->IsPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : POWER_FOCUS_DEFAULT);
         case POWER_ENERGY:      return POWER_ENERGY_DEFAULT;
         case POWER_HAPPINESS:   return (GetTypeId() == TYPEID_PLAYER || !((Creature const*)this)->IsPet() || ((Pet const*)this)->getPetType() != HUNTER_PET ? 0 : POWER_HAPPINESS_DEFAULT);
+        default: break; //MAX_POWERS and POWERS_ALL probably should not belong to the enum Powers to do not require the default: case
     }
 
     return 0;

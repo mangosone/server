@@ -129,7 +129,7 @@ struct GameObjectInfo
             uint32 spellId;                                 // 3
             uint32 charges;                                 // 4 need respawn (if > 0)
             uint32 cooldown;                                // 5 time in secs
-            uint32 autoCloseTime;                           // 6
+            uint32 autoCloseTime;                           //6 secs till autoclose = autoCloseTime / IN_MILLISECONDS (previous was 0x10000)
             uint32 startDelay;                              // 7
             uint32 serverOnly;                              // 8
             uint32 stealthed;                               // 9
@@ -169,7 +169,7 @@ struct GameObjectInfo
             uint32 lockId;                                  // 0 -> Lock.dbc
             uint32 questId;                                 // 1
             uint32 eventId;                                 // 2
-            uint32 autoCloseTime;                           // 3
+            uint32 autoCloseTime;                           //3 secs till autoclose = autoCloseTime / IN_MILLISECONDS (previous was 0x10000)
             uint32 customAnim;                              // 4
             uint32 consumable;                              // 5
             uint32 cooldown;                                // 6
@@ -192,7 +192,7 @@ struct GameObjectInfo
         {
             uint32 pause;                                   // 0
             uint32 startOpen;                               // 1
-            uint32 autoCloseTime;                           // 2 secs till autoclose = autoCloseTime / 0x10000
+            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / IN_MILLISECONDS (previous was 0x10000)
         } transport;
         // 12 GAMEOBJECT_TYPE_AREADAMAGE
         struct
@@ -202,7 +202,7 @@ struct GameObjectInfo
             uint32 damageMin;                               // 2
             uint32 damageMax;                               // 3
             uint32 damageSchool;                            // 4
-            uint32 autoCloseTime;                           // 5 secs till autoclose = autoCloseTime / 0x10000
+            uint32 autoCloseTime;                           //5 secs till autoclose = autoCloseTime / IN_MILLISECONDS (previous was 0x10000)
             uint32 openTextID;                              // 6
             uint32 closeTextID;                             // 7
         } areadamage;
@@ -504,9 +504,9 @@ struct GameObjectLocale
 // client side GO show states
 enum GOState
 {
-    GO_STATE_ACTIVE             = 0,                        // show in world as used and not reset (closed door open)
-    GO_STATE_READY              = 1,                        // show in world as ready (closed door close)
-    GO_STATE_ACTIVE_ALTERNATIVE = 2                         // show in world as used in alt way and not reset (closed door open by cannon fire)
+    GO_STATE_ACTIVE             = 0x00,                     // show in world as used and not reset (closed door open)
+    GO_STATE_READY              = 0x01,                     // show in world as ready (closed door close)
+    GO_STATE_ACTIVE_ALTERNATIVE = 0x02,                     // show in world as used in alt way and not reset (closed door open by cannon fire)
 };
 
 #define MAX_GO_STATE              3
@@ -531,7 +531,7 @@ struct GameObjectData
 };
 
 // For containers:  [GO_NOT_READY]->GO_READY (close)->GO_ACTIVATED (open) ->GO_JUST_DEACTIVATED->GO_READY        -> ...
-// For bobber:      [GO_NOT_READY]  ->GO_READY (close)->GO_ACTIVATED (open) ->GO_JUST_DEACTIVATED-><deleted>
+// For bobber:      [GO_NOT_READY]->GO_READY (close)->GO_ACTIVATED (open) ->GO_JUST_DEACTIVATED-><deleted>
 // For door(closed):[GO_NOT_READY]->GO_READY (close)->GO_ACTIVATED (open) ->GO_JUST_DEACTIVATED->GO_READY(close) -> ...
 // For door(open):  [GO_NOT_READY]->GO_READY (open) ->GO_ACTIVATED (close)->GO_JUST_DEACTIVATED->GO_READY(open)  -> ...
 enum LootState
@@ -755,7 +755,7 @@ class GameObject : public WorldObject
 
         GuidSet m_SkillupSet;                               // players that already have skill-up at GO use
 
-        uint32 m_useTimes;                                  // amount uses/charges triggered
+        uint32 m_useTimes;                                  // amount uses/charges triggered - also used for health for DESTRUCTIBLE_BUILDING
 
         // collected only for GAMEOBJECT_TYPE_SUMMONING_RITUAL
         ObjectGuid m_firstUser;                             // first GO user, in most used cases owner, but in some cases no, for example non-summoned multi-use GAMEOBJECT_TYPE_SUMMONING_RITUAL

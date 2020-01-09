@@ -32,13 +32,12 @@
 #include <ace/RW_Thread_Mutex.h>
 #include "Utilities/UnorderedMapSet.h"
 #include "Policies/ThreadingModel.h"
-
 #include "UpdateData.h"
-
 #include "GridDefines.h"
 #include "Object.h"
 #include "Player.h"
 #include "Corpse.h"
+
 
 class Unit;
 class WorldObject;

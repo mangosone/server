@@ -62,6 +62,11 @@ class Item;
 
 struct AreaTrigger;
 
+#ifdef ENABLE_PLAYERBOTS
+class PlayerbotAI;
+class PlayerbotMgr;
+#endif
+
 typedef std::deque<Mail*> PlayerMails;
 
 #define PLAYER_MAX_SKILLS           127
@@ -486,7 +491,7 @@ enum MirrorTimerType
 {
     FATIGUE_TIMER               = 0,
     BREATH_TIMER                = 1,
-    FIRE_TIMER                  = 2
+    FIRE_TIMER                  = 2     // probably mistake. More like to FEIGN_DEATH_TIMER
 };
 #define MAX_TIMERS              3
 #define DISABLED_MIRROR_TIMER   -1
@@ -1452,6 +1457,9 @@ class Player : public Unit
         /*********************************************************/
 
         bool LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder);
+#ifdef ENABLE_PLAYERBOTS
+        bool MinimalLoadFromDB(QueryResult *result, uint32 guid);
+#endif
 
         static uint32 GetZoneIdFromDB(ObjectGuid guid);
         static uint32 GetLevelFromDB(ObjectGuid guid);
@@ -2614,6 +2622,10 @@ class Player : public Unit
         GridReference<Player> m_gridRef;
         MapReference m_mapRef;
 
+#ifdef ENABLE_PLAYERBOTS
+        PlayerbotAI* m_playerbotAI;
+        PlayerbotMgr* m_playerbotMgr;
+#endif
         // Homebind coordinates
         uint32 m_homebindMapId;
         uint16 m_homebindAreaId;

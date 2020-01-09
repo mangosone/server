@@ -121,7 +121,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
                 CanCastResult castResult = CanCastSpell(pTarget, pSpell, uiCastFlags & CAST_TRIGGERED);
 
                 if (castResult != CAST_OK)
-                    { return castResult; }
+                { 
+                    return castResult;
+                }
             }
 
             // Interrupt any previous spell
@@ -193,15 +195,17 @@ void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=fals
 void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
 {
     MotionMaster* creatureMotion = m_creature->GetMotionMaster();
+    MovementGeneratorType mmgen = creatureMotion->GetCurrentMovementGeneratorType();
     creatureMotion->MovementExpired(false);
 
     if (IsCombatMovement())
-        { creatureMotion->MoveChase(victim, m_attackDistance, m_attackAngle); }
+      { creatureMotion->MoveChase(victim, m_attackDistance, m_attackAngle); }
+
     // TODO - adapt this to only stop OOC-MMGens when MotionMaster rewrite is finished
-    else if (creatureMotion->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE || creatureMotion->GetCurrentMovementGeneratorType() == RANDOM_MOTION_TYPE)
+    else if (mmgen == WAYPOINT_MOTION_TYPE || mmgen == RANDOM_MOTION_TYPE)
     {
-        m_creature->StopMoving();
         creatureMotion->MoveIdle();
+        m_creature->StopMoving();
     }
 }
 

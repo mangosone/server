@@ -189,7 +189,6 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) c
     buf << uint8(m_objectTypeId);
 
     BuildMovementUpdate(&buf, updateFlags);
-
     UpdateMask updateMask;
     updateMask.SetCount(m_valuesCount);
     _SetCreateBits(&updateMask, target);
@@ -1296,13 +1295,13 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
 {
     float new_z = GetMap()->GetHeight(x, y, z);
     if (new_z > INVALID_HEIGHT)
-        { z = new_z + 0.05f; }                                  // just to be sure that we are not a few pixel under the surface
+    { z = new_z + 0.05f; }                                  // just to be sure that we are not a few pixel under the surface
 }
 
 void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=NULL*/) const
 {
     if (!atMap)
-        atMap = GetMap();
+    { atMap = GetMap(); }
 
     switch (GetTypeId())
     {

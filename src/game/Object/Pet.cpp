@@ -249,9 +249,9 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     uint32 savedpower = fields[14].GetUInt32();
 
     // set current pet as current
-    // 0=current
-    // 1..MAX_PET_STABLES in stable slot
-    // PET_SAVE_NOT_IN_SLOT(100) = not stable slot (summoning))
+    // 0 = current
+    // 1..MAX_PET_STABLES = in stable slot
+    // PET_SAVE_NOT_IN_SLOT(100) = not stable slot (summoning) or hunter pet dead
     if (fields[10].GetUInt32() != 0)
     {
         CharacterDatabase.BeginTransaction();
@@ -2147,19 +2147,19 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             return;
     }
 
-        // Get owner current speed
-        float ownerSpeed = owner->GetSpeedRate(mtype);
-        int32 slow = owner->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
+    // Get owner current speed
+    float ownerSpeed = owner->GetSpeedRate(mtype);
+    int32 slow = owner->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
 
-            // If owner is affected by speed reduction effects, do not take them into account
-                // (a dazed hunter does not affect pet's speed)
-            if (slow)
-            { ownerSpeed *= 100.0f / (100.0f + slow); }
-        
-            float speed = std::max(non_stack_bonus, stack_bonus) * ownerSpeed;
-        
-            if (main_speed_mod)
-            speed = speed * (100.0f + main_speed_mod) / 100.0f;
+    // If owner is affected by speed reduction effects, do not take them into account
+    // (a dazed hunter does not affect pet's speed)
+    if (slow)
+        { ownerSpeed *= 100.0f / (100.0f + slow) ;}
+
+    float speed = std::max(non_stack_bonus, stack_bonus) * ownerSpeed;
+
+    if (main_speed_mod)
+      speed = speed * (100.0f + main_speed_mod) / 100.0f;
 
     switch (mtype)
     {
@@ -2182,7 +2182,7 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     }
 
     // Apply strongest slow aura mod to speed
-    slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);;
+    slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
     if (slow)
         { speed *= (100.0f + slow) / 100.0f; }
 

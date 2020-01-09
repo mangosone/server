@@ -107,6 +107,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
     if (spell)
     {
         // some triggered spells have data only usable for client
+        // any triggered spell should be an instant cast
         if (spell->IsTriggeredSpellWithRedundentCastTime())
             { return 0; }
 
@@ -313,21 +314,20 @@ WeaponAttackType GetWeaponAttackType(SpellEntry const* spellInfo)
     switch (spellInfo->DmgClass)
     {
         case SPELL_DAMAGE_CLASS_MELEE:
+        {
             if (spellInfo->HasAttribute(SPELL_ATTR_EX3_REQ_OFFHAND))
-                { return OFF_ATTACK; }
-            else
-                { return BASE_ATTACK; }
-            break;
+              { return OFF_ATTACK; }
+            return BASE_ATTACK;
+        }
         case SPELL_DAMAGE_CLASS_RANGED:
             return RANGED_ATTACK;
-            break;
         default:
+        {
             // Wands
             if (spellInfo->HasAttribute(SPELL_ATTR_EX2_AUTOREPEAT_FLAG))
-                { return RANGED_ATTACK; }
-            else
-                { return BASE_ATTACK; }
-            break;
+              { return RANGED_ATTACK; }
+            return BASE_ATTACK;
+        }
     }
 }
 
@@ -1561,6 +1561,7 @@ void SpellMgr::LoadSpellBonuses()
             dot_diff = std::abs(sbe.dot_damage - dot_calc);
         }
 
+        // direct bonus
         if (direct_diff < 0.02f && !need_dot && !sbe.ap_bonus && !sbe.ap_dot_bonus)
             sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not needed (data from table: %f, calculated %f, difference of %f) and `dot_bonus` also not used",
                             entry, sbe.direct_damage, direct_calc, direct_diff);
@@ -1597,7 +1598,6 @@ void SpellMgr::LoadSpellBonuses()
     delete result;
 
     sLog.outString(">> Loaded %u extra spell bonus data",  count);
-    sLog.outString();
 }
 
 void SpellMgr::LoadSpellLinked()
@@ -1646,16 +1646,17 @@ void SpellMgr::LoadSpellLinked()
 
         SpellLinkedEntry data;
 
-        data.spellId = entry;
-        data.linkedId = linkedEntry;
-        data.type = fields[2].GetUInt32();
-        data.effectMask = fields[3].GetUInt32();
+        data.spellId      = entry;
+        data.linkedId     = linkedEntry;
+        data.type         = fields[2].GetUInt32();
+        data.effectMask   = fields[3].GetUInt32();
 
         mSpellLinkedMap.insert(SpellLinkedMap::value_type(entry, data));
 
         ++count;
 
-    } while (result->NextRow());
+    }
+    while (result->NextRow());
 
     delete result;
 
@@ -1912,7 +1913,7 @@ void SpellMgr::ModDBCSpellAttributes()
             // If MeleeSpellHitResult method is executed for this spell id, it means that the spellId sent by the client for execute did already passed.
             case 20647:
                 spellInfo->Attributes |= SPELL_ATTR_IMPOSSIBLE_DODGE_PARRY_BLOCK;
-                spellInfo->AttributesEx3 |= SPELL_ATTR_EX3_CANT_MISS;                
+                spellInfo->AttributesEx3 |= SPELL_ATTR_EX3_CANT_MISS;
                 break;
         }
     }
@@ -2052,39 +2053,53 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Shade Soul Channel and Akama Soul Channel
                     if ((spellInfo_1->Id == 40401 && spellInfo_2->Id == 40447) ||
                             (spellInfo_2->Id == 40401 && spellInfo_1->Id == 40447))
+                    {
                         return false;
+                    }
 
                     // Eye Blast visual and Eye Blast
                     if ((spellInfo_1->Id == 39908 && spellInfo_2->Id == 40017) ||
                             (spellInfo_2->Id == 39908 && spellInfo_1->Id == 40017))
+                    {
                         return false;
+                    }
 
                     // Encapsulate and Encapsulate (channeled)
                     if ((spellInfo_1->Id == 45665 && spellInfo_2->Id == 45661) ||
                             (spellInfo_2->Id == 45665 && spellInfo_1->Id == 45661))
+                    {
                         return false;
+                    }
 
                     // Felblaze Visual and Fog of Corruption
                     if ((spellInfo_1->Id == 45068 && spellInfo_2->Id == 45582) ||
                             (spellInfo_2->Id == 45068 && spellInfo_1->Id == 45582))
+                    {
                         return false;
+                    }
 
                     // Simon Game START timer, (DND) and Simon Game Pre-game timer
                     if ((spellInfo_1->Id == 39993 && spellInfo_2->Id == 40041) ||
                             (spellInfo_2->Id == 39993 && spellInfo_1->Id == 40041))
+                    {
                         return false;
+                    }
 
                     // Karazhan - Chess: Is Square OCCUPIED aura Karazhan - Chess: Create Move Marker
                     if ((spellInfo_1->Id == 39400 && spellInfo_2->Id == 32261) ||
                             (spellInfo_2->Id == 39400 && spellInfo_1->Id == 32261))
+                    {
                         return false;
+                    }
                     break;
                 }
                 case SPELLFAMILY_MAGE:
+                {
                     // Arcane Intellect and Insight
                     if (spellInfo_2->SpellIconID == 125 && spellInfo_1->Id == 18820)
                         { return false; }
                     break;
+                }
                 case SPELLFAMILY_WARRIOR:
                 {
                     // Scroll of Protection and Defensive Stance (multi-family check)
@@ -4102,7 +4117,6 @@ bool IsDiminishingReturnsGroupDurationLimited(DiminishingGroup group)
         default:
             return false;
     }
-    return false;
 }
 
 DiminishingReturnsType GetDiminishingReturnsGroupType(DiminishingGroup group)

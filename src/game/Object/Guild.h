@@ -86,7 +86,7 @@ enum Typecommand
 
 enum CommandErrors
 {
-    ERR_PLAYER_NO_MORE_IN_GUILD     = 0x00,
+    ERR_PLAYER_NO_MORE_IN_GUILD     = 0x00, // no message/error
     ERR_GUILD_INTERNAL              = 0x01,
     ERR_ALREADY_IN_GUILD            = 0x02,
     ERR_ALREADY_IN_GUILD_S          = 0x03,
@@ -94,8 +94,8 @@ enum CommandErrors
     ERR_ALREADY_INVITED_TO_GUILD_S  = 0x05,
     ERR_GUILD_NAME_INVALID          = 0x06,
     ERR_GUILD_NAME_EXISTS_S         = 0x07,
-    ERR_GUILD_LEADER_LEAVE          = 0x08,
-    ERR_GUILD_PERMISSIONS           = 0x08,
+    ERR_GUILD_LEADER_LEAVE          = 0x08, // for Typecommand 0x03
+    ERR_GUILD_PERMISSIONS           = 0x08, // for another Typecommand
     ERR_GUILD_PLAYER_NOT_IN_GUILD   = 0x09,
     ERR_GUILD_PLAYER_NOT_IN_GUILD_S = 0x0A,
     ERR_GUILD_PLAYER_NOT_FOUND_S    = 0x0B,

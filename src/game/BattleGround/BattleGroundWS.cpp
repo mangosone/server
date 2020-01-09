@@ -460,8 +460,6 @@ void BattleGroundWS::HandleAreaTrigger(Player* source, uint32 trigger)
     if (GetStatus() != STATUS_IN_PROGRESS)
         { return; }
 
-    // uint32 SpellId = 0;
-    // uint64 buff_guid = 0;
     switch (trigger)
     {
         case 3686:                                          // Alliance elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in BattleGround::Update().
