@@ -145,22 +145,30 @@ Quest::Quest(Field* questRecord)
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
     {
         if (ReqItemId[i])
-            { ++m_reqitemscount; }
+        {
+            ++m_reqitemscount;
+        }
 
         if (ReqCreatureOrGOId[i])
-            { ++m_reqCreatureOrGOcount; }
+        {
+            ++m_reqCreatureOrGOcount;
+        }
     }
 
     for (int i = 0; i < QUEST_REWARDS_COUNT; ++i)
     {
         if (RewItemId[i])
-            { ++m_rewitemscount; }
+        {
+            ++m_rewitemscount;
+        }
     }
 
     for (int i = 0; i < QUEST_REWARD_CHOICES_COUNT; ++i)
     {
         if (RewChoiceItemId[i])
-            { ++m_rewchoiceitemscount; }
+        {
+            ++m_rewchoiceitemscount;
+        }
     }
 }
 
@@ -174,7 +182,9 @@ uint32 Quest::XPValue(Player* pPlayer) const
             uint32 qLevel = QuestLevel > 0 ? (uint32)QuestLevel : 0;
             float fullxp = 0;
             if (qLevel >= 65)
-                { fullxp = RewMoneyMaxLevel / 6.0f; }
+            {
+                fullxp = RewMoneyMaxLevel / 6.0f;
+            }
             else if (qLevel == 64)
                 { fullxp = RewMoneyMaxLevel / 4.8f; }
             else if (qLevel == 63)
@@ -187,7 +197,9 @@ uint32 Quest::XPValue(Player* pPlayer) const
                 { fullxp = RewMoneyMaxLevel / 0.6f; }
 
             if (pLevel <= qLevel +  5)
-                { return uint32(ceilf(fullxp)); }
+            {
+                return uint32(ceilf(fullxp));
+            }
             else if (pLevel == qLevel +  6)
                 { return uint32(ceilf(fullxp * 0.8f)); }
             else if (pLevel == qLevel +  7)
@@ -207,7 +219,9 @@ uint32 Quest::XPValue(Player* pPlayer) const
 int32  Quest::GetRewOrReqMoney() const
 {
     if (RewOrReqMoney <= 0)
-        { return RewOrReqMoney; }
+    {
+        return RewOrReqMoney;
+    }
 
     return int32(RewOrReqMoney * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
 }
@@ -215,7 +229,9 @@ int32  Quest::GetRewOrReqMoney() const
 bool Quest::IsAllowedInRaid() const
 {
     if (Type == QUEST_TYPE_RAID)
-        { return true; }
+    {
+        return true;
+    }
 
     return sWorld.getConfig(CONFIG_BOOL_QUEST_IGNORE_RAID);
 }

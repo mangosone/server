@@ -57,7 +57,9 @@ void WorldSession::SendTaxiStatus(ObjectGuid guid)
 
     // not found nearest
     if (curloc == 0)
-        { return; }
+    {
+        return;
+    }
 
     DEBUG_LOG("WORLD: current location %u ", curloc);
 
@@ -86,11 +88,15 @@ void WorldSession::HandleTaxiQueryAvailableNodes(WorldPacket& recv_data)
 
     // remove fake death
     if (GetPlayer()->hasUnitState(UNIT_STAT_DIED))
-        { GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH); }
+    {
+        GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
+    }
 
     // unknown taxi node case
     if (SendLearnNewTaxiNode(unit))
-        { return; }
+    {
+        return;
+    }
 
     // known taxi node case
     SendTaxiMenu(unit);
@@ -102,7 +108,9 @@ void WorldSession::SendTaxiMenu(Creature* unit)
     uint32 curloc = sObjectMgr.GetNearestTaxiNode(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ(), unit->GetMapId(), GetPlayer()->GetTeam());
 
     if (curloc == 0)
-        { return; }
+    {
+        return;
+    }
 
     DEBUG_LOG("WORLD: CMSG_TAXINODE_STATUS_QUERY %u ", curloc);
 
@@ -120,13 +128,17 @@ void WorldSession::SendDoFlight(uint32 mountDisplayId, uint32 path, uint32 pathN
 {
     // remove fake death
     if (GetPlayer()->hasUnitState(UNIT_STAT_DIED))
-        { GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH); }
+    {
+        GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
+    }
 
     while (GetPlayer()->GetMotionMaster()->GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE)
         { GetPlayer()->GetMotionMaster()->MovementExpired(false); }
 
     if (mountDisplayId)
-        { GetPlayer()->Mount(mountDisplayId); }
+    {
+        GetPlayer()->Mount(mountDisplayId);
+    }
 
     GetPlayer()->GetMotionMaster()->MoveTaxiFlight(path, pathNode);
 }
@@ -189,7 +201,9 @@ void WorldSession::HandleActivateTaxiExpressOpcode(WorldPacket& recv_data)
     }
 
     if (nodes.empty())
-        { return; }
+    {
+        return;
+    }
 
     DEBUG_LOG("WORLD: Received opcode CMSG_ACTIVATETAXIEXPRESS from %d to %d" , nodes.front(), nodes.back());
 
@@ -221,7 +235,9 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
     // we need process only (1)
     uint32 curDest = GetPlayer()->m_taxi.GetTaxiDestination();
     if (!curDest)
-        { return; }
+    {
+        return;
+    }
 
     TaxiNodesEntry const* curDestNode = sTaxiNodesStore.LookupEntry(curDest);
 

@@ -539,7 +539,9 @@ class ObjectMgr
         {
             QuestAreaTriggerMap::const_iterator itr = mQuestAreaTriggerMap.find(Trigger_ID);
             if (itr != mQuestAreaTriggerMap.end())
-                { return itr->second; }
+            {
+                return itr->second;
+            }
             return 0;
         }
         bool IsTavernAreaTrigger(uint32 Trigger_ID) const
@@ -564,7 +566,9 @@ class ObjectMgr
         {
             AreaTriggerMap::const_iterator itr = mAreaTriggers.find(trigger);
             if (itr != mAreaTriggers.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
             return NULL;
         }
 
@@ -575,7 +579,9 @@ class ObjectMgr
         {
             RepRewardRateMap::const_iterator itr = m_RepRewardRateMap.find(factionId);
             if (itr != m_RepRewardRateMap.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
 
             return NULL;
         }
@@ -584,7 +590,9 @@ class ObjectMgr
         {
             RepOnKillMap::const_iterator itr = mRepOnKill.find(id);
             if (itr != mRepOnKill.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
             return NULL;
         }
 
@@ -592,7 +600,9 @@ class ObjectMgr
         {
             RepSpilloverTemplateMap::const_iterator itr = m_RepSpilloverTemplateMap.find(factionId);
             if (itr != m_RepSpilloverTemplateMap.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
 
             return NULL;
         }
@@ -601,7 +611,9 @@ class ObjectMgr
         {
             PointOfInterestMap::const_iterator itr = mPointsOfInterest.find(id);
             if (itr != mPointsOfInterest.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
             return NULL;
         }
 
@@ -609,7 +621,9 @@ class ObjectMgr
         {
             PetCreateSpellMap::const_iterator itr = mPetCreateSpell.find(id);
             if (itr != mPetCreateSpell.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
             return NULL;
         }
 
@@ -747,13 +761,17 @@ class ObjectMgr
         uint32 GenerateStaticCreatureLowGuid()
         {
             if (m_StaticCreatureGuids.GetNextAfterMaxUsed() >= m_FirstTemporaryCreatureGuid)
-            { return 0; }
+            {
+                return 0;
+            }
             return m_StaticCreatureGuids.Generate();
         }
         uint32 GenerateStaticGameObjectLowGuid()
         {
             if (m_StaticGameObjectGuids.GetNextAfterMaxUsed() >= m_FirstTemporaryGameObjectGuid)
-            { return 0; }
+            {
+                return 0;
+            }
             return m_StaticGameObjectGuids.Generate();
         }
 
@@ -802,7 +820,9 @@ class ObjectMgr
         {
             ItemTextMap::const_iterator itr = mItemTexts.find(id);
             if (itr != mItemTexts.end())
-                { return itr->second; }
+            {
+                return itr->second;
+            }
             else
                 { return "There is no info for this item"; }
         }
@@ -844,7 +864,9 @@ class ObjectMgr
         {
             for (CreatureDataMap::const_iterator itr = mCreatureDataMap.begin(); itr != mCreatureDataMap.end(); ++itr)
                 if (worker(*itr))
-                    { break; }
+                {
+                    break;
+                }
         }
 
         CreatureLocale const* GetCreatureLocale(uint32 entry) const
@@ -937,7 +959,9 @@ class ObjectMgr
         {
             for (GameObjectDataMap::const_iterator itr = mGameObjectDataMap.begin(); itr != mGameObjectDataMap.end(); ++itr)
                 if (worker(*itr))                           // arg = GameObjectDataPair
-                    { break; }
+                {
+                    break;
+                }
         }
 
         MangosStringLocale const* GetMangosStringLocale(int32 entry) const
@@ -950,7 +974,9 @@ class ObjectMgr
         {
             std::map<int32, uint32>::const_iterator itr = m_loadedStringCount.find(minEntry);
             if (itr != m_loadedStringCount.end())
-                { return itr->second; }
+            {
+                return itr->second;
+            }
             return 0;
         }
 
@@ -1010,7 +1036,9 @@ class ObjectMgr
         {
             CacheNpcTextIdMap::const_iterator iter = m_mCacheNpcTextIdMap.find(entry);
             if (iter == m_mCacheNpcTextIdMap.end())
-                { return 0; }
+            {
+                return 0;
+            }
 
             return iter->second;
         }
@@ -1019,7 +1047,9 @@ class ObjectMgr
         {
             CacheTrainerSpellMap::const_iterator iter = m_mCacheTrainerSpellMap.find(entry);
             if (iter == m_mCacheTrainerSpellMap.end())
-                { return NULL; }
+            {
+                return NULL;
+            }
 
             return &iter->second;
         }
@@ -1028,7 +1058,9 @@ class ObjectMgr
         {
             CacheTrainerSpellMap::const_iterator iter = m_mCacheTrainerTemplateSpellMap.find(entry);
             if (iter == m_mCacheTrainerTemplateSpellMap.end())
-                { return NULL; }
+            {
+                return NULL;
+            }
 
             return &iter->second;
         }
@@ -1037,7 +1069,9 @@ class ObjectMgr
         {
             CacheVendorItemMap::const_iterator  iter = m_mCacheVendorItemMap.find(entry);
             if (iter == m_mCacheVendorItemMap.end())
-                { return NULL; }
+            {
+                return NULL;
+            }
 
             return &iter->second;
         }
@@ -1046,7 +1080,9 @@ class ObjectMgr
         {
             CacheVendorItemMap::const_iterator  iter = m_mCacheVendorTemplateItemMap.find(entry);
             if (iter == m_mCacheVendorTemplateItemMap.end())
-                { return NULL; }
+            {
+                return NULL;
+            }
 
             return &iter->second;
         }

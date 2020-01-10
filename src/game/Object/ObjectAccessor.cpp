@@ -55,13 +55,19 @@ Unit*
 ObjectAccessor::GetUnit(WorldObject const& u, ObjectGuid guid)
 {
     if (!guid)
-        { return nullptr; }
+    {
+        return nullptr;
+    }
 
     if (guid.IsPlayer())
-        { return FindPlayer(guid); }
+    {
+        return FindPlayer(guid);
+    }
 
     if (!u.IsInWorld())
-        { return nullptr; }
+    {
+        return nullptr;
+    }
 
     return u.GetMap()->GetAnyTypeCreature(guid);
 }
@@ -70,9 +76,13 @@ Corpse* ObjectAccessor::GetCorpseInMap(ObjectGuid guid, uint32 mapid)
 {
     Corpse* ret = HashMapHolder<Corpse>::Find(guid);
     if (!ret)
-        { return nullptr; }
+    {
+        return nullptr;
+    }
     if (ret->GetMapId() != mapid)
-        { return nullptr; }
+    {
+        return nullptr;
+    }
 
     return ret;
 }
@@ -80,11 +90,15 @@ Corpse* ObjectAccessor::GetCorpseInMap(ObjectGuid guid, uint32 mapid)
 Player* ObjectAccessor::FindPlayer(ObjectGuid guid, bool inWorld /*= true*/)
 {
     if (!guid)
-        { return nullptr; }
+    {
+        return nullptr;
+    }
 
     Player* plr = HashMapHolder<Player>::Find(guid);
     if (!plr || (!plr->IsInWorld() && inWorld))
-        { return nullptr; }
+    {
+        return nullptr;
+    }
 
     return plr;
 }
@@ -95,7 +109,9 @@ Player* ObjectAccessor::FindPlayerByName(const char* name)
     HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
     for (HashMapHolder<Player>::MapType::iterator iter = m.begin(); iter != m.end(); ++iter)
         if (iter->second->IsInWorld() && (::strcmp(name, iter->second->GetName()) == 0))
-              { return iter->second; }
+        {
+            return iter->second;
+        }
     return nullptr;
 }
 
@@ -131,7 +147,9 @@ ObjectAccessor::GetCorpseForPlayerGUID(ObjectGuid guid)
     Player2CorpsesMapType::iterator iter = i_player2corpse.find(guid);
 
     if (iter == i_player2corpse.end())
-        { return nullptr; }
+    {
+        return nullptr;
+    }
 
     MANGOS_ASSERT(iter->second->GetType() != CORPSE_BONES);
     return iter->second;
@@ -146,7 +164,9 @@ ObjectAccessor::RemoveCorpse(Corpse* corpse)
 
     Player2CorpsesMapType::iterator iter = i_player2corpse.find(corpse->GetOwnerGuid());
     if (iter == i_player2corpse.end())
-        { return; }
+    {
+        return;
+    }
 
     // build mapid*cellid -> guid_set map
     CellPair cell_pair = MaNGOS::ComputeCellPair(corpse->GetPositionX(), corpse->GetPositionY());
@@ -219,7 +239,9 @@ ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insignia)
     // do not load the map if it's not loaded
     Map* map = sMapMgr.FindMap(corpse->GetMapId(), corpse->GetInstanceId());
     if (map)
-        { map->Remove(corpse, false); }
+    {
+        map->Remove(corpse, false);
+    }
 
     // remove corpse from DB
     corpse->DeleteFromDB();
@@ -250,7 +272,9 @@ ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insignia)
         for (int i = 0; i < EQUIPMENT_SLOT_END; ++i)
         {
             if (corpse->GetUInt32Value(CORPSE_FIELD_ITEM + i))
-                { bones->SetUInt32Value(CORPSE_FIELD_ITEM + i, 0); }
+            {
+                bones->SetUInt32Value(CORPSE_FIELD_ITEM + i, 0);
+            }
         }
 
         // add bones in grid store if grid loaded where corpse placed
@@ -273,7 +297,9 @@ void ObjectAccessor::RemoveOldCorpses()
         ++next;
 
         if (!itr->second->IsExpired(now))
-            { continue; }
+        {
+            continue;
+        }
 
         ConvertCorpseForPlayer(itr->first);
     }

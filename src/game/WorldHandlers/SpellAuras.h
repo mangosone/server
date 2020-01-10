@@ -143,11 +143,15 @@ class SpellAuraHolder
         void SetInUse(bool state)
         {
             if (state)
-                { ++m_in_use; }
+            {
+                ++m_in_use;
+            }
             else
             {
                 if (m_in_use)
-                    { --m_in_use; }
+                {
+                    --m_in_use;
+                }
             }
         }
 
@@ -172,7 +176,9 @@ class SpellAuraHolder
         void SetAuraCharges(uint32 charges)
         {
             if (m_procCharges == charges)
-                { return; }
+            {
+                return;
+            }
             m_procCharges = charges;
 
             UpdateAuraApplication();
@@ -180,7 +186,9 @@ class SpellAuraHolder
         bool DropAuraCharge()                               // return true if last charge dropped
         {
             if (m_procCharges == 0)
-                { return false; }
+            {
+                return false;
+            }
 
             --m_procCharges;
             UpdateAuraApplication();
@@ -447,7 +455,9 @@ class Aura
             m_modifier.periodictime = periodicTime;
 
             if (uint32 maxticks = GetAuraMaxTicks())
-                { m_periodicTick = maxticks - GetAuraDuration() / m_modifier.periodictime; }
+            {
+                m_periodicTick = maxticks - GetAuraDuration() / m_modifier.periodictime;
+            }
         }
 
         bool IsPositive() { return m_positive; }
@@ -459,11 +469,15 @@ class Aura
         void SetInUse(bool state)
         {
             if (state)
-                { ++m_in_use; }
+            {
+                ++m_in_use;
+            }
             else
             {
                 if (m_in_use)
-                    { --m_in_use; }
+                {
+                    --m_in_use;
+                }
             }
         }
         void ApplyModifier(bool apply, bool Real = false);

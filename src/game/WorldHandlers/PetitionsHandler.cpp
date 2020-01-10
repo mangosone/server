@@ -88,7 +88,9 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
 
     // remove fake death
     if (GetPlayer()->hasUnitState(UNIT_STAT_DIED))
-        { GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH); }
+    {
+        GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
+    }
 
     uint32 charterid = 0;
     uint32 cost = 0;
@@ -194,7 +196,9 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
     _player->ModifyMoney(-(int32)cost);
     Item* charter = _player->StoreNewItem(dest, charterid, true);
     if (!charter)
-        { return; }
+    {
+        return;
+    }
 
     charter->SetUInt32Value(ITEM_FIELD_ENCHANTMENT_1_1, charter->GetGUIDLow());
     // ITEM_FIELD_ENCHANTMENT_1_1 is guild/arenateam id
@@ -258,13 +262,17 @@ void WorldSession::HandlePetitionShowSignOpcode(WorldPacket& recv_data)
 
     // if guild petition and has guild => error, return;
     if (type == 9 && _player->GetGuildId())
-        { return; }
+    {
+        return;
+    }
 
     result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE petitionguid = '%u'", petitionguid_low);
 
     // result==NULL also correct in case no sign yet
     if (result)
-        { signs = (uint8)result->GetRowCount(); }
+    {
+        signs = (uint8)result->GetRowCount();
+    }
 
     DEBUG_LOG("CMSG_PETITION_SHOW_SIGNATURES petition: %s", petitionguid.GetString().c_str());
 
@@ -381,7 +389,9 @@ void WorldSession::HandlePetitionRenameOpcode(WorldPacket& recv_data)
 
     Item* item = _player->GetItemByGuid(petitionGuid);
     if (!item)
-        { return; }
+    {
+        return;
+    }
 
     QueryResult* result = CharacterDatabase.PQuery("SELECT type FROM petition WHERE petitionguid = '%u'", petitionGuid.GetCounter());
 
@@ -471,7 +481,9 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
     delete result;
 
     if (ownerGuid == _player->GetObjectGuid())
-        { return; }
+    {
+        return;
+    }
 
     // not let enemies sign guild charter
     if (!sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GUILD) &&
@@ -526,7 +538,9 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
     }
 
     if (++signs > type)                                     // client signs maximum
-        { return; }
+    {
+        return;
+    }
 
     // client doesn't allow to sign petition two times by one character, but not check sign by another character from same account
     // not allow sign another player from already sign player account
@@ -545,7 +559,9 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
 
         // update for owner if online
         if (Player* owner = sObjectMgr.GetPlayer(ownerGuid))
-            { owner->GetSession()->SendPacket(&data); }
+        {
+            owner->GetSession()->SendPacket(&data);
+        }
         return;
     }
 
@@ -569,7 +585,9 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
 
     // update for owner if online
     if (Player* owner = sObjectMgr.GetPlayer(ownerGuid))
-        { owner->GetSession()->SendPacket(&data); }
+    {
+        owner->GetSession()->SendPacket(&data);
+    }
 }
 
 void WorldSession::HandlePetitionDeclineOpcode(WorldPacket& recv_data)
@@ -586,7 +604,9 @@ void WorldSession::HandlePetitionDeclineOpcode(WorldPacket& recv_data)
 
     QueryResult* result = CharacterDatabase.PQuery("SELECT ownerguid FROM petition WHERE petitionguid = '%u'", petitionLowGuid);
     if (!result)
-        { return; }
+    {
+        return;
+    }
 
     Field* fields = result->Fetch();
     ObjectGuid ownerguid = ObjectGuid(HIGHGUID_PLAYER, fields[0].GetUInt32());
@@ -615,7 +635,9 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
 
     Player* player = ObjectAccessor::FindPlayer(playerGuid);
     if (!player)
-        { return; }
+    {
+        return;
+    }
 
     /// Get petition type and check
     QueryResult* result = CharacterDatabase.PQuery("SELECT type FROM petition WHERE petitionguid = '%u'", petitionGuid.GetCounter());
@@ -686,7 +708,9 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
     result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE petitionguid = '%u'", petitionGuid.GetCounter());
     // result==NULL also correct charter without signs
     if (result)
-        { signs = (uint8)result->GetRowCount(); }
+    {
+        signs = (uint8)result->GetRowCount();
+    }
 
     /// Send response
     WorldPacket data(SMSG_PETITION_SHOW_SIGNATURES, (8 + 8 + 4 + signs + signs * 12));
@@ -772,7 +796,9 @@ void WorldSession::HandleTurnInPetitionOpcode(WorldPacket& recv_data)
     }
 
     if (_player->GetObjectGuid() != ownerGuid)
-        { return; }
+    {
+        return;
+    }
 
     // signs
     result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE petitionguid = '%u'", petitionGuid.GetCounter());
@@ -840,7 +866,9 @@ void WorldSession::HandleTurnInPetitionOpcode(WorldPacket& recv_data)
 
             ObjectGuid signGuid = ObjectGuid(HIGHGUID_PLAYER, fields[0].GetUInt32());
             if (signGuid.IsEmpty())
-                { continue; }
+            {
+                continue;
+            }
 
             guild->AddMember(signGuid, guild->GetLowestRank());
             result->NextRow();
@@ -917,7 +945,9 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
 
     // remove fake death
     if (GetPlayer()->hasUnitState(UNIT_STAT_DIED))
-        { GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH); }
+    {
+        GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
+    }
 
     uint8 count = 0;
     if (pCreature->IsTabardDesigner())
