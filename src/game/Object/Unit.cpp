@@ -1709,8 +1709,14 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
     // Disable parry or dodge for ranged attack
     if (damageInfo->attackType == RANGED_ATTACK)
     {
-        if (damageInfo->hitOutCome == MELEE_HIT_PARRY) { damageInfo->hitOutCome = MELEE_HIT_NORMAL; }
-        if (damageInfo->hitOutCome == MELEE_HIT_DODGE) { damageInfo->hitOutCome = MELEE_HIT_MISS; }
+        if (damageInfo->hitOutCome == MELEE_HIT_PARRY)
+        {
+            damageInfo->hitOutCome = MELEE_HIT_NORMAL;
+        }
+        if (damageInfo->hitOutCome == MELEE_HIT_DODGE)
+        {
+            damageInfo->hitOutCome = MELEE_HIT_MISS;
+        }
     }
 
     switch (damageInfo->hitOutCome)
@@ -1904,7 +1910,10 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
 
 void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
 {
-    if (damageInfo == 0) { return; }
+    if (damageInfo == 0)
+    {
+        return;
+    }
     Unit* pVictim = damageInfo->target;
 
     if (!this || !pVictim)
@@ -2588,7 +2597,7 @@ void Unit::AttackerStateUpdate(Unit* pVictim, WeaponAttackType attType, bool ext
     }
 
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MELEE_ATTACK);
-    
+
     // attack can be redirected to another target
     if (Unit* magnetTarget = SelectMagnetTarget(pVictim))
         pVictim = magnetTarget;
@@ -3211,8 +3220,14 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell)
     if (pVictim->GetTypeId() == TYPEID_PLAYER)
         HitChance -= int32(((Player*)pVictim)->GetRatingBonusValue(CR_HIT_TAKEN_SPELL) * 100.0f);
 
-    if (HitChance <  100) { HitChance =  100; }
-    if (HitChance > 9900) { HitChance = 9900; }
+    if (HitChance <  100)
+    {
+        HitChance =  100;
+    }
+    if (HitChance > 9900)
+    {
+        HitChance = 9900;
+    }
 
     int32 tmp = spell->HasAttribute(SPELL_ATTR_EX3_CANT_MISS) ? 0 : (10000 - HitChance);
 
@@ -3686,7 +3701,10 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
 
     CurrentSpellTypes CSpellType = pSpell->GetCurrentContainer();
 
-    if (pSpell == m_currentSpells[CSpellType]) { return; }      // avoid breaking self
+    if (pSpell == m_currentSpells[CSpellType])
+    {
+        return;       // avoid breaking self
+    }
 
     // break same type spell if it is not delayed
     InterruptSpell(CSpellType, false);
@@ -3752,7 +3770,7 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
     m_currentSpells[CSpellType] = pSpell;
     pSpell->SetReferencedFromCurrent(true);
 
-    pSpell->SetSelfContainer(&(m_currentSpells[pSpell->GetCurrentContainer()])); 
+    pSpell->SetSelfContainer(&(m_currentSpells[pSpell->GetCurrentContainer()]));
     // previous and faulty version of the following code. If the above proves to work, then delete this instruction
     //   pSpell->m_selfContainer = &(m_currentSpells[pSpell->GetCurrentContainer()]);
 }
@@ -4389,7 +4407,10 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
     {
         next = i;
         ++next;
-        if (!(*i).second) { continue; }
+        if (!(*i).second)
+        {
+            continue;
+        }
 
         SpellEntry const* i_spellProto = (*i).second->GetSpellProto();
 
@@ -4416,7 +4437,10 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
             }
         }
 
-        if (i_spellId == spellId) { continue; }
+        if (i_spellId == spellId)
+        {
+            continue;
+        }
 
         bool is_triggered_by_spell = false;
         // prevent triggering aura of removing aura that triggered it
@@ -6139,9 +6163,15 @@ void Unit::ModifyAuraState(AuraState flag, bool apply)
                 const PlayerSpellMap& sp_list = ((Player*)this)->GetSpellMap();
                 for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
                 {
-                    if (itr->second.state == PLAYERSPELL_REMOVED) { continue; }
+                    if (itr->second.state == PLAYERSPELL_REMOVED)
+                    {
+                        continue;
+                    }
                     SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
-                    if (!spellInfo || !IsPassiveSpell(spellInfo)) { continue; }
+                    if (!spellInfo || !IsPassiveSpell(spellInfo))
+                    {
+                        continue;
+                    }
                     if (AuraState(spellInfo->CasterAuraState) == flag)
                     {
                         CastSpell(this, itr->first, true, NULL);
@@ -7025,7 +7055,10 @@ uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, 
 
     // done scripted mod (take it from owner)
     Unit* owner = GetOwner();
-    if (!owner) { owner = this; }
+    if (!owner)
+    {
+        owner = this;
+    }
     AuraList const& mOverrideClassScript = owner->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
     for (AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
     {

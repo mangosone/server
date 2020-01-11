@@ -994,7 +994,7 @@ void ChatHandler::SendGlobalSysMessage(const char* str, AccountTypes minSec)
         ObjectGuid senderGuid;
         if (m_session)
             senderGuid = m_session->GetPlayer()->GetObjectGuid();
-        
+
         ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, line, LANG_UNIVERSAL, CHAT_TAG_NONE, senderGuid);
         sWorld.SendGlobalMessage(&data, minSec);
     }

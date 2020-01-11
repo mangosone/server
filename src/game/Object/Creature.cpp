@@ -1942,7 +1942,7 @@ bool Creature::IsImmuneToSpell(SpellEntry const* spellInfo, bool castOnSelf)
         {
             return true;
         }
-        
+
         if (GetCreatureInfo()->SchoolImmuneMask & spellInfo->SchoolMask)
         {
             return true;
@@ -2021,7 +2021,10 @@ SpellEntry const* Creature::ReachWithSpellAttack(Unit* pVictim)
                 break;
             }
         }
-        if (bcontinue) { continue; }
+        if (bcontinue)
+        {
+            continue;
+        }
 
         if (spellInfo->manaCost > GetPower(POWER_MANA))
         {

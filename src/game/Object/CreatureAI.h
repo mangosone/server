@@ -323,7 +323,7 @@ class CreatureAI
         bool IsCombatMovement() const { return m_combatMovement != 0; }
         void AddCombatMovementFlags(uint32 cmFlags);
         void ClearCombatMovementFlags(uint32 cmFlags);
-        
+
         ///== Event Handling ===============================
 
         /*

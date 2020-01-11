@@ -1155,7 +1155,7 @@ void PoolManager::LoadFromDB()
             gogroup.AddEntry(plObject, 0);
             SearchPair p(guid, pool_id);
             mGameobjectSearchMap.insert(p);
-        
+
             if (!mapChecker.CheckAndRemember(map, pool_id, "pool_gameobject", "gameobject guid", guid))
             {
                 continue;

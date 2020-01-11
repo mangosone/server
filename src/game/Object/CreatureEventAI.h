@@ -430,7 +430,7 @@ struct CreatureEventAI_Action
             uint32 creatureId;
             uint32 target;
             uint32 spawnId;
-        } summon_unique;        
+        } summon_unique;
         // ACTION_T_EMOTE_TARGET                            = 50
         struct
         {

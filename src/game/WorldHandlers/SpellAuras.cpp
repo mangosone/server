@@ -4916,7 +4916,10 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
                         }
                     }
 
-                        if (cp > 4) { cp = 4; }
+                        if (cp > 4)
+                        {
+                            cp = 4;
+                        }
                         m_modifier.m_amount += int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * cp / 100);
                 }
                 break;
@@ -4932,7 +4935,10 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
                     }
                     // Dmg/tick = $AP*min(0.01*$cp, 0.03) [Like Rip: only the first three CP increase the contribution from AP]
                     uint8 cp = ((Player*)caster)->GetComboPoints();
-                    if (cp > 3) { cp = 3; }
+                    if (cp > 3)
+                    {
+                        cp = 3;
+                    }
                     m_modifier.m_amount += int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * cp / 100);
                 }
                 break;
@@ -5650,7 +5656,7 @@ void Aura::HandleModSpellCritChanceShool(bool /*apply*/, bool Real)
 void Aura::HandleModCastingSpeed(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     GetTarget()->ApplyCastTimePercentMod(amount, apply);
 }
 
@@ -5674,14 +5680,14 @@ void Aura::HandleModCombatSpeedPct(bool apply, bool /*Real*/)
 void Aura::HandleModAttackSpeed(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     GetTarget()->ApplyAttackTimePercentMod(BASE_ATTACK, amount, apply);
 }
 
 void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     Unit* target = GetTarget();
     target->ApplyAttackTimePercentMod(BASE_ATTACK, amount, apply);
     target->ApplyAttackTimePercentMod(OFF_ATTACK, amount, apply);
@@ -5690,7 +5696,7 @@ void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
 void Aura::HandleAuraModRangedHaste(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     GetTarget()->ApplyAttackTimePercentMod(RANGED_ATTACK, amount, apply);
 }
 
@@ -5700,7 +5706,7 @@ void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
     {
         return;
     }
-        
+
     float amount = m_modifier.m_amount;
 
     GetTarget()->ApplyAttackTimePercentMod(RANGED_ATTACK, amount, apply);
@@ -5713,7 +5719,7 @@ void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
 void Aura::HandleAuraModAttackPower(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     GetTarget()->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, amount, apply);
 }
 
@@ -5723,7 +5729,7 @@ void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
     {
         return;
     }
-        
+
     float amount = m_modifier.m_amount;
 
     GetTarget()->HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, amount, apply);
@@ -5732,7 +5738,7 @@ void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
 void Aura::HandleAuraModAttackPowerPercent(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     // UNIT_FIELD_ATTACK_POWER_MULTIPLIER = multiplier - 1
     GetTarget()->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_PCT, amount, apply);
 }
@@ -5745,7 +5751,7 @@ void Aura::HandleAuraModRangedAttackPowerPercent(bool apply, bool /*Real*/)
     }
 
     float amount = m_modifier.m_amount;
-    
+
     // UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER = multiplier - 1
     GetTarget()->HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_PCT, amount, apply);
 }
@@ -6062,8 +6068,14 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             const PlayerSpellMap& sp_list = ((Player*)target)->GetSpellMap();
             for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
             {
-                if (itr->second.state == PLAYERSPELL_REMOVED) { continue; }
-                if (itr->first == spellId1 || itr->first == spellId2) { continue; }
+                if (itr->second.state == PLAYERSPELL_REMOVED)
+                {
+                    continue;
+                }
+                if (itr->first == spellId1 || itr->first == spellId2)
+                {
+                    continue;
+                }
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
                 if (!spellInfo || !IsNeedCastSpellAtFormApply(spellInfo, form))
                 {
@@ -6315,15 +6327,15 @@ void Aura::HandleSpiritOfRedemption(bool apply, bool Real)
             }
         }
 
-        // interrupt casting when entering Spirit of Redemption  
-        if (target->IsNonMeleeSpellCasted(false))  
+        // interrupt casting when entering Spirit of Redemption
+        if (target->IsNonMeleeSpellCasted(false))
         {
             target->InterruptNonMeleeSpells(false);
         }
-   
-        // set health and mana to maximum  
-        target->SetHealth(target->GetMaxHealth());  
-        target->SetPower(POWER_MANA, target->GetMaxPower(POWER_MANA));  
+
+        // set health and mana to maximum
+        target->SetHealth(target->GetMaxHealth());
+        target->SetPower(POWER_MANA, target->GetMaxPower(POWER_MANA));
     }
     // die at aura end
     else

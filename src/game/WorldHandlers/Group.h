@@ -442,7 +442,7 @@ class Group
         InstanceGroupBind* GetBoundInstance(Map* aMap, Difficulty difficulty);
         BoundInstancesMap& GetBoundInstances(Difficulty difficulty)
         {
-            return m_boundInstances[difficulty]; 
+            return m_boundInstances[difficulty];
         }
 
     protected:

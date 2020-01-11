@@ -810,7 +810,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                     bool silenceOff = m_combatMovement & COMBAT_MOVEMENT_SILENCE;
                     ClearCombatMovementFlags(COMBAT_MOVEMENT_LOS | COMBAT_MOVEMENT_DISTANCE | COMBAT_MOVEMENT_OOM | COMBAT_MOVEMENT_SILENCE);
 
-                    if (m_creature->IsInCombat() && m_creature->getVictim() && 
+                    if (m_creature->IsInCombat() && m_creature->getVictim() &&
                         (silenceOff || (!IsCombatMovement() && m_creature->IsNonMeleeSpellCasted(false))))
                     {
                         SetCombatMovement(true, true);      // resetting the same chase movegen
@@ -940,7 +940,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             }
             else
                 {  ClearCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT); }
-                
+
             SetCombatMovement(IsCombatMovement(), true);
 
             if (IsCombatMovement() && action.combat_movement.melee && m_creature->IsInCombat() && m_creature->getVictim())

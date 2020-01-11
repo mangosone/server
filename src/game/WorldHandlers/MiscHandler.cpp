@@ -1005,10 +1005,10 @@ void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recv_data)
     uint32 time_dif;
     //uint8 buf[16];
     WorldPacket data(MSG_MOVE_TIME_SKIPPED, 16);
-    
+
     recv_data >> guid;
     recv_data >> time_dif;
-    
+
     // ignore updates not for us
     if (_player == NULL || guid != _player->GetGUID())
     {

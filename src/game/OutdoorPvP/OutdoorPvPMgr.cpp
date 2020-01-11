@@ -163,7 +163,7 @@ void OutdoorPvPMgr::HandlePlayerLeaveZone(Player* player, uint32 zoneId)
     {
         script->HandlePlayerLeaveZone(player, true);
     }
-    else 
+    else
     {
         script = GetScriptOfAffectedZone(zoneId);
         if (script)

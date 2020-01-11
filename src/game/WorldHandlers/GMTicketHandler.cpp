@@ -86,7 +86,7 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
     }
     else
         { sLog.outError("Ticket update: Player %s (GUID: %u) doesn't have active ticket", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow()); }
-    
+
 }
 
 //A statusCode of 3 would mean that the client should show the survey now
@@ -169,7 +169,7 @@ void WorldSession::HandleGMTicketSurveySubmitOpcode(WorldPacket& recv_data)
     if (!ticket)
         //Should we send GM_TICKET_STATUS_CLOSE here aswell?
         return;
-    
+
     ticket->SaveSurveyData(recv_data);
     //Here something needs to be done to inform the client that the ticket is closed
 }

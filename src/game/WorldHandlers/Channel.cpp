@@ -588,9 +588,9 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         {
             speakInWorldDef = true;
         }
-        
+
     }
-    
+
     if (!IsOn(guid))
     {
         WorldPacket data;

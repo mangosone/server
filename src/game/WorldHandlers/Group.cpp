@@ -994,7 +994,10 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
     {
         SendLootAllPassed(*roll);
         LootItem* item = &(roll->getLoot()->items[roll->itemSlot]);
-        if (item) { item->is_blocked = false; }
+        if (item)
+        {
+            item->is_blocked = false;
+        }
     }
 
     rollI = RollId.erase(rollI);

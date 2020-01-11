@@ -388,7 +388,10 @@ void LoadDBCStores(const std::string& dataPath)
     for (unsigned int i = 0; i < sTalentStore.GetNumRows(); ++i)
     {
         TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
-        if (!talentInfo) { continue; }
+        if (!talentInfo)
+        {
+            continue;
+        }
         for (int j = 0; j < 5; ++j)
             if (talentInfo->RankID[j])
             {
@@ -407,7 +410,10 @@ void LoadDBCStores(const std::string& dataPath)
         for (uint32 i = 1; i < sTalentStore.GetNumRows(); ++i)
         {
             TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
-            if (!talentInfo) { continue; }
+            if (!talentInfo)
+            {
+                continue;
+            }
 
             TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
             if (!talentTabInfo)

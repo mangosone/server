@@ -1109,7 +1109,6 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
                 }
             }
         }
-    
 
     // All calculated do it!
     // Do healing and triggers
@@ -1838,7 +1837,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_PET:
         {
             Pet* tmpUnit = m_caster->GetPet();
-            if (!tmpUnit) { break; }
+            if (!tmpUnit)
+            {
+                break;
+            }
             targetUnitMap.push_back(tmpUnit);
             break;
         }
@@ -2892,7 +2894,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         {
             next = itr;
             ++next;
-            if (!*itr) { continue; }
+            if (!*itr)
+            {
+                continue;
+            }
             if ((*itr) == m_targets.getUnitTarget())
             {
                 targetUnitMap.erase(itr);
@@ -2906,7 +2911,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             uint32 poz = urand(0, targetUnitMap.size() - 1);
             for (UnitList::iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end(); ++itr, --poz)
             {
-                if (!*itr) { continue; }
+                if (!*itr)
+                {
+                    continue;
+                }
 
                 if (!poz)
                 {
@@ -2931,7 +2939,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             {
                 next = itr;
                 ++next;
-                if (!*itr) { continue; }
+                if (!*itr)
+                {
+                    continue;
+                }
                 if ((*itr) == m_targets.getGOTarget())
                 {
                     tempTargetGOList.erase(itr);
@@ -2945,7 +2956,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 uint32 poz = urand(0, tempTargetGOList.size() - 1);
                 for (std::list<GameObject*>::iterator itr = tempTargetGOList.begin(); itr != tempTargetGOList.end(); ++itr, --poz)
                 {
-                    if (!*itr) { continue; }
+                    if (!*itr)
+                    {
+                        continue;
+                    }
 
                     if (!poz)
                     {
@@ -3180,9 +3194,9 @@ void Spell::cast(bool skipCheck)
             // Blood Fury (Racial)
             else if (m_spellInfo->SpellIconID == 1662 && m_spellInfo->AttributesEx & 0x20)
                 AddPrecastSpell(23230);                     // Blood Fury - Healing Reduction
-            // Weak Alcohol  
-            else if (m_spellInfo->SpellIconID == 1306 && m_spellInfo->SpellVisual == 11359)  
-                AddTriggeredSpell(51655);                   // BOTM - Create Empty Brew Bottle  
+            // Weak Alcohol
+            else if (m_spellInfo->SpellIconID == 1306 && m_spellInfo->SpellVisual == 11359)
+                AddTriggeredSpell(51655);                   // BOTM - Create Empty Brew Bottle
 
             break;
         }
@@ -4985,8 +4999,8 @@ SpellCastResult Spell::CheckCast(bool strict)
             return SPELL_FAILED_TARGET_AFFECTING_COMBAT;
         }
 
-        // check if target is affected by Spirit of Redemption (Aura: 27827)  
-        if (target->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))  
+        // check if target is affected by Spirit of Redemption (Aura: 27827)
+        if (target->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
         {
             return SPELL_FAILED_BAD_TARGETS;
         }
@@ -5975,8 +5989,8 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (expectedTarget->GetTypeId() == TYPEID_PLAYER)
                 {
                     Player const* player = static_cast<Player const*>(expectedTarget);
-                    
-                    // Player is not allowed to cast water walk on shapeshifted/mounted player 
+
+                    // Player is not allowed to cast water walk on shapeshifted/mounted player
                     if (player->GetShapeshiftForm() != FORM_NONE || player->IsMounted())
                     {
                         return SPELL_FAILED_BAD_TARGETS;
@@ -6891,7 +6905,10 @@ SpellCastResult Spell::CheckItems()
             case SPELL_EFFECT_WEAPON_DAMAGE:
             case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
             {
-                if (m_caster->GetTypeId() != TYPEID_PLAYER) { return SPELL_FAILED_TARGET_NOT_PLAYER; }
+                if (m_caster->GetTypeId() != TYPEID_PLAYER)
+                {
+                    return SPELL_FAILED_TARGET_NOT_PLAYER;
+                }
                 if (m_attackType != RANGED_ATTACK)
                 {
                     break;

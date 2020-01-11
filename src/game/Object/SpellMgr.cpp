@@ -181,8 +181,14 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
 {
     uint32 CastingTime = !IsChanneledSpell(spellProto) ? GetSpellCastTime(spellProto) : GetSpellDuration(spellProto);
 
-    if (CastingTime > 7000) { CastingTime = 7000; }
-    if (CastingTime < 1500) { CastingTime = 1500; }
+    if (CastingTime > 7000)
+    {
+        CastingTime = 7000;
+    }
+    if (CastingTime < 1500)
+    {
+        CastingTime = 1500;
+    }
 
     if (damagetype == DOT && !IsChanneledSpell(spellProto))
     {
@@ -250,8 +256,14 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
     {
         // mainly for DoTs which are 3500 here otherwise
         uint32 OriginalCastTime = GetSpellCastTime(spellProto);
-        if (OriginalCastTime > 7000) { OriginalCastTime = 7000; }
-        if (OriginalCastTime < 1500) { OriginalCastTime = 1500; }
+        if (OriginalCastTime > 7000)
+        {
+            OriginalCastTime = 7000;
+        }
+        if (OriginalCastTime < 1500)
+        {
+            OriginalCastTime = 1500;
+        }
         // Portion to Over Time
         float PtOT = (overTime / 15000.0f) / ((overTime / 15000.0f) + (OriginalCastTime / 3500.0f));
 
@@ -406,8 +418,14 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2)
 {
     SpellEntry const* spellInfo_1 = sSpellStore.LookupEntry(spellId_1);
     SpellEntry const* spellInfo_2 = sSpellStore.LookupEntry(spellId_2);
-    if (!spellInfo_1 || !spellInfo_2) { return false; }
-    if (spellInfo_1->Id == spellId_2) { return false; }
+    if (!spellInfo_1 || !spellInfo_2)
+    {
+        return false;
+    }
+    if (spellInfo_1->Id == spellId_2)
+    {
+        return false;
+    }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
@@ -430,8 +448,14 @@ int32 CompareAuraRanks(uint32 spellId_1, uint32 spellId_2)
 {
     SpellEntry const* spellInfo_1 = sSpellStore.LookupEntry(spellId_1);
     SpellEntry const* spellInfo_2 = sSpellStore.LookupEntry(spellId_2);
-    if (!spellInfo_1 || !spellInfo_2) { return 0; }
-    if (spellId_1 == spellId_2) { return 0; }
+    if (!spellInfo_1 || !spellInfo_2)
+    {
+        return 0;
+    }
+    if (spellId_1 == spellId_2)
+    {
+        return 0;
+    }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
@@ -442,7 +466,10 @@ int32 CompareAuraRanks(uint32 spellId_1, uint32 spellId_2)
             {
                 return -diff;
             }
-            else { return diff; }
+            else
+            {
+                return diff;
+            }
         }
     }
     return 0;
@@ -2108,8 +2135,14 @@ void SpellMgr::ModDBCSpellAttributes()
 bool SpellMgr::IsRankSpellDueToSpell(SpellEntry const* spellInfo_1, uint32 spellId_2) const
 {
     SpellEntry const* spellInfo_2 = sSpellStore.LookupEntry(spellId_2);
-    if (!spellInfo_1 || !spellInfo_2) { return false; }
-    if (spellInfo_1->Id == spellId_2) { return false; }
+    if (!spellInfo_1 || !spellInfo_2)
+    {
+        return false;
+    }
+    if (spellInfo_1->Id == spellId_2)
+    {
+        return false;
+    }
 
     return GetFirstSpellInChain(spellInfo_1->Id) == GetFirstSpellInChain(spellId_2);
 }
