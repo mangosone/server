@@ -100,7 +100,9 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         // if tabard designer, then trying to buy a guild charter.
         // do not let if already in guild.
         if (_player->GetGuildId())
+        {
             return;
+        }
 
         charterid = GUILD_CHARTER;
         cost = GUILD_CHARTER_COST;
@@ -505,11 +507,15 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
         }
 
         if (!IsArenaTypeValid(ArenaType(type)))
+        {
             return;
+        }
 
         uint8 slot = ArenaTeam::GetSlotByType(ArenaType(type));
         if (slot >= MAX_ARENA_SLOT)
+        {
             return;
+        }
 
         if (_player->GetArenaTeamId(slot))
         {
@@ -642,7 +648,9 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
     /// Get petition type and check
     QueryResult* result = CharacterDatabase.PQuery("SELECT type FROM petition WHERE petitionguid = '%u'", petitionGuid.GetCounter());
     if (!result)
+    {
         return;
+    }
 
     Field* fields = result->Fetch();
     uint32 type = fields[0].GetUInt32();
@@ -669,11 +677,15 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
         }
 
         if (!IsArenaTypeValid(ArenaType(type)))
+        {
             return;
+        }
 
         uint8 slot = ArenaTeam::GetSlotByType(ArenaType(type));
         if (slot >= MAX_ARENA_SLOT)
+        {
             return;
+        }
 
         if (player->GetArenaTeamId(slot))
         {
@@ -779,11 +791,15 @@ void WorldSession::HandleTurnInPetitionOpcode(WorldPacket& recv_data)
     else
     {
         if (!IsArenaTypeValid(ArenaType(type)))
+        {
             return;
+        }
 
         uint8 slot = ArenaTeam::GetSlotByType(ArenaType(type));
         if (slot >= MAX_ARENA_SLOT)
+        {
             return;
+        }
 
         if (_player->GetArenaTeamId(slot))
         {

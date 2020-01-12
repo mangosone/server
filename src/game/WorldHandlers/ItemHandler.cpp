@@ -254,9 +254,13 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
             _player->StoreItem(sSrc, pDstItem, true);
         }
         else if (_player->IsBankPos(src))
-            { _player->BankItem(sSrc, pDstItem, true); }
+        {
+            _player->BankItem(sSrc, pDstItem, true);
+        }
         else if (_player->IsEquipmentPos(src))
-            { _player->EquipItem(eSrc, pDstItem, true); }
+        {
+            _player->EquipItem(eSrc, pDstItem, true);
+        }
 
         _player->AutoUnequipOffhandIfNeed();
     }
@@ -303,7 +307,9 @@ void WorldSession::HandleDestroyItemOpcode(WorldPacket& recv_data)
         _player->DestroyItemCount(pItem, i_count, true);
     }
     else
-        { _player->DestroyItem(bag, slot, true); }
+    {
+        _player->DestroyItem(bag, slot, true);
+    }
 }
 
 // Only _static_ data send in this packet !!!
@@ -485,7 +491,9 @@ void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
         SendPacket(&data);
     }
     else
-        { _player->SendEquipError(EQUIP_ERR_ITEM_NOT_FOUND, NULL, NULL); }
+    {
+        _player->SendEquipError(EQUIP_ERR_ITEM_NOT_FOUND, NULL, NULL);
+    }
 }
 
 void WorldSession::HandlePageQuerySkippedOpcode(WorldPacket& recv_data)
@@ -615,7 +623,9 @@ void WorldSession::HandleSellItemOpcode(WorldPacket& recv_data)
                 _player->ModifyMoney(money);
             }
             else
-                { _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, pCreature, itemGuid, 0); }
+            {
+                _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, pCreature, itemGuid, 0);
+            }
             return;
         }
     }
@@ -665,11 +675,15 @@ void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
             _player->StoreItem(dest, pItem, true);
         }
         else
-            { _player->SendEquipError(msg, pItem, NULL); }
+        {
+            _player->SendEquipError(msg, pItem, NULL);
+        }
         return;
     }
     else
-        { _player->SendBuyError(BUY_ERR_CANT_FIND_ITEM, pCreature, 0, 0); }
+    {
+        _player->SendBuyError(BUY_ERR_CANT_FIND_ITEM, pCreature, 0, 0);
+    }
 }
 
 void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket& recv_data)
@@ -1066,7 +1080,9 @@ void WorldSession::HandleSetAmmoOpcode(WorldPacket& recv_data)
         GetPlayer()->RemoveAmmo();
     }
     else
-        { GetPlayer()->SetAmmo(item); }
+    {
+        GetPlayer()->SetAmmo(item);
+    }
 }
 
 void WorldSession::SendEnchantmentLog(ObjectGuid targetGuid, ObjectGuid casterGuid, uint32 itemId, uint32 spellId)
@@ -1238,7 +1254,9 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
 
     recv_data >> itemGuid;
     if (!itemGuid.IsItem())
+    {
         return;
+    }
 
     for (int i = 0; i < MAX_GEM_SOCKETS; ++i)
         recv_data >> gemGuids[i];
@@ -1251,20 +1269,28 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
             continue;
 
         if (!gemGuid.IsItem())
+        {
             return;
+        }
 
         for (int j = i + 1; j < MAX_GEM_SOCKETS; ++j)
             if (gemGuids[j] == gemGuid)
+            {
                 return;
+            }
     }
 
     Item* itemTarget = _player->GetItemByGuid(itemGuid);
     if (!itemTarget)                                        // missing item to socket
+    {
         return;
+    }
 
     ItemPrototype const* itemProto = itemTarget->GetProto();
     if (!itemProto)
+    {
         return;
+    }
 
     // this slot is excepted when applying / removing meta gem bonus
     uint8 slot = itemTarget->IsEquipped() ? itemTarget->GetSlot() : uint8(NULL_SLOT);
@@ -1284,15 +1310,21 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
 
         // tried to put gem in socket where no socket exists
         if (!itemProto->Socket[i].Color)
+        {
             return;
+        }
 
         // tried to put normal gem in meta socket
         if (itemProto->Socket[i].Color == SOCKET_COLOR_META && GemProps[i]->color != SOCKET_COLOR_META)
+        {
             return;
+        }
 
         // tried to put meta gem in normal socket
         if (itemProto->Socket[i].Color != SOCKET_COLOR_META && GemProps[i]->color == SOCKET_COLOR_META)
+        {
             return;
+        }
     }
 
     uint32 GemEnchants[MAX_GEM_SOCKETS];

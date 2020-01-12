@@ -338,7 +338,9 @@ void WorldSession::HandlePVPLogDataOpcode(WorldPacket & /*recv_data*/)
 
     // arena finish version will send in BattleGround::EndBattleGround directly
     if (bg->isArena())
+    {
         return;
+    }
 
     WorldPacket data;
     sBattleGroundMgr.BuildPvpLogDataPacket(&data, bg);
@@ -676,14 +678,20 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPacket& recv_data)
 
     // ignore if we already in BG or BG queue
     if (_player->InBattleGround())
+    {
         return;
+    }
 
     Creature* unit = GetPlayer()->GetMap()->GetCreature(guid);
     if (!unit)
+    {
         return;
+    }
 
     if (!unit->IsBattleMaster())                            // it's not battle master
+    {
         return;
+    }
 
     ArenaType arenatype;
     uint32 arenaRating = 0;
@@ -723,7 +731,9 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPacket& recv_data)
     {
         // you can't join in this way by client
         if (isRated)
+        {
             return;
+        }
 
         // check if already in queue
         if (_player->GetBattleGroundQueueIndex(bgQueueTypeId) < PLAYER_MAX_BATTLEGROUND_QUEUES)
@@ -731,14 +741,18 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPacket& recv_data)
             return;
         // check if has free queue slots
         if (!_player->HasFreeBattleGroundQueueId())
+        {
             return;
+        }
     }
     else
     {
         grp = _player->GetGroup();
         // no group found, error
         if (!grp)
+        {
             return;
+        }
         uint32 err = grp->CanJoinBattleGroundQueue(bgTypeId, bgQueueTypeId, arenatype, arenatype, (bool)isRated, arenaslot);
         if (err != BG_JOIN_ERR_OK)
         {
@@ -769,7 +783,9 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPacket& recv_data)
         {
             ArenaTeamMember const* at_member = at->GetMember(citr->guid);
             if (!at_member)                                 // group member joining to arena must be in leader arena team
+            {
                 return;
+            }
 
             // calc avg personal rating
             avg_pers_rating += at_member->personal_rating;

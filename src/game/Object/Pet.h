@@ -186,7 +186,9 @@ class Pet : public Creature
                 return 0;
             }
             else
-                { return m_autospells[pos]; }
+            {
+                return m_autospells[pos];
+            }
         }
 
         bool CanSwim() const
@@ -197,7 +199,9 @@ class Pet : public Creature
                 return owner->GetTypeId() == TYPEID_PLAYER ? true : ((Creature const*)owner)->CanSwim();
             }
             else
-                { return Creature::CanSwim(); }
+            {
+                return Creature::CanSwim();
+            }
         }
 
         bool CanFly() const { return false; } // pet are not able to fly. TODO: check if this is right

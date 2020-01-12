@@ -648,7 +648,9 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     recv_data >> usable >> isFull >> sortCount;
 
     if (sortCount >= MAX_AUCTION_SORT)
+    {
         return;
+    }
 
     uint8 Sort[MAX_AUCTION_SORT];
     memset(Sort, MAX_AUCTION_SORT, MAX_AUCTION_SORT);
@@ -660,7 +662,9 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
         recv_data >> column;
 
         if (column >= MAX_AUCTION_SORT)
+        {
             return;
+        }
 
         recv_data >> reversed;
         Sort[i] = (reversed > 0) ? (column |= AUCTION_SORT_REVERSED) : column;

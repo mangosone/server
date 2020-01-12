@@ -70,7 +70,9 @@ bool MapPersistentState::UnloadIfEmpty()
         return false;
     }
     else
-        { return true; }
+    {
+        return true;
+    }
 }
 
 void MapPersistentState::SaveCreatureRespawnTime(uint32 loguid, time_t t)
@@ -301,7 +303,9 @@ time_t DungeonPersistentState::GetResetTimeForDB() const
         return 0;
     }
     else
-        { return GetResetTime(); }
+    {
+        return GetResetTime();
+    }
 }
 
 //== BattleGroundPersistentState functions =================
@@ -670,14 +674,18 @@ MapPersistentState* MapPersistentStateManager::AddPersistentState(MapEntry const
     else if (mapEntry->IsBattleGroundOrArena())
         state = new BattleGroundPersistentState(mapEntry->MapID, instanceId, difficulty);
     else
-        { state = new WorldPersistentState(mapEntry->MapID); }
+    {
+        state = new WorldPersistentState(mapEntry->MapID);
+    }
 
     if (instanceId)
     {
         m_instanceSaveByInstanceId[instanceId] = state;
     }
     else
-        { m_instanceSaveByMapId[mapEntry->MapID] = state; }
+    {
+        m_instanceSaveByMapId[mapEntry->MapID] = state;
+    }
 
     if (initPools)
     {

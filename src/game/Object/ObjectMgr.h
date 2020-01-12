@@ -836,18 +836,24 @@ class ObjectMgr
                 return itr->second;
             }
             else
-                { return "There is no info for this item"; }
+            {
+                return "There is no info for this item";
+            }
         }
 
         MailLevelReward const* GetMailLevelReward(uint32 level, uint32 raceMask)
         {
             MailLevelRewardMap::const_iterator map_itr = m_mailLevelRewardMap.find(level);
             if (map_itr == m_mailLevelRewardMap.end())
+            {
                 return NULL;
+            }
 
             for (MailLevelRewardList::const_iterator set_itr = map_itr->second.begin(); set_itr != map_itr->second.end(); ++set_itr)
                 if (set_itr->raceMask & raceMask)
+                {
                     return &*set_itr;
+                }
 
             return NULL;
         }

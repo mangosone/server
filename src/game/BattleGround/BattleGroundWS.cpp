@@ -147,7 +147,9 @@ void BattleGroundWS::RespawnDroppedFlag(Team team)
         SendMessageToAll(LANG_BG_WS_ALLIANCE_FLAG_RESPAWNED, CHAT_MSG_BG_SYSTEM_NEUTRAL);
     }
     else
-        { SendMessageToAll(LANG_BG_WS_HORDE_FLAG_RESPAWNED, CHAT_MSG_BG_SYSTEM_NEUTRAL); }
+    {
+        SendMessageToAll(LANG_BG_WS_HORDE_FLAG_RESPAWNED, CHAT_MSG_BG_SYSTEM_NEUTRAL);
+    }
 
     PlaySoundToAll(BG_WS_SOUND_FLAGS_RESPAWNED);
 
@@ -157,7 +159,9 @@ void BattleGroundWS::RespawnDroppedFlag(Team team)
         obj->Delete();
     }
     else
-        { sLog.outError("Unknown dropped flag bg: %s", GetDroppedFlagGuid(team).GetString().c_str()); }
+    {
+        sLog.outError("Unknown dropped flag bg: %s", GetDroppedFlagGuid(team).GetString().c_str());
+    }
 
     ClearDroppedFlagGuid(team);
 }
@@ -218,7 +222,9 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player* source)
         SendMessageToAll(LANG_BG_WS_CAPTURED_HF, CHAT_MSG_BG_SYSTEM_ALLIANCE, source);
     }
     else
-        { SendMessageToAll(LANG_BG_WS_CAPTURED_AF, CHAT_MSG_BG_SYSTEM_HORDE, source); }
+    {
+        SendMessageToAll(LANG_BG_WS_CAPTURED_AF, CHAT_MSG_BG_SYSTEM_HORDE, source);
+    }
 
     UpdateFlagState(source->GetTeam(), 1);                  // flag state none
     UpdateTeamScore(source->GetTeam());
@@ -231,7 +237,9 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player* source)
         winner = ALLIANCE;
     }
     else if (m_TeamScores[TEAM_INDEX_HORDE] == BG_WS_MAX_TEAM_SCORE)
-        { winner = HORDE; }
+    {
+        winner = HORDE;
+    }
 
     if (winner)
     {
@@ -455,7 +463,9 @@ void BattleGroundWS::RemovePlayer(Player* plr, ObjectGuid guid)
             RespawnFlag(ALLIANCE, false);
         }
         else
-            { EventPlayerDroppedFlag(plr); }
+        {
+            EventPlayerDroppedFlag(plr);
+        }
     }
     if (IsHordeFlagPickedUp() && m_flagCarrierHorde == guid)
     {
@@ -466,7 +476,9 @@ void BattleGroundWS::RemovePlayer(Player* plr, ObjectGuid guid)
             RespawnFlag(HORDE, false);
         }
         else
-            { EventPlayerDroppedFlag(plr); }
+        {
+            EventPlayerDroppedFlag(plr);
+        }
     }
 }
 
@@ -477,7 +489,9 @@ void BattleGroundWS::UpdateFlagState(Team team, uint32 value)
         UpdateWorldState(BG_WS_FLAG_STATE_ALLIANCE, value);
     }
     else
-        { UpdateWorldState(BG_WS_FLAG_STATE_HORDE, value); }
+    {
+        UpdateWorldState(BG_WS_FLAG_STATE_HORDE, value);
+    }
 }
 
 void BattleGroundWS::UpdateTeamScore(Team team)
@@ -619,7 +633,9 @@ WorldSafeLocsEntry const* BattleGroundWS::GetClosestGraveYard(Player* player)
             return sWorldSafeLocsStore.LookupEntry(WS_GRAVEYARD_MAIN_ALLIANCE);
         }
         else
-            { return sWorldSafeLocsStore.LookupEntry(WS_GRAVEYARD_FLAGROOM_ALLIANCE); }
+        {
+            return sWorldSafeLocsStore.LookupEntry(WS_GRAVEYARD_FLAGROOM_ALLIANCE);
+        }
     }
     else
     {
@@ -628,7 +644,9 @@ WorldSafeLocsEntry const* BattleGroundWS::GetClosestGraveYard(Player* player)
             return sWorldSafeLocsStore.LookupEntry(WS_GRAVEYARD_MAIN_HORDE);
         }
         else
-            { return sWorldSafeLocsStore.LookupEntry(WS_GRAVEYARD_FLAGROOM_HORDE); }
+        {
+            return sWorldSafeLocsStore.LookupEntry(WS_GRAVEYARD_FLAGROOM_HORDE);
+        }
     }
 }
 
@@ -642,18 +660,26 @@ void BattleGroundWS::FillInitialWorldStates(WorldPacket& data, uint32& count)
         FillInitialWorldState(data, count, BG_WS_FLAG_UNK_ALLIANCE, -1);
     }
     else if (m_FlagState[TEAM_INDEX_ALLIANCE] == BG_WS_FLAG_STATE_ON_PLAYER)
-        { FillInitialWorldState(data, count, BG_WS_FLAG_UNK_ALLIANCE, 1); }
+    {
+        FillInitialWorldState(data, count, BG_WS_FLAG_UNK_ALLIANCE, 1);
+    }
     else
-        { FillInitialWorldState(data, count, BG_WS_FLAG_UNK_ALLIANCE, 0); }
+    {
+        FillInitialWorldState(data, count, BG_WS_FLAG_UNK_ALLIANCE, 0);
+    }
 
     if (m_FlagState[TEAM_INDEX_HORDE] == BG_WS_FLAG_STATE_ON_GROUND)
     {
         FillInitialWorldState(data, count, BG_WS_FLAG_UNK_HORDE, -1);
     }
     else if (m_FlagState[TEAM_INDEX_HORDE] == BG_WS_FLAG_STATE_ON_PLAYER)
-        { FillInitialWorldState(data, count, BG_WS_FLAG_UNK_HORDE, 1); }
+    {
+        FillInitialWorldState(data, count, BG_WS_FLAG_UNK_HORDE, 1);
+    }
     else
-        { FillInitialWorldState(data, count, BG_WS_FLAG_UNK_HORDE, 0); }
+    {
+        FillInitialWorldState(data, count, BG_WS_FLAG_UNK_HORDE, 0);
+    }
 
     FillInitialWorldState(data, count, BG_WS_FLAG_CAPTURES_MAX, BG_WS_MAX_TEAM_SCORE);
 
@@ -662,14 +688,18 @@ void BattleGroundWS::FillInitialWorldStates(WorldPacket& data, uint32& count)
         FillInitialWorldState(data, count, BG_WS_FLAG_STATE_HORDE, 2);
     }
     else
-        { FillInitialWorldState(data, count, BG_WS_FLAG_STATE_HORDE, 1); }
+    {
+        FillInitialWorldState(data, count, BG_WS_FLAG_STATE_HORDE, 1);
+    }
 
     if (m_FlagState[TEAM_INDEX_ALLIANCE] == BG_WS_FLAG_STATE_ON_PLAYER)
     {
         FillInitialWorldState(data, count, BG_WS_FLAG_STATE_ALLIANCE, 2);
     }
     else
-        { FillInitialWorldState(data, count, BG_WS_FLAG_STATE_ALLIANCE, 1); }
+    {
+        FillInitialWorldState(data, count, BG_WS_FLAG_STATE_ALLIANCE, 1);
+    }
 }
 
 Team BattleGroundWS::GetPrematureWinner()

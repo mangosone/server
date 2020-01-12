@@ -210,7 +210,9 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
             sObjectMgr.AddGroup(group);
         }
         else
-            { return; }
+        {
+            return;
+        }
     }
 
     // everything is fine, do it, PLAYER'S GROUP IS SET IN ADDMEMBER!!!
@@ -482,7 +484,9 @@ void WorldSession::HandleRandomRollOpcode(WorldPacket& recv_data)
         GetPlayer()->GetGroup()->BroadcastPacket(&data, false);
     }
     else
-        { SendPacket(&data); }
+    {
+        SendPacket(&data);
+    }
 }
 
 void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket& recv_data)
@@ -736,10 +740,14 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
                 *data << uint16(MEMBER_STATUS_ONLINE | MEMBER_STATUS_PVP);
             }
             else
-                { *data << uint16(MEMBER_STATUS_ONLINE); }
+            {
+                *data << uint16(MEMBER_STATUS_ONLINE);
+            }
         }
         else
-            { *data << uint16(MEMBER_STATUS_OFFLINE); }
+        {
+            *data << uint16(MEMBER_STATUS_OFFLINE);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_CUR_HP)
@@ -811,7 +819,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << pet->GetName();
         }
         else
-            { *data << uint8(0); }
+        {
+            *data << uint8(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_MODEL_ID)
@@ -821,7 +831,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << uint16(pet->GetDisplayId());
         }
         else
-            { *data << uint16(0); }
+        {
+            *data << uint16(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_CUR_HP)
@@ -831,7 +843,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << uint16(pet->GetHealth());
         }
         else
-            { *data << uint16(0); }
+        {
+            *data << uint16(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_MAX_HP)
@@ -841,7 +855,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << uint16(pet->GetMaxHealth());
         }
         else
-            { *data << uint16(0); }
+        {
+            *data << uint16(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_POWER_TYPE)
@@ -851,7 +867,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << uint8(pet->GetPowerType());
         }
         else
-            { *data << uint8(0); }
+        {
+            *data << uint8(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_CUR_POWER)
@@ -861,7 +879,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << uint16(pet->GetPower(pet->GetPowerType()));
         }
         else
-            { *data << uint16(0); }
+        {
+            *data << uint16(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_MAX_POWER)
@@ -871,7 +891,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             *data << uint16(pet->GetMaxPower(pet->GetPowerType()));
         }
         else
-            { *data << uint16(0); }
+        {
+            *data << uint16(0);
+        }
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_AURAS)
@@ -891,7 +913,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
             }
         }
         else
-            { *data << uint64(0); }
+        {
+            *data << uint64(0);
+        }
     }
 }
 

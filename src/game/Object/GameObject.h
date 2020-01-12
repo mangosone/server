@@ -634,7 +634,9 @@ class GameObject : public WorldObject
                 return m_respawnTime;
             }
             else
-                { return now; }
+            {
+                return now;
+            }
         }
 
         void SetRespawnTime(time_t respawn)

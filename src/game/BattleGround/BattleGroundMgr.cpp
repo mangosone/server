@@ -113,7 +113,9 @@ bool BattleGroundQueue::SelectionPool::KickGroup(uint32 size)
             found = true;
         }
         else if (!found && (*itr)->Players.size() >= (*groupToKick)->Players.size())
-            { groupToKick = itr; }
+        {
+            groupToKick = itr;
+        }
     }
     // if pool is empty, do nothing
     if (GetPlayerCount())
@@ -736,7 +738,9 @@ bool BattleGroundQueue::CheckNormalMatch(BattleGround* bg_template, BattleGround
 bool BattleGroundQueue::CheckSkirmishForSameFaction(BattleGroundBracketId bracket_id, uint32 minPlayersPerTeam)
 {
     if (m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount() < minPlayersPerTeam && m_SelectionPools[TEAM_INDEX_HORDE].GetPlayerCount() < minPlayersPerTeam)
+    {
         return false;
+    }
     PvpTeamIndex teamIdx = TEAM_INDEX_ALLIANCE;
     PvpTeamIndex otherTeamIdx = TEAM_INDEX_HORDE;
     Team otherTeamId = HORDE;
@@ -756,7 +760,9 @@ bool BattleGroundQueue::CheckSkirmishForSameFaction(BattleGroundBracketId bracke
         if (ginfo == *itr_team)
             break;
     if (itr_team == m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE + teamIdx].end())
+    {
         return false;
+    }
     GroupsQueueType::iterator itr_team2 = itr_team;
     ++itr_team2;
     // invite players to other selection pool
@@ -767,7 +773,9 @@ bool BattleGroundQueue::CheckSkirmishForSameFaction(BattleGroundBracketId bracke
             break;
     }
     if (m_SelectionPools[otherTeamIdx].GetPlayerCount() != minPlayersPerTeam)
+    {
         return false;
+    }
 
     // here we have correct 2 selections and we need to change one teams team and move selection pool teams to other team's queue
     for (GroupsQueueType::iterator itr = m_SelectionPools[otherTeamIdx].SelectedGroups.begin(); itr != m_SelectionPools[otherTeamIdx].SelectedGroups.end(); ++itr)
@@ -1453,7 +1461,9 @@ BattleGround* BattleGroundMgr::GetBattleGroundThroughClientInstance(uint32 insta
     }
 
     if (bg->isArena())
+    {
         return GetBattleGround(instanceId, bgTypeId);
+    }
 
     for (BattleGroundSet::iterator itr = m_BattleGrounds[bgTypeId].begin(); itr != m_BattleGrounds[bgTypeId].end(); ++itr)
     {
@@ -1969,7 +1979,9 @@ void BattleGroundMgr::ToggleTesting()
         sWorld.SendWorldText(LANG_DEBUG_BG_ON);
     }
     else
-        { sWorld.SendWorldText(LANG_DEBUG_BG_OFF); }
+    {
+        sWorld.SendWorldText(LANG_DEBUG_BG_OFF);
+    }
 }
 
 void BattleGroundMgr::ToggleArenaTesting()
@@ -2197,7 +2209,9 @@ void BattleGroundMgr::LoadBattleEventIndexes()
             m_GameObjectBattleEventIndexMap[dbTableGuidLow] = events;
         }
         else
-            { m_CreatureBattleEventIndexMap[dbTableGuidLow] = events; }
+        {
+            m_CreatureBattleEventIndexMap[dbTableGuidLow] = events;
+        }
 
         ++count;
     }

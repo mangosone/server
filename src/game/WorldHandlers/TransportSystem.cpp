@@ -153,7 +153,9 @@ void TransportBase::UnBoardPassenger(WorldObject* passenger)
     PassengerMap::iterator itr = m_passengers.find(passenger);
 
     if (itr == m_passengers.end())
+    {
         return;
+    }
 
     // Set passengers transportInfo to NULL
     passenger->SetTransportInfo(NULL);

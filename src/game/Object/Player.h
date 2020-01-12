@@ -354,7 +354,9 @@ struct LookingForGroup
     {
         for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
             if (slots[i].Is(_entry, _type))
+            {
                 return true;
+            }
         return false;
     }
 
@@ -362,7 +364,9 @@ struct LookingForGroup
     {
         for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
             if (slots[i].canAutoJoin())
+            {
                 return true;
+            }
         return false;
     }
 
@@ -370,7 +374,9 @@ struct LookingForGroup
     {
         for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
             if (!slots[i].Empty())
+            {
                 return false;
+            }
         return more.Empty();
     }
 
@@ -817,7 +823,9 @@ class PlayerTaxi
                 return true;
             }
             else
-                { return false; }
+            {
+                return false;
+            }
         }
         void AppendTaximaskTo(ByteBuffer& data, bool all);
 
@@ -1081,7 +1089,9 @@ class Player : public Unit
                 m_ExtraFlags |= PLAYER_EXTRA_AUCTION_ENEMY;
             }
             else if (state > 0)
-                { m_ExtraFlags |= PLAYER_EXTRA_AUCTION_NEUTRAL; }
+            {
+                m_ExtraFlags |= PLAYER_EXTRA_AUCTION_NEUTRAL;
+            }
         }
 
 

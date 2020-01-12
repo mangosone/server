@@ -126,7 +126,9 @@ void CreatureCreatePos::SelectFinalPoint(Creature* cr)
             m_pos.z = m_closeObject->GetPositionZ();
         }
         else
-            { m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, cr->GetObjectBoundingRadius(), m_dist, m_angle); }
+        {
+            m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, cr->GetObjectBoundingRadius(), m_dist, m_angle);
+        }
     }
 }
 
@@ -630,7 +632,9 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                     LoadCreatureAddon(true);
                 }
                 else
-                    { SetDeathState(JUST_ALIVED); }
+                {
+                    SetDeathState(JUST_ALIVED);
+                }
 
                 // Call AI respawn virtual function
                 if (AI())
@@ -663,7 +667,9 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                     StopGroupLoot();
                 }
                 else
-                    { m_groupLootTimer -= update_diff; }
+                {
+                    m_groupLootTimer -= update_diff;
+                }
             }
 
             if (m_corpseRemoveTime <= time(NULL))
@@ -754,7 +760,9 @@ void Creature::RegenerateAll(uint32 update_diff)
             m_regenTimer = 0;
         }
         else
-            { m_regenTimer -= update_diff; }
+        {
+            m_regenTimer -= update_diff;
+        }
     }
     if (m_regenTimer != 0)
     {
@@ -774,7 +782,9 @@ void Creature::RegenerateAll(uint32 update_diff)
 void Creature::RegeneratePower()
 {
     if (!IsRegeneratingPower() && !IsPet())
+    {
         return;
+    }
 
     Powers powerType = GetPowerType();
     uint32 curValue = GetPower(powerType);
@@ -866,10 +876,14 @@ void Creature::RegenerateHealth()
             addvalue = uint32(Spirit * 0.25 * HealthIncreaseRate);
         }
         else
-            { addvalue = uint32(Spirit * 0.80 * HealthIncreaseRate); }
+        {
+            addvalue = uint32(Spirit * 0.80 * HealthIncreaseRate);
+        }
     }
     else
-      { addvalue = maxValue / 3; }
+    {
+        addvalue = maxValue / 3;
+    }
 
     ModifyHealth(addvalue);
 }
@@ -1270,7 +1284,9 @@ void Creature::SaveToDB()
 bool Creature::IsTappedBy(Player const* player) const
 {
     if (player == GetOriginalLootRecipient())
+    {
         return true;
+    }
 
     Group const* playerGroup = player->GetGroup();
     if (!playerGroup || playerGroup != GetGroupLootRecipient()) // if we dont have a group we arent the recipient
@@ -1304,7 +1320,9 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask)
                         }
         }
         else
-            { displayId = 0; }
+        {
+            displayId = 0;
+        }
     }
 
     // data->guid = guid don't must be update at save
@@ -1362,7 +1380,9 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 {
     CreatureInfo const* cinfo = GetCreatureInfo();
     if (!cinfo)
+    {
         return;
+    }
 
     uint32 rank = IsPet() ? 0 : cinfo->Rank;                // TODO :: IsPet probably not needed here
 
@@ -1982,7 +2002,9 @@ bool Creature::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectInd
         }
         // Spell effect taunt check
         else if (spellInfo->Effect[index] == SPELL_EFFECT_ATTACK_ME)
-            { return true; }
+        {
+            return true;
+        }
     }
 
     return Unit::IsImmuneToSpellEffect(spellInfo, index, castOnSelf);
@@ -2181,7 +2203,9 @@ void Creature::CallAssistance()
         SetNoCallAssistance(true);
 
         if (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NO_CALL_ASSIST)
+        {
             return;
+        }
 
         AI()->SendAIEventAround(AI_EVENT_CALL_ASSISTANCE, getVictim(), sWorld.getConfig(CONFIG_UINT32_CREATURE_FAMILY_ASSISTANCE_DELAY), sWorld.getConfig(CONFIG_FLOAT_CREATURE_FAMILY_ASSISTANCE_RADIUS));
     }
@@ -2293,7 +2317,9 @@ void Creature::SaveRespawnTime()
         GetMap()->GetPersistentState()->SaveCreatureRespawnTime(GetGUIDLow(), m_respawnTime);
     }
     else if (m_corpseRemoveTime > time(NULL))               // dead (corpse)
-        { GetMap()->GetPersistentState()->SaveCreatureRespawnTime(GetGUIDLow(), m_corpseRemoveTime + m_respawnDelay); }
+    {
+        GetMap()->GetPersistentState()->SaveCreatureRespawnTime(GetGUIDLow(), m_corpseRemoveTime + m_respawnDelay);
+    }
 }
 
 bool Creature::IsOutOfThreatArea(Unit* pVictim) const
@@ -2348,7 +2374,9 @@ CreatureDataAddon const* Creature::GetCreatureAddon() const
     {
         // If CreatureTemplateAddon for heroic exist, it's there for a reason
         if (CreatureDataAddon const* addon =  ObjectMgr::GetCreatureTemplateAddon(GetCreatureInfo()->Entry))
+        {
             return addon;
+        }
     }
 
     // Return CreatureTemplateAddon when nothing else exist
@@ -2481,9 +2509,13 @@ bool Creature::MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* 
         return false;
     }
     else if (selectFlags & SELECT_FLAG_POWER_RAGE && pTarget->GetPowerType() != POWER_RAGE)
-        { return false; }
+    {
+        return false;
+    }
     else if (selectFlags & SELECT_FLAG_POWER_ENERGY && pTarget->GetPowerType() != POWER_ENERGY)
-        { return false; }
+    {
+        return false;
+    }
 
     if (selectFlags & SELECT_FLAG_IN_MELEE_RANGE && !CanReachWithMeleeAttack(pTarget))
     {
@@ -2670,9 +2702,13 @@ time_t Creature::GetRespawnTimeEx() const
         return m_respawnTime;
     }
     else if (m_corpseRemoveTime > time(NULL))               // dead (corpse)
-        { return m_corpseRemoveTime + m_respawnDelay; }
+    {
+        return m_corpseRemoveTime + m_respawnDelay;
+    }
     else
-        { return now; }
+    {
+        return now;
+    }
 }
 
 void Creature::GetRespawnCoord(float& x, float& y, float& z, float* ori, float* dist) const
@@ -2863,7 +2899,9 @@ uint32 Creature::UpdateVendorItemCurrentCount(VendorItem const* vItem, uint32 us
             vCount->count += diff * pProto->BuyCount;
         }
         else
-            { vCount->count = vItem->maxcount; }
+        {
+            vCount->count = vItem->maxcount;
+        }
     }
 
     vCount->count = vCount->count > used_count ? vCount->count - used_count : 0;
@@ -3098,7 +3136,9 @@ void Creature::SetWalk(bool enable, bool asDefault)
             clearUnitState(UNIT_STAT_RUNNING);
         }
         else
-            { addUnitState(UNIT_STAT_RUNNING); }
+        {
+            addUnitState(UNIT_STAT_RUNNING);
+        }
     }
 
     // Nothing changed?
@@ -3112,7 +3152,9 @@ void Creature::SetWalk(bool enable, bool asDefault)
         m_movementInfo.AddMovementFlag(MOVEFLAG_WALK_MODE);
     }
     else
-        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_WALK_MODE); }
+    {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_WALK_MODE);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_SET_WALK_MODE : SMSG_SPLINE_MOVE_SET_RUN_MODE, 9);
     data << GetPackGUID();
@@ -3126,7 +3168,9 @@ void Creature::SetLevitate(bool enable)
         m_movementInfo.AddMovementFlag(MOVEFLAG_LEVITATING);
     }
     else
-        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_LEVITATING); }
+    {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_LEVITATING);
+    }
 
     // TODO: there should be analogic opcode for 2.43
     // WorldPacket data(enable ? SMSG_SPLINE_MOVE_GRAVITY_DISABLE : SMSG_SPLINE_MOVE_GRAVITY_ENABLE, 9);
@@ -3189,7 +3233,9 @@ void Creature::SetRoot(bool enable)
         m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
     }
     else
-        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT); }
+    {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_ROOT : SMSG_SPLINE_MOVE_UNROOT, 9);
     data << GetPackGUID();

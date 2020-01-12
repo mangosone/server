@@ -78,7 +78,9 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
 
         // Spell school check; for the mobs, only non-triggered spells are affected
         if (pSpell->SchoolMask && !m_creature->IsSchoolAllowed(SpellSchoolMask(pSpell->SchoolMask)))
+        {
             return CAST_FAIL_STATE;
+        }
     }
 
     if (!m_creature->IsWithinLOSInMap(pTarget))
@@ -109,7 +111,9 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         return CAST_OK;
     }
     else
-        { return CAST_FAIL_OTHER; }
+    {
+        return CAST_FAIL_OTHER;
+    }
 }
 
 CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags, ObjectGuid uiOriginalCasterGUID)
@@ -162,7 +166,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
         }
     }
     else
-        { return CAST_FAIL_IS_CASTING; }
+    {
+        return CAST_FAIL_IS_CASTING;
+    }
 }
 
 bool CreatureAI::DoMeleeAttackIfReady()

@@ -272,9 +272,13 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
             CastingTime = uint32(CastingTime * PtOT);
         }
         else if (PtOT < 1.0f)
-            { CastingTime  = uint32(CastingTime * (1 - PtOT)); }
+        {
+            CastingTime  = uint32(CastingTime * (1 - PtOT));
+        }
         else
-            { CastingTime = 0; }
+        {
+            CastingTime = 0;
+        }
     }
 
     // Area Effect Spells receive only half of bonus
@@ -522,9 +526,13 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
                     return SPELL_FOOD_AND_DRINK;
                 }
                 else if (food)
-                    { return SPELL_FOOD; }
+                {
+                    return SPELL_FOOD;
+                }
                 else if (drink)
-                    { return SPELL_DRINK; }
+                {
+                    return SPELL_DRINK;
+                }
             }
             else
             {
@@ -571,7 +579,9 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
 
             // family flag 37 (only part spells have family name)
             if (spellInfo->IsFitToFamilyMask(UI64LIT(0x0000002000000000)))
+            {
                 return SPELL_WARLOCK_ARMOR;
+            }
 
             break;
         }
@@ -1024,7 +1034,9 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                 case SPELL_AURA_FORCE_REACTION:
                 {
                     if (spellproto->Id == 42792)            // Recently Dropped Flag (prevent cancel)
+                    {
                         return false;
+                    }
                     break;
                 }
                 default:
@@ -1079,7 +1091,9 @@ bool IsSingleTargetSpell(SpellEntry const* spellInfo)
 {
     // all other single target spells have if it has AttributesEx5
     if (spellInfo->HasAttribute(SPELL_ATTR_EX5_SINGLE_TARGET_SPELL))
+    {
         return true;
+    }
 
     // hunter's mark and similar
     if (spellInfo->SpellVisual == 3239)
@@ -1144,7 +1158,9 @@ bool IsSingleTargetSpell(SpellEntry const* spellInfo)
     // Not real client side single target spell, but it' not triggered until prev. aura expired.
     // This is allow store it in single target spells list for caster for spell proc checking
     if (spellInfo->Id == 38324)                             // Regeneration (triggered by 38299 (HoTs on Heals))
+    {
         return true;
+    }
 
     return false;
 }
@@ -1215,7 +1231,9 @@ SpellCastResult GetErrorAtShapeshiftedCast(SpellEntry const* spellInfo, uint32 f
             return SPELL_FAILED_NOT_SHAPESHIFT;
         }
         else if (spellInfo->Stances != 0)                   // needs other shapeshift
-            { return SPELL_FAILED_ONLY_SHAPESHIFT; }
+        {
+            return SPELL_FAILED_ONLY_SHAPESHIFT;
+        }
     }
     else
     {
@@ -1464,7 +1482,9 @@ struct DoSpellProcEvent
                 sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same proc flags as in spell.dbc, field value redundant", spell->Id);
             }
             else
-                { isCustom = true; }
+            {
+                isCustom = true;
+            }
         }
 
         if (spe.customChance == 0)
@@ -1481,7 +1501,9 @@ struct DoSpellProcEvent
                 sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same custom chance as in spell.dbc, field value redundant", spell->Id);
             }
             else
-                { isCustom = true; }
+            {
+                isCustom = true;
+            }
         }
 
         // totally redundant record
@@ -1508,7 +1530,9 @@ struct DoSpellProcEvent
             ++customProc;
         }
         else
-            { ++count; }
+        {
+            ++count;
+        }
     }
 
     bool HasEntry(uint32 spellId) { return spe_map.find(spellId) != spe_map.end(); }
@@ -1765,16 +1789,22 @@ void SpellMgr::LoadSpellBonuses()
             sLog.outErrorDb("`spell_bonus_data` entry for spell %u `dot_bonus` not needed (data from table: %f, calculated %f, difference of %f) and direct also not used",
                             entry, sbe.dot_damage, dot_calc, dot_diff);
         else if (!need_direct && sbe.direct_damage)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry);
+        }
         else if (!need_dot && sbe.dot_damage)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `dot_bonus` not used (spell not have periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `dot_bonus` not used (spell not have periodic affects)", entry);
+        }
 
         if (!need_direct && sbe.ap_bonus)
         {
             sLog.outErrorDb("`spell_bonus_data` entry for spell %u `ap_bonus` not used (spell not have non-periodic affects)", entry);
         }
         else if (!need_dot && sbe.ap_dot_bonus)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `ap_dot_bonus` not used (spell not have periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `ap_dot_bonus` not used (spell not have periodic affects)", entry);
+        }
 
         mSpellBonusMap[entry] = sbe;
 
@@ -2286,7 +2316,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Blood Fury and Rage of the Unraveller
                     if (spellInfo_1->SpellIconID == 1662 && spellInfo_2->SpellIconID == 1662)
+                    {
                         return false;
+                    }
 
                     // Possess visual and Possess
                     if ((spellInfo_1->Id == 23014 && spellInfo_2->Id == 19832) ||
@@ -2418,7 +2450,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Seal of Righteousness and Head Crack
                     if (spellInfo_1->SpellIconID == 25 && spellInfo_2->SpellIconID == 25 && spellInfo_2->SpellVisual == 7986)
+                    {
                         return false;
+                    }
 
                     break;
                 }
@@ -2535,7 +2569,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             // Seal of Righteousness and Concussion Blow, Head Crack
             if (spellInfo_1->SpellIconID == 25 && spellInfo_2->SpellIconID == 25 && spellInfo_2->SpellVisual == 7986)
+            {
                 return false;
+            }
 
             break;
         case SPELLFAMILY_PRIEST:
@@ -2589,7 +2625,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             // Dragonmaw Illusion (multi-family check)
             if (spellId_1 == 42016 && spellId_2 == 40216)
+            {
                 return false;
+            }
 
             break;
         case SPELLFAMILY_ROGUE:
@@ -2654,7 +2692,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 }
                 // Holy shield and (talent) and Vigilance of the Colossus (from item 27529)
                 if (spellInfo_1->SpellIconID == 453 && spellInfo_2->SpellIconID == 453)
+                {
                     return false;
+                }
             }
 
             // Combustion and Fire Protection Aura (multi-family check)
@@ -2671,7 +2711,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             // *Seal of Command and Band of Eternal Champion (multi-family check)
             if (spellInfo_1->SpellIconID == 561 && spellInfo_1->SpellVisual == 7992 && spellId_2 == 35081)
+            {
                 return false;
+            }
             break;
         case SPELLFAMILY_SHAMAN:
             if (spellInfo_2->SpellFamilyName == SPELLFAMILY_SHAMAN)
@@ -3352,7 +3394,9 @@ void SpellMgr::LoadSpellLearnSkills()
                     dbc_node.value = 1;
                 }
                 else
-                    { dbc_node.value = dbc_node.step * 75; }
+                {
+                    dbc_node.value = dbc_node.step * 75;
+                }
                 dbc_node.maxvalue = dbc_node.step * 75;
 
                 mSpellLearnSkills[spell] = dbc_node;
@@ -3716,7 +3760,9 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
                             ChatHandler(pl).PSendSysMessage("Craft spell %u create item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->EffectItemType[i]);
                         }
                         else
-                            { sLog.outErrorDb("Craft spell %u create item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->EffectItemType[i]); }
+                        {
+                            sLog.outErrorDb("Craft spell %u create item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->EffectItemType[i]);
+                        }
                     }
                     return false;
                 }
@@ -3736,7 +3782,9 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
                             ChatHandler(pl).PSendSysMessage("Spell %u learn to broken spell %u, and then...", spellInfo->Id, spellInfo->EffectTriggerSpell[i]);
                         }
                         else
-                            { sLog.outErrorDb("Spell %u learn to invalid spell %u, and then...", spellInfo->Id, spellInfo->EffectTriggerSpell[i]); }
+                        {
+                            sLog.outErrorDb("Spell %u learn to invalid spell %u, and then...", spellInfo->Id, spellInfo->EffectTriggerSpell[i]);
+                        }
                     }
                     return false;
                 }
@@ -3758,7 +3806,9 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
                         ChatHandler(pl).PSendSysMessage("Craft spell %u requires reagent item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->Reagent[j]);
                     }
                     else
-                        { sLog.outErrorDb("Craft spell %u requires reagent item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->Reagent[j]); }
+                    {
+                        sLog.outErrorDb("Craft spell %u requires reagent item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->Reagent[j]);
+                    }
                 }
                 return false;
             }
@@ -3994,7 +4044,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
 {
     // normal case
     if (spellInfo->AreaId > 0 && spellInfo->AreaId != zone_id && spellInfo->AreaId != area_id)
+    {
         return SPELL_FAILED_REQUIRES_AREA;
+    }
 
     // continent limitation (virtual continent), ignore for GM
     if (spellInfo->HasAttribute(SPELL_ATTR_EX4_CAST_ONLY_IN_OUTLAND) && !(player && player->isGameMaster()))
@@ -4002,7 +4054,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
         uint32 v_map = GetVirtualMapForMapAndZone(map_id, zone_id);
         MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
         if (!mapEntry || mapEntry->addon < 1 || !mapEntry->IsContinent())
+        {
             return SPELL_FAILED_REQUIRES_AREA;
+        }
     }
 
     // raid instance limitation
@@ -4010,7 +4064,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
     {
         MapEntry const* mapEntry = sMapStore.LookupEntry(map_id);
         if (!mapEntry || mapEntry->IsRaid())
+        {
             return SPELL_FAILED_REQUIRES_AREA;
+        }
     }
 
     // DB base check (if non empty then must fit at least single for allow)
@@ -4035,7 +4091,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
     if (spellInfo->HasAttribute(SPELL_ATTR_EX4_NOT_USABLE_IN_ARENA) ||
             (GetSpellRecoveryTime(spellInfo) > 15 * MINUTE * IN_MILLISECONDS && !spellInfo->HasAttribute(SPELL_ATTR_EX4_USABLE_IN_ARENA)))
         if (player && player->InArena())
+        {
             return SPELL_FAILED_NOT_IN_ARENA;
+        }
 
     // Spell casted only on battleground
     if (spellInfo->HasAttribute(SPELL_ATTR_EX3_BATTLEGROUND))
@@ -4084,7 +4142,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
         case 44521:                                         // Preparation
         {
             if (!player)
+            {
                 return SPELL_FAILED_REQUIRES_AREA;
+            }
 
             BattleGround* bg = player->GetBattleGround();
             return bg && bg->GetStatus() == STATUS_WAIT_JOIN ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;
@@ -4099,9 +4159,13 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
         case 32727:                                         // Arena Preparation
         {
             if (!player)
+            {
                 return SPELL_FAILED_REQUIRES_AREA;
+            }
             if (!player->InArena())
+            {
                 return SPELL_FAILED_REQUIRES_AREA;
+            }
 
             BattleGround* bg = player->GetBattleGround();
             return bg && bg->GetStatus() == STATUS_WAIT_JOIN ? SPELL_CAST_OK : SPELL_FAILED_ONLY_IN_ARENA;
@@ -4447,7 +4511,9 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
         case SPELLFAMILY_GENERIC:
             // some generic arena related spells have by some strange reason MECHANIC_TURN
             if (spellproto->Mechanic == MECHANIC_TURN)
+            {
                 return DIMINISHING_NONE;
+            }
             break;
         case SPELLFAMILY_ROGUE:
         {
@@ -4458,7 +4524,9 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             }
             // Blind
             else if (spellproto->IsFitToFamilyMask(UI64LIT(0x00001000000)))
+            {
                 return DIMINISHING_BLIND_CYCLONE;
+            }
             break;
         }
         case SPELLFAMILY_HUNTER:
@@ -4488,7 +4556,9 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
         {
             // Cyclone
             if (spellproto->IsFitToFamilyMask(UI64LIT(0x02000000000)))
+            {
                 return DIMINISHING_BLIND_CYCLONE;
+            }
             break;
         }
         case SPELLFAMILY_WARRIOR:
@@ -4705,7 +4775,9 @@ void SpellArea::ApplyOrRemoveSpellIfCan(Player* player, uint32 newZone, uint32 n
         }
     }
     else if (!onlyApply && player->HasAura(spellId))
-        { player->RemoveAurasDueToSpell(spellId); }
+    {
+        player->RemoveAurasDueToSpell(spellId);
+    }
 }
 
 void SpellMgr::LoadSpellAffects()

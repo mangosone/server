@@ -72,7 +72,9 @@ void WorldSession::HandleGMTicketGetTicketOpcode(WorldPacket& /*recv_data*/)
         SendGMTicketGetTicket(0x06, ticket);
     }
     else
-        { SendGMTicketGetTicket(0x0A); }
+    {
+        SendGMTicketGetTicket(0x0A);
+    }
 }
 
 void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
@@ -85,7 +87,9 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
         ticket->SetText(ticketText.c_str());
     }
     else
-        { sLog.outError("Ticket update: Player %s (GUID: %u) doesn't have active ticket", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow()); }
+    {
+        sLog.outError("Ticket update: Player %s (GUID: %u) doesn't have active ticket", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow());
+    }
 
 }
 

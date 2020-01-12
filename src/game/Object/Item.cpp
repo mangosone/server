@@ -80,7 +80,9 @@ void AddItemsSetItem(Player* player, Item* item)
             player->ItemSetEff[x] = eff;
         }
         else
-            { player->ItemSetEff.push_back(eff); }
+        {
+            player->ItemSetEff.push_back(eff);
+        }
     }
 
     ++eff->item_count;
@@ -228,7 +230,9 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
                     return true;
                 case ITEM_SUBCLASS_MINING_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_MINING_SUPP)
+                    {
                         return false;
+                    }
                     return true;
                 case ITEM_SUBCLASS_ENGINEERING_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_ENGINEERING_SUPP)
@@ -238,11 +242,15 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
                     return true;
                 case ITEM_SUBCLASS_GEM_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_GEMS)
+                    {
                         return false;
+                    }
                     return true;
                 case ITEM_SUBCLASS_LEATHERWORKING_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_LEATHERWORKING_SUPP)
+                    {
                         return false;
+                    }
                     return true;
                 default:
                     return false;
@@ -321,7 +329,9 @@ bool Item::Create(uint32 guidlow, uint32 itemid, Player const* owner)
 bool Item::IsNotEmptyBag() const
 {
     if (Bag const* bag = ToBag())
+    {
         return !bag->IsEmpty();
+    }
     return false;
 }
 
@@ -670,7 +680,9 @@ uint32 Item::GetSkill()
                 return 0;
             }
             else
-                { return item_weapon_skills[proto->SubClass]; }
+            {
+                return item_weapon_skills[proto->SubClass];
+            }
 
         case ITEM_CLASS_ARMOR:
             if (proto->SubClass >= MAX_ITEM_SUBCLASS_ARMOR)
@@ -678,7 +690,9 @@ uint32 Item::GetSkill()
                 return 0;
             }
             else
-                { return item_armor_skills[proto->SubClass]; }
+            {
+                return item_armor_skills[proto->SubClass];
+            }
 
         default:
             return 0;
@@ -736,7 +750,9 @@ int32 Item::GenerateItemRandomPropertyId(uint32 item_id)
 
     // item must have one from this field values not null if it can have random enchantments
     if ((!itemProto->RandomProperty) && (!itemProto->RandomSuffix))
+    {
         return 0;
+    }
 
     // Random Property case
     if (itemProto->RandomProperty)
@@ -810,7 +826,9 @@ bool Item::UpdateItemSuffixFactor()
 {
     uint32 suffixFactor = GenerateEnchSuffixFactor(GetEntry());
     if (GetItemSuffixFactor() == suffixFactor)
+    {
         return false;
+    }
     SetUInt32Value(ITEM_FIELD_PROPERTY_SEED, suffixFactor);
     return true;
 }
@@ -1160,7 +1178,9 @@ void Item::SendTimeUpdate(Player* owner)
 {
 #ifdef ENABLE_PLAYERBOTS
     if (!owner || !owner->IsInWorld() || owner->GetPlayerbotAI())
+    {
         return;
+    }
 #endif
 
     uint32 duration = GetUInt32Value(ITEM_FIELD_DURATION);
@@ -1201,7 +1221,9 @@ Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 r
             return pItem;
         }
         else
-            { delete pItem; }
+        {
+            delete pItem;
+        }
     }
     return NULL;
 }
@@ -1346,7 +1368,9 @@ void Item::SetLootState(ItemLootUpdateState state)
             }
             // temporary must stay until remove (ignore any changes)
             else if (m_lootState != ITEM_LOOT_TEMPORARY)
-                { m_lootState = ITEM_LOOT_UNCHANGED; }
+            {
+                m_lootState = ITEM_LOOT_UNCHANGED;
+            }
             break;
         case ITEM_LOOT_REMOVED:
             // if loot not saved then it existence in past can be just ignored

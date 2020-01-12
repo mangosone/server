@@ -33,7 +33,9 @@ static void AttemptJoin(Player* _player)
 {
     // skip not can autojoin cases and player group case
     if (!_player->m_lookingForGroup.canAutoJoin() || _player->GetGroup())
+    {
         return;
+    }
 
     // TODO: Guard Player Map
     HashMapHolder<Player>::MapType const& players = sObjectAccessor.GetPlayers();
@@ -90,10 +92,14 @@ static void AttemptAddMore(Player* _player)
 {
     // skip not group leader case
     if (_player->GetGroup() && _player->GetGroup()->GetLeaderGuid() != _player->GetObjectGuid())
+    {
         return;
+    }
 
     if (!_player->m_lookingForGroup.more.canAutoJoin())
+    {
         return;
+    }
 
     // TODO: Guard Player map
     HashMapHolder<Player>::MapType const& players = sObjectAccessor.GetPlayers();
@@ -158,7 +164,9 @@ void WorldSession::HandleLfgSetAutoJoinOpcode(WorldPacket & /*recv_data*/)
     LookingForGroup_auto_join = true;
 
     if (!_player)                                           // needed because STATUS_AUTHED
+    {
         return;
+    }
 
     AttemptJoin(_player);
 }
@@ -175,7 +183,9 @@ void WorldSession::HandleLfmSetAutoFillOpcode(WorldPacket & /*recv_data*/)
     LookingForGroup_auto_add = true;
 
     if (!_player)                                           // needed because STATUS_AUTHED
+    {
         return;
+    }
 
     AttemptAddMore(_player);
 }
@@ -335,7 +345,9 @@ void WorldSession::HandleSetLfgOpcode(WorldPacket& recv_data)
     uint32 type = ((temp >> 24) & 0xFFFF);
 
     if (slot >= MAX_LOOKING_FOR_GROUP_SLOT)
+    {
         return;
+    }
 
     _player->m_lookingForGroup.slots[slot].Set(entry, type);
     DEBUG_LOG("LFG set: looknumber %u, temp %X, type %u, entry %u", slot, temp, type, entry);

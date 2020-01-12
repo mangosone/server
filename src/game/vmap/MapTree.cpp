@@ -447,7 +447,9 @@ namespace VMAP
                             DEBUG_LOG("Error: trying to load wrong spawn in node!");
                         }
                         else if (iTreeValues[referencedVal].name != spawn.name)
-                            { DEBUG_LOG("Error: name mismatch on GUID=%u", spawn.ID); }
+                        {
+                            DEBUG_LOG("Error: name mismatch on GUID=%u", spawn.ID);
+                        }
 #endif
                     }
                 }
@@ -456,7 +458,9 @@ namespace VMAP
             fclose(tf);
         }
         else
-            { iLoadedTiles[packTileID(tileX, tileY)] = false; }
+        {
+            iLoadedTiles[packTileID(tileX, tileY)] = false;
+        }
         return result;
     }
 

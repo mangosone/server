@@ -73,9 +73,13 @@ Group::~Group()
             m_bgGroup->SetBgRaid(ALLIANCE, NULL);
         }
         else if (m_bgGroup->GetBgRaid(HORDE) == this)
-            { m_bgGroup->SetBgRaid(HORDE, NULL); }
+        {
+            m_bgGroup->SetBgRaid(HORDE, NULL);
+        }
         else
-            { sLog.outError("Group::~Group: battleground group is not linked to the correct battleground."); }
+        {
+            sLog.outError("Group::~Group: battleground group is not linked to the correct battleground.");
+        }
     }
     Rolls::iterator itr;
     while (!RollId.empty())
@@ -408,7 +412,9 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
     }
     // if group before remove <= 2 disband it
     else
-        { Disband(true); }
+    {
+        Disband(true);
+    }
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
@@ -465,7 +471,9 @@ void Group::Disband(bool hideDestroy)
                 player->SetOriginalGroup(NULL);
             }
             else
-                { player->SetGroup(NULL); }
+            {
+                player->SetGroup(NULL);
+            }
         }
 
         // quest related GO state dependent from raid membership
@@ -651,7 +659,9 @@ void Group::GroupLoot(WorldObject* pSource, Loot* loot)
             StartLootRoll(pSource, GROUP_LOOT, loot, itemSlot);
         }
         else
-            { lootItem.is_underthreshold = 1; }
+        {
+            lootItem.is_underthreshold = 1;
+        }
     }
 }
 
@@ -673,7 +683,9 @@ void Group::NeedBeforeGreed(WorldObject* pSource, Loot* loot)
             StartLootRoll(pSource, NEED_BEFORE_GREED, loot, itemSlot);
         }
         else
-            { lootItem.is_underthreshold = 1; }
+        {
+            lootItem.is_underthreshold = 1;
+        }
     }
 }
 
@@ -848,7 +860,9 @@ void Group::StartLootRoll(WorldObject* lootTarget, LootMethod method, Loot* loot
         RollId.push_back(r);
     }
     else                                            // no looters??
-        { delete r; }
+    {
+        delete r;
+    }
 }
 
 // called when roll timer expires
@@ -1295,10 +1309,14 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
         }
         // if player is in bg raid and we are adding him to normal group, then call SetOriginalGroup()
         else if (player->GetGroup())
-            { player->SetOriginalGroup(this, group); }
+        {
+            player->SetOriginalGroup(this, group);
+        }
         // if player is not in group, then call set group
         else
-            { player->SetGroup(this, group); }
+        {
+            player->SetGroup(this, group);
+        }
 
         if (player->IsInWorld())
         {
@@ -1345,7 +1363,9 @@ bool Group::_removeMember(ObjectGuid guid)
                 player->SetOriginalGroup(NULL);
             }
             else
-                { player->SetGroup(NULL); }
+            {
+                player->SetGroup(NULL);
+            }
         }
     }
 
@@ -1417,7 +1437,9 @@ void Group::_setLeader(ObjectGuid guid)
                         m_boundInstances[i].erase(itr++);
                     }
                     else
-                        { ++itr; }
+                    {
+                        ++itr;
+                    }
                 }
             }
         }
@@ -1586,7 +1608,9 @@ bool Group::SameSubGroup(Player const* member1, Player const* member2) const
         return false;
     }
     else
-        { return member1->GetSubGroup() == member2->GetSubGroup(); }
+    {
+        return member1->GetSubGroup() == member2->GetSubGroup();
+    }
 }
 
 // allows setting subgroup for offline members
@@ -1775,7 +1799,9 @@ uint32 Group::CanJoinBattleGroundQueue(BattleGroundTypeId bgTypeId, BattleGround
         }
         // don't let join rated matches if the arena team id doesn't match
         if (isRated && member->GetArenaTeamId(arenaSlot) != arenaTeamId)
+        {
             return BG_JOIN_ERR_MIXED_ARENATEAM;
+        }
         // don't let join if someone from the group is already in that bg queue
         if (member->InBattleGroundQueueForBattleGroundQueueType(bgQueueTypeId))
         {
@@ -1871,7 +1897,9 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
                 SendMsgTo->SendResetInstanceSuccess(state->GetMapId());
             }
             else
-                { SendMsgTo->SendResetInstanceFailed(0, state->GetMapId()); }
+            {
+                SendMsgTo->SendResetInstanceFailed(0, state->GetMapId());
+            }
         }
 
         if (isEmpty || method == INSTANCE_RESET_GROUP_DISBAND || method == INSTANCE_RESET_CHANGE_DIFFICULTY)
@@ -1882,7 +1910,9 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
                 state->DeleteFromDB();
             }
             else
-                { CharacterDatabase.PExecute("DELETE FROM group_instance WHERE instance = '%u'", state->GetInstanceId()); }
+            {
+                CharacterDatabase.PExecute("DELETE FROM group_instance WHERE instance = '%u'", state->GetInstanceId());
+            }
             // i don't know for sure if hash_map iterators
             m_boundInstances[diff].erase(itr);
             itr = m_boundInstances[diff].begin();
@@ -1891,7 +1921,9 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
             state->RemoveGroup(this);
         }
         else
-            { ++itr; }
+        {
+            ++itr;
+        }
     }
 }
 
@@ -1915,16 +1947,22 @@ InstanceGroupBind* Group::GetBoundInstance(uint32 mapid, Player* player)
         return &itr->second;
     }
     else
-        { return NULL; }
+    {
+        return NULL;
+    }
 }
 
 InstanceGroupBind* Group::GetBoundInstance(Map* aMap, Difficulty difficulty)
 {
     BoundInstancesMap::iterator itr = m_boundInstances[difficulty].find(aMap->GetId());
     if (itr != m_boundInstances[difficulty].end())
+    {
         return &itr->second;
+    }
     else
+    {
         return NULL;
+    }
 }
 
 InstanceGroupBind* Group::BindToInstance(DungeonPersistentState* state, bool permanent, bool load)
@@ -1961,7 +1999,9 @@ InstanceGroupBind* Group::BindToInstance(DungeonPersistentState* state, bool per
         return &bind;
     }
     else
-        { return NULL; }
+    {
+        return NULL;
+    }
 }
 
 void Group::UnbindInstance(uint32 mapid, uint8 difficulty, bool unload)

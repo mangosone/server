@@ -605,7 +605,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             sLog.outErrorEventAI("Event %u Action %u has not set chance param1. Text will not be displayed", i, j + 1);
                         }
                         else if (action.chanced_text.chance >= 100)
-                            { sLog.outErrorEventAI("Event %u Action %u has set chance param1 >= 100. Text will always be displayed", i, j + 1); }
+                        {
+                            sLog.outErrorEventAI("Event %u Action %u has set chance param1 >= 100. Text will always be displayed", i, j + 1);
+                        }
                         // no break here to check texts
                     case ACTION_T_TEXT:
                     {
@@ -636,7 +638,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                                     action.text.TextId[k] = 0;
                                 }
                                 else
-                                    { usedTextIds.insert(action.text.TextId[k]); }
+                                {
+                                    usedTextIds.insert(action.text.TextId[k]);
+                                }
                             }
                         }
                         break;
@@ -795,7 +799,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             }
                         }
                         else
-                            { sLog.outErrorEventAI("Event %u Action %u uses nonexistent Quest entry %u.", i, j + 1, action.quest_event.questId); }
+                        {
+                            sLog.outErrorEventAI("Event %u Action %u uses nonexistent Quest entry %u.", i, j + 1, action.quest_event.questId);
+                        }
 
                         if (action.quest_event.target >= TARGET_T_END)
                             sLog.outErrorEventAI("Event %u Action %u uses incorrect Target type", i, j + 1);
@@ -838,7 +844,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             sLog.outErrorEventAI("Event %u Action %u is incrementing phase by 0. Was this intended?", i, j + 1);
                         }
                         else if (std::abs(action.set_inc_phase.step) > MAX_PHASE - 1)
-                            { sLog.outErrorEventAI("Event %u Action %u is change phase by too large for any use %i.", i, j + 1, action.set_inc_phase.step); }
+                        {
+                            sLog.outErrorEventAI("Event %u Action %u is change phase by too large for any use %i.", i, j + 1, action.set_inc_phase.step);
+                        }
                         break;
                     case ACTION_T_QUEST_EVENT_ALL:
                         if (Quest const* qid = sObjectMgr.GetQuestTemplate(action.quest_event_all.questId))
@@ -849,7 +857,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             }
                         }
                         else
-                            { sLog.outErrorEventAI("Event %u Action %u uses nonexistent Quest entry %u.", i, j + 1, action.quest_event_all.questId); }
+                        {
+                            sLog.outErrorEventAI("Event %u Action %u uses nonexistent Quest entry %u.", i, j + 1, action.quest_event_all.questId);
+                        }
                         break;
                     case ACTION_T_CAST_EVENT_ALL:
                         if (!sCreatureStorage.LookupEntry<CreatureInfo>(action.cast_event_all.creatureId))
@@ -1076,7 +1086,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                     sLog.outErrorEventAI("EventAI not has script for creature entry (%u), but AIName = '%s'.", i, cInfo->AIName);
                 }
                 else if (!ainame && hasevent)
-                    { sLog.outErrorEventAI("EventAI has script for creature entry (%u), but AIName = '%s' instead 'EventAI'.", i, cInfo->AIName); }
+                {
+                    sLog.outErrorEventAI("EventAI has script for creature entry (%u), but AIName = '%s' instead 'EventAI'.", i, cInfo->AIName);
+                }
             }
         }
 

@@ -229,7 +229,9 @@ inline void LoadDBC(uint32& availableDbcLocales, BarGoLink& bar, StoreProblemLis
             fclose(f);
         }
         else
-            { errlist.push_back(dbc_filename); }
+        {
+            errlist.push_back(dbc_filename);
+        }
     }
 }
 
@@ -685,7 +687,9 @@ AreaTableEntry const* GetAreaEntryByAreaID(uint32 area_id)
 {
     int32 areaflag = GetAreaFlagByAreaID(area_id);
     if (areaflag < 0)
+    {
         return NULL;
+    }
 
     return sAreaStore.LookupEntry(areaflag);
 }
@@ -693,7 +697,9 @@ AreaTableEntry const* GetAreaEntryByAreaID(uint32 area_id)
 AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_id)
 {
     if (area_flag)
+    {
         return sAreaStore.LookupEntry(area_flag);
+    }
 
     if (MapEntry const* mapEntry = sMapStore.LookupEntry(map_id))
     {
@@ -711,16 +717,22 @@ uint32 GetAreaFlagByMapId(uint32 mapid)
         return 0;
     }
     else
-        { return i->second; }
+    {
+        return i->second;
+    }
 }
 
 uint32 GetVirtualMapForMapAndZone(uint32 mapid, uint32 zoneId)
 {
     if (mapid != 530)                                       // speed for most cases
+    {
         return mapid;
+    }
 
     if (WorldMapAreaEntry const* wma = sWorldMapAreaStore.LookupEntry(zoneId))
+    {
         return wma->virtual_map_id >= 0 ? wma->virtual_map_id : wma->map_id;
+    }
 
     return mapid;
 }
@@ -729,11 +741,15 @@ ContentLevels GetContentLevelsForMapAndZone(uint32 mapid, uint32 zoneId)
 {
     mapid = GetVirtualMapForMapAndZone(mapid, zoneId);
     if (mapid < 2)
+    {
         return CONTENT_1_60;
+    }
 
     MapEntry const* mapEntry = sMapStore.LookupEntry(mapid);
     if (!mapEntry)
+    {
         return CONTENT_1_60;
+    }
 
     switch (mapEntry->Expansion())
     {
@@ -774,7 +790,9 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
                 entryName.replace(removeString, 2, "");
 
             if (name.find(entryName) != std::string::npos)
+            {
                 return ch;
+            }
         }
     }
 
@@ -790,7 +808,9 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
     }
 
     if (compare)
+    {
         return &worldCh;
+    }
 
     return NULL;
 }
@@ -798,19 +818,29 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
 bool IsTotemCategoryCompatiableWith(uint32 itemTotemCategoryId, uint32 requiredTotemCategoryId)
 {
     if (requiredTotemCategoryId == 0)
+    {
         return true;
+    }
     if (itemTotemCategoryId == 0)
+    {
         return false;
+    }
 
     TotemCategoryEntry const* itemEntry = sTotemCategoryStore.LookupEntry(itemTotemCategoryId);
     if (!itemEntry)
+    {
         return false;
+    }
     TotemCategoryEntry const* reqEntry = sTotemCategoryStore.LookupEntry(requiredTotemCategoryId);
     if (!reqEntry)
+    {
         return false;
+    }
 
     if (itemEntry->categoryType != reqEntry->categoryType)
+    {
         return false;
+    }
 
     return (itemEntry->categoryMask & reqEntry->categoryMask) == reqEntry->categoryMask;
 }

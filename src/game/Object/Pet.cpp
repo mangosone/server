@@ -71,7 +71,9 @@ Pet::Pet(PetType type) :
         charmInfo->SetReactState(REACT_PASSIVE);
     }
     else if (type == GUARDIAN_PET)                          // always aggressive
-        { charmInfo->SetReactState(REACT_AGGRESSIVE); }
+    {
+        charmInfo->SetReactState(REACT_AGGRESSIVE);
+    }
 }
 
 Pet::~Pet()
@@ -298,7 +300,9 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
                 AddTeachSpell(tmp, atol((*iter).c_str()));
             }
             else
-                { break; }
+            {
+                break;
+            }
         }
     }
 
@@ -674,7 +678,9 @@ void Pet::RegenerateAll(uint32 update_diff)
         m_regenTimer = 4000;
     }
     else
-        { m_regenTimer -= update_diff; }
+    {
+        m_regenTimer -= update_diff;
+    }
 
     if (getPetType() != HUNTER_PET)
     {
@@ -687,7 +693,9 @@ void Pet::RegenerateAll(uint32 update_diff)
         m_happinessTimer = 7500;
     }
     else
-        { m_happinessTimer -= update_diff; }
+    {
+        m_happinessTimer -= update_diff;
+    }
 
     if (m_loyaltyTimer <= update_diff)
     {
@@ -695,7 +703,9 @@ void Pet::RegenerateAll(uint32 update_diff)
         m_loyaltyTimer = 12000;
     }
     else
-        { m_loyaltyTimer -= update_diff; }
+    {
+        m_loyaltyTimer -= update_diff;
+    }
 }
 
 void Pet::LooseHappiness()
@@ -797,9 +807,13 @@ HappinessState Pet::GetHappinessState()
         return UNHAPPY;
     }
     else if (GetPower(POWER_HAPPINESS) >= HAPPINESS_LEVEL_SIZE * 2)
-        { return HAPPY; }
+    {
+        return HAPPY;
+    }
     else
-        { return CONTENT; }
+    {
+        return CONTENT;
+    }
 }
 
 void Pet::SetLoyaltyLevel(LoyaltyLevel level)
@@ -917,7 +931,9 @@ uint32 Pet::GetMaxLoyaltyPoints(uint32 level)
         level = 1;  // prevent SIGSEGV (out of range)
     }
     if (level > 7) level = 7; // prevent SIGSEGV (out of range)
-    return LevelUpLoyalty[level - 1];
+    {
+        return LevelUpLoyalty[level - 1];
+    }
 }
 
 uint32 Pet::GetStartLoyaltyPoints(uint32 level)
@@ -927,7 +943,9 @@ uint32 Pet::GetStartLoyaltyPoints(uint32 level)
         level = 1;  // prevent SIGSEGV (out of range)
     }
     if (level > 7) level = 7; // prevent SIGSEGV (out of range)
-    return LevelStartLoyalty[level - 1];
+    {
+        return LevelStartLoyalty[level - 1];
+    }
 }
 
 void Pet::SetTP(int32 TP)
@@ -947,7 +965,9 @@ int32 Pet::GetDispTP()
         return -m_TrainingPoints;
     }
     else
-        { return -(m_TrainingPoints + 1); }
+    {
+        return -(m_TrainingPoints + 1);
+    }
 }
 
 void Pet::Unsummon(PetSaveMode mode, Unit* owner /*= NULL*/)
@@ -1150,7 +1170,9 @@ bool Pet::CreateBaseAtCreature(Creature* creature)
         SetName(cFamily->Name[sWorld.GetDefaultDbcLocale()]);
     }
     else
-        { SetName(creature->GetNameForLocaleIdx(sObjectMgr.GetDBCLocaleIndex())); }
+    {
+        SetName(creature->GetNameForLocaleIdx(sObjectMgr.GetDBCLocaleIndex()));
+    }
 
     m_loyaltyPoints = 1000;
     if (cinfo->CreatureType == CREATURE_TYPE_BEAST)
@@ -1229,9 +1251,13 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
             scale = cFamily->maxScale;
         }
         else if (getLevel() <= cFamily->minScaleLevel)
-            { scale = cFamily->minScale; }
+        {
+            scale = cFamily->minScale;
+        }
         else
-            { scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale); }
+        {
+            scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale);
+        }
 
         SetObjectScale(scale);
         UpdateModelData();
@@ -1427,10 +1453,14 @@ uint32 Pet::GetCurrentFoodBenefitLevel(uint32 itemlevel)
     }
     // -10..-6
     else if (getLevel() <= itemlevel + 10)                  // pure guess, but sounds good
-        { return 17000; }
+    {
+        return 17000;
+    }
     // -14..-11
     else if (getLevel() <= itemlevel + 14)                  // level 55 food gets green on 70, makes sense to me
-        { return 8000; }
+    {
+        return 8000;
+    }
     // -15 or less
     else
         { return 0; }                                           // food too low level
@@ -1646,9 +1676,13 @@ void Pet::_LoadAuras(uint32 timediff)
                 stackcount = 1;
             }
             else if (spellproto->StackAmount < stackcount)
-                { stackcount = spellproto->StackAmount; }
+            {
+                stackcount = spellproto->StackAmount;
+            }
             else if (!stackcount)
-                { stackcount = 1; }
+            {
+                stackcount = 1;
+            }
 
             SpellAuraHolder* holder = CreateSpellAuraHolder(spellproto, this, NULL);
             holder->SetLoadedState(casterGuid, ObjectGuid(HIGHGUID_ITEM, item_lowguid), stackcount, remaincharges, maxduration, remaintime);
@@ -1675,7 +1709,9 @@ void Pet::_LoadAuras(uint32 timediff)
                 AddSpellAuraHolder(holder);
             }
             else
-                { delete holder; }
+            {
+                delete holder;
+            }
         }
         while (result->NextRow());
 
@@ -1784,7 +1820,9 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
             CharacterDatabase.PExecute("DELETE FROM pet_spell WHERE spell = '%u'", spell_id);
         }
         else
-            { sLog.outError("Pet::addSpell: nonexistent in SpellStore spell #%u request.", spell_id); }
+        {
+            sLog.outError("Pet::addSpell: nonexistent in SpellStore spell #%u request.", spell_id);
+        }
 
         return false;
     }
@@ -1807,12 +1845,16 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
                 ToggleAutocast(spell_id, true);
             }
             else if (active == ACT_DISABLED)
-                { ToggleAutocast(spell_id, false); }
+            {
+                ToggleAutocast(spell_id, false);
+            }
 
             return false;
         }
         else
-            { return false; }
+        {
+            return false;
+        }
     }
 
     PetSpell newspell;
@@ -1826,10 +1868,14 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
             newspell.active = ACT_PASSIVE;
         }
         else
-            { newspell.active = ACT_DISABLED; }
+        {
+            newspell.active = ACT_DISABLED;
+        }
     }
     else
-        { newspell.active = active; }
+    {
+        newspell.active = active;
+    }
 
     if (sSpellMgr.GetSpellRank(spell_id) != 0)
     {
@@ -1857,7 +1903,9 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
                 }
                 // ignore new lesser rank
                 else if (sSpellMgr.IsHighRankOfSpell(oldspell_id, spell_id))
-                    { return false; }
+                {
+                    return false;
+                }
             }
         }
     }
@@ -1869,7 +1917,9 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
         CastSpell(this, spell_id, true);
     }
     else
-        { m_charmInfo->AddSpellToActionBar(spell_id, ActiveStates(newspell.active)); }
+    {
+        m_charmInfo->AddSpellToActionBar(spell_id, ActiveStates(newspell.active));
+    }
 
     if (newspell.active == ACT_ENABLED)
     {
@@ -1925,7 +1975,9 @@ bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
         m_spells.erase(itr);
     }
     else
-        { itr->second.state = PETSPELL_REMOVED; }
+    {
+        itr->second.state = PETSPELL_REMOVED;
+    }
 
     RemoveAurasDueToSpell(spell_id);
 
@@ -1936,7 +1988,9 @@ bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
             learnSpell(prev_id);
         }
         else
-            { learn_prev = false; }
+        {
+            learn_prev = false;
+        }
     }
 
     // if remove last rank or non-ranked then update action bar at server and client if need
@@ -2004,11 +2058,15 @@ void Pet::InitPetCreateSpells()
                         p_owner->learnSpell(learn_spellproto->Id, false);
                     }
                     else
-                        { AddTeachSpell(learn_spellproto->EffectTriggerSpell[0], learn_spellproto->Id); }
+                    {
+                        AddTeachSpell(learn_spellproto->EffectTriggerSpell[0], learn_spellproto->Id);
+                    }
                 }
             }
             else
-                { petspellid = learn_spellproto->Id; }
+            {
+                petspellid = learn_spellproto->Id;
+            }
 
             addSpell(petspellid);
 
@@ -2068,13 +2126,19 @@ uint32 Pet::resetTalentsCost() const
     }
     // then 50 silver
     else if (m_resetTalentsCost < 50 * SILVER)
-        { return 50 * SILVER; }
+    {
+        return 50 * SILVER;
+    }
     // then 1 gold
     else if (m_resetTalentsCost < 1 * GOLD)
-        { return 1 * GOLD; }
+    {
+        return 1 * GOLD;
+    }
     // then increasing at a rate of 1 gold; cap 10 gold
     else
-        { return (m_resetTalentsCost + 1 * GOLD > 10 * GOLD ? 10 * GOLD : m_resetTalentsCost + 1 * GOLD); }
+    {
+        return (m_resetTalentsCost + 1 * GOLD > 10 * GOLD ? 10 * GOLD : m_resetTalentsCost + 1 * GOLD);
+    }
 }
 
 void Pet::ToggleAutocast(uint32 spellid, bool apply)
@@ -2233,7 +2297,9 @@ void Pet::CastPetAuras(bool current)
             owner->RemovePetAura(pa);
         }
         else
-            { CastPetAura(pa); }
+        {
+            CastPetAura(pa);
+        }
     }
 }
 
@@ -2282,7 +2348,9 @@ void Pet::CastPetAura(PetAura const* aura)
         CastCustomSpell(this, auraId, &basePoints, NULL, NULL, true);
     }
     else
-        { CastSpell(this, auraId, true); }
+    {
+        CastSpell(this, auraId, true);
+    }
 }
 
 void Pet::SynchronizeLevelWithOwner()
@@ -2318,7 +2386,9 @@ void Pet::ApplyModeFlags(PetModeFlags mode, bool apply)
         m_petModeFlags = PetModeFlags(m_petModeFlags | mode);
     }
     else
-        { m_petModeFlags = PetModeFlags(m_petModeFlags & ~mode); }
+    {
+        m_petModeFlags = PetModeFlags(m_petModeFlags & ~mode);
+    }
 
     Unit* owner = GetOwner();
     if (!owner || owner->GetTypeId() != TYPEID_PLAYER)

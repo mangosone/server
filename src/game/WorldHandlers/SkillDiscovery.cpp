@@ -163,7 +163,9 @@ uint32 GetSkillDiscoverySpell(uint32 skillId, uint32 spellId, Player* player)
     }
 
     if (!skillId)
+    {
         return 0;
+    }
 
     // check skill line case
     tab = SkillDiscoveryStore.find(-(int32)skillId);

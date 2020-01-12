@@ -262,7 +262,9 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
         stmt.PExecute(pItem->GetGUIDLow());
     }
     else
-        { pUser->SendLoot(pItem->GetObjectGuid(), LOOT_CORPSE); }
+    {
+        pUser->SendLoot(pItem->GetObjectGuid(), LOOT_CORPSE);
+    }
 }
 
 void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
@@ -393,7 +395,9 @@ void WorldSession::HandleCancelCastOpcode(WorldPacket& recvPacket)
 
     // FIXME: hack, ignore unexpected client cancel Deadly Throw cast
     if (spellId == 26679)
+    {
         return;
+    }
 
     if (_player->IsNonMeleeSpellCasted(false))
     {
@@ -446,7 +450,9 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
             }
         }
         else
-            { return; }
+        {
+            return;
+        }
     }
 
     // channeled spell case (it currently casted then)
@@ -593,12 +599,16 @@ void WorldSession::HandleGetMirrorimageData(WorldPacket& recv_data)
     Creature* pCreature = _player->GetMap()->GetAnyTypeCreature(guid);
 
     if (!pCreature)
+    {
         return;
+    }
 
     Unit::AuraList const& images = pCreature->GetAurasByType(SPELL_AURA_MIRROR_IMAGE);
 
     if (images.empty())
+    {
         return;
+    }
 
     Unit* pCaster = images.front()->GetCaster();
 

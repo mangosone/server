@@ -302,14 +302,18 @@ void PlayerMenu::SendTalking(uint32 textID)
                 data << Text_1[i];
             }
             else
-                { data << Text_0[i]; }
+            {
+                data << Text_0[i];
+            }
 
             if (Text_1[i].empty())
             {
                 data << Text_0[i];
             }
             else
-                { data << Text_1[i]; }
+            {
+                data << Text_1[i];
+            }
 
             data << pGossip->Options[i].Language;
 
@@ -501,7 +505,9 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
                 data << uint32(IProto->DisplayInfoID);
             }
             else
-                { data << uint32(0x00); }
+            {
+                data << uint32(0x00);
+            }
         }
 
         data << uint32(pQuest->GetRewItemsCount());
@@ -521,7 +527,9 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
                 data << uint32(IProto->DisplayInfoID);
             }
             else
-                { data << uint32(0x00); }
+            {
+                data << uint32(0x00);
+            }
         }
 
         data << uint32(pQuest->GetRewOrReqMoney());
@@ -743,7 +751,9 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
             data << uint32(pItem->DisplayInfoID);
         }
         else
-            { data << uint32(0x00); }
+        {
+            data << uint32(0x00);
+        }
     }
 
     data << uint32(pQuest->GetRewItemsCount());
@@ -758,7 +768,9 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
             data << uint32(pItem->DisplayInfoID);
         }
         else
-            { data << uint32(0x00); }
+        {
+            data << uint32(0x00);
+        }
     }
 
     data << uint32(pQuest->GetRewOrReqMoney());
@@ -815,13 +827,17 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
     if (Completable)
         { data << pQuest->GetCompleteEmote(); }                 // emote id
     else
-        { data << pQuest->GetIncompleteEmote(); }
+    {
+        data << pQuest->GetIncompleteEmote();
+    }
 
     // Close Window after cancel
     if (CloseOnCancel)
         { data << uint32(0x01); }                               // auto finish
     else
-        { data << uint32(0x00); }
+    {
+        data << uint32(0x00);
+    }
 
     data << uint32(pQuest->GetSuggestedPlayers());          // SuggestedGroupNum
 
@@ -845,13 +861,17 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
             data << uint32(pItem->DisplayInfoID);
         }
         else
-            { data << uint32(0); }
+        {
+            data << uint32(0);
+        }
     }
 
     if (!Completable)                                       // Completable = flags1 && flags2 && flags3 && flags4
         { data << uint32(0x00); }                               // flags1
     else
-        { data << uint32(0x03); }
+    {
+        data << uint32(0x03);
+    }
 
     data << uint32(0x04);                                   // flags2
     data << uint32(0x08);                                   // flags3
