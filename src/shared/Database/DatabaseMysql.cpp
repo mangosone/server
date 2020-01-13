@@ -49,13 +49,16 @@ DatabaseMysql::DatabaseMysql()
     if (db_count++ == 0)
     {
         // Mysql Library Init
-        mysql_library_init(-1, NULL, NULL);
-
+        if(mysql_library_init(-1, NULL, NULL))
+        {
+            sLog.outError("Could not initialize MySQL client library\n");
+            ACE_OS::exit();
+        }
         if (!mysql_thread_safe())
         {
             sLog.outError("FATAL ERROR: Used MySQL library isn't thread-safe.");
             Log::WaitBeforeContinueIfNeed();
-            exit(1);
+            ACE_OS::exit();
         }
     }
 }
@@ -466,7 +469,7 @@ void MySqlPreparedStatement::addParam(unsigned int nIndex, const SqlStmtFieldDat
 
     MYSQL_BIND& pData = m_pInputArgs[nIndex];
 
-    bool bUnsigned = false;
+    bool bUnsigned = 0;
     enum_field_types dataType = ToMySQLType(data, bUnsigned);
 
     // setup MYSQL_BIND structure
@@ -517,22 +520,22 @@ bool MySqlPreparedStatement::execute()
 
 enum_field_types MySqlPreparedStatement::ToMySQLType(const SqlStmtFieldData& data, bool& bUnsigned)
 {
-    bUnsigned = false;
+    bUnsigned = 0;
     enum_field_types dataType = MYSQL_TYPE_NULL;
 
     switch (data.type())
     {
         case FIELD_NONE:    dataType = MYSQL_TYPE_NULL;                     break;
             // MySQL does not support MYSQL_TYPE_BIT as input type
-        case FIELD_BOOL:    // dataType = MYSQL_TYPE_BIT;      bUnsigned = true;  break;
-        case FIELD_UI8:     dataType = MYSQL_TYPE_TINY;     bUnsigned = true;  break;
+        case FIELD_BOOL:    // dataType = MYSQL_TYPE_BIT;      bUnsigned = 1;  break;
+        case FIELD_UI8:     dataType = MYSQL_TYPE_TINY;     bUnsigned = 1;  break;
         case FIELD_I8:      dataType = MYSQL_TYPE_TINY;                     break;
         case FIELD_I16:     dataType = MYSQL_TYPE_SHORT;                    break;
-        case FIELD_UI16:    dataType = MYSQL_TYPE_SHORT;    bUnsigned = true;  break;
+        case FIELD_UI16:    dataType = MYSQL_TYPE_SHORT;    bUnsigned = 1;  break;
         case FIELD_I32:     dataType = MYSQL_TYPE_LONG;                     break;
-        case FIELD_UI32:    dataType = MYSQL_TYPE_LONG;     bUnsigned = true;  break;
+        case FIELD_UI32:    dataType = MYSQL_TYPE_LONG;     bUnsigned = 1;  break;
         case FIELD_I64:     dataType = MYSQL_TYPE_LONGLONG;                 break;
-        case FIELD_UI64:    dataType = MYSQL_TYPE_LONGLONG; bUnsigned = true;  break;
+        case FIELD_UI64:    dataType = MYSQL_TYPE_LONGLONG; bUnsigned = 1;  break;
         case FIELD_FLOAT:   dataType = MYSQL_TYPE_FLOAT;                    break;
         case FIELD_DOUBLE:  dataType = MYSQL_TYPE_DOUBLE;                   break;
         case FIELD_STRING:  dataType = MYSQL_TYPE_STRING;                   break;

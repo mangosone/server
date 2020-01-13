@@ -73,7 +73,7 @@ int DelayExecutor::svc()
     return 0;
 }
 
-int DelayExecutor::activate(int num_threads)
+int DelayExecutor::_activate(int num_threads)
 {
     if (activated())
     {
