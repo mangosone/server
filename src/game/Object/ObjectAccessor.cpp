@@ -34,11 +34,14 @@
 #include "GridNotifiersImpl.h"
 #include "ObjectGuid.h"
 #include "World.h"
-#define CLASS_LOCK MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Thread_Mutex>
-INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
-INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Thread_Mutex);
 
-ObjectAccessor::ObjectAccessor() : i_playerGuard(), i_corpseGuard()
+#include <algorithm>
+
+#define CLASS_LOCK MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Recursive_Thread_Mutex>
+INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
+INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Recursive_Thread_Mutex);
+
+ObjectAccessor::ObjectAccessor() : i_playerMap(), i_corpseMap(), i_corpseGuard()
 {
 }
 
@@ -74,7 +77,7 @@ ObjectAccessor::GetUnit(WorldObject const& u, ObjectGuid guid)
 
 Corpse* ObjectAccessor::GetCorpseInMap(ObjectGuid guid, uint32 mapid)
 {
-    Corpse* ret = HashMapHolder<Corpse>::Find(guid);
+    Corpse* ret = i_corpseMap.Find(guid);
     if (!ret)
     {
         return nullptr;
@@ -94,7 +97,7 @@ Player* ObjectAccessor::FindPlayer(ObjectGuid guid, bool inWorld /*= true*/)
         return nullptr;
     }
 
-    Player* plr = HashMapHolder<Player>::Find(guid);
+    Player* plr = i_playerMap.Find(guid);
     if (!plr || (!plr->IsInWorld() && inWorld))
     {
         return nullptr;
@@ -105,12 +108,11 @@ Player* ObjectAccessor::FindPlayer(ObjectGuid guid, bool inWorld /*= true*/)
 
 Player* ObjectAccessor::FindPlayerByName(const char* name)
 {
-    ACE_READ_GUARD_RETURN(HashMapHolder<Player>::LockType, guard, HashMapHolder<Player>::GetLock(), NULL)
-    HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
-    for (HashMapHolder<Player>::MapType::iterator iter = m.begin(); iter != m.end(); ++iter)
-        if (iter->second->IsInWorld() && (::strcmp(name, iter->second->GetName()) == 0))
+    ACE_READ_GUARD_RETURN(HashMapHolder<Player>::LockType, guard, i_playerMap.GetLock(), nullptr)
+    for (auto& iter : i_playerMap.GetContainer())
+        if (iter.second->IsInWorld() && (::strcmp(name, iter.second->GetName()) == 0))
         {
-            return iter->second;
+            return iter.second;
         }
     return nullptr;
 }
@@ -131,7 +133,7 @@ void ObjectAccessor::SaveAllPlayers()
 
 void ObjectAccessor::KickPlayer(ObjectGuid guid)
 {
-    if (Player* p = ObjectAccessor::FindPlayer(guid, false))
+    if (Player* p = FindPlayer(guid, false))
     {
         WorldSession* s = p->GetSession();
         s->KickPlayer();                            // mark session to remove at next session list update
@@ -307,12 +309,12 @@ void ObjectAccessor::RemoveOldCorpses()
     }
 }
 
-/// Define the static member of HashMapHolder
+Corpse* ObjectAccessor::FindCorpse(ObjectGuid guid)
+{
+    if (!guid)
+    {
+        return nullptr;
+    }
 
-template <class T> typename HashMapHolder<T>::MapType HashMapHolder<T>::m_objectMap;
-template <class T> typename HashMapHolder<T>::LockType HashMapHolder<T>::i_lock;
-
-/// Global definitions for the hashmap storage
-
-template class HashMapHolder<Player>;
-template class HashMapHolder<Corpse>;
+    return i_corpseMap.Find(guid);
+}

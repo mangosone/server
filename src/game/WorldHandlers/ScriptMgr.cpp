@@ -44,6 +44,7 @@
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
+
 #ifdef ENABLE_SD3
 #include "system/ScriptDevMgr.h"
 #endif
@@ -54,7 +55,7 @@
 
 INSTANTIATE_SINGLETON_1(ScriptMgr);
 
-ScriptMgr::ScriptMgr() : m_scheduledScripts(0)
+ScriptMgr::ScriptMgr() : m_scheduledScripts(0), m_lock(0)
 {
     m_dbScripts.resize(DBS_END);
 
@@ -70,6 +71,18 @@ ScriptMgr::~ScriptMgr()
 {
     m_dbScripts.clear();
 }
+
+ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
+{
+    ACE_GUARD_RETURN(ACE_Thread_Mutex, _guard, m_lock, NULL)
+    if ((type != DBS_INTERNAL) && type < DBS_END)
+    {
+        return &m_dbScripts[type];
+    }
+
+    return NULL;
+}
+
 
 // /////////////////////////////////////////////////////////
 //              DB SCRIPTS (loaders of static data)
@@ -768,6 +781,7 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
     if (t == DBS_ON_EVENT)
       CollectPossibleEventIds(eventIds);
 
+        ACE_GUARD(ACE_Thread_Mutex, _g, m_lock)
     LoadScripts(t);
     ScriptChainMap& scm = m_dbScripts[t];
 
@@ -908,7 +922,7 @@ bool ScriptAction::GetScriptCommandObject(const ObjectGuid guid, bool includeIte
             resultObject = m_map->GetGameObject(guid);
             break;
         case HIGHGUID_CORPSE:
-            resultObject = HashMapHolder<Corpse>::Find(guid);
+            resultObject = sObjectAccessor.FindCorpse(guid);
             break;
         case HIGHGUID_ITEM:
             // case HIGHGUID_CONTAINER: ==HIGHGUID_ITEM
@@ -1936,15 +1950,7 @@ bool ScriptAction::HandleScriptStep()
         }
         case SCRIPT_COMMAND_JOIN_LFG:                       // 33
         {
-            // Only Currently supported in Zero
-#if defined(CLASSIC)
-            //Player* pPlayer = GetPlayerTargetOrSourceAndLog(pSource, pTarget);
-            //if (!pPlayer)
-            //    break;
-
-            //sLFGMgr.AddToQueue(pPlayer, m_script->joinLfg.areaId);
-#endif
-
+            //Not supported
             break;
         }
         case SCRIPT_COMMAND_TERMINATE_COND:                 // 34
@@ -2008,7 +2014,7 @@ bool ScriptAction::HandleScriptStep()
             ((Creature*)pSource)->AI()->SendAIEventAround(AIEventType(m_script->sendAIEvent.eventType), (Unit*)pTarget, 0, float(m_script->sendAIEvent.radius));
             break;
         }
-        case SCRIPT_COMMAND_TURN_TO:                 // 36
+        case SCRIPT_COMMAND_TURN_TO:                        // 36
         {
             if (LogIfNotUnit(pSource))
             {

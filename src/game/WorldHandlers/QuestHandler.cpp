@@ -161,7 +161,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
             return;
         }
 
-        if (Player* pPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid()))
+        if (Player* pPlayer = sObjectAccessor.FindPlayer(_player->GetDividerGuid()))
         {
             pPlayer->SendPushToPartyResponse(_player, QUEST_PARTY_MSG_ACCEPT_QUEST);
             _player->ClearDividerGuid();
@@ -416,7 +416,7 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
             return;
         }
 
-        Player* pOriginalPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid());
+        Player* pOriginalPlayer = sObjectAccessor.FindPlayer(_player->GetDividerGuid());
 
         if (!pOriginalPlayer)
         {
@@ -557,7 +557,7 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
 
     DEBUG_LOG("WORLD: Received opcode MSG_QUEST_PUSH_RESULT");
 
-    if (Player* pPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid()))
+    if (Player* pPlayer = sObjectAccessor.FindPlayer(_player->GetDividerGuid()))
     {
         WorldPacket data(MSG_QUEST_PUSH_RESULT, (8 + 1));
         data << ObjectGuid(guid);

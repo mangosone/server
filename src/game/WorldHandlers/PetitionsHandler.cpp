@@ -639,7 +639,7 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recv_data)
     recv_data >> petitionGuid;                              // petition guid
     recv_data >> playerGuid;                                // player guid
 
-    Player* player = ObjectAccessor::FindPlayer(playerGuid);
+    Player* player = sObjectAccessor.FindPlayer(playerGuid);
     if (!player)
     {
         return;

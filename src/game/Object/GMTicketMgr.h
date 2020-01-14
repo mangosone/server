@@ -33,6 +33,16 @@
 #include "SharedDefines.h"
 #include <map>
 
+enum GMTicketResponse
+{
+    GMTICKET_RESPONSE_ALREADY_EXIST     = 1,
+    GMTICKET_RESPONSE_CREATE_SUCCESS    = 2,
+    GMTICKET_RESPONSE_CREATE_ERROR      = 3,
+    GMTICKET_RESPONSE_UPDATE_SUCCESS    = 4,
+    GMTICKET_RESPONSE_UPDATE_ERROR      = 5,
+    GMTICKET_RESPONSE_TICKET_DELETED    = 9
+};
+
 /**
  * \addtogroup game
  * @{
@@ -204,7 +214,9 @@ class GMTicketMgr
         {
             GMTicketIdMap::iterator itr = m_GMTicketIdMap.find(id);
             if (itr == m_GMTicketIdMap.end())
+            {
                 return NULL;
+            }
             return itr->second;
         }
 

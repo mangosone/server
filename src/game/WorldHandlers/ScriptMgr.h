@@ -29,6 +29,8 @@
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
 #include <ace/Atomic_Op.h>
+#include <ace/Thread_Mutex.h>
+#include <ace/Guard_T.h>
 
 struct AreaTriggerEntry;
 struct SpellEntry;
@@ -104,6 +106,7 @@ enum DBScriptCommand                                        // resSource, resTar
     SCRIPT_COMMAND_RESPAWN_GAMEOBJECT       = 9,            // source = any, datalong=db_guid, datalong2=despawn_delay
     SCRIPT_COMMAND_TEMP_SUMMON_CREATURE     = 10,           // source = any, datalong=creature entry, datalong2=despawn_delay
                                                             // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL = summon active
+                                                            // dataint = (bool) setRun; 0 = off (default), 1 = on
     SCRIPT_COMMAND_OPEN_DOOR                = 11,           // datalong=db_guid (or not provided), datalong2=reset_delay
     SCRIPT_COMMAND_CLOSE_DOOR               = 12,           // datalong=db_guid (or not provided), datalong2=reset_delay
     SCRIPT_COMMAND_ACTIVATE_OBJECT          = 13,           // source = unit, target=GO
@@ -573,13 +576,7 @@ class ScriptMgr
 
         bool ReloadScriptBinding();
 
-        ScriptChainMap const* GetScriptChainMap(DBScriptType type)
-        {
-            if ((type != DBS_INTERNAL) && type < DBS_END)
-                return &m_dbScripts[type];
-
-            return NULL;
-        }
+        ScriptChainMap const* GetScriptChainMap(DBScriptType type);
 
         const char* GetScriptName(uint32 id) const
         {
@@ -667,6 +664,8 @@ class ScriptMgr
 #endif /* _DEBUG */
         // atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
+        char __cache_guard[1024];
+        ACE_Thread_Mutex m_lock;
 };
 
 // Starters for events

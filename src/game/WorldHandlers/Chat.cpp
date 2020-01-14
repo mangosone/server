@@ -2131,7 +2131,7 @@ Unit* ChatHandler::getSelectedUnit()
     }
 
     // can be selected player at another map
-    return ObjectAccessor::GetUnit(*m_session->GetPlayer(), guid);
+    return sObjectAccessor.GetUnit(*m_session->GetPlayer(), guid);
 }
 
 Creature* ChatHandler::getSelectedCreature()

@@ -230,7 +230,7 @@ int WorldSocket::open(void* a)
     return SendPacket(packet);
 }
 
-int WorldSocket::close(int)
+int WorldSocket::close(u_long)
 {
     shutdown();
 

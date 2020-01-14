@@ -102,7 +102,6 @@ class WorldSocket : protected WorldHandler
 
         /// Mutex type used for various synchronizations.
         typedef ACE_Thread_Mutex LockType;
-        typedef ACE_Guard<LockType> GuardType;
 
         /// Queue for storing packets for which there is no space.
         typedef ACE_Unbounded_Queue< WorldPacket* > PacketQueueT;
@@ -136,7 +135,7 @@ class WorldSocket : protected WorldHandler
         virtual int open(void*) override;
 
         /// Called on failures inside of the acceptor, don't call from your code.
-        virtual int close(int);
+        virtual int close(u_long) override;
 
         /// Called when we can read from the socket.
         virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
@@ -146,7 +145,7 @@ class WorldSocket : protected WorldHandler
 
         /// Called when connection is closed or error happens.
         virtual int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
-                                 ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+                                 ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
 
     private:
         /// Helper functions for processing incoming data.

@@ -639,7 +639,7 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
         return;
     }
 
-    Player* target = ObjectAccessor::FindPlayer(target_playerguid);
+    Player* target = sObjectAccessor.FindPlayer(target_playerguid);
     if (!target)
     {
         return;

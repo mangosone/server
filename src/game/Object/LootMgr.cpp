@@ -707,7 +707,7 @@ void Loot::NotifyItemRemoved(uint8 lootIndex)
     {
         i_next = i;
         ++i_next;
-        if (Player* pl = ObjectAccessor::FindPlayer(*i))
+        if (Player* pl = sObjectAccessor.FindPlayer(*i))
         {
             pl->SendNotifyLootItemRemoved(lootIndex);
         }
@@ -726,7 +726,7 @@ void Loot::NotifyMoneyRemoved()
     {
         i_next = i;
         ++i_next;
-        if (Player* pl = ObjectAccessor::FindPlayer(*i))
+        if (Player* pl = sObjectAccessor.FindPlayer(*i))
         {
             pl->SendNotifyLootMoneyRemoved();
         }
@@ -749,7 +749,7 @@ void Loot::NotifyQuestItemRemoved(uint8 questIndex)
     {
         i_next = i;
         ++i_next;
-        if (Player* pl = ObjectAccessor::FindPlayer(*i))
+        if (Player* pl = sObjectAccessor.FindPlayer(*i))
         {
             QuestItemMap::const_iterator pq = m_playerQuestItems.find(pl->GetGUIDLow());
             if (pq != m_playerQuestItems.end() && pq->second)
@@ -1109,7 +1109,7 @@ bool LootTemplate::LootGroup::HasStartingQuestDropForPlayer(Player const* player
 
         proto = ObjectMgr::GetItemPrototype(i->itemid);
 
-        if(proto->StartQuest && i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE && !player->HasQuestForItem(i->itemid))
+        if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
         {
             return true;
         }
@@ -1124,7 +1124,7 @@ bool LootTemplate::LootGroup::HasStartingQuestDropForPlayer(Player const* player
 
         proto = ObjectMgr::GetItemPrototype(i->itemid);
 
-        if(proto->StartQuest && i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE && !player->HasQuestForItem(i->itemid))
+        if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
         {
             return true;
         }
@@ -1419,7 +1419,7 @@ bool LootTemplate::HasStartingQuestDropForPlayer(LootTemplateMap const& store, P
         }
         else if (i->conditionId && !sObjectMgr.IsPlayerMeetToCondition(i->conditionId, player, player->GetMap(), NULL, CONDITION_FROM_LOOT))
             { return false;    } // player doesn't respect the conditions.
-        else if(proto->StartQuest && i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE && !player->HasQuestForItem(i->itemid))
+        else if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
             { return true; } // starting quest drop found.
     }
 
