@@ -159,7 +159,7 @@ void SpellCastTargets::Update(Unit* caster)
 
     m_itemTarget = NULL;
     if (caster->GetTypeId() == TYPEID_PLAYER)
-{
+    {
         Player* player = ((Player*)caster);
 
         if (m_targetMask & TARGET_FLAG_ITEM)
@@ -169,10 +169,12 @@ void SpellCastTargets::Update(Unit* caster)
         else if (m_targetMask & TARGET_FLAG_TRADE_ITEM)
         {
             if (TradeData* pTrade = player->GetTradeData())
+            {
                 if (m_itemTargetGUID.GetRawValue() < TRADE_SLOT_COUNT)
                 {
                     m_itemTarget = pTrade->GetTraderData()->GetItem(TradeSlots(m_itemTargetGUID.GetRawValue()));
                 }
+            }
         }
 
         if (m_itemTarget)
@@ -337,7 +339,9 @@ Spell::Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid or
         if ((m_caster->getClassMask() & CLASSMASK_WAND_USERS) != 0 && m_caster->GetTypeId() == TYPEID_PLAYER)
         {
             if (Item* pItem = ((Player*)m_caster)->GetWeaponForAttack(RANGED_ATTACK))
+            {
                 m_spellSchoolMask = SpellSchoolMask(1 << pItem->GetProto()->Damage[0].DamageType);
+            }
         }
     }
     // Set health leech amount to zero
@@ -735,7 +739,7 @@ void Spell::prepareDataForTriggerSystem()
 {
     //==========================================================================================
     // Now fill data for trigger system, need know:
-    // a spell trigger another or not ( m_canTrigger )
+    // an spell trigger another or not ( m_canTrigger )
     // Create base triggers flags for Attacker and Victim ( m_procAttacker and  m_procVictim)
     //==========================================================================================
     // Fill flag can spell trigger or not
@@ -1098,10 +1102,12 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     {
         // mark effects that were already handled in Spell::HandleDelayedSpellLaunch on spell launch as processed
         for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+        {
             if (IsEffectHandledOnDelayedSpellLaunch(m_spellInfo, SpellEffectIndex(i)))
             {
                 mask &= ~(1 << i);
             }
+        }
 
         // maybe used in effects that are handled on hit
         m_damage += target->damage;
@@ -1119,7 +1125,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
             unitTarget = m_caster;
 
             if (m_caster->GetTypeId() == TYPEID_UNIT)
+            {
                 m_caster->ToCreature()->LowerPlayerDamageReq(target->damage);
+            }
         }
     }
     else if (missInfo == SPELL_MISS_MISS || missInfo == SPELL_MISS_RESIST)
@@ -1258,10 +1266,12 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         // cast at creature (or GO) quest objectives update at successful cast finished (+channel finished)
         // ignore pets or autorepeat/melee casts for speed (not exist quest for spells (hm... )
         if (real_caster && !((Creature*)unit)->IsPet() && !IsAutoRepeat() && !IsNextMeleeSwingSpell() && !IsChannelActive())
+        {
             if (Player* p = real_caster->GetCharmerOrOwnerPlayerOrPlayerItself())
             {
                 p->RewardPlayerAndGroupAtCast(unit, m_spellInfo->Id);
             }
+        }
 
         if (((Creature*)unit)->AI())
         {
@@ -1418,10 +1428,12 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
                 float multiplier = m_spellInfo->DmgMultiplier[effectNumber];
                 // Apply multiplier mods
                 if (realCaster)
+                {
                     if (Player* modOwner = realCaster->GetSpellModOwner())
                     {
                         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this);
                     }
+                }
                 m_damageMultipliers[effectNumber] *= multiplier;
             }
         }
@@ -1486,10 +1498,12 @@ void Spell::DoAllEffectOnTarget(GOTargetInfo* target)
     }
 
     for (int effectNumber = 0; effectNumber < MAX_EFFECT_INDEX; ++effectNumber)
+    {
         if (effectMask & (1 << effectNumber))
         {
             HandleEffects(NULL, NULL, go, SpellEffectIndex(effectNumber));
         }
+    }
 
     // cast at creature (or GO) quest objectives update at successful cast finished (+channel finished)
     // ignore autorepeat/melee casts for speed (not exist quest for spells (hm... )
@@ -1559,10 +1573,12 @@ void Spell::HandleDelayedSpellLaunch(TargetInfo* target)
                     float multiplier = m_spellInfo->DmgMultiplier[effectNumber];
                     // Apply multiplier mods
                     if (real_caster)
+                    {
                         if (Player* modOwner = real_caster->GetSpellModOwner())
                         {
                             modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this);
                         }
+                    }
                     m_damageMultipliers[effectNumber] *= multiplier;
                 }
             }
@@ -1862,7 +1878,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             while (t && next != tempTargetUnitMap.end())
             {
                 if (!prev->IsWithinDist(*next, CHAIN_SPELL_JUMP_RADIUS))
+                {
                     break;
+                }
 
                 if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->Id, NULL, SPELL_DISABLE_LOS) && !prev->IsWithinLOSInMap(*next))
                 {
@@ -5230,7 +5248,9 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 // override range with default when it's not provided
                 if (!range)
+                {
                     range = m_caster->GetMap()->IsDungeon() ? DEFAULT_VISIBILITY_INSTANCE : DEFAULT_VISIBILITY_DISTANCE;
+                }
 
                 Creature* targetExplicit = NULL;            // used for cases where a target is provided (by script for example)
                 Creature* creatureScriptTarget = NULL;
