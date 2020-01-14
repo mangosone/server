@@ -165,8 +165,9 @@ void WorldSession::HandleQueryTimeOpcode(WorldPacket& /*recv_data*/)
 void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
 {
     uint32 entry;
-    recv_data >> entry;
     ObjectGuid guid;
+
+    recv_data >> entry;
     recv_data >> guid;
 
     CreatureInfo const* ci = ObjectMgr::GetCreatureTemplate(entry);
