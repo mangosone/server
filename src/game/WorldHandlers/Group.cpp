@@ -95,7 +95,9 @@ Group::~Group()
     // this may unload some dungeon persistent state
     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
     for (BoundInstancesMap::iterator itr2 = m_boundInstances[i].begin(); itr2 != m_boundInstances[i].end(); ++itr2)
-        { itr2->second.state->RemoveGroup(this); }
+    {
+        itr2->second.state->RemoveGroup(this);
+    }
 
     // Sub group counters clean up
     delete[] m_subGroupsCounts;
@@ -195,7 +197,9 @@ bool Group::LoadGroupFromDB(Field* fields)
     m_lootThreshold = ItemQualities(fields[4].GetUInt16());
 
     for (int i = 0; i < TARGET_ICON_COUNT; ++i)
-        { m_targetIcons[i] = ObjectGuid(fields[5 + i].GetUInt64()); }
+    {
+        m_targetIcons[i] = ObjectGuid(fields[5 + i].GetUInt64());
+    }
 
     return true;
 }
@@ -294,7 +298,9 @@ uint32 Group::RemoveInvite(Player* player)
 void Group::RemoveAllInvites()
 {
     for (InvitesList::iterator itr = m_invitees.begin(); itr != m_invitees.end(); ++itr)
-        { (*itr)->SetGroupInvite(NULL); }
+    {
+        (*itr)->SetGroupInvite(NULL);
+    }
 
     m_invitees.clear();
 }
@@ -1332,7 +1338,9 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     if (!isRaidGroup())                                     // reset targetIcons for non-raid-groups
     {
         for (int i = 0; i < TARGET_ICON_COUNT; ++i)
-            { m_targetIcons[i].Clear(); }
+        {
+            m_targetIcons[i].Clear();
+        }
     }
 
     if (!isBGGroup())

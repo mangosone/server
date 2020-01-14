@@ -652,7 +652,9 @@ AuctionBotBuyer::AuctionBotBuyer()
 {
     // Define faction for our main data class.
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { m_HouseConfig[i].Initialize(AuctionHouseType(i)); }
+    {
+        m_HouseConfig[i].Initialize(AuctionHouseType(i));
+    }
 }
 
 AuctionBotBuyer::~AuctionBotBuyer()
@@ -1138,7 +1140,9 @@ AuctionBotSeller::AuctionBotSeller()
 {
     // Define faction for our main data class.
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { m_HouseConfig[i].Initialize(AuctionHouseType(i)); }
+    {
+        m_HouseConfig[i].Initialize(AuctionHouseType(i));
+    }
 }
 
 AuctionBotSeller::~AuctionBotSeller()
@@ -1708,7 +1712,9 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
                          sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_RECIPE_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUIVER_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT) +
                          sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_KEY_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
         for (uint32 i = 0; i < MAX_ITEM_CLASS; ++i)
-            { config.SetItemsAmountPerClass(AuctionQuality(j), ItemClass(i), indice); }
+        {
+            config.SetItemsAmountPerClass(AuctionQuality(j), ItemClass(i), indice);
+        }
     }
 }
 
@@ -1846,7 +1852,9 @@ void AuctionBotSeller::SetItemsRatio(uint32 al, uint32 ho, uint32 ne)
     sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO, ne < 10000 ? ne : 10000);
 
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { LoadItemsQuantity(m_HouseConfig[i]); }
+    {
+        LoadItemsQuantity(m_HouseConfig[i]);
+    }
 }
 
 void AuctionBotSeller::SetItemsRatioForHouse(AuctionHouseType house, uint32 val)
@@ -1877,7 +1885,9 @@ void AuctionBotSeller::SetItemsAmount(uint32(&vals) [MAX_AUCTION_QUALITY])
     sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_YELLOW_AMOUNT, vals[AUCTION_QUALITY_YELLOW]);
 
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { LoadItemsQuantity(m_HouseConfig[i]); }
+    {
+        LoadItemsQuantity(m_HouseConfig[i]);
+    }
 }
 
 void AuctionBotSeller::SetItemsAmountForQuality(AuctionQuality quality, uint32 val)
@@ -1894,7 +1904,9 @@ void AuctionBotSeller::SetItemsAmountForQuality(AuctionQuality quality, uint32 v
     }
 
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { LoadItemsQuantity(m_HouseConfig[i]); }
+    {
+        LoadItemsQuantity(m_HouseConfig[i]);
+    }
 }
 
 // Add new auction to one of the factions.
@@ -2093,7 +2105,9 @@ void AuctionHouseBot::PrepareStatusInfos(AuctionHouseBotStatusInfo& statusInfo)
         statusInfo[i].ItemsCount = 0;
 
         for (int j = 0; j < MAX_AUCTION_QUALITY; ++j)
-            { statusInfo[i].QualityInfo[j] = 0; }
+        {
+            statusInfo[i].QualityInfo[j] = 0;
+        }
 
         AuctionHouseObject::AuctionEntryMapBounds bounds = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i))->GetAuctionsBounds();
         for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)

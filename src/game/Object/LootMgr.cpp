@@ -95,7 +95,9 @@ class LootTemplate::LootGroup                               // A set of loot def
 void LootStore::Clear()
 {
     for (LootTemplateMap::const_iterator itr = m_LootTemplates.begin(); itr != m_LootTemplates.end(); ++itr)
-        { delete itr->second; }
+    {
+        delete itr->second;
+    }
     m_LootTemplates.clear();
 }
 
@@ -104,7 +106,9 @@ void LootStore::Clear()
 void LootStore::Verify() const
 {
     for (LootTemplateMap::const_iterator i = m_LootTemplates.begin(); i != m_LootTemplates.end(); ++i)
-        { i->second->Verify(*this, i->first); }
+    {
+        i->second->Verify(*this, i->first);
+    }
 }
 
 // Loads a *_loot_template DB table into loot store
@@ -266,13 +270,17 @@ void LootStore::LoadAndCollectLootIds(LootIdSet& ids_set)
     LoadLootTable();
 
     for (LootTemplateMap::const_iterator tab = m_LootTemplates.begin(); tab != m_LootTemplates.end(); ++tab)
-        { ids_set.insert(tab->first); }
+    {
+        ids_set.insert(tab->first);
+    }
 }
 
 void LootStore::CheckLootRefs(LootIdSet* ref_set) const
 {
     for (LootTemplateMap::const_iterator ltItr = m_LootTemplates.begin(); ltItr != m_LootTemplates.end(); ++ltItr)
-        { ltItr->second->CheckLootRefs(ref_set); }
+    {
+        ltItr->second->CheckLootRefs(ref_set);
+    }
 }
 
 void LootStore::ReportUnusedIds(LootIdSet const& ids_set) const
@@ -1259,7 +1267,9 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
             }
 
             for (uint32 loop = 0; loop < i->maxcount; ++loop) // Ref multiplicator
-                { Referenced->Process(loot, store, rate, i->group); }
+            {
+                Referenced->Process(loot, store, rate, i->group);
+            }
         }
         else                                                // Plain entries (not a reference, not grouped)
             { loot.AddItem(*i); }                               // Chance is already checked, just add
@@ -1267,7 +1277,9 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
 
     // Now processing groups
     for (LootGroups::const_iterator i = Groups.begin() ; i != Groups.end() ; ++i)
-        { i->Process(loot); }
+    {
+        i->Process(loot);
+    }
 }
 
 // True if template includes at least 1 quest drop entry
@@ -1426,7 +1438,9 @@ void LootTemplate::Verify(LootStore const& lootstore, uint32 id) const
 {
     // Checking group chances
     for (uint32 i = 0; i < Groups.size(); ++i)
-        { Groups[i].Verify(lootstore, id, i + 1); }
+    {
+        Groups[i].Verify(lootstore, id, i + 1);
+    }
 
     // TODO: References validity checks
 }
@@ -1449,7 +1463,9 @@ void LootTemplate::CheckLootRefs(LootIdSet* ref_set) const
     }
 
     for (LootGroups::const_iterator grItr = Groups.begin(); grItr != Groups.end(); ++grItr)
-        { grItr->CheckLootRefs(ref_set); }
+    {
+        grItr->CheckLootRefs(ref_set);
+    }
 }
 
 void LoadLootTemplates_Creature()
@@ -1476,7 +1492,9 @@ void LoadLootTemplates_Creature()
         }
     }
     for (LootIdSet::const_iterator itr = ids_setUsed.begin(); itr != ids_setUsed.end(); ++itr)
-        { ids_set.erase(*itr); }
+    {
+        ids_set.erase(*itr);
+    }
 
     // for alterac valley we've defined Player-loot inside creature_loot_template id=0
     // this hack is used, so that we won't need to create an extra table player_loot_template for just one case
@@ -1510,7 +1528,9 @@ void LoadLootTemplates_Disenchant()
         }
     }
     for (LootIdSet::const_iterator itr = ids_setUsed.begin(); itr != ids_setUsed.end(); ++itr)
-        { ids_set.erase(*itr); }
+    {
+        ids_set.erase(*itr);
+    }
     // output error for any still listed (not referenced from appropriate table) ids
     LootTemplates_Disenchant.ReportUnusedIds(ids_set);
 }
@@ -1558,7 +1578,9 @@ void LoadLootTemplates_Gameobject()
         }
     }
     for (LootIdSet::const_iterator itr = ids_setUsed.begin(); itr != ids_setUsed.end(); ++itr)
-        { ids_set.erase(*itr); }
+    {
+        ids_set.erase(*itr);
+    }
 
     // output error for any still listed (not referenced from appropriate table) ids
     LootTemplates_Gameobject.ReportUnusedIds(ids_set);
@@ -1619,7 +1641,9 @@ void LoadLootTemplates_Pickpocketing()
         }
     }
     for (LootIdSet::const_iterator itr = ids_setUsed.begin(); itr != ids_setUsed.end(); ++itr)
-        { ids_set.erase(*itr); }
+    {
+        ids_set.erase(*itr);
+    }
 
     // output error for any still listed (not referenced from appropriate table) ids
     LootTemplates_Pickpocketing.ReportUnusedIds(ids_set);
@@ -1691,7 +1715,9 @@ void LoadLootTemplates_Skinning()
         }
     }
     for (LootIdSet::const_iterator itr = ids_setUsed.begin(); itr != ids_setUsed.end(); ++itr)
-        { ids_set.erase(*itr); }
+    {
+        ids_set.erase(*itr);
+    }
 
     // output error for any still listed (not referenced from appropriate table) ids
     LootTemplates_Skinning.ReportUnusedIds(ids_set);

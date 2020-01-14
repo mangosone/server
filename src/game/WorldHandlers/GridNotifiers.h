@@ -260,30 +260,40 @@ namespace MaNGOS
         void Visit(GameObjectMapType& m)
         {
             for (GameObjectMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
 
         void Visit(PlayerMapType& m)
         {
             for (PlayerMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
         void Visit(CreatureMapType& m)
         {
             for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
 
         void Visit(CorpseMapType& m)
         {
             for (CorpseMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
 
         void Visit(DynamicObjectMapType& m)
         {
             for (DynamicObjectMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
 
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
@@ -430,7 +440,9 @@ namespace MaNGOS
         void Visit(CreatureMapType& m)
         {
             for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
 
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
@@ -475,7 +487,9 @@ namespace MaNGOS
         void Visit(PlayerMapType& m)
         {
             for (PlayerMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-                { i_do(itr->getSource()); }
+            {
+                i_do(itr->getSource());
+            }
         }
 
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
@@ -1189,7 +1203,9 @@ namespace MaNGOS
             ~LocalizedPacketDo()
             {
                 for (size_t i = 0; i < i_data_cache.size(); ++i)
-                    { delete i_data_cache[i]; }
+                {
+                    delete i_data_cache[i];
+                }
             }
             void operator()(Player* p);
 
@@ -1210,7 +1226,9 @@ namespace MaNGOS
             {
                 for (size_t i = 0; i < i_data_cache.size(); ++i)
                     for (size_t j = 0; j < i_data_cache[i].size(); ++j)
-                        { delete i_data_cache[i][j]; }
+                    {
+                        delete i_data_cache[i][j];
+                    }
             }
             void operator()(Player* p);
 

@@ -83,7 +83,9 @@ bool ChatHandler::HandleAHBotItemsAmountCommand(char* args)
     sAuctionBot.SetItemsAmount(qVals);
 
     for (int i = 0; i < MAX_AUCTION_QUALITY; ++i)
-        { PSendSysMessage(LANG_AHBOT_ITEMS_AMOUNT, GetMangosString(ahbotQualityIds[i]), sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(i))); }
+    {
+        PSendSysMessage(LANG_AHBOT_ITEMS_AMOUNT, GetMangosString(ahbotQualityIds[i]), sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(i)));
+    }
 
     return true;
 }
@@ -122,7 +124,9 @@ bool ChatHandler::HandleAHBotItemsRatioCommand(char* args)
     sAuctionBot.SetItemsRatio(rVal[0], rVal[1], rVal[2]);
 
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { PSendSysMessage(LANG_AHBOT_ITEMS_RATIO, AuctionBotConfig::GetHouseTypeName(AuctionHouseType(i)), sAuctionBotConfig.getConfigItemAmountRatio(AuctionHouseType(i))); }
+    {
+        PSendSysMessage(LANG_AHBOT_ITEMS_RATIO, AuctionBotConfig::GetHouseTypeName(AuctionHouseType(i)), sAuctionBotConfig.getConfigItemAmountRatio(AuctionHouseType(i)));
+    }
     return true;
 }
 
@@ -2246,7 +2250,9 @@ bool ChatHandler::HandleLearnAllLangCommand(char* /*args*/)
 
     // skipping UNIVERSAL language (0)
     for (int i = 1; i < LANGUAGES_COUNT; ++i)
-        { player->learnSpell(lang_description[i].spell_id, false); }
+    {
+        player->learnSpell(lang_description[i].spell_id, false);
+    }
 
     SendSysMessage(LANG_COMMAND_LEARN_ALL_LANG);
     return true;
@@ -5299,7 +5305,9 @@ bool ChatHandler::HandleResetAllCommand(char* args)
     CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE (at_login & '%u') = '0'", atLogin, atLogin);
     HashMapHolder<Player>::MapType const& plist = sObjectAccessor.GetPlayers();
     for (HashMapHolder<Player>::MapType::const_iterator itr = plist.begin(); itr != plist.end(); ++itr)
-        { itr->second->SetAtLoginFlag(atLogin); }
+    {
+        itr->second->SetAtLoginFlag(atLogin);
+    }
 
     return true;
 }
@@ -5659,18 +5667,24 @@ bool ChatHandler::HandleQuestCompleteCommand(char* args)
         if (uint32 spell_id = pQuest->ReqSpell[i])
         {
             for (uint16 z = 0; z < creaturecount; ++z)
-                { player->CastedCreatureOrGO(creature, ObjectGuid(), spell_id); }
+            {
+                player->CastedCreatureOrGO(creature, ObjectGuid(), spell_id);
+            }
         }
         else if (creature > 0)
         {
             if (CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(creature))
                 for (uint16 z = 0; z < creaturecount; ++z)
-                    { player->KilledMonster(cInfo, ObjectGuid()); }
+                {
+                    player->KilledMonster(cInfo, ObjectGuid());
+                }
         }
         else if (creature < 0)
         {
             for (uint16 z = 0; z < creaturecount; ++z)
-                { player->CastedCreatureOrGO(-creature, ObjectGuid(), 0); }
+            {
+                player->CastedCreatureOrGO(-creature, ObjectGuid(), 0);
+            }
         }
     }
 

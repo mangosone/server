@@ -990,7 +990,9 @@ uint32 Guild::GetAccountsNumber()
     // We use a set to be sure each element will be unique
     std::set<uint32> accountsIdSet;
     for (MemberList::const_iterator itr = members.begin(); itr != members.end(); ++itr)
-        { accountsIdSet.insert(itr->second.accountId); }
+    {
+        accountsIdSet.insert(itr->second.accountId);
+    }
 
     m_accountsNumber = accountsIdSet.size();
 
@@ -1582,7 +1584,9 @@ void Guild::SetBankRightsAndSlots(uint32 rankId, uint8 TabId, uint32 right, uint
             MemberSlot &member = itr->second;
             if (member.RankId == rankId)
                 for (int i = 0; i < GUILD_BANK_MAX_TABS; ++i)
-                    { member.BankResetTimeTab[i] = 0; }
+                {
+                    member.BankResetTimeTab[i] = 0;
+                }
         }
 
         CharacterDatabase.PExecute("DELETE FROM guild_bank_right WHERE guildid='%u' AND TabId='%u' AND rid='%u'", m_Id, uint32(TabId), rankId);
