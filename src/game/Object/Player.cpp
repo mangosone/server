@@ -572,7 +572,9 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     }
 
     for (int i = 0; i < MAX_COMBAT_RATING; ++i)
+    {
         m_baseRatingValue[i] = 0;
+    }
 
     // Honor System
     m_lastHonorUpdateTime = time(NULL);
@@ -626,7 +628,9 @@ Player::~Player()
     // clean up player-instance binds, may unload some instance saves
     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
         for (BoundInstancesMap::iterator itr = m_boundInstances[i].begin(); itr != m_boundInstances[i].end(); ++itr)
+        {
             itr->second.state->RemovePlayer(this);
+        }
 
     delete m_declinedname;
 }
@@ -2616,7 +2620,9 @@ void Player::GiveXP(uint32 xp, Unit* victim)
     // handle SPELL_AURA_MOD_XP_PCT auras
     Unit::AuraList const& ModXPPctAuras = GetAurasByType(SPELL_AURA_MOD_XP_PCT);
     for (Unit::AuraList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
+    {
         xp = uint32(xp * (1.0f + (*i)->GetModifier()->m_amount / 100.0f));
+    }
 
     // XP resting bonus for kill
     uint32 rested_bonus_xp = victim ? GetXPRestBonus(xp) : 0;
@@ -2820,7 +2826,9 @@ void Player::InitStatsForLevel(bool reapplyMods)
 
     // reset rating fields values
     for (uint16 index = PLAYER_FIELD_COMBAT_RATING_1; index < PLAYER_FIELD_COMBAT_RATING_1 + MAX_COMBAT_RATING; ++index)
+    {
         SetUInt32Value(index, 0);
+    }
 
     SetUInt32Value(PLAYER_FIELD_MOD_HEALING_DONE_POS, 0);
     for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
@@ -2856,7 +2864,9 @@ void Player::InitStatsForLevel(bool reapplyMods)
 
     // Init spell schools (will be recalculated in UpdateAllStats() at loading and in _ApplyAllStatBonuses() at reset
     for (uint8 i = 0; i < MAX_SPELL_SCHOOL; ++i)
+    {
         SetFloatValue(PLAYER_SPELL_CRIT_PERCENTAGE1 + i, 0.0f);
+    }
 
     SetFloatValue(PLAYER_PARRY_PERCENTAGE, 0.0f);
     SetFloatValue(PLAYER_BLOCK_PERCENTAGE, 0.0f);
@@ -5073,14 +5083,18 @@ uint32 Player::DurabilityRepairAll(bool cost, float discountMod, bool guildBank)
     uint32 TotalCost = 0;
     // equipped, backpack, bags itself
     for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
         TotalCost += DurabilityRepair(((INVENTORY_SLOT_BAG_0 << 8) | i), cost, discountMod, guildBank);
+    }
 
     // bank, buyback and keys not repaired
 
     // items in inventory bags
     for (int j = INVENTORY_SLOT_BAG_START; j < INVENTORY_SLOT_BAG_END; ++j)
         for (int i = 0; i < MAX_BAG_SIZE; ++i)
+        {
             TotalCost += DurabilityRepair(((j << 8) | i), cost, discountMod, guildBank);
+        }
     return TotalCost;
 }
 
@@ -5740,7 +5754,9 @@ void Player::UpdateRating(CombatRating cr)
 void Player::UpdateAllRatings()
 {
     for (int cr = 0; cr < MAX_COMBAT_RATING; ++cr)
+    {
         UpdateRating(CombatRating(cr));
+    }
 }
 
 void Player::SetRegularAttackTime()
@@ -16392,7 +16408,9 @@ void Player::_LoadDeclinedNames(QueryResult* result)
 
     Field* fields = result->Fetch();
     for (int i = 0; i < MAX_DECLINED_NAME_CASES; ++i)
+    {
         m_declinedname->name[i] = fields[i].GetCppString();
+    }
 
     delete result;
 }
@@ -16652,7 +16670,9 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
         // arena team not exist or not member, cleanup fields
         for (int j = 0; j < ARENA_TEAM_END; ++j)
+        {
             SetArenaTeamInfoField(arena_slot, ArenaTeamInfoType(j), 0);
+        }
     }
 
     SetHonorPoints(fields[40].GetUInt32());
@@ -17933,7 +17953,9 @@ void Player::_LoadQuestStatus(QueryResult* result)
 void Player::_LoadDailyQuestStatus(QueryResult* result)
 {
     for (uint32 quest_daily_idx = 0; quest_daily_idx < PLAYER_MAX_DAILY_QUESTS; ++quest_daily_idx)
+    {
         SetUInt32Value(PLAYER_FIELD_DAILY_QUESTS_1 + quest_daily_idx, 0);
+    }
 
     // QueryResult *result = CharacterDatabase.PQuery("SELECT quest FROM character_queststatus_daily WHERE guid = '%u'", GetGUIDLow());
 
@@ -18014,7 +18036,9 @@ void Player::_LoadGroup(QueryResult* result)
 void Player::_LoadBoundInstances(QueryResult* result)
 {
     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
+    {
         m_boundInstances[i].clear();
+    }
 
     Group* group = GetGroup();
 
@@ -21886,7 +21910,9 @@ void Player::SetDailyQuestStatus(uint32 quest_id)
 void Player::ResetDailyQuestStatus()
 {
     for (uint32 quest_daily_idx = 0; quest_daily_idx < PLAYER_MAX_DAILY_QUESTS; ++quest_daily_idx)
+    {
         SetUInt32Value(PLAYER_FIELD_DAILY_QUESTS_1 + quest_daily_idx, 0);
+    }
 
     // DB data deleted in caller
     m_DailyQuestChanged = false;

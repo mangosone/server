@@ -1158,7 +1158,9 @@ void Aura::TriggerSpell()
                         Cell::VisitWorldObjects(GetTarget(), checker, 100.0f);
 
                         for (std::list<Player*>::iterator itr = targets.begin(); itr != targets.end(); ++itr)
+                        {
                             (*itr)->CastSpell((*itr), debuffSpellId, true, NULL, NULL, casterGUID);
+                        }
 
                         return;
                     }
@@ -1455,9 +1457,13 @@ void Aura::TriggerSpell()
                     {
                         // cast 24 spells 34269-34289, 34314-34316
                         for (uint32 spell_id = 34269; spell_id != 34290; ++spell_id)
+                        {
                             triggerTarget->CastSpell(triggerTarget, spell_id, true, NULL, this, casterGUID);
+                        }
                         for (uint32 spell_id = 34314; spell_id != 34317; ++spell_id)
+                        {
                             triggerTarget->CastSpell(triggerTarget, spell_id, true, NULL, this, casterGUID);
+                        }
                         return;
                     }
 //                    // Gravity Lapse

@@ -1151,7 +1151,9 @@ void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
 
     // fill by 0 talents array
     for (uint32 i = 0; i < talent_points; ++i)
+    {
         data << uint8(0);
+    }
 
     if (sWorld.getConfig(CONFIG_BOOL_TALENTS_INSPECTING) || _player->isGameMaster())
     {

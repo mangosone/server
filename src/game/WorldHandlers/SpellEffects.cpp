@@ -1354,7 +1354,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     std::random_shuffle(spellPool.begin(), spellPool.end());
 
                     for (uint8 i = 0; i < (m_caster->GetMap()->IsRegularDifficulty() ? 2 : 4); ++i)
+                    {
                         m_caster->CastSpell(m_caster, spellPool[i], true);
+                    }
 
                     return;
                 }
@@ -1787,7 +1789,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     // Summon 4 clones of the same player
                     for (uint8 i = 0; i < 4; ++i)
+                    {
                         unitTarget->CastSpell(unitTarget, 45891, true, NULL, NULL, m_caster->GetObjectGuid());
+                    }
                     return;
                 }
                 case 45976:                                 // Open Portal
@@ -2502,7 +2506,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     // Righteous Defense (step 2) (in old version 31980 dummy effect)
                     // Clear targets for eff 1
                     for (TargetList::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+                    {
                         ihit->effectMask &= ~(1 << 1);
+                    }
 
                     // not empty (checked), copy
                     Unit::AttackerSet attackers = friendTarget->getAttackers();

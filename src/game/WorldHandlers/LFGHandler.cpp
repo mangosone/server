@@ -202,7 +202,9 @@ void WorldSession::HandleLfgClearOpcode(WorldPacket & /*recv_data */)
     DEBUG_LOG("CMSG_CLEAR_LOOKING_FOR_GROUP");
 
     for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
+    {
         _player->m_lookingForGroup.slots[i].Clear();
+    }
 
     if (sWorld.getConfig(CONFIG_BOOL_RESTRICTED_LFG_CHANNEL) && _player->GetSession()->GetSecurity() == SEC_PLAYER)
         _player->LeaveLFGChannel();

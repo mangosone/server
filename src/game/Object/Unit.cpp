@@ -279,7 +279,9 @@ Unit::Unit() :
     // disabled spell school
     uint32 rightnow = WorldTimer::getMSTime() - 1;
     for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
+    {
         m_schoolAllowedSince[i] = rightnow;
+    }
 }
 
 Unit::~Unit()
@@ -10718,7 +10720,9 @@ float Unit::GetObjectScaleMod() const
     int32 modValue = 0;
     Unit::AuraList const& scaleAuraList = GetAurasByType(SPELL_AURA_MOD_SCALE);
     for (Unit::AuraList::const_iterator itr = scaleAuraList.begin(); itr != scaleAuraList.end(); ++itr)
+    {
         modValue += (*itr)->GetModifier()->m_amount;
+    }
 
     float result = (100 + modValue) / 100.0f;
 

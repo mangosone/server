@@ -61,7 +61,9 @@ ScriptMgr::ScriptMgr() : m_scheduledScripts(0)
     ScriptChainMap emptyMap;
 
     for (int t = DBS_START; t < DBS_END; ++t)
+    {
         m_dbScripts[t] = emptyMap;
+    }
 }
 
 ScriptMgr::~ScriptMgr()
@@ -2097,7 +2099,9 @@ void ScriptMgr::LoadScriptBinding()
 {
 #ifdef ENABLE_SD3
     for (int i = 0; i < SCRIPTED_MAX_TYPE; ++i)
+    {
         m_scriptBind[i].clear();
+    }
 
     QueryResult* result = WorldDatabase.PQuery("SELECT type, bind, ScriptName, data FROM script_binding");
     uint32 count = 0;

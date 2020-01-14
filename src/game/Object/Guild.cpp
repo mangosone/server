@@ -109,7 +109,9 @@ Guild::Guild()
     m_GuildEventLogNextGuid = 0;
     m_GuildBankEventLogNextGuid_Money = 0;
     for (uint8 i = 0; i < GUILD_BANK_MAX_TABS; ++i)
+    {
         m_GuildBankEventLogNextGuid_Item[i] = 0;
+    }
 }
 
 Guild::~Guild()
@@ -252,7 +254,9 @@ bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
     newmember.LogoutTime = time(NULL);
     newmember.BankResetTimeMoney = 0;                       // this will force update at first query
     for (int i = 0; i < GUILD_BANK_MAX_TABS; ++i)
+    {
         newmember.BankResetTimeTab[i] = 0;
+    }
     members[lowguid] = newmember;
 
     std::string dbPnote   = newmember.Pnote;
@@ -339,7 +343,9 @@ bool Guild::LoadGuildFromDB(QueryResult* guildDataResult)
     m_TabListMap.resize(purchasedTabs);
 
     for (uint8 i = 0; i < purchasedTabs; ++i)
+    {
         m_TabListMap[i] = new GuildBankTab;
+    }
 
     if (time > 0)
     {
@@ -1112,7 +1118,9 @@ void Guild::DisplayGuildBankContent(WorldSession* session, uint8 TabId)
     data << uint8(GUILD_BANK_MAX_SLOTS);
 
     for (int i = 0; i < GUILD_BANK_MAX_SLOTS; ++i)
+    {
         AppendDisplayGuildBankSlot(data, tab, i);
+    }
 
     session->SendPacket(&data);
 
@@ -1196,7 +1204,9 @@ void Guild::DisplayGuildBankContentUpdate(uint8 TabId, GuildItemPosCountVec cons
     data << uint8(slots.size());                            // updates count
 
     for (GuildItemPosCountVec::const_iterator itr = slots.begin(); itr != slots.end(); ++itr)
+    {
         AppendDisplayGuildBankSlot(data, tab, itr->Slot);
+    }
 
     for (MemberList::const_iterator itr = members.begin(); itr != members.end(); ++itr)
     {

@@ -685,7 +685,9 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     auctions.reserve(aucs.size());
 
     for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = aucs.begin(); itr != aucs.end(); ++itr)
+    {
         auctions.push_back(itr->second);
+    }
 
     AuctionSorter sorter(Sort, GetPlayer());
     std::sort(auctions.begin(), auctions.end(), sorter);
