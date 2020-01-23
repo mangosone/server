@@ -219,7 +219,7 @@ void BattleGroundAB::RemovePlayer(Player * /*plr*/, ObjectGuid /*guid*/)
 /// </summary>
 /// <param name="source">The source.</param>
 /// <param name="trigger">The trigger.</param>
-void BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
+bool BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
 {
     switch (trigger)
     {
@@ -243,19 +243,12 @@ void BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
                 source->LeaveBattleground();
             }
             break;
-        case 3866:                                          // Stables
-        case 3869:                                          // Gold Mine
-        case 3867:                                          // Farm
-        case 3868:                                          // Lumber Mill
-        case 3870:                                          // Black Smith
-        case 4020:                                          // Unk1
-        case 4021:                                          // Unk2
-            // break;
+
         default:
-            // sLog.outError("WARNING: Unhandled AreaTrigger in Battleground: %u", trigger);
-            // source->GetSession()->SendAreaTriggerMessage("Warning: Unhandled AreaTrigger in Battleground: %u", trigger);
-            break;
+            return false;
+
     }
+    return true;
 }
 
 /// <summary>
