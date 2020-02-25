@@ -55,7 +55,7 @@ namespace MaNGOS
             /// <param name="textId">The text id.</param>
             /// <param name="source">The source.</param>
             /// <param name="args">The args.</param>
-            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = NULL)
+            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = nullptr)
                 : i_msgtype(msgtype), i_textId(textId), i_source(source), i_args(args) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {

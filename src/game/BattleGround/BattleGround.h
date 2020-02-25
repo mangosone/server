@@ -119,7 +119,7 @@ enum BattleGroundSpells
     SPELL_HORDE_GREEN_FLAG          = 35775,
     SPELL_PREPARATION               = 44521,                // Preparation
     SPELL_RECENTLY_DROPPED_FLAG     = 42792,                // Recently Dropped Flag
-    SPELL_AURA_PLAYER_INACTIVE      = 43681                 // Inactive
+    SPELL_AURA_PLAYER_INACTIVE      = 43681,                // Inactive
 };
 
 enum BattleGroundTimeIntervals
@@ -1380,7 +1380,6 @@ class BattleGround
 
         /* Arena team ids by team */
         uint32 m_ArenaTeamIds[PVP_TEAM_COUNT];
-
         int32 m_ArenaTeamRatingChanges[PVP_TEAM_COUNT];
 
         /* Limits */

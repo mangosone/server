@@ -30,7 +30,8 @@
 #include "BattleGroundMgr.h"
 #include "Language.h"
 #include "WorldPacket.h"
-#include "DBCStores.h"                                   // TODO REMOVE this when graveyard handling for pvp is updated
+// TODO REMOVE this when graveyard handling for pvp is updated
+#include "DBCStores.h"
 
 /// <summary>
 /// Initializes a new instance of the <see cref="BattleGroundAB"/> class.
@@ -243,10 +244,8 @@ bool BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
                 source->LeaveBattleground();
             }
             break;
-
         default:
             return false;
-
     }
     return true;
 }
@@ -587,12 +586,20 @@ void BattleGroundAB::EndBattleGround(Team winner)
 {
     // win reward
     if (winner == ALLIANCE)
+    {
+
         RewardHonorToTeam(GetBonusHonorFromKill(1), ALLIANCE);
+
+    }
     if (winner == HORDE)
+    {
+
         RewardHonorToTeam(GetBonusHonorFromKill(1), HORDE);
     // complete map_end rewards (even if no team wins)
     RewardHonorToTeam(GetBonusHonorFromKill(1), HORDE);
     RewardHonorToTeam(GetBonusHonorFromKill(1), ALLIANCE);
+
+    }
 
     BattleGround::EndBattleGround(winner);
 }

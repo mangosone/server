@@ -50,7 +50,7 @@ enum CanCastResult
     CAST_FAIL_POWER             = 5,
     CAST_FAIL_STATE             = 6,
     CAST_FAIL_TARGET_AURA       = 7,
-    CAST_FAIL_NO_LOS            = 8
+    CAST_FAIL_NO_LOS            = 8,
 };
 
 enum CastFlags
@@ -112,7 +112,9 @@ class CreatureAI
             m_combatMovement(0),
             m_attackDistance(0.0f),
             m_attackAngle(0.0f)
-        { AddCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT); }
+            {
+                AddCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT);
+            }
 
         virtual ~CreatureAI();
 

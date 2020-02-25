@@ -198,6 +198,7 @@ bool ChatHandler::HandleGMCommand(char* args)
         VMAP::IVMapManager *vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
         vMapManager->processCommand("stoplog");
 #endif
+
         return true;
     }
 
@@ -209,6 +210,7 @@ bool ChatHandler::HandleGMCommand(char* args)
         VMAP::IVMapManager *vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
         vMapManager->processCommand("startlog");
 #endif
+
         return true;
     }
 
@@ -1305,7 +1307,9 @@ bool ChatHandler::HandleModifyFlyCommand(char* args)
 
     PSendSysMessage(LANG_YOU_CHANGE_FLY_SPEED, modSpeed, GetNameLink(chr).c_str());
     if (needReportToTarget(chr))
+    {
         ChatHandler(chr).PSendSysMessage(LANG_YOURS_FLY_SPEED_CHANGED, GetNameLink().c_str(), modSpeed);
+    }
 
     chr->UpdateSpeed(MOVE_FLIGHT, true, modSpeed);
 

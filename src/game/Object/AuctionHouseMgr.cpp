@@ -425,7 +425,9 @@ void AuctionHouseMgr::LoadAuctions()
             {
                 std::string plName;
                 if (!sObjectMgr.GetPlayerNameByGUID(ObjectGuid(HIGHGUID_PLAYER, auction->owner), plName))
+                {
                     plName = sObjectMgr.GetMangosStringForDBCLocale(LANG_UNKNOWN);
+                }
 
                 Utf8toWStr(plName, plWName);
             }
@@ -577,13 +579,21 @@ AuctionHouseEntry const* AuctionHouseMgr::GetAuctionHouseEntry(Unit* unit)
                 {
                     FactionTemplateEntry const* u_entry = sFactionTemplateStore.LookupEntry(factionTemplateId);
                     if (!u_entry)
-                        { houseid = 7; }                        // goblin auction house
+                    {
+                        houseid = 7; // goblin auction house
+                    }
                     else if (u_entry->ourMask & FACTION_MASK_ALLIANCE)
-                        { houseid = 1; }                        // human auction house
+                    {
+                        houseid = 1; // human auction house
+                    }
                     else if (u_entry->ourMask & FACTION_MASK_HORDE)
-                        { houseid = 6; }                        // orc auction house
+                    {
+                        houseid = 6; // orc auction house
+                    }
                     else
-                        { houseid = 7; }                        // goblin auction house
+                    {
+                        houseid = 7; // goblin auction house
+                    }
                     break;
                 }
             }
@@ -871,7 +881,9 @@ bool AuctionSorter::operator()(const AuctionEntry* auc1, const AuctionEntry* auc
         int res = auc1->CompareAuctionEntry(m_sort[i] & ~AUCTION_SORT_REVERSED, auc2, m_viewPlayer);
         // "equal" by used column
         if (res == 0)
+        {
             continue;
+        }
         // less/greater and normal/reversed ordered
         return (res < 0) == ((m_sort[i] & AUCTION_SORT_REVERSED) == 0);
     }
@@ -930,14 +942,18 @@ void WorldSession::BuildListAuctionItems(std::vector<AuctionEntry*> const& aucti
             if (usable != 0x00)
             {
                 if (_player->CanUseItem(item) != EQUIP_ERR_OK)
+                {
                     continue;
+                }
 
                 if (proto->Class == ITEM_CLASS_RECIPE)
                 {
                     if (SpellEntry const* spell = sSpellStore.LookupEntry(proto->Spells[0].SpellId))
                     {
                         if (_player->HasSpell(spell->EffectTriggerSpell[EFFECT_INDEX_0]))
+                        {
                             continue;
+                        }
                     }
                 }
             }
@@ -974,7 +990,9 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
     AH->owner = pl ? pl->GetGUIDLow() : 0;
 
     if (pl)
+    {
         Utf8toWStr(pl->GetName(), AH->ownerName);
+    }
 
     AH->startbid = bid;
     AH->bidder = 0;

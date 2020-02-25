@@ -30,7 +30,8 @@
 #include "GameObject.h"
 #include "Language.h"
 #include "WorldPacket.h"
-#include "DBCStores.h"                                   // TODO REMOVE this when graveyard handling for pvp is updated
+// TODO REMOVE this when graveyard handling for pvp is updated
+#include "DBCStores.h"
 
 BattleGroundAV::BattleGroundAV()
 {
@@ -235,6 +236,7 @@ void BattleGroundAV::HandleQuestComplete(uint32 questid, Player* player)
         default:
             DEBUG_LOG("BattleGroundAV: Quest %i completed but is not interesting for us", questid);
             return;
+            break;
     }
     if (reputation)
     {

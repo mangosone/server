@@ -210,15 +210,20 @@ void Creature::AddToWorld()
 
 #ifdef ENABLE_ELUNA
     if (!inWorld)
+    {
         sEluna->OnAddToWorld(this);
+    }
 #endif /* ENABLE_ELUNA */
+
 }
 
 void Creature::RemoveFromWorld()
 {
 #ifdef ENABLE_ELUNA
     if (IsInWorld())
+    {
         sEluna->OnRemoveFromWorld(this);
+    }
 #endif /* ENABLE_ELUNA */
 
     ///- Remove the creature from the accessor
@@ -278,7 +283,9 @@ void Creature::RemoveCorpse(bool inPlace)
     }
 
     if (m_isCreatureLinkingTrigger)
+    {
         GetMap()->GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_DESPAWN, this);
+    }
 
     if (InstanceData* mapInstance = GetInstanceData())
     {
@@ -398,7 +405,9 @@ bool Creature::InitEntry(uint32 Entry, CreatureData const* data /*=NULL*/, GameE
     else if (!data || data->equipmentId == 0)
     {
         if (cinfo->EquipmentTemplateId== 0)
+        {
             LoadEquipment(normalInfo->EquipmentTemplateId); // use default from normal template if diff does not have any
+        }
         else
             LoadEquipment(cinfo->EquipmentTemplateId);      // else use from diff template
     }
@@ -420,7 +429,7 @@ bool Creature::InitEntry(uint32 Entry, CreatureData const* data /*=NULL*/, GameE
 
     // check if we need to add swimming movement. TODO: i thing movement flags should be computed automatically at each movement of creature so we need a sort of UpdateMovementFlags() method
     if (cinfo->InhabitType & INHABIT_WATER &&                                   // check inhabit type water
-            data &&                                                                 // check if there is data to get creature spawn pos
+        data &&                                                                 // check if there is data to get creature spawn pos
             GetMap()->GetTerrain()->IsInWater(data->posX, data->posY, data->posZ))  // check if creature is in water
         m_movementInfo.AddMovementFlag(MOVEFLAG_SWIMMING);                      // add swimming movement
 
@@ -448,7 +457,9 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
         SetHealthPercent(healthPercent);
     }
     else
+    {
         SelectLevel();
+    }
 
     if (team == HORDE)
     {
@@ -500,9 +511,11 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
             SetPvP(true);
         }
         else
+        {
             {
                 SetPvP(false);
             }
+        }
     }
 
     // Try difficulty dependend version before falling back to base entry
@@ -684,9 +697,13 @@ void Creature::Update(uint32 update_diff, uint32 diff)
         case ALIVE:
         {
             if (m_aggroDelay <= update_diff)
+            {
                 m_aggroDelay = 0;
+            }
             else
+            {
                 m_aggroDelay -= update_diff;
+            }
 
             if (m_IsDeadByDefault)
             {
@@ -814,7 +831,9 @@ void Creature::RegeneratePower()
                 }
             }
             else
+            {
                 addValue = maxValue / 3.0f;
+            }
             break;
         case POWER_ENERGY:
             // ToDo: for vehicle this is different - NEEDS TO BE FIXED!
@@ -1134,7 +1153,9 @@ bool Creature::CanInteractWithBattleMaster(Player* pPlayer, bool msg) const
             case BATTLEGROUND_NA:
             case BATTLEGROUND_BE:
             case BATTLEGROUND_AA:
-            case BATTLEGROUND_RL:  pPlayer->PlayerTalkClass->SendGossipMenu(10024, GetObjectGuid()); break;
+            case BATTLEGROUND_RL:
+                pPlayer->PlayerTalkClass->SendGossipMenu(10024, GetObjectGuid());
+                break;
             default: break;
         }
         return false;
@@ -1316,12 +1337,18 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask)
             displayId != cinfo->ModelId[2] && displayId != cinfo->ModelId[3])
         {
             for (int i = 0; i < MAX_CREATURE_MODEL && displayId; ++i)
+            {
                 if (cinfo->ModelId[i])
+                {
                     if (CreatureModelInfo const* minfo = sObjectMgr.GetCreatureModelInfo(cinfo->ModelId[i]))
+                    {
                         if (displayId == minfo->modelid_other_gender)
                         {
                             displayId = 0;
                         }
+                    }
+                }
+            }
         }
         else
         {
@@ -1396,7 +1423,9 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     uint32 const maxlevel = cinfo->MaxLevel;
 
     if (level == USE_DEFAULT_DATABASE_LEVEL)
+    {
         level = minlevel == maxlevel ? minlevel : urand(minlevel, maxlevel);
+    }
 
     SetLevel(level);
 
@@ -1445,7 +1474,9 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
     health *= _GetHealthMod(rank); // Apply custom config setting
     if (health < 1)
+    {
         health = 1;
+    }
 
     //////////////////////////////////////////////////////////////////////////
     // Set values
@@ -1478,11 +1509,15 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
         // For non regenerating powers set 0
         if ((i == POWER_ENERGY || i == POWER_MANA) && !IsRegeneratingPower())
+        {
             value = 0;
+        }
 
         // Mana requires an extra field to be set
         if (i == POWER_MANA)
+        {
             SetCreateMana(value);
+        }
 
         SetMaxPower(Powers(i), maxValue);
         SetPower(Powers(i), value);
@@ -1545,7 +1580,9 @@ float Creature::_GetDamageMod(int32 Rank)
 void Creature::LowerPlayerDamageReq(uint32 unDamage)
 {
     if (m_PlayerDamageReq)
+    {
         m_PlayerDamageReq > unDamage ? m_PlayerDamageReq -= unDamage : m_PlayerDamageReq = 0;
+    }
 }
 
 float Creature::_GetSpellDamageMod(int32 Rank)
@@ -3193,9 +3230,13 @@ void Creature::SetLevitate(bool enable)
 void Creature::SetSwim(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_SWIMMING);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_SWIMMING);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_START_SWIM : SMSG_SPLINE_MOVE_STOP_SWIM);
     data << GetPackGUID();
@@ -3205,9 +3246,13 @@ void Creature::SetSwim(bool enable)
 void Creature::SetCanFly(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_CAN_FLY);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_CAN_FLY);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_SET_FLYING : SMSG_SPLINE_MOVE_UNSET_FLYING, 9);
     data << GetPackGUID();
@@ -3217,9 +3262,13 @@ void Creature::SetCanFly(bool enable)
 void Creature::SetFeatherFall(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_SAFE_FALL);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_SAFE_FALL);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_FEATHER_FALL : SMSG_SPLINE_MOVE_NORMAL_FALL);
     data << GetPackGUID();
@@ -3229,9 +3278,13 @@ void Creature::SetFeatherFall(bool enable)
 void Creature::SetHover(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_HOVER);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_HOVER);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_SET_HOVER : SMSG_SPLINE_MOVE_UNSET_HOVER, 9);
     data << GetPackGUID();
