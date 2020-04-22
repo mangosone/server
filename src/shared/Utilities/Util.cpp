@@ -536,6 +536,7 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
     utf8str = conStr;
     return true;
 #endif
+
 }
 
 bool Utf8FitTo(const std::string& str, std::wstring search)
@@ -574,6 +575,7 @@ void vutf8printf(FILE* out, const char* str, va_list* ap)
 #else
     vfprintf(out, str, *ap);
 #endif
+
 }
 
 void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result)
@@ -666,6 +668,7 @@ void utf8print(void* /*arg*/, const char* str)
 #else
     printf("%s", str);
 #endif
+
 }
 
 void utf8printf(FILE* out, const char* str, ...)
@@ -678,6 +681,7 @@ void utf8printf(FILE* out, const char* str, ...)
 
 int return_iCoreNumber()
 {
+
 #if defined(CLASSIC)
     return 0;
 #elif defined(TBC)
@@ -695,6 +699,7 @@ int return_iCoreNumber()
 #else
     return -1;
 #endif
+
 }
 
 /// Print out the core banner
