@@ -293,7 +293,7 @@ void MapManager::InitMaxInstanceId()
 {
     i_MaxInstanceId = 0;
 
-    QueryResult* result = CharacterDatabase.Query("SELECT MAX(id) FROM instance");
+    QueryResult* result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `instance`");
     if (result)
     {
         i_MaxInstanceId = result->Fetch()[0].GetUInt32();
