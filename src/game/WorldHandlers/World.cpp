@@ -2242,7 +2242,7 @@ void World::_UpdateRealmCharCount(QueryResult* resultCharCount, uint32 accountId
 
 void World::InitDailyQuestResetTime()
 {
-    QueryResult* result = CharacterDatabase.Query("SELECT NextDailyQuestResetTime FROM saved_variables");
+    QueryResult* result = CharacterDatabase.Query("SELECT `NextDailyQuestResetTime` FROM `saved_variables`");
     if (!result)
         m_NextDailyQuestReset = time_t(time(NULL));         // game time not yet init
     else
@@ -2280,7 +2280,7 @@ void World::ResetDailyQuests()
             itr->second->GetPlayer()->ResetDailyQuestStatus();
 
     m_NextDailyQuestReset = time_t(m_NextDailyQuestReset + DAY);
-    CharacterDatabase.PExecute("UPDATE saved_variables SET NextDailyQuestResetTime = '" UI64FMTD "'", uint64(m_NextDailyQuestReset));
+    CharacterDatabase.PExecute("UPDATE `saved_variables` SET `NextDailyQuestResetTime` = '" UI64FMTD "'", uint64(m_NextDailyQuestReset));
 }
 
 void World::SetPlayerLimit(int32 limit, bool needUpdate)

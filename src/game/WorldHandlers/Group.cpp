@@ -1833,7 +1833,7 @@ void Group::SetDifficulty(Difficulty difficulty)
 {
     m_difficulty = difficulty;
     if (!isBGGroup())
-        CharacterDatabase.PExecute("UPDATE groups SET difficulty = %u WHERE groupId='%u'", m_difficulty, m_Id);
+        CharacterDatabase.PExecute("UPDATE `groups` SET `difficulty` = %u WHERE `groupId`='%u'", m_difficulty, m_Id);
 
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
     {
