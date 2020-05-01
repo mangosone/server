@@ -2266,7 +2266,7 @@ void World::InitDailyQuestResetTime()
     m_NextDailyQuestReset = m_NextDailyQuestReset < curTime ? nextDayResetTime - DAY : nextDayResetTime;
 
     if (!result)
-        CharacterDatabase.PExecute("INSERT INTO saved_variables (NextDailyQuestResetTime) VALUES ('" UI64FMTD "')", uint64(m_NextDailyQuestReset));
+        CharacterDatabase.PExecute("INSERT INTO `saved_variables` (`NextDailyQuestResetTime`) VALUES ('" UI64FMTD "')", uint64(m_NextDailyQuestReset));
     else
         delete result;
 }
@@ -2274,7 +2274,7 @@ void World::InitDailyQuestResetTime()
 void World::ResetDailyQuests()
 {
     DETAIL_LOG("Daily quests reset for all characters.");
-    CharacterDatabase.Execute("DELETE FROM character_queststatus_daily");
+    CharacterDatabase.Execute("DELETE FROM `character_queststatus_daily`");
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         if (itr->second->GetPlayer())
             itr->second->GetPlayer()->ResetDailyQuestStatus();

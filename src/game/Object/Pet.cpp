@@ -363,7 +363,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
 
     if (owner->GetTypeId() == TYPEID_PLAYER && getPetType() == HUNTER_PET)
     {
-        result = CharacterDatabase.PQuery("SELECT genitive, dative, accusative, instrumental, prepositional FROM character_pet_declinedname WHERE owner = '%u' AND id = '%u'", owner->GetGUIDLow(), GetCharmInfo()->GetPetNumber());
+        result = CharacterDatabase.PQuery("SELECT `genitive`, `dative`, `accusative`, `instrumental`, `prepositional` FROM `character_pet_declinedname` WHERE `owner` = '%u' AND `id` = '%u'", owner->GetGUIDLow(), GetCharmInfo()->GetPetNumber());
 
         if (result)
         {
