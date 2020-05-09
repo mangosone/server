@@ -1077,7 +1077,7 @@ bool ChatHandler::HandleModifyASpeedCommand(char* args)
 
     float modSpeed = (float)atof(args);
 
-    if (modSpeed > 10 || modSpeed < 0.1)
+    if (modSpeed > sWorld.getConfig(CONFIG_UINT32_GM_MAX_SPEED_FACTOR) || modSpeed < 0.1)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
@@ -1131,7 +1131,7 @@ bool ChatHandler::HandleModifySpeedCommand(char* args)
 
     float modSpeed = (float)atof(args);
 
-    if (modSpeed > 10 || modSpeed < 0.1)
+    if (modSpeed > sWorld.getConfig(CONFIG_UINT32_GM_MAX_SPEED_FACTOR) || modSpeed < 0.1)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
@@ -1182,7 +1182,7 @@ bool ChatHandler::HandleModifySwimCommand(char* args)
 
     float modSpeed = (float)atof(args);
 
-    if (modSpeed > 10.0f || modSpeed < 0.01f)
+    if (modSpeed > sWorld.getConfig(CONFIG_UINT32_GM_MAX_SPEED_FACTOR) || modSpeed < 0.01f)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
@@ -1233,7 +1233,7 @@ bool ChatHandler::HandleModifyBWalkCommand(char* args)
 
     float modSpeed = (float)atof(args);
 
-    if (modSpeed > 10.0f || modSpeed < 0.1f)
+    if (modSpeed > sWorld.getConfig(CONFIG_UINT32_GM_MAX_SPEED_FACTOR) || modSpeed < 0.1f)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
