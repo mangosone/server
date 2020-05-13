@@ -24,7 +24,7 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "2112001"
+    #define REVISION_NR "2113002"
 
     #define REALMD_DB_VERSION_NR 21
     #define REALMD_DB_STRUCTURE_NR 2
@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 13
-    #define WORLD_DB_CONTENT_NR 001
-    #define WORLD_DB_UPDATE_DESCRIPTION "UBRS_equip_models_add"
+    #define WORLD_DB_CONTENT_NR 002
+    #define WORLD_DB_UPDATE_DESCRIPTION "go 153205 resize"
 #endif // __REVISION_H__
