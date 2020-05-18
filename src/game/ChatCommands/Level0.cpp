@@ -36,31 +36,6 @@
 #include "revision.h"
 #include "Util.h"
 
-bool ChatHandler::HandleHelpCommand(char* args)
-{
-    if (!*args)
-    {
-        ShowHelpForCommand(getCommandTable(), "help");
-        ShowHelpForCommand(getCommandTable(), "");
-    }
-    else
-    {
-        if (!ShowHelpForCommand(getCommandTable(), args))
-        {
-            SendSysMessage(LANG_NO_CMD);
-        }
-    }
-
-    return true;
-}
-
-bool ChatHandler::HandleCommandsCommand(char* /*args*/)
-{
-    ShowHelpForCommand(getCommandTable(), "");
-    return true;
-}
-
-
 bool ChatHandler::HandleStartCommand(char* /*args*/)
 {
     Player* chr = m_session->GetPlayer();
