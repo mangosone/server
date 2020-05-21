@@ -225,7 +225,8 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     uint32 expansion = 0;
     if(ExtractUInt32(&args, expansion))
     {
-        result = sAccountMgr.CreateAccount(account_name, password, expansion);
+        // No point in assigning to result as it's never used on this side of the if/else branch
+        sAccountMgr.CreateAccount(account_name, password, expansion);
     }
     else
     {
