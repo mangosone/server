@@ -1702,6 +1702,48 @@ bool ChatHandler::HandleModifySwimCommand(char* args)
     return true;
 }
 
+//Edit Player Fly command
+bool ChatHandler::HandleModifyFlyCommand(char* args)
+{
+    if (!*args)
+    {
+        return false;
+    }
+
+    float modSpeed = (float)atof(args);
+
+    if (modSpeed > 10.0f || modSpeed < 0.1f)
+    {
+        SendSysMessage(LANG_BAD_VALUE);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    Player* chr = getSelectedPlayer();
+    if (chr == NULL)
+    {
+        SendSysMessage(LANG_NO_CHAR_SELECTED);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // check online security
+    if (HasLowerSecurity(chr))
+    {
+        return false;
+    }
+
+    PSendSysMessage(LANG_YOU_CHANGE_FLY_SPEED, modSpeed, GetNameLink(chr).c_str());
+    if (needReportToTarget(chr))
+    {
+        ChatHandler(chr).PSendSysMessage(LANG_YOURS_FLY_SPEED_CHANGED, GetNameLink().c_str(), modSpeed);
+    }
+
+    chr->UpdateSpeed(MOVE_FLIGHT, true, modSpeed);
+
+    return true;
+}
+
 // Edit Player Walk Speed
 bool ChatHandler::HandleModifyBWalkCommand(char* args)
 {
@@ -2341,6 +2383,30 @@ bool ChatHandler::HandleModifyGenderCommand(char* args)
     {
         ChatHandler(player).PSendSysMessage(LANG_YOUR_GENDER_CHANGED, gender_full, GetNameLink().c_str());
     }
+
+    return true;
+}
+
+bool ChatHandler::HandleModifyArenaCommand(char* args)
+{
+    if (!*args)
+    {
+        return false;
+    }
+
+    Player* target = getSelectedPlayer();
+    if (!target)
+    {
+        SendSysMessage(LANG_PLAYER_NOT_FOUND);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    int32 amount = (int32)atoi(args);
+
+    target->ModifyArenaPoints(amount);
+
+    PSendSysMessage(LANG_COMMAND_MODIFY_ARENA, GetNameLink(target).c_str(), target->GetArenaPoints());
 
     return true;
 }

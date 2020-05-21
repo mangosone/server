@@ -22,169 +22,9 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
-#include "Database/DatabaseEnv.h"
-
-#include "DBCStores.h"
-
-#include "ObjectMgr.h"
-#include "ObjectGuid.h"
-#include "Item.h"
-#include "Player.h"
-#include "TemporarySummon.h"
-#include "Totem.h"
-#include "Pet.h"
-#include "CreatureAI.h"
-#include "GameObject.h"
-#include "Opcodes.h"
 #include "Chat.h"
-#include "ObjectAccessor.h"
-#include "MapManager.h"
 #include "Language.h"
 #include "World.h"
-#include "GameEventMgr.h"
-#include "SpellMgr.h"
-#include "MapPersistentStateMgr.h"
-#include "AccountMgr.h"
-#include "GMTicketMgr.h"
-#include "WaypointManager.h"
-#include "DBCStores.h"
-#include "Util.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
-#include "WaypointMovementGenerator.h"
-#include "Formulas.h"
-#include "G3D/Quat.h"                                       // for turning GO's
-#include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
-#include "MoveMap.h"                                        // for mmap manager
-#include "PathFinder.h"                                     // for mmap commands
-#include "movement/MoveSplineInit.h"
-
-#include <fstream>
-#include <map>
-#include <typeinfo>
-
-static uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
-{
-    LANG_REP_HATED,    LANG_REP_HOSTILE, LANG_REP_UNFRIENDLY, LANG_REP_NEUTRAL,
-    LANG_REP_FRIENDLY, LANG_REP_HONORED, LANG_REP_REVERED,    LANG_REP_EXALTED
-};
-
-// mute player for some times
-
-
-
-static char const* const areatriggerKeys[] =
-{
-    "Hareatrigger",
-    "Hareatrigger_target",
-    NULL
-};
-
-
-enum CreatureLinkType
-{
-    CREATURE_LINK_RAW = -1,                   // non-link case
-    CREATURE_LINK_GUID = 0,
-    CREATURE_LINK_ENTRY = 1,
-};
-
-static char const* const creatureKeys[] =
-{
-    "Hcreature",
-    "Hcreature_entry",
-    NULL
-};
-
-/** \brief Teleport the GM to the specified creature
-*
-* .go creature <GUID>     --> TP using creature.guid
-* .go creature azuregos   --> TP player to the mob with this name
-*                             Warning: If there is more than one mob with this name
-*                                      you will be teleported to the first one that is found.
-* .go creature id 6109    --> TP player to the mob, that has this creature_template.entry
-*                             Warning: If there is more than one mob with this "id"
-*                                      you will be teleported to the first one that is found.
-*/
-// teleport to creature
-
-enum GameobjectLinkType
-{
-    GAMEOBJECT_LINK_RAW = -1,                   // non-link case
-    GAMEOBJECT_LINK_GUID = 0,
-    GAMEOBJECT_LINK_ENTRY = 1,
-};
-
-static char const* const gameobjectKeys[] =
-{
-    "Hgameobject",
-    "Hgameobject_entry",
-    NULL
-};
-
-
-
-
-void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, LocaleConstant loc, FactionState const* repState /*= NULL*/, Player* target /*= NULL */)
-{
-    std::string name = factionEntry->name[loc];
-    // send faction in "id - [faction] rank reputation [visible] [at war] [own team] [unknown] [invisible] [inactive]" format
-    // or              "id - [faction] [no reputation]" format
-    std::ostringstream ss;
-    if (m_session)
-    {
-        ss << factionEntry->ID << " - |cffffffff|Hfaction:" << factionEntry->ID << "|h[" << name << " " << localeNames[loc] << "]|h|r";
-    }
-    else
-    {
-        ss << factionEntry->ID << " - " << name << " " << localeNames[loc];
-    }
-
-    if (repState)                               // and then target!=NULL also
-    {
-        ReputationRank rank = target->GetReputationMgr().GetRank(factionEntry);
-        std::string rankName = GetMangosString(ReputationRankStrIndex[rank]);
-
-        ss << " " << rankName << "|h|r (" << target->GetReputationMgr().GetReputation(factionEntry) << ")";
-
-        if (repState->Flags & FACTION_FLAG_VISIBLE)
-        {
-            ss << GetMangosString(LANG_FACTION_VISIBLE);
-        }
-        if (repState->Flags & FACTION_FLAG_AT_WAR)
-        {
-            ss << GetMangosString(LANG_FACTION_ATWAR);
-        }
-        if (repState->Flags & FACTION_FLAG_PEACE_FORCED)
-        {
-            ss << GetMangosString(LANG_FACTION_PEACE_FORCED);
-        }
-        if (repState->Flags & FACTION_FLAG_HIDDEN)
-        {
-            ss << GetMangosString(LANG_FACTION_HIDDEN);
-        }
-        if (repState->Flags & FACTION_FLAG_INVISIBLE_FORCED)
-        {
-            ss << GetMangosString(LANG_FACTION_INVISIBLE_FORCED);
-        }
-        if (repState->Flags & FACTION_FLAG_INACTIVE)
-        {
-            ss << GetMangosString(LANG_FACTION_INACTIVE);
-        }
-    }
-    else if (target)
-    {
-        ss << GetMangosString(LANG_FACTION_NOREPUTATION);
-    }
-
-    SendSysMessage(ss.str().c_str());
-}
-
-
-
-// move item to other slot
-
 
 
 bool ChatHandler::HandleLookupTitleCommand(char* args)
@@ -254,8 +94,8 @@ bool ChatHandler::HandleLookupTitleCommand(char* args)
                 char const* knownStr = target && target->HasTitle(titleInfo) ? GetMangosString(LANG_KNOWN) : "";
 
                 char const* activeStr = target && target->GetUInt32Value(PLAYER_CHOSEN_TITLE) == titleInfo->bit_index
-                                        ? GetMangosString(LANG_ACTIVE)
-                                        : "";
+                    ? GetMangosString(LANG_ACTIVE)
+                    : "";
 
                 char titleNameStr[80];
                 snprintf(titleNameStr, 80, name.c_str(), targetName);
@@ -462,8 +302,8 @@ bool ChatHandler::HandleCharacterTitlesCommand(char* args)
             }
 
             char const* activeStr = target && target->GetUInt32Value(PLAYER_CHOSEN_TITLE) == titleInfo->bit_index
-                                    ? GetMangosString(LANG_ACTIVE)
-                                    : "";
+                ? GetMangosString(LANG_ACTIVE)
+                : "";
 
             char titleNameStr[80];
             snprintf(titleNameStr, 80, name.c_str(), targetName);
