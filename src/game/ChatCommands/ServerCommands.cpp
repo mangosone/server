@@ -27,6 +27,7 @@
 #include "World.h"
 #include "Config.h"
 #include "SystemConfig.h"
+#include "BattleGroundMgr.h"
 #include "revision.h"
 
  /**********************************************************************
@@ -433,5 +434,7 @@ bool ChatHandler::HandleServerPLimitCommand(char* args)
 
     return true;
 }
+
+
 
 

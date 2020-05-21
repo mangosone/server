@@ -29,10 +29,6 @@
      CommandTable : honorCommandTable
  /***********************************************************************/
 
-bool ChatHandler::HandleHonorShow(char* /*args*/)
-{
-    // NOT PRESENT IN MANGOS ONE
-}
 
 bool ChatHandler::HandleHonorAddCommand(char* args)
 {

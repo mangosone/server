@@ -25,6 +25,7 @@
 #include "Chat.h"
 #include "Language.h"
 #include "World.h"
+#include "BattleGroundMgr.h"
 #include "PlayerDump.h"
 
  /**********************************************************************
@@ -253,3 +254,12 @@ bool ChatHandler::HandlePDumpWriteCommand(char* args)
 
     return true;
 }
+
+// Misc COmmands
+
+bool ChatHandler::HandleFlushArenaPointsCommand(char* /*args*/)
+{
+    sBattleGroundMgr.DistributeArenaPoints();
+    return true;
+}
+

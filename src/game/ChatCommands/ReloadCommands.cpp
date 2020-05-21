@@ -30,6 +30,8 @@
 #include "MapManager.h"
 #include "CreatureEventAIMgr.h"
 #include "BattleGroundMgr.h"
+#include "SkillExtraItems.h"
+#include "SkillDiscovery.h"
 #include "ItemEnchantmentMgr.h"
 
  /**********************************************************************
