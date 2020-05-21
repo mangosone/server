@@ -75,7 +75,6 @@ static char const* const areatriggerKeys[] =
     NULL
 };
 
-
 bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const* zPtr, float const* ortPtr)
 {
     float z;
