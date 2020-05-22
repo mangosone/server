@@ -33,6 +33,7 @@
 #include "SkillExtraItems.h"
 #include "SkillDiscovery.h"
 #include "ItemEnchantmentMgr.h"
+#include "CommandMgr.h"
 
  /**********************************************************************
      CommandTable : commandTable
@@ -191,6 +192,7 @@ bool ChatHandler::HandleReloadAllLocalesCommand(char* /*args*/)
     HandleReloadLocalesPageTextCommand((char*)"a");
     HandleReloadLocalesPointsOfInterestCommand((char*)"a");
     HandleReloadLocalesQuestCommand((char*)"a");
+    HandleReloadLocalesCommandHelpCommand((char*)"a");
     return true;
 }
 
@@ -893,6 +895,14 @@ bool ChatHandler::HandleReloadLocalesNpcTextCommand(char* /*args*/)
     sLog.outString("Re-Loading Locales NPC Text ... ");
     sObjectMgr.LoadGossipTextLocales();
     SendGlobalSysMessage("DB table `locales_npc_text` reloaded.", SEC_MODERATOR);
+    return true;
+}
+
+bool ChatHandler::HandleReloadLocalesCommandHelpCommand(char* /*args*/)
+{
+    sLog.outString("Re-Loading Locales Command Help ... ");
+    sCommandMgr.LoadCommandHelpLocale();
+    SendGlobalSysMessage("DB table `locales_command` reloaded.", SEC_MODERATOR);
     return true;
 }
 

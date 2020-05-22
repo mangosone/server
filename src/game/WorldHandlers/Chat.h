@@ -51,13 +51,32 @@ class Unit;
 
 class ChatCommand
 {
-    public:
-        const char*        Name;
-        uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
-        bool               AllowConsole;
-        bool (ChatHandler::*Handler)(char* args);
-        std::string        Help;
-        ChatCommand*       ChildCommands;
+public:
+    uint32             Id;
+    const char* Name;
+    uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
+    bool               AllowConsole;
+    bool (ChatHandler::* Handler)(char* args);
+    std::string        Help;
+    ChatCommand* ChildCommands;
+
+      ChatCommand(
+          const char* pName,
+          uint32 pSecurityLevel,
+          bool pAllowConsole,
+          bool (ChatHandler::* pHandler)(char* args),
+          std::string pHelp,
+          ChatCommand* pChildCommands
+      )
+         : Id(-1)
+      {
+          Name = pName;
+          SecurityLevel = pSecurityLevel;
+          AllowConsole = pAllowConsole;
+          Handler = pHandler;
+          Help = pHelp;
+          ChildCommands = pChildCommands;
+      }
 };
 
 enum ChatCommandSearchResult
@@ -151,7 +170,7 @@ class ChatHandler
 
         void SendGlobalSysMessage(const char* str, AccountTypes minSec = SEC_PLAYER);
 
-        bool SetDataForCommandInTable(ChatCommand* table, const char* text, uint32 security, std::string const& help);
+        bool SetDataForCommandInTable(ChatCommand* table, uint32 id, const char* text, uint32 security, std::string const& help);
         void ExecuteCommand(const char* text);
         void LogCommand(char const* fullcmd);
 
@@ -447,6 +466,7 @@ class ChatHandler
         bool HandleReloadLocalesPageTextCommand(char* args);
         bool HandleReloadLocalesPointsOfInterestCommand(char* args);
         bool HandleReloadLocalesQuestCommand(char* args);
+        bool HandleReloadLocalesCommandHelpCommand(char* args);
         bool HandleReloadLootTemplatesCreatureCommand(char* args);
         bool HandleReloadLootTemplatesDisenchantCommand(char* args);
         bool HandleReloadLootTemplatesFishingCommand(char* args);

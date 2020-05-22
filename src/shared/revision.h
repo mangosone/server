@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 14
+    #define WORLD_DB_STRUCTURE_NR 15
     #define WORLD_DB_CONTENT_NR 001
-    #define WORLD_DB_UPDATE_DESCRIPTION "GM_tickets_handling_fixes"
+    #define WORLD_DB_UPDATE_DESCRIPTION "GM_Commands_localization"
 #endif // __REVISION_H__
