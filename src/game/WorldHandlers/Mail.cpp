@@ -316,6 +316,9 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
     // expire time if COD 3 days, if no COD 30 days, if auction sale pending 1 hour
     uint32 expire_delay;
 
+    // Normal Mail Expire Timer
+    expire_delay = 30 * DAY;
+
     // auction mail without any items and money (auction sale note) pending 1 hour
     if (sender.GetMailMessageType() == MAIL_AUCTION && m_items.empty() && !m_money)
     {
@@ -326,19 +329,15 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
     {
         expire_delay = DAY;
     }
-    // default case: expire time if COD 3 days, if no COD 30 days
-    else
+    else if (m_COD)
     {
-        if (m_COD)
-        {
-            // COD Mail Expire Timer
-            expire_delay = 3 * DAY;
-        }
-        else
-        {
-            // Normal Mail Expire Timer
-            expire_delay = 30 * DAY;
-        }
+        // COD Mail Expire Timer
+        expire_delay = 3 * DAY;
+    }
+    //Mail from GM
+    else if (sender.GetStationery() == MAIL_STATIONERY_GM)
+    {
+        expire_delay = 90 * DAY;
     }
 
     time_t expire_time = deliver_time + expire_delay;
