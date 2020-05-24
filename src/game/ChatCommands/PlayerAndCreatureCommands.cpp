@@ -43,7 +43,6 @@ bool ChatHandler::HandleDeMorphCommand(char* /*args*/)
         target = m_session->GetPlayer();
     }
 
-
     // check online security
     else if (target->GetTypeId() == TYPEID_PLAYER && HasLowerSecurity((Player*)target))
     {

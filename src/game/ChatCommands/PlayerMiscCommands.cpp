@@ -242,6 +242,9 @@ bool ChatHandler::HandleResetAllCommand(char* args)
     }
 
     CharacterDatabase.PExecute("UPDATE `characters` SET `at_login` = `at_login` | '%u' WHERE (`at_login` & '%u') = '0'", atLogin, atLogin);
-    sObjectAccessor.DoForAllPlayers([&atLogin](Player* plr) { plr->SetAtLoginFlag(atLogin); });
+    sObjectAccessor.DoForAllPlayers([&atLogin](Player* plr)
+    {
+        plr->SetAtLoginFlag(atLogin);
+    });
     return true;
 }

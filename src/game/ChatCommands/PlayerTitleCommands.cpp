@@ -94,8 +94,8 @@ bool ChatHandler::HandleLookupTitleCommand(char* args)
                 char const* knownStr = target && target->HasTitle(titleInfo) ? GetMangosString(LANG_KNOWN) : "";
 
                 char const* activeStr = target && target->GetUInt32Value(PLAYER_CHOSEN_TITLE) == titleInfo->bit_index
-                    ? GetMangosString(LANG_ACTIVE)
-                    : "";
+                                        ? GetMangosString(LANG_ACTIVE)
+                                        : "";
 
                 char titleNameStr[80];
                 snprintf(titleNameStr, 80, name.c_str(), targetName);
@@ -302,8 +302,8 @@ bool ChatHandler::HandleCharacterTitlesCommand(char* args)
             }
 
             char const* activeStr = target && target->GetUInt32Value(PLAYER_CHOSEN_TITLE) == titleInfo->bit_index
-                ? GetMangosString(LANG_ACTIVE)
-                : "";
+                                    ? GetMangosString(LANG_ACTIVE)
+                                    : "";
 
             char titleNameStr[80];
             snprintf(titleNameStr, 80, name.c_str(), targetName);
@@ -369,4 +369,3 @@ bool ChatHandler::HandleTitlesCurrentCommand(char* args)
 
     return true;
 }
-
