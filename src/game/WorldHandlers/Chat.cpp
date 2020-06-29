@@ -1566,7 +1566,7 @@ bool ChatHandler::ShowHelpForCommand(ChatCommand* table, const char* cmd)
             break;
     }
 
-    if (!command->Help.empty())
+    if (command && !command->Help.empty())
     {
         std::string helpText = command->Help;
 
