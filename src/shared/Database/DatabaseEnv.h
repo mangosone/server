@@ -47,5 +47,6 @@ typedef DatabaseMysql DatabaseType;
 extern DatabaseType WorldDatabase; /**< TODO */
 extern DatabaseType CharacterDatabase; /**< TODO */
 extern DatabaseType LoginDatabase; /**< TODO */
+extern DatabaseType PlayerbotDatabase;
 
 #endif

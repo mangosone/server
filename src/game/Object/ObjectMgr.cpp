@@ -639,7 +639,9 @@ void ObjectMgr::LoadCreatureTemplates()
         }
 
         if (!displayScaleEntry)
+        {
             sLog.outErrorDb("Creature (Entry: %u) has nonexistent modelid in modelid_1/modelid_2/modelid_3/modelid_4", cInfo->Entry);
+        }
 
         if (!cInfo->MinLevel)
         {
@@ -3759,7 +3761,9 @@ void ObjectMgr::LoadQuests()
     {
         // skip post-loading checks for disabled quests
         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_QUEST, iter->first))
+        {
             continue;
+        }
 
         Quest* qinfo = iter->second;
 
@@ -5790,6 +5794,13 @@ void ObjectMgr::LoadAreaTriggerTeleports()
             sLog.outErrorDb("Table `areatrigger_teleport` has area trigger (ID:%u) without target coordinates.", Trigger_ID);
             continue;
         }
+
+        // TODO: NEED TO FIX THIS UP ONCE THE CONDITIONS SYSTEM IS PORTED
+        //if (at.condition && !sConditionStorage.LookupEntry<PlayerCondition>(at.condition))
+        //{
+        //    sLog.outErrorDb("Table `areatrigger_teleport` has nonexistent condition (ID:%u) for Area trigger (ID:%u).", at.condition, Trigger_ID);
+        //    continue;
+        //}
 
         mAreaTriggers[Trigger_ID] = at;
     }

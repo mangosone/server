@@ -444,6 +444,9 @@ class Group
         {
             return m_boundInstances[difficulty];
         }
+#ifdef ENABLE_PLAYERBOTS
+        ObjectGuid GetTargetIcon(int index) { return m_targetIcons[index]; }
+#endif
 
     protected:
         bool _addMember(ObjectGuid guid, const char* name, bool isAssistant = false);

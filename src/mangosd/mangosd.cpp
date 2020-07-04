@@ -71,6 +71,7 @@
 DatabaseType WorldDatabase;                                 ///< Accessor to the world database
 DatabaseType CharacterDatabase;                             ///< Accessor to the character database
 DatabaseType LoginDatabase;                                 ///< Accessor to the realm/login database
+DatabaseType PlayerbotDatabase;                             ///< Accessor to the playerbot database
 
 uint32 realmID = 0;                                         ///< Id of the realm
 //*******************************************************************************************************//
