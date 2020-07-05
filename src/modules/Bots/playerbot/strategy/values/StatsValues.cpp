@@ -22,8 +22,17 @@ bool IsDeadValue::Calculate()
 
 bool PetIsDeadValue::Calculate()
 {
-    PetDatabaseStatus status = Pet::GetStatusFromDB(bot);
-    if (status == PET_DB_DEAD)
+   if (!bot->GetPet())
+   {
+      uint32 ownerid = bot->GetGUIDLow();
+      QueryResult* result = CharacterDatabase.PQuery("SELECT id FROM character_pet WHERE owner = '%u'", ownerid);
+      if (!result)
+         return false;
+
+      delete result;
+      return true;
+   }
+   if (bot->GetPetGuid() && !bot->GetPet())
         return true;
 
     return bot->GetPet() && bot->GetPet()->GetDeathState() != ALIVE;
@@ -31,9 +40,9 @@ bool PetIsDeadValue::Calculate()
 
 bool PetIsHappyValue::Calculate()
 {
-    PetDatabaseStatus status = Pet::GetStatusFromDB(bot);
+    /*PetDatabaseStatus status = Pet::GetStatusFromDB(bot);
     if (status == PET_DB_DEAD)
-        return true;
+        return true;*/
 
     return !bot->GetPet() || bot->GetPet()->GetHappinessState() == HAPPY;
 }

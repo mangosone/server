@@ -815,8 +815,14 @@ ChatCommand* ChatHandler::getCommandTable()
         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
 #ifdef ENABLE_PLAYERBOTS
         { "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
-        { "rndbot",         SEC_CONSOLE,        true,  &ChatHandler::HandlePlayerbotConsoleCommand,    "", NULL },
+       //{ "rndbot",         SEC_CONSOLE,        true,  &ChatHandler::HandlePlayerbotConsoleCommand,    "", NULL },
         { "ahbot",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleAhBotCommand,               "", NULL },
+        { "gtask",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleGuildTaskCommand,           "", NULL },
+        //{ "pmon",           SEC_GAMEMASTER,     true,  &ChatHandler::HandlePerfMonCommand,             "", NULL },
+        { "rndbot",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleRandomPlayerbotCommand,     "", NULL },
+    
+      
+   
 #endif
 
         { NULL,             0,                  false, NULL,                                           "", NULL }

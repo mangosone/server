@@ -446,6 +446,7 @@ class Group
         }
 #ifdef ENABLE_PLAYERBOTS
         ObjectGuid GetTargetIcon(int index) { return m_targetIcons[index]; }
+        Rolls GetRolls() { return RollId; }
 #endif
 
     protected:
