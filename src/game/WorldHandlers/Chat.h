@@ -127,6 +127,10 @@ class ChatHandler
         bool isValidChatMessage(const char* msg);
         bool HasSentErrorMessage() { return sentErrorMessage;}
 
+#ifdef ENABLE_PLAYERBOTS
+        WorldSession* GetSession() { return m_session; }
+#endif
+
         /**
         * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT
         *
@@ -645,6 +649,16 @@ class ChatHandler
         bool HandleMmap(char* args);
         bool HandleMmapTestArea(char* args);
         bool HandleMmapTestHeight(char* args);
+
+#ifdef ENABLE_PLAYERBOTS
+
+       // bool HandlePlayerbotConsoleCommand(char* args);
+        bool HandlePlayerbotCommand(char* args);
+        bool HandleRandomPlayerbotCommand(char* args);
+        bool HandleAhBotCommand(char* args);
+        bool HandleGuildTaskCommand(char* args);
+        //bool HandlePerfMonCommand(char* args);
+#endif
 
         //! Development Commands
         bool HandleSaveAllCommand(char* args);

@@ -639,7 +639,9 @@ void ObjectMgr::LoadCreatureTemplates()
         }
 
         if (!displayScaleEntry)
+        {
             sLog.outErrorDb("Creature (Entry: %u) has nonexistent modelid in modelid_1/modelid_2/modelid_3/modelid_4", cInfo->Entry);
+        }
 
         if (!cInfo->MinLevel)
         {
@@ -3759,7 +3761,9 @@ void ObjectMgr::LoadQuests()
     {
         // skip post-loading checks for disabled quests
         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_QUEST, iter->first))
+        {
             continue;
+        }
 
         Quest* qinfo = iter->second;
 

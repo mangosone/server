@@ -424,6 +424,11 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
+#ifdef ENABLE_PLAYERBOTS
+    m_playerbotAI = 0;
+    m_playerbotMgr = 0;
+#endif
+
     m_transport = 0;
 
     m_speakTime = 0;
@@ -600,6 +605,10 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_lastFallTime = 0;
     m_lastFallZ = 0;
+#ifdef ENABLE_PLAYERBOTS
+    m_playerbotAI = NULL;
+    m_playerbotMgr = NULL;
+#endif
 }
 
 Player::~Player()
@@ -636,6 +645,21 @@ Player::~Player()
     {
         delete ItemSetEff[x];
     }
+
+#ifdef ENABLE_PLAYERBOTS
+    if (m_playerbotAI) {
+    {
+        delete m_playerbotAI;
+    }
+        m_playerbotAI = 0;
+    }
+    if (m_playerbotMgr) {
+    {
+        delete m_playerbotMgr;
+    }
+        m_playerbotMgr = 0;
+    }
+#endif
 
     // clean up player-instance binds, may unload some instance saves
     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
@@ -1528,6 +1552,18 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     {
         TeleportTo(m_teleport_dest, m_teleport_options);
     }
+
+#ifdef ENABLE_PLAYERBOTS
+    if (m_playerbotAI)
+    {
+        m_playerbotAI->UpdateAI(p_time);
+    }
+    if (m_playerbotMgr)
+    {
+        m_playerbotMgr->UpdateAI(p_time);
+    }
+#endif
+
 }
 
 void Player::SetDeathState(DeathState s)
