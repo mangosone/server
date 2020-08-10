@@ -7,7 +7,7 @@ map<int, T> filterList(vector<T> src, string filter)
     if (filter.empty() || filter == "*")
     {
         int idx = 0;
-        for (vector<T>::iterator i = src.begin(); i != src.end(); ++i)
+        for (auto i = src.begin(); i != src.end(); ++i)
             result[idx++] = *i;
         return result;
     }
@@ -30,7 +30,7 @@ map<int, T> filterList(vector<T> src, string filter)
     }
 
     vector<string> ss = split(filter, ',');
-    for (vector<string>::iterator i = ss.begin(); i != ss.end(); ++i)
+    for (auto i = ss.begin(); i != ss.end(); ++i)
     {
         int idx = atoi(i->c_str()) - 1;
         if (idx < 0) idx = 0;

@@ -18,7 +18,7 @@
 #include "Group.h"
 #include "Pet.h"
 #include "SpellAuras.h"
-#include "../AhBot/ahbot.h"
+#include "../ahbot/AhBot.h"
 #include "GuildTaskMgr.h"
 #include "PlayerbotDbStore.h"
 
