@@ -15,7 +15,7 @@ NextAction* toNextAction(string action)
     else if (tokens.size() == 1 && !tokens[0].empty())
         return new NextAction(tokens[0], ACTION_NORMAL);
 
-    sLog.outError("Invalid action '%s'", action);
+    sLog.outError("Invalid action '%s'", action.c_str());
     return NULL;
 }
 
@@ -40,7 +40,7 @@ TriggerNode* toTriggerNode(string actionLine)
     if (tokens.size() == 2)
         return new TriggerNode(tokens[0], toNextActionArray(tokens[1]));
 
-    sLog.outError("Invalid action line '%s'", actionLine);
+    sLog.outError("Invalid action line '%s'", actionLine.c_str());
     return NULL;
 }
 
