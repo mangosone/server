@@ -101,7 +101,7 @@ void Queue::RemoveExpired()
         ActionNode* action = basket->getAction();
         if (action)
         {
-            sLog.outDebug("Action %s is expired", action->getName());
+            sLog.outDebug("Action %s is expired", action->getName().c_str());
             delete action;
         }
         delete basket;
