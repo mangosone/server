@@ -15,21 +15,31 @@ Unit* EnemyHealerTargetValue::Calculate()
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || unit == target)
+        {
             continue;
+        }
 
         if (bot->GetDistance(unit) > sPlayerbotAIConfig.spellDistance)
+        {
             continue;
+        }
 
         if (!ai->IsInterruptableSpellCasting(unit, spell))
+        {
             continue;
+        }
 
         Spell* spell = unit->GetCurrentSpell(CURRENT_GENERIC_SPELL);
         if (spell && IsPositiveSpell(spell->m_spellInfo))
+        {
             return unit;
+        }
 
         spell = unit->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
         if (spell && IsPositiveSpell(spell->m_spellInfo))
+        {
             return unit;
+        }
     }
 
     return NULL;

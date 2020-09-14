@@ -10,10 +10,14 @@ bool CheckMountStateAction::Execute(Event event)
 {
 	Player* master = GetMaster();
 	if (!bot->GetGroup() || !master)
-		return false;
+ {
+     return false;
+ }
 
 	if (bot->IsTaxiFlying())
-		return false;
+ {
+     return false;
+ }
 
 	if (master->IsMounted() && !bot->IsMounted())
 	{
@@ -44,15 +48,21 @@ bool CheckMountStateAction::Mount()
 	{
 		uint32 spellId = itr->first;
 		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
-			continue;
+  {
+      continue;
+  }
 
 		const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
 		if (!spellInfo || spellInfo->EffectApplyAuraName[0] != SPELL_AURA_MOUNTED)
-			continue;
+  {
+      continue;
+  }
 
 		int32 effect = max(spellInfo->EffectBasePoints[1], spellInfo->EffectBasePoints[2]);
 		if (effect < masterSpeed)
-			continue;
+  {
+      continue;
+  }
 
 		spells[effect].push_back(spellId);
 	}
@@ -62,7 +72,9 @@ bool CheckMountStateAction::Mount()
 		vector<uint32>& ids = i->second;
 		int index = urand(0, ids.size() - 1);
 		if (index >= ids.size())
-			continue;
+  {
+      continue;
+  }
 
 		ai->CastSpell(ids[index], bot);
 		return true;

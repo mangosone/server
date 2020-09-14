@@ -20,7 +20,9 @@ bool ReadLine(ACE_SOCK_Stream& client_stream, string* buffer, string* line)
         char buf[33];
         size_t n = client_stream.recv_n(buf, 1, 0);
         if (n == -1)
+        {
             return false;
+        }
 
         buf[n] = 0;
         *buffer += buf;
@@ -38,7 +40,9 @@ public:
     int svc(void) {
         int serverPort = sImmersiveConfig.serverPort;
         if (!serverPort)
+        {
             return 0;
+        }
 
         ostringstream s; s << "Starting Immersive Server on port " << serverPort;
         sLog.outString(s.str().c_str());
@@ -113,16 +117,22 @@ string ImmersiveServer::HandleCommand(string request)
     if (command == "state")
     {
         if (player->GetDeathState() != ALIVE) out << "dead";
-        else if (player->IsInCombat()) out << "combat";
+        {
+            else if (player->IsInCombat()) out << "combat";
+        }
         else if (player->GetRestType() == REST_TYPE_IN_TAVERN) out << "rest";
-        else out << "default";
+        {
+            else out << "default";
+        }
 
         uint32 area = player->GetAreaId();
         if (area)
         {
             const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
             if (entry)
+            {
                 out << "|" << entry->area_name[0];
+            }
         }
     }
     else

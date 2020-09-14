@@ -20,13 +20,17 @@ bool FollowAction::Execute(Event event)
     {
         WorldLocation loc = formation->GetLocation();
         if (Formation::IsNullLocation(loc) || loc.mapid == -1)
+        {
             return false;
+        }
 
         moved = MoveTo(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
     }
 
     if (moved) ai->SetNextCheckDelay(sPlayerbotAIConfig.reactDelay);
-    return moved;
+    {
+        return moved;
+    }
 }
 
 bool FollowAction::isUseful()
@@ -43,7 +47,9 @@ bool FollowAction::isUseful()
     {
         WorldLocation loc = formation->GetLocation();
         if (Formation::IsNullLocation(loc) || bot->GetMapId() != loc.mapid)
+        {
             return false;
+        }
 
         distance = bot->GetDistance2d(loc.coord_x, loc.coord_y);
     }

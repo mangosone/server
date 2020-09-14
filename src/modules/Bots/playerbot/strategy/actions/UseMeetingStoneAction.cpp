@@ -13,7 +13,9 @@ bool UseMeetingStoneAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     WorldPacket p(event.getPacket());
     p.rpos(0);
@@ -21,13 +23,19 @@ bool UseMeetingStoneAction::Execute(Event event)
     p >> guid;
 
 	if (master->GetSelectionGuid() && master->GetSelectionGuid() != bot->GetObjectGuid())
-		return false;
+ {
+     return false;
+ }
 
 	if (!master->GetSelectionGuid() && master->GetGroup() != bot->GetGroup())
-		return false;
+ {
+     return false;
+ }
 
     if (master->IsBeingTeleported())
+    {
         return false;
+    }
 
     if (bot->IsInCombat())
     {
@@ -37,15 +45,21 @@ bool UseMeetingStoneAction::Execute(Event event)
 
     Map* map = master->GetMap();
     if (!map)
+    {
         return NULL;
+    }
 
     GameObject *gameObject = map->GetGameObject(guid);
     if (!gameObject)
+    {
         return false;
+    }
 
 	const GameObjectInfo* goInfo = gameObject->GetGOInfo();
 	if (!goInfo || goInfo->type != GAMEOBJECT_TYPE_SUMMONING_RITUAL)
-        return false;
+ {
+     return false;
+ }
 
     return Teleport(master, bot);
 }
@@ -58,7 +72,9 @@ public:
     bool operator()(GameObject* u)
     {
         if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo())
+        {
             return true;
+        }
 
         return false;
     }
@@ -73,10 +89,14 @@ bool SummonAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (master->GetSession()->GetSecurity() >= SEC_PLAYER)
+    {
         return Teleport(master, bot);
+    }
 
     if (Summon(master, bot))
     {
@@ -107,7 +127,9 @@ bool SummonAction::Summon(Player *summoner, Player *player)
     {
         GameObject* go = *tIter;
         if (go && go->isSpawned() && go->GetGoType() == GAMEOBJECT_TYPE_MEETINGSTONE)
+        {
             return Teleport(summoner, player);
+        }
     }
 
     return false;

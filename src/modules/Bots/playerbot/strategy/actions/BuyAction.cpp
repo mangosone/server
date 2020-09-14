@@ -12,12 +12,16 @@ bool BuyAction::Execute(Event event)
 
     ItemIds itemIds = chat->parseItems(link);
     if (itemIds.empty())
+    {
         return false;
+    }
 
     Player* master = GetMaster();
 
     if (!master)
+    {
         return false;
+    }
 
     list<ObjectGuid> vendors = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest npcs")->Get();
     bool bought = false;
@@ -26,11 +30,15 @@ bool BuyAction::Execute(Event event)
         ObjectGuid vendorguid = *i;
         Creature *pCreature = bot->GetNPCIfCanInteractWith(vendorguid,UNIT_NPC_FLAG_VENDOR);
         if (!pCreature)
+        {
             continue;
+        }
 
         VendorItemData const* tItems = pCreature->GetVendorItems();
         if (!tItems)
+        {
             continue;
+        }
 
         for (ItemIds::iterator i = itemIds.begin(); i != itemIds.end(); i++)
         {

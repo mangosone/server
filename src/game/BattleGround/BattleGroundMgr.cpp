@@ -1757,7 +1757,9 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         }
 
         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeID_))
+        {
             continue;
+        }
 
         BattleGroundTypeId bgTypeID = BattleGroundTypeId(bgTypeID_);
 
@@ -2072,9 +2074,13 @@ void BattleGroundMgr::ToggleArenaTesting()
 {
     m_ArenaTesting = !m_ArenaTesting;
     if (m_ArenaTesting)
+    {
         sWorld.SendWorldText(LANG_DEBUG_ARENA_ON);
+    }
     else
+    {
         sWorld.SendWorldText(LANG_DEBUG_ARENA_OFF);
+    }
 }
 
 void BattleGroundMgr::ScheduleQueueUpdate(uint32 arenaRating, ArenaType arenaType, BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
@@ -2102,7 +2108,9 @@ uint32 BattleGroundMgr::GetMaxRatingDifference() const
     // this is for stupid people who can't use brain and set max rating difference to 0
     uint32 diff = sWorld.getConfig(CONFIG_UINT32_ARENA_MAX_RATING_DIFFERENCE);
     if (diff == 0)
+    {
         diff = 5000;
+    }
     return diff;
 }
 

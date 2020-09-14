@@ -12,11 +12,16 @@ bool CustomStrategyEditAction::Execute(Event event)
     string text = event.getParam();
     int pos = text.find(" ");
     if (pos == string::npos) return PrintHelp();
-    string name = text.substr(0, pos);
+    {
+        string name = text.substr(0, pos);
+    }
     text = text.substr(pos + 1);
 
     pos = text.find(" ");
-    if (pos == string::npos) pos = text.size();
+    if (pos == string::npos)
+    {
+        pos = text.size();
+    }
     string idx = text.substr(0, pos);
     text = pos >= text.size() ? "" : text.substr(pos + 1);
 

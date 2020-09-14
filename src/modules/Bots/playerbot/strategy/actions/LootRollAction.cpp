@@ -20,7 +20,9 @@ bool LootRollAction::Execute(Event event)
 
     Group* group = bot->GetGroup();
     if(!group)
+    {
         return false;
+    }
 
     RollVote vote = ROLL_PASS;
     for (vector<Roll*>::iterator i = group->GetRolls().begin(); i != group->GetRolls().end(); ++i)
@@ -30,7 +32,9 @@ bool LootRollAction::Execute(Event event)
             uint32 itemId = (*i)->itemid;
             ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemId);
             if (!proto)
+            {
                 continue;
+            }
 
             if (IsLootAllowed(itemId, bot->GetPlayerbotAI()))
             {

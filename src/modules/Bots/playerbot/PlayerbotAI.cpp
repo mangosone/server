@@ -55,7 +55,9 @@ void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
 void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
 {
     if (handlers.find(packet.GetOpcode()) != handlers.end())
+    {
         queue.push(WorldPacket(packet));
+    }
 }
 
 
@@ -63,7 +65,9 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
     currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    {
         engines[i] = NULL;
+    }
 }
 
 PlayerbotAI::PlayerbotAI(Player* bot) :
@@ -122,17 +126,23 @@ PlayerbotAI::~PlayerbotAI()
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
         if (engines[i])
+        {
             delete engines[i];
+        }
     }
 
     if (aiObjectContext)
+    {
         delete aiObjectContext;
+    }
 }
 
 void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
 {
     if (bot->IsBeingTeleported())
+    {
         return;
+    }
 
     ExternalEventHelper helper(aiObjectContext);
     while (!chatCommands.empty())
@@ -178,7 +188,9 @@ void PlayerbotAI::HandleTeleportAck()
 void PlayerbotAI::Reset()
 {
     if (bot->IsTaxiFlying())
+    {
         return;
+    }
 
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     nextAICheckDelay = 0;
@@ -211,16 +223,22 @@ map<string,ChatMsg> chatMap;
 void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
     if (!GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, type != CHAT_MSG_WHISPER, &fromPlayer))
+    {
         return;
+    }
 
     if (type == CHAT_MSG_ADDON)
+    {
         return;
+    }
 
     string filtered = text;
     if (!sPlayerbotAIConfig.commandPrefix.empty())
     {
         if (filtered.find(sPlayerbotAIConfig.commandPrefix) != 0)
+        {
             return;
+        }
 
         filtered = filtered.substr(sPlayerbotAIConfig.commandPrefix.size());
     }
@@ -246,7 +264,9 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
 
     filtered = chatFilter.Filter(trim((string&)filtered));
     if (filtered.empty())
+    {
         return;
+    }
 
     if (filtered.substr(0, 6) == "debug ")
     {
@@ -259,7 +279,9 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
     }
 
     if (filtered.find("who") != 0 && !GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_ALLOW_ALL, type != CHAT_MSG_WHISPER, &fromPlayer))
+    {
         return;
+    }
 
     if (type == CHAT_MSG_RAID_WARNING && filtered.find(bot->GetName()) != string::npos && filtered.find("award") == string::npos)
     {
@@ -295,7 +317,9 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         ObjectGuid casterGuid;
         p >> casterGuid.ReadAsPacked();
         if (casterGuid != bot->GetObjectGuid())
+        {
             return;
+        }
 
         uint32 spellId;
         p >> spellId;
@@ -310,12 +334,16 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         p >> casterGuid.ReadAsPacked();
 
         if (casterGuid != bot->GetObjectGuid())
+        {
             return;
+        }
 
         uint32 delaytime;
         p >> delaytime;
         if (delaytime <= 1000)
+        {
             IncreaseNextCheckDelay(delaytime);
+        }
         return;
     }
     default:
@@ -327,21 +355,29 @@ void PlayerbotAI::SpellInterrupted(uint32 spellid)
 {
     LastSpellCast& lastSpell = aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get();
     if (!spellid || lastSpell.id != spellid)
+    {
         return;
+    }
 
     lastSpell.Reset();
 
     time_t now = time(0);
     if (now <= lastSpell.time)
+    {
         return;
+    }
 
     uint32 castTimeSpent = 1000 * (now - lastSpell.time);
 
     int32 globalCooldown = CalculateGlobalCooldown(lastSpell.id);
     if (castTimeSpent < globalCooldown)
+    {
         SetNextCheckDelay(globalCooldown - castTimeSpent);
+    }
     else
+    {
         SetNextCheckDelay(sPlayerbotAIConfig.reactDelay);
+    }
 
     lastSpell.id = 0;
 }
@@ -349,10 +385,14 @@ void PlayerbotAI::SpellInterrupted(uint32 spellid)
 int32 PlayerbotAI::CalculateGlobalCooldown(uint32 spellid)
 {
     if (!spellid)
+    {
         return 0;
+    }
 
     if (bot->HasSpellCooldown(spellid))
+    {
         return sPlayerbotAIConfig.globalCoolDown;
+    }
 
     return sPlayerbotAIConfig.reactDelay;
 }
@@ -395,15 +435,21 @@ void PlayerbotAI::ChangeEngine(BotState type)
 void PlayerbotAI::DoNextAction()
 {
     if (bot->IsBeingTeleported() || (GetMaster() && GetMaster()->IsBeingTeleported()))
+    {
         return;
+    }
 
     currentEngine->DoNextAction(NULL);
 
     if (currentEngine != engines[BOT_STATE_DEAD] && !bot->IsAlive())
+    {
         ChangeEngine(BOT_STATE_DEAD);
+    }
 
     if (currentEngine == engines[BOT_STATE_DEAD] && bot->IsAlive())
+    {
         ChangeEngine(BOT_STATE_NON_COMBAT);
+    }
 
     Group *group = bot->GetGroup();
     if (!master && group)
@@ -433,7 +479,9 @@ void PlayerbotAI::ChangeStrategy(string names, BotState type)
 {
     Engine* e = engines[type];
     if (!e)
+    {
         return;
+    }
 
     e->ChangeStrategy(names);
 }
@@ -442,7 +490,9 @@ void PlayerbotAI::ClearStrategies(BotState type)
 {
     Engine* e = engines[type];
     if (!e)
+    {
         return;
+    }
 
     e->removeAllStrategies();
 }
@@ -451,7 +501,9 @@ list<string> PlayerbotAI::GetStrategies(BotState type)
 {
     Engine* e = engines[type];
     if (!e)
+    {
         return list<string>();
+    }
 
     return e->GetStrategies();
 }
@@ -508,7 +560,9 @@ bool PlayerbotAI::ContainsStrategy(StrategyType type)
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
         if (engines[i]->ContainsStrategy(type))
+        {
             return true;
+        }
     }
     return false;
 }
@@ -521,7 +575,9 @@ bool PlayerbotAI::HasStrategy(string name, BotState type)
 void PlayerbotAI::ResetStrategies()
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    {
         engines[i]->removeAllStrategies();
+    }
 
     AiFactory::AddDefaultCombatStrategies(bot, this, engines[BOT_STATE_COMBAT]);
     AiFactory::AddDefaultNonCombatStrategies(bot, this, engines[BOT_STATE_NON_COMBAT]);
@@ -533,7 +589,9 @@ bool PlayerbotAI::IsRanged(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
     if (botAi)
+    {
         return botAi->ContainsStrategy(STRATEGY_TYPE_RANGED);
+    }
 
     switch (player->getClass())
     {
@@ -551,7 +609,9 @@ bool PlayerbotAI::IsTank(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
     if (botAi)
+    {
         return botAi->ContainsStrategy(STRATEGY_TYPE_TANK);
+    }
 
     switch (player->getClass())
     {
@@ -568,7 +628,9 @@ bool PlayerbotAI::IsHeal(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
     if (botAi)
+    {
         return botAi->ContainsStrategy(STRATEGY_TYPE_HEAL);
+    }
 
     switch (player->getClass())
     {
@@ -608,7 +670,9 @@ namespace MaNGOS
         bool operator()(GameObject* u)
         {
             if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo() && u->GetObjectGuid() == i_guid)
+            {
                 return true;
+            }
 
             return false;
         }
@@ -624,11 +688,15 @@ namespace MaNGOS
 Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
 {
     if (!guid)
+    {
         return NULL;
+    }
 
     Map* map = bot->GetMap();
     if (!map)
+    {
         return NULL;
+    }
 
     return sObjectAccessor.GetUnit(*bot, guid);
 }
@@ -637,11 +705,15 @@ Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
 Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
 {
     if (!guid)
+    {
         return NULL;
+    }
 
     Map* map = bot->GetMap();
     if (!map)
+    {
         return NULL;
+    }
 
     return map->GetCreature(guid);
 }
@@ -649,11 +721,15 @@ Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
 GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
 {
     if (!guid)
+    {
         return NULL;
+    }
 
     Map* map = bot->GetMap();
     if (!map)
+    {
         return NULL;
+    }
 
     return map->GetGameObject(guid);
 }
@@ -662,10 +738,14 @@ bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securit
 {
     Player* master = GetMaster();
     if (!master || master->IsBeingTeleported())
+    {
         return false;
+    }
 
     if (!GetSecurity()->CheckLevelFor(securityLevel, true, master))
+    {
         return false;
+    }
 
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
             master->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
@@ -679,7 +759,9 @@ bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securit
 
         ChatMsg type = CHAT_MSG_WHISPER;
         if (currentChat.second - time(0) >= 1)
+        {
             type = currentChat.first;
+        }
 
         WorldPacket data;
         ChatHandler::BuildChatPacket(data,
@@ -695,12 +777,16 @@ bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securit
 bool PlayerbotAI::TellMaster(string text, PlayerbotSecurityLevel securityLevel)
 {
     if (!TellMasterNoFacing(text, securityLevel))
+    {
         return false;
+    }
 
     if (!bot->isMoving() && !bot->IsInCombat() && bot->GetMapId() == master->GetMapId() && !bot->IsTaxiFlying())
     {
         if (!bot->IsInFront(master, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
+        {
             bot->SetFacingTo(bot->GetAngle(master));
+        }
 
         bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
     }
@@ -711,17 +797,25 @@ bool PlayerbotAI::TellMaster(string text, PlayerbotSecurityLevel securityLevel)
 bool IsRealAura(Player* bot, Aura const* aura, Unit* unit)
 {
     if (!aura)
+    {
         return false;
+    }
 
     if (!unit->IsHostileTo(bot))
+    {
         return true;
+    }
 
     uint32 stacks = aura->GetStackAmount();
     if (stacks >= aura->GetSpellProto()->StackAmount)
+    {
         return true;
+    }
 
     if (aura->GetCaster() == bot || IsPositiveSpell(aura->GetSpellProto()) || aura->IsAreaAura())
+    {
         return true;
+    }
 
     return false;
 }
@@ -729,11 +823,15 @@ bool IsRealAura(Player* bot, Aura const* aura, Unit* unit)
 bool PlayerbotAI::HasAura(string name, Unit* unit)
 {
     if (!unit)
+    {
         return false;
+    }
 
     wstring wnamepart;
     if (!Utf8toWStr(name, wnamepart))
+    {
         return 0;
+    }
 
     wstrToLower(wnamepart);
 
@@ -744,14 +842,20 @@ bool PlayerbotAI::HasAura(string name, Unit* unit)
         {
             Aura* aura = *i;
             if (!aura)
+            {
                 continue;
+            }
 
             const string auraName = aura->GetSpellProto()->SpellName[0];
             if (auraName.empty() || auraName.length() != wnamepart.length() || !Utf8FitTo(auraName, wnamepart))
+            {
                 continue;
+            }
 
             if (IsRealAura(bot, aura, unit))
+            {
                 return true;
+            }
         }
     }
 
@@ -761,14 +865,18 @@ bool PlayerbotAI::HasAura(string name, Unit* unit)
 bool PlayerbotAI::HasAura(uint32 spellId, const Unit* unit)
 {
     if (!spellId || !unit)
+    {
         return false;
+    }
 
     for (uint32 effect = EFFECT_INDEX_0; effect <= EFFECT_INDEX_2; effect++)
     {
         Aura* aura = ((Unit*)unit)->GetAura(spellId, (SpellEffectIndex)effect);
 
         if (IsRealAura(bot, aura, (Unit*)unit))
+        {
             return true;
+        }
     }
 
     return false;
@@ -778,7 +886,9 @@ bool PlayerbotAI::HasAura(uint32 spellId, const Unit* unit)
 bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
 {
     if (!player)
+    {
         return false;
+    }
 
     va_list vl;
     va_start(vl, player);
@@ -787,7 +897,9 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
     do {
         cur = va_arg(vl, const char*);
         if (cur && HasAura(cur, player)) {
+        {
             va_end(vl);
+        }
             return true;
         }
     }
@@ -805,37 +917,57 @@ bool PlayerbotAI::CanCastSpell(string name, Unit* target)
 bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell)
 {
     if (!spellid)
+    {
         return false;
+    }
 
     if (!target)
+    {
         target = bot;
+    }
 
     Pet* pet = bot->GetPet();
     if (pet && pet->HasSpell(spellid))
+    {
         return true;
+    }
 
     if (checkHasSpell && !bot->HasSpell(spellid))
+    {
         return false;
+    }
 
     if (bot->HasSpellCooldown(spellid))
+    {
         return false;
+    }
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
     if (!spellInfo)
+    {
         return false;
+    }
 
     bool positiveSpell = IsPositiveSpell(spellInfo);
     if (positiveSpell && bot->IsHostileTo(target))
+    {
         return false;
+    }
 
     if (!positiveSpell && bot->IsFriendlyTo(target))
+    {
         return false;
+    }
 
     if (target->IsImmuneToSpell(spellInfo, false))
+    {
         return false;
+    }
 
     if (bot != target && bot->GetDistance(target) > sPlayerbotAIConfig.sightDistance)
+    {
         return false;
+    }
 
     ObjectGuid oldSel = bot->GetSelectionGuid();
     bot->SetSelectionGuid(target->GetObjectGuid());
@@ -847,7 +979,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell)
     SpellCastResult result = spell->CheckCast(false);
     delete spell;
     if (oldSel)
+    {
         bot->SetSelectionGuid(oldSel);
+    }
 
     switch (result)
     {
@@ -880,10 +1014,14 @@ bool PlayerbotAI::CastSpell(string name, Unit* target)
 bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
 {
     if (!spellId)
+    {
         return false;
+    }
 
     if (!target)
+    {
         target = bot;
+    }
 
     Pet* pet = bot->GetPet();
     SpellEntry const *pSpellInfo = sSpellStore.LookupEntry(spellId);
@@ -912,7 +1050,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     MotionMaster &mm = *bot->GetMotionMaster();
 
     if (bot->IsFlying())
+    {
         return false;
+    }
 
     bot->clearUnitState(UNIT_STAT_CHASE);
     bot->clearUnitState(UNIT_STAT_FOLLOW);
@@ -997,7 +1137,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetObjectGuid().GetRawValue(), time(0));
 
     if (oldSel)
+    {
         bot->SetSelectionGuid(oldSel);
+    }
 
     return true;
 }
@@ -1011,14 +1153,18 @@ void PlayerbotAI::WaitForSpellCast(Spell *spell)
     {
         int32 duration = GetSpellDuration(pSpellInfo);
         if (duration > 0)
+        {
             castTime += duration;
+        }
     }
 
     castTime = ceil(castTime);
 
     uint32 globalCooldown = CalculateGlobalCooldown(pSpellInfo->Id);
     if (castTime < globalCooldown)
+    {
         castTime = globalCooldown;
+    }
 
     SetNextCheckDelay(castTime + sPlayerbotAIConfig.reactDelay);
 }
@@ -1029,10 +1175,14 @@ void PlayerbotAI::InterruptSpell()
     {
         Spell* spell = bot->GetCurrentSpell((CurrentSpellTypes)type);
         if (!spell)
+        {
             continue;
+        }
 
         if (IsPositiveSpell(spell->m_spellInfo))
+        {
             continue;
+        }
 
         bot->InterruptSpell((CurrentSpellTypes)type);
 
@@ -1059,26 +1209,36 @@ void PlayerbotAI::RemoveAura(string name)
 {
     uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", name)->Get();
     if (spellid && HasAura(spellid, bot))
+    {
         bot->RemoveAurasDueToSpell(spellid);
+    }
 }
 
 bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, string spell)
 {
     uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", spell)->Get();
     if (!spellid || !target->IsNonMeleeSpellCasted(true))
+    {
         return false;
+    }
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
     if (!spellInfo)
+    {
         return false;
+    }
 
     if (target->IsImmuneToSpell(spellInfo, false))
+    {
         return false;
+    }
 
     for (int32 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
     {
         if ((spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_INTERRUPT) && spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
+        {
             return true;
+        }
 
         if ((spellInfo->Effect[i] == SPELL_EFFECT_INTERRUPT_CAST) &&
             !target->IsImmuneToSpellEffect(spellInfo, (SpellEffectIndex)i, true))
@@ -1101,16 +1261,24 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 
             bool isPositiveSpell = IsPositiveSpell(spellId);
             if (isPositiveSpell && bot->IsFriendlyTo(target))
+            {
                 continue;
+            }
 
             if (!isPositiveSpell && bot->IsHostileTo(target))
+            {
                 continue;
+            }
 
             if (sPlayerbotAIConfig.dispelAuraDuration && aura->GetAuraDuration() && aura->GetAuraDuration() < (int32)sPlayerbotAIConfig.dispelAuraDuration)
+            {
                 return false;
+            }
 
             if (canDispel(entry, dispelType))
+            {
                 return true;
+            }
         }
     }
     return false;
@@ -1122,14 +1290,18 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 inline int strcmpi(const char* s1, const char* s2)
 {
     for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    return *s1 - *s2;
+    {
+        return *s1 - *s2;
+    }
 }
 #endif
 
 bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
 {
     if (entry->Dispel != dispelType)
+    {
         return false;
+    }
 
     return !entry->SpellName[0] ||
         (strcmpi((const char*)entry->SpellName[0], "demon skin") &&
@@ -1178,7 +1350,9 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
     for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
     {
         if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             _fillGearScoreData(player, item, &gearScore, twoHandScore);
+        }
     }
 
     if (withBags)
@@ -1187,7 +1361,9 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
         for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
         {
             if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
                 _fillGearScoreData(player, item, &gearScore, twoHandScore);
+            }
         }
 
         // check bags
@@ -1198,7 +1374,9 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
                 for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
                 {
                     if (Item* item2 = pBag->GetItemByPos(j))
+                    {
                         _fillGearScoreData(player, item2, &gearScore, twoHandScore);
+                    }
                 }
             }
         }
@@ -1209,7 +1387,9 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
         for (uint8 i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
         {
             if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
                 _fillGearScoreData(player, item, &gearScore, twoHandScore);
+            }
         }
 
         for (uint8 i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
@@ -1222,7 +1402,9 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
                     for (uint8 j = 0; j < bag->GetBagSize(); ++j)
                     {
                         if (Item* item2 = bag->GetItemByPos(j))
+                        {
                             _fillGearScoreData(player, item2, &gearScore, twoHandScore);
+                        }
                     }
                 }
             }
@@ -1251,16 +1433,22 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
         return res;
     }
     else
+    {
         return 0;
+    }
 }
 
 void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uint32>* gearScore, uint32& twoHandScore)
 {
     if (!item)
+    {
         return;
+    }
 
     if (player->CanUseItem(item->GetProto()) != EQUIP_ERR_OK)
+    {
         return;
+    }
 
     uint8 type   = item->GetProto()->InventoryType;
     uint32 level = item->GetProto()->ItemLevel;
@@ -1325,7 +1513,9 @@ void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uin
                 (*gearScore)[EQUIPMENT_SLOT_FINGER1] = level;
             }
             else if ((*gearScore)[EQUIPMENT_SLOT_FINGER2] < level)
+            {
                 (*gearScore)[EQUIPMENT_SLOT_FINGER2] = level;
+            }
             break;
         }
         case INVTYPE_TRINKET:
@@ -1336,7 +1526,9 @@ void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uin
                 (*gearScore)[EQUIPMENT_SLOT_TRINKET1] = level;
             }
             else if ((*gearScore)[EQUIPMENT_SLOT_TRINKET2] < level)
+            {
                 (*gearScore)[EQUIPMENT_SLOT_TRINKET2] = level;
+            }
             break;
         }
         case INVTYPE_CLOAK:
@@ -1368,14 +1560,18 @@ string PlayerbotAI::HandleRemoteCommand(string command)
         ostringstream out; out << bot->GetPositionX() << " " << bot->GetPositionY() << " " << bot->GetPositionZ() << " " << bot->GetMapId() << " " << bot->GetOrientation();
         uint32 area = bot->GetAreaId();
         if (const AreaTableEntry* entry = sAreaStore.LookupEntry(area))
+        {
             out << " |" << entry->area_name[0] << "|";
+        }
         return out.str();
     }
     else if (command == "tpos")
     {
         Unit* target = *GetAiObjectContext()->GetValue<Unit*>("current target");
         if (!target) {
+        {
             return "";
+        }
         }
 
         ostringstream out; out << target->GetPositionX() << " " << target->GetPositionY() << " " << target->GetPositionZ() << " " << target->GetMapId() << " " << target->GetOrientation();
@@ -1391,7 +1587,9 @@ string PlayerbotAI::HandleRemoteCommand(string command)
     {
         Unit* target = *GetAiObjectContext()->GetValue<Unit*>("current target");
         if (!target) {
+        {
             return "";
+        }
         }
 
         return target->GetName();
@@ -1403,7 +1601,9 @@ string PlayerbotAI::HandleRemoteCommand(string command)
 
         Unit* target = *GetAiObjectContext()->GetValue<Unit*>("current target");
         if (!target) {
+        {
             return out.str();
+        }
         }
 
         pct = (int)((static_cast<float> (target->GetHealth()) / target->GetMaxHealth()) * 100);

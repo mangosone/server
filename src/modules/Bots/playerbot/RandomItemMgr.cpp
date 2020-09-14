@@ -22,13 +22,19 @@ public:
             return false;
 
         if (proto->Quality < ITEM_QUALITY_NORMAL)
+        {
             return false;
+        }
 
         if ((proto->Class == ITEM_CLASS_ARMOR || proto->Class == ITEM_CLASS_WEAPON) && proto->Quality >= ITEM_QUALITY_RARE)
+        {
             return true;
+        }
 
         if (proto->Class == ITEM_CLASS_TRADE_GOODS || proto->Class == ITEM_CLASS_CONSUMABLE)
+        {
             return true;
+        }
 
         return false;
     }
@@ -47,24 +53,34 @@ public:
             return false;
 
         if (proto->Class == ITEM_CLASS_QUEST)
+        {
             return false;
+        }
 
         if (equip)
         {
             uint32 desiredQuality = rare ? ITEM_QUALITY_RARE : ITEM_QUALITY_UNCOMMON;
             if (proto->Quality < desiredQuality)
+            {
                 return false;
+            }
 
             if (proto->Class == ITEM_CLASS_ARMOR || proto->Class == ITEM_CLASS_WEAPON)
+            {
                 return true;
+            }
         }
         else
         {
             if (proto->Quality < ITEM_QUALITY_UNCOMMON)
+            {
                 return false;
+            }
 
             if (proto->Class == ITEM_CLASS_TRADE_GOODS || proto->Class == ITEM_CLASS_CONSUMABLE)
+            {
                 return true;
+            }
         }
 
         return false;
@@ -86,7 +102,9 @@ RandomItemMgr::RandomItemMgr()
 RandomItemMgr::~RandomItemMgr()
 {
     for (map<RandomItemType, RandomItemPredicate*>::iterator i = predicates.begin(); i != predicates.end(); ++i)
+    {
         delete i->second;
+    }
 
     predicates.clear();
 }
@@ -106,7 +124,9 @@ RandomItemList RandomItemMgr::Query(RandomItemType type, RandomItemPredicate* pr
 {
     RandomItemList &list = cache[type];
     if (list.empty())
+    {
         list = cache[type] = Query(type);
+    }
 
     RandomItemList result;
     for (RandomItemList::iterator i = list.begin(); i != list.end(); ++i)
@@ -114,10 +134,14 @@ RandomItemList RandomItemMgr::Query(RandomItemType type, RandomItemPredicate* pr
         uint32 itemId = *i;
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         if (predicate && !predicate->Apply(proto))
+        {
             continue;
+        }
 
         result.push_back(itemId);
     }
@@ -133,25 +157,39 @@ RandomItemList RandomItemMgr::Query(RandomItemType type)
 	{
 		ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         if (proto->Duration & 0x80000000)
+        {
             continue;
+        }
 
         if (sAhBotConfig.ignoreItemIds.find(proto->ItemId) != sAhBotConfig.ignoreItemIds.end())
+        {
             continue;
+        }
 
         if (strstri(proto->Name1, "qa") || strstri(proto->Name1, "test") || strstri(proto->Name1, "deprecated"))
+        {
             continue;
+        }
 
         if ((proto->RequiredLevel && proto->RequiredLevel > sAhBotConfig.maxRequiredLevel) || proto->ItemLevel > sAhBotConfig.maxItemLevel)
+        {
             continue;
+        }
 
         if (predicates[type] && !predicates[type]->Apply(proto))
+        {
             continue;
+        }
 
         if (!auctionbot.GetSellPrice(proto))
+        {
             continue;
+        }
 
         items.push_back(itemId);
     }
@@ -166,7 +204,9 @@ uint32 RandomItemMgr::GetRandomItem(RandomItemType type, RandomItemPredicate* pr
 {
     RandomItemList const& list = Query(type, predicate);
     if (list.empty())
+    {
         return 0;
+    }
 
     uint32 index = urand(0, list.size() - 1);
     uint32 itemId = list[index];

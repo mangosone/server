@@ -10,11 +10,15 @@ bool ReviveFromCorpseAction::Execute(Event event)
 {
     Corpse* corpse = bot->GetCorpse();
     if (!corpse)
+    {
         return false;
+    }
 
     time_t reclaimTime = corpse->GetGhostTime() + bot->GetCorpseReclaimDelay( corpse->GetType()==CORPSE_RESURRECTABLE_PVP );
     if (reclaimTime > time(0) || corpse->GetDistance(bot) > sPlayerbotAIConfig.spellDistance)
+    {
         return false;
+    }
 
     bot->ResurrectPlayer(0.5f);
     bot->SpawnCorpseBones();
@@ -28,7 +32,9 @@ bool SpiritHealerAction::Execute(Event event)
 {
     Corpse* corpse = bot->GetCorpse();
     if (!corpse)
+    {
         return false;
+    }
 
     list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
     for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)

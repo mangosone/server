@@ -13,7 +13,9 @@ SayAction::SayAction(PlayerbotAI* ai) : Action(ai, "say"), Qualified()
 
 void replaceAll(std::string& str, const std::string& from, const std::string& to) {
     if(from.empty())
+    {
         return;
+    }
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
         str.replace(start_pos, from.length(), to);
@@ -36,7 +38,9 @@ bool SayAction::Execute(Event event)
                 string type = fields[2].GetString();
 
                 if (type == "yell") text = "/y " + text;
-                stringTable[name].push_back(text);
+                {
+                    stringTable[name].push_back(text);
+                }
             } while (results->NextRow());
 			delete results;
 		}
@@ -66,14 +70,18 @@ bool SayAction::Execute(Event event)
 
     uint32 probability = probabilityTable[qualifier];
     if (!probability) probability = 100;
-    if (urand(0, 100) >= probability) return false;
+    {
+        if (urand(0, 100) >= probability) return false;
+    }
 
     uint32 idx = urand(0, strings.size() - 1);
     string text = strings[idx];
 
     Unit* target = AI_VALUE(Unit*, "tank target");
     if (!target) target = AI_VALUE(Unit*, "current target");
-    if (target) replaceAll(text, "<target>", target->GetName());
+    {
+        if (target) replaceAll(text, "<target>", target->GetName());
+    }
 
     replaceAll(text, "<randomfaction>", IsAlliance(bot->getRace()) ? "Alliance" : "Horde");
 
@@ -95,9 +103,13 @@ bool SayAction::Execute(Event event)
     }
 
     if (text.find("/y ") == 0)
+    {
         bot->Yell(text.substr(3), LANG_UNIVERSAL);
+    }
     else
+    {
         bot->Say(text, LANG_UNIVERSAL);
+    }
 }
 
 

@@ -216,7 +216,9 @@ inline void LoadDBC(uint32& availableDbcLocales, BarGoLink& bar, StoreProblemLis
 
             std::string dbc_filename_loc = dbc_path + fullLocaleNameList[i].name + "/" + filename;
             if (!storage.LoadStringsFrom(dbc_filename_loc.c_str()))
-                { availableDbcLocales &= ~(1 << i); }           // mark as not available for speedup next checks
+            {
+                availableDbcLocales &= ~(1 << i);            // mark as not available for speedup next checks
+            }
         }
     }
     else
@@ -796,7 +798,9 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
             std::size_t removeString = entryName.find("%s");
 
             if (removeString != std::string::npos)
+            {
                 entryName.replace(removeString, 2, "");
+            }
 
             if (name.find(entryName) != std::string::npos)
             {

@@ -14,11 +14,15 @@ bool HasAggroValue::Calculate()
 {
     Unit* target = GetTarget();
     if (!target)
+    {
         return true;
+    }
 
     HostileReference *ref = bot->GetHostileRefManager().getFirst();
     if (!ref)
+    {
         return true; // simulate as target is not atacking anybody yet
+    }
 
     while( ref )
     {
@@ -26,7 +30,9 @@ bool HasAggroValue::Calculate()
         Unit *attacker = threatManager->getOwner();
         Unit *victim = attacker->getVictim();
         if (victim == bot && target == attacker)
+        {
             return true;
+        }
         ref = ref->next();
     }
     return false;
@@ -42,11 +48,15 @@ uint8 AttackerCountValue::Calculate()
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || !unit->IsAlive())
+        {
             continue;
+        }
 
         float distance = bot->GetDistance(unit);
         if (distance <= range)
+        {
             count++;
+        }
     }
 
     return count;
@@ -65,7 +75,9 @@ uint8 BalancePercentValue::Calculate()
         {
             Player *player = sObjectMgr.GetPlayer(itr->guid);
             if( !player || !player->IsAlive())
+            {
                 continue;
+            }
 
             playerLevel += player->getLevel();
         }
@@ -77,7 +89,9 @@ uint8 BalancePercentValue::Calculate()
     {
         Creature* creature = ai->GetCreature((*i));
         if (!creature || !creature->IsAlive())
+        {
             continue;
+        }
 
         uint32 level = creature->getLevel();
 
@@ -99,7 +113,9 @@ uint8 BalancePercentValue::Calculate()
     }
 
     if (!attackerLevel)
+    {
         return 100;
+    }
 
     float percent = playerLevel * 100 / attackerLevel;
     return percent <= 200 ? (uint8)percent : 200;

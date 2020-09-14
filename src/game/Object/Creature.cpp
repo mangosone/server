@@ -409,7 +409,9 @@ bool Creature::InitEntry(uint32 Entry, CreatureData const* data /*=NULL*/, GameE
             LoadEquipment(normalInfo->EquipmentTemplateId); // use default from normal template if diff does not have any
         }
         else
+        {
             LoadEquipment(cinfo->EquipmentTemplateId);      // else use from diff template
+        }
     }
     else if (data && data->equipmentId != -1)
     {

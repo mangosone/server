@@ -676,7 +676,9 @@ MapPersistentState* MapPersistentStateManager::AddPersistentState(MapEntry const
         state = dungeonState;
     }
     else if (mapEntry->IsBattleGroundOrArena())
+    {
         state = new BattleGroundPersistentState(mapEntry->MapID, instanceId, difficulty);
+    }
     else
     {
         state = new WorldPersistentState(mapEntry->MapID);
@@ -959,7 +961,9 @@ void MapPersistentStateManager::_ResetOrWarnAll(uint32 mapid, bool warn, uint32 
         // remove all binds for online player
         for (PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.begin(); itr != m_instanceSaveByInstanceId.end(); ++itr)
             if (itr->second->GetMapId() == mapid)
+            {
                 ((DungeonPersistentState*)(itr->second))->UnbindThisState();
+            }
 
         // reset maps, teleport player automaticaly to their homebinds and unload maps
         MapPersistantStateResetWorker worker;
@@ -1066,21 +1070,29 @@ void MapPersistentStateManager::LoadCreatureRespawnTimes()
 
         MapEntry const* mapEntry = sMapStore.LookupEntry(data->mapid);
         if (!mapEntry)
+        {
             continue;
+        }
 
         if (instanceId)                                     // In instance - mapId must be data->mapid and mapEntry must be Instanceable
         {
             if (mapId != data->mapid || !mapEntry->Instanceable())
+            {
                 continue;
+            }
         }
         else                                                // Not in instance, mapEntry must not be Instanceable
         {
             if (mapEntry->Instanceable())
+            {
                 continue;
+            }
         }
 
         if (difficulty >= (!mapEntry->Instanceable() ? REGULAR_DIFFICULTY + 1 : MAX_DIFFICULTY))
+        {
             continue;
+        }
 
         MapPersistentState* state = AddPersistentState(mapEntry, instanceId, Difficulty(difficulty), resetTime, mapEntry->IsDungeon(), true);
         if (!state)
@@ -1141,21 +1153,29 @@ void MapPersistentStateManager::LoadGameobjectRespawnTimes()
 
         MapEntry const* mapEntry = sMapStore.LookupEntry(data->mapid);
         if (!mapEntry)
+        {
             continue;
+        }
 
         if (instanceId)                                     // In instance - mapId must be data->mapid and mapEntry must be Instanceable
         {
             if (mapId != data->mapid || !mapEntry->Instanceable())
+            {
                 continue;
+            }
         }
         else                                                // Not in instance, mapEntry must not be Instanceable
         {
             if (mapEntry->Instanceable())
+            {
                 continue;
+            }
         }
 
         if (difficulty >= (!mapEntry->Instanceable() ? REGULAR_DIFFICULTY + 1 : MAX_DIFFICULTY))
+        {
             continue;
+        }
 
         MapPersistentState* state = AddPersistentState(mapEntry, instanceId, Difficulty(difficulty), resetTime, mapEntry->IsDungeon(), true);
         if (!state)

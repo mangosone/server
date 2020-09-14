@@ -14,7 +14,9 @@ bool GossipHelloAction::Execute(Event event)
 	{
 		Player* master = GetMaster();
 		if (master)
-			guid = master->GetSelectionGuid();
+  {
+      guid = master->GetSelectionGuid();
+  }
 	}
 	else
 	{
@@ -23,7 +25,9 @@ bool GossipHelloAction::Execute(Event event)
 	}
 
 	if (!guid)
-		return false;
+ {
+     return false;
+ }
 
 	Creature *pCreature = bot->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
 	if (!pCreature)
@@ -34,7 +38,9 @@ bool GossipHelloAction::Execute(Event event)
 
 	GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->GossipMenuId);
 	if (pMenuItemBounds.first == pMenuItemBounds.second)
-		return false;
+ {
+     return false;
+ }
 
 	string text = event.getParam();
 	int menuToSelect = -1;
@@ -59,7 +65,9 @@ bool GossipHelloAction::Execute(Event event)
 	{
 	    menuToSelect = atoi(text.c_str());
 	    if (menuToSelect > 0) menuToSelect--;
-        ProcessGossip(menuToSelect);
+     {
+         ProcessGossip(menuToSelect);
+     }
 	}
 
 	bot->TalkedToCreature(pCreature->GetEntry(), pCreature->GetObjectGuid());
@@ -69,7 +77,9 @@ bool GossipHelloAction::Execute(Event event)
 void GossipHelloAction::TellGossipText(uint32 textId)
 {
     if (!textId)
+    {
         return;
+    }
 
     GossipText const* text = sObjectMgr.GetGossipText(textId);
     if (text)
@@ -77,9 +87,15 @@ void GossipHelloAction::TellGossipText(uint32 textId)
         for (int i = 0; i < MAX_GOSSIP_TEXT_OPTIONS; i++)
         {
             string text0 = text->Options[i].Text_0;
-            if (!text0.empty()) ai->TellMasterNoFacing(text0);
+            if (!text0.empty())
+            {
+                ai->TellMasterNoFacing(text0);
+            }
             string text1 = text->Options[i].Text_1;
-            if (!text1.empty()) ai->TellMasterNoFacing(text1);
+            if (!text1.empty())
+            {
+                ai->TellMasterNoFacing(text1);
+            }
         }
     }
 }
@@ -87,7 +103,9 @@ void GossipHelloAction::TellGossipText(uint32 textId)
 void GossipHelloAction::TellGossipMenus()
 {
     if (!bot->PlayerTalkClass)
+    {
         return;
+    }
 
     Creature *pCreature = bot->GetNPCIfCanInteractWith(GetMaster()->GetSelectionGuid(), UNIT_NPC_FLAG_NONE);
     GossipMenu& menu = bot->PlayerTalkClass->GetGossipMenu();

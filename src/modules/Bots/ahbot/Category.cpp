@@ -9,7 +9,9 @@ using namespace ahbot;
 uint32 Category::GetStackCount(ItemPrototype const* proto)
 {
     if (proto->Quality > ITEM_QUALITY_UNCOMMON)
+    {
         return 1;
+    }
 
     return urand(1, proto->GetMaxStackSize());
 }
@@ -27,7 +29,9 @@ uint32 Category::GetMaxAllowedAuctionCount()
 PricingStrategy* Category::GetPricingStrategy()
 {
     if (pricingStrategy)
+    {
         return pricingStrategy;
+    }
 
     ostringstream out; out << "AhBot.PricingStrategy." << GetName();
     string name = sAhBotConfig.GetStringDefault(out.str().c_str(), "default");
@@ -78,44 +82,62 @@ uint32 QualityCategoryWrapper::GetMaxAllowedItemAuctionCount(ItemPrototype const
 bool TradeSkill::Contains(ItemPrototype const* proto)
 {
     if (!Trade::Contains(proto))
+    {
         return false;
+    }
 
     for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
     {
         SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
         if (!skillLine || skillLine->skillId != skill)
+        {
             continue;
+        }
 
         if (IsCraftedBy(proto, skillLine->spellId))
+        {
             return true;
+        }
     }
 
     for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
     {
         CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
         if (!co || co->TrainerType != TRAINER_TYPE_TRADESKILLS)
+        {
             continue;
+        }
 
         uint32 trainerId = co->TrainerTemplateId;
         if (!trainerId)
+        {
             trainerId = co->Entry;
+        }
 
         TrainerSpellData const* trainer_spells = sObjectMgr.GetNpcTrainerTemplateSpells(trainerId);
         if (!trainer_spells)
+        {
             trainer_spells = sObjectMgr.GetNpcTrainerSpells(trainerId);
+        }
 
         if (!trainer_spells)
+        {
             continue;
+        }
 
         for (TrainerSpellMap::const_iterator itr = trainer_spells->spellList.begin(); itr != trainer_spells->spellList.end(); ++itr)
         {
             TrainerSpell const* tSpell = &itr->second;
 
             if (!tSpell || tSpell->reqSkill != skill)
+            {
                 continue;
+            }
 
             if (IsCraftedBy(proto, tSpell->spell))
+            {
                 return true;
+            }
         }
     }
 
@@ -123,7 +145,9 @@ bool TradeSkill::Contains(ItemPrototype const* proto)
     {
         ItemPrototype const* recipe = sItemStorage.LookupEntry<ItemPrototype>(itemId);
         if (!recipe)
+        {
             continue;
+        }
 
         if (recipe->Class == ITEM_CLASS_RECIPE && (
             (recipe->SubClass == ITEM_SUBCLASS_LEATHERWORKING_PATTERN && skill == SKILL_LEATHERWORKING) ||
@@ -140,7 +164,9 @@ bool TradeSkill::Contains(ItemPrototype const* proto)
             for (uint32 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
             {
                 if (IsCraftedBy(proto, recipe->Spells[i].SpellId))
+                {
                     return true;
+                }
             }
         }
     }
@@ -152,12 +178,16 @@ bool TradeSkill::IsCraftedBySpell(ItemPrototype const* proto, uint32 spellId)
 {
     SpellEntry const *entry = sSpellStore.LookupEntry(spellId);
     if (!entry)
+    {
         return false;
+    }
 
     for (uint32 x = 0; x < MAX_SPELL_REAGENTS; ++x)
     {
         if (entry->Reagent[x] <= 0)
-            { continue; }
+        {
+            continue;
+        }
 
         if (proto->ItemId == entry->Reagent[x])
         {
@@ -172,18 +202,24 @@ bool TradeSkill::IsCraftedBySpell(ItemPrototype const* proto, uint32 spellId)
 bool TradeSkill::IsCraftedBy(ItemPrototype const* proto, uint32 spellId)
 {
     if (IsCraftedBySpell(proto, spellId))
+    {
         return true;
+    }
 
     SpellEntry const *entry = sSpellStore.LookupEntry(spellId);
     if (!entry)
+    {
         return false;
+    }
 
     for (uint32 effect = EFFECT_INDEX_0; effect < MAX_EFFECT_INDEX; ++effect)
     {
         uint32 craftId = entry->EffectTriggerSpell[effect];
         SpellEntry const *craft = sSpellStore.LookupEntry(craftId);
         if (!craft)
+        {
             continue;
+        }
 
         for (uint32 i = 0; i < MAX_SPELL_REAGENTS; ++i)
         {

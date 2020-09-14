@@ -370,7 +370,9 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
         if (uint32 quest = _player->GetQuestSlotQuestId(slot))
         {
             if (!_player->TakeQuestSourceItem(quest, true))
-                { return; }                                     // can't un-equip some items, reject quest cancel
+            {
+                return;                                      // can't un-equip some items, reject quest cancel
+            }
 
             if (const Quest* pQuest = sObjectMgr.GetQuestTemplate(quest))
             {
@@ -385,7 +387,9 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
                     {
                         ItemPrototype const* iProto = ObjectMgr::GetItemPrototype(pQuest->ReqSourceId[i]);
                         if (iProto && iProto->Bonding == BIND_QUEST_ITEM)
+                        {
                             _player->DestroyItemCount(pQuest->ReqSourceId[i], pQuest->ReqSourceCount[i], true, false, true);
+                        }
                     }
                 }
             }
@@ -439,7 +443,9 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
         }
 
         if (_player->CanAddQuest(pQuest, true))
-            { _player->AddQuest(pQuest, NULL); }                // NULL, this prevent DB script from duplicate running
+        {
+            _player->AddQuest(pQuest, NULL);                 // NULL, this prevent DB script from duplicate running
+        }
 
         _player->ClearDividerGuid();
     }
@@ -667,9 +673,13 @@ uint32 WorldSession::getDialogStatus(Player* pPlayer, Object* questgiver, uint32
                     else if (lowLevelDiff < 0 || pPlayer->getLevel() <= pPlayer->GetQuestLevelForPlayer(pQuest) + uint32(lowLevelDiff))
                     {
                         if (pQuest->HasQuestFlag(QUEST_FLAGS_DAILY))
+                        {
                             dialogStatusNew = DIALOG_STATUS_AVAILABLE_REP;
+                        }
                         else
+                        {
                             dialogStatusNew = DIALOG_STATUS_AVAILABLE;
+                        }
                     }
                     else
                     {

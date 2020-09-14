@@ -15,10 +15,14 @@ namespace ai
         virtual bool Execute(Event event)
         {
             if (!sRandomPlayerbotMgr.IsRandomBot(bot) || bot->GetGroup() || ai->GetMaster())
+            {
                 return false;
+            }
 
             if (bot->IsInCombat())
+            {
                 return true;
+            }
 
             ai->SetNextCheckDelay(sPlayerbotAIConfig.passiveDelay + sPlayerbotAIConfig.globalCoolDown);
             return true;

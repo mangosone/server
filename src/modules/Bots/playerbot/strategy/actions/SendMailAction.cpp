@@ -10,7 +10,9 @@ bool SendMailAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(bot->GetObjectGuid());
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
@@ -57,7 +59,9 @@ bool SendMailAction::Execute(Event event)
     {
         uint32 money = chat->parseMoney(text);
         if (!money)
+        {
             return false;
+        }
 
         if (bot->GetMoney() < money)
         {

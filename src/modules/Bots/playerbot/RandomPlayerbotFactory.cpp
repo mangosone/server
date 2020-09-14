@@ -86,7 +86,9 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     uint8 race = availableRaces[cls][urand(0, availableRaces[cls].size() - 1)];
     string name = CreateRandomBotName(gender);
     if (name.empty())
+    {
         return false;
+    }
 
     uint8 skin = urand(0, 7);
     uint8 face = urand(0, 7);
@@ -202,7 +204,9 @@ void RandomPlayerbotFactory::CreateRandomBots()
 
         QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
         if (!results)
+        {
             continue;
+        }
 
         Field* fields = results->Fetch();
         uint32 accountId = fields[0].GetUInt32();
@@ -221,7 +225,9 @@ void RandomPlayerbotFactory::CreateRandomBots()
         for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
         {
             if (cls != 10 && cls != 6)
+            {
                 factory.CreateRandomBot(cls);
+            }
         }
 
         totalRandomBotChars += sAccountMgr.GetCharactersCount(accountId);
@@ -285,7 +291,9 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
         {
             Player* player = sObjectMgr.GetPlayer(leader);
             if (player)
+            {
                 availableLeaders.push_back(leader);
+            }
         }
     }
 
@@ -293,7 +301,9 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
     {
         string guildName = CreateRandomGuildName();
         if (guildName.empty())
+        {
             break;
+        }
 
         if (availableLeaders.empty())
         {

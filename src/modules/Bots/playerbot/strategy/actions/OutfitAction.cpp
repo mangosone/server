@@ -34,7 +34,9 @@ bool OutfitAction::Execute(Event event)
 
         int space = param.find(" ");
         if (space == -1)
+        {
             return false;
+        }
 
         name = param.substr(0, space);
         ItemIds outfit = Find(name);
@@ -75,7 +77,9 @@ bool OutfitAction::Execute(Event event)
             {
                 set<uint32>::iterator j = outfit.find(itemid);
                 if (j != outfit.end())
+                {
                     outfit.erase(j);
+                }
 
                 out << " removed from ";
             }
@@ -114,7 +118,9 @@ void OutfitAction::Save(string name, ItemIds items)
     for (ItemIds::iterator i = items.begin(); i != items.end(); i++)
     {
         if (first) first = false; else out << ",";
-        out << *i;
+        {
+            out << *i;
+        }
     }
     outfits.push_back(out.str());
 }
@@ -126,7 +132,9 @@ ItemIds OutfitAction::Find(string name)
     {
         string outfit = *i;
         if (name == parseName(outfit))
+        {
             return parseItems(outfit);
+        }
     }
     return set<uint32>();
 }
@@ -159,7 +167,9 @@ string OutfitAction::parseName(string outfit)
 {
     int pos = outfit.find("=");
     if (pos == -1) return "";
-    return outfit.substr(0, pos);
+    {
+        return outfit.substr(0, pos);
+    }
 }
 
 ItemIds OutfitAction::parseItems(string text)
@@ -171,13 +181,17 @@ ItemIds OutfitAction::parseItems(string text)
     {
         int endPos = text.find(',', pos);
         if (endPos == -1)
+        {
             endPos = text.size();
+        }
 
         string idC = text.substr(pos, endPos - pos);
         uint32 id = atol(idC.c_str());
         pos = endPos + 1;
         if (id)
+        {
             itemIds.insert(id);
+        }
     }
 
     return itemIds;
@@ -190,7 +204,9 @@ void OutfitAction::Update(string name)
 
     ItemIds items;
     for (map<uint32, int>::iterator i = visitor.items.begin(); i != visitor.items.end(); ++i)
+    {
         items.insert(i->first);
+    }
 
     Save(name, items);
 }

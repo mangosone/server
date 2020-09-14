@@ -22,17 +22,22 @@ WorldLocation MoveAheadFormation::GetLocation()
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return WorldLocation();
+    }
 
     WorldLocation loc = GetLocationInternal();
     if (Formation::IsNullLocation(loc))
+    {
         return loc;
+    }
 
     float x = loc.coord_x;
     float y = loc.coord_y;
     float z = loc.coord_z;
 
-    if (master->isMoving()) {
+    if (master->isMoving())
+    {
         float ori = master->GetOrientation();
         float x1 = x + sPlayerbotAIConfig.tooCloseDistance * cos(ori);
         float y1 = y + sPlayerbotAIConfig.tooCloseDistance * sin(ori);
@@ -45,7 +50,9 @@ WorldLocation MoveAheadFormation::GetLocation()
     }
     float ground = master->GetMap()->GetHeight(x, y, z + 0.5f);
     if (ground <= INVALID_HEIGHT)
+    {
         return Formation::NullLocation;
+    }
 
     return WorldLocation(master->GetMapId(), x, y, ground + 0.5f);
 }
@@ -74,7 +81,9 @@ namespace ai
         {
             Player* master = GetMaster();
             if (!master)
+            {
                 return WorldLocation();
+            }
 
             float range = sPlayerbotAIConfig.followDistance;
             float angle = GetFollowAngle();
@@ -83,7 +92,9 @@ namespace ai
             float z = master->GetPositionZ();
             float ground = master->GetMap()->GetHeight(x, y, z + 0.5f);
             if (ground <= INVALID_HEIGHT)
+            {
                 return Formation::NullLocation;
+            }
 
             return WorldLocation(master->GetMapId(), x, y, ground + 0.5f);
         }
@@ -100,14 +111,18 @@ namespace ai
         {
             Player* master = GetMaster();
             if (!master)
+            {
                 return WorldLocation();
+            }
 
             float range = sPlayerbotAIConfig.followDistance;
 			float angle = GetFollowAngle();
 
             time_t now = time(0);
             if (!lastChangeTime || now - lastChangeTime >= 3) {
+            {
                 lastChangeTime = now;
+            }
                 dx = (urand(0, 10) / 10.0 - 0.5) * sPlayerbotAIConfig.tooCloseDistance;
                 dy = (urand(0, 10) / 10.0 - 0.5) * sPlayerbotAIConfig.tooCloseDistance;
                 dr = sqrt(dx*dx + dy*dy);
@@ -118,7 +133,9 @@ namespace ai
             float z = master->GetPositionZ();
             float ground = master->GetMap()->GetHeight(x, y, z + 0.5f);
             if (ground <= INVALID_HEIGHT)
+            {
                 return Formation::NullLocation;
+            }
 
             return WorldLocation(master->GetMapId(), x, y, ground + 0.5f);
         }
@@ -141,10 +158,14 @@ namespace ai
             Unit* target = AI_VALUE(Unit*, "current target");
             Player* master = GetMaster();
             if (!target)
+            {
                 target = master;
+            }
 
             if (!target)
-				return Formation::NullLocation;
+            {
+                return Formation::NullLocation;
+            }
 
             switch (bot->getClass())
             {
@@ -156,11 +177,15 @@ namespace ai
                 break;
             case CLASS_DRUID:
                 if (!ai->IsTank(bot))
+                {
                     range = sPlayerbotAIConfig.fleeDistance;
+                }
                 break;
             case CLASS_SHAMAN:
                 if (ai->IsHeal(bot))
+                {
                     range = sPlayerbotAIConfig.fleeDistance;
+                }
                 break;
             }
 
@@ -169,7 +194,9 @@ namespace ai
             float z = target->GetPositionZ();
             float ground = target->GetMap()->GetHeight(x, y, z + 0.5f);
             if (ground <= INVALID_HEIGHT)
+            {
                 return Formation::NullLocation;
+            }
 
             float angle = GetFollowAngle();
             return WorldLocation(bot->GetMapId(), x + cos(angle) * range, y + sin(angle) * range, ground + 0.5f);
@@ -184,13 +211,17 @@ namespace ai
         {
             Group* group = bot->GetGroup();
             if (!group)
+            {
                 return Formation::NullLocation;
+            }
 
             float range = 2.0f;
 
             Player* master = GetMaster();
             if (!master)
+            {
                 return Formation::NullLocation;
+            }
 
             float x = master->GetPositionX();
             float y = master->GetPositionY();
@@ -203,7 +234,9 @@ namespace ai
             {
                 Player* member = gref->getSource();
                 if (member != master)
+                {
                     players.push_back(member);
+                }
 
                 gref = gref->next();
             }
@@ -222,13 +255,17 @@ namespace ai
         {
             Group* group = bot->GetGroup();
             if (!group)
+            {
                 return Formation::NullLocation;
+            }
 
             float range = sPlayerbotAIConfig.followDistance;
 
             Player* master = GetMaster();
             if (!master)
+            {
                 return Formation::NullLocation;
+            }
 
             float x = master->GetPositionX();
             float y = master->GetPositionY();
@@ -244,18 +281,26 @@ namespace ai
                 if (member != master)
                 {
                     if (ai->IsTank(member))
+                    {
                         tanks.push_back(member);
+                    }
                     else
+                    {
                         dps.push_back(member);
+                    }
                 }
 
                 gref = gref->next();
             }
 
             if (ai->IsTank(master))
+            {
                 tanks.insert(tanks.begin() + (tanks.size() + 1) / 2, master);
+            }
             else
+            {
                 dps.insert(dps.begin() + (dps.size() + 1) / 2, master);
+            }
 
             if (ai->IsTank(bot) && ai->IsTank(master))
             {
@@ -291,7 +336,9 @@ float Formation::GetFollowAngle()
         for (PlayerBotMap::const_iterator i = master->GetPlayerbotMgr()->GetPlayerBotsBegin(); i != master->GetPlayerbotMgr()->GetPlayerBotsEnd(); ++i)
         {
             if (i->second == bot) index = total;
-            total++;
+            {
+                total++;
+            }
         }
     }
     else
@@ -299,10 +346,14 @@ float Formation::GetFollowAngle()
         for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
         {
             if( ref->getSource() == master)
+            {
                 continue;
+            }
 
             if( ref->getSource() == bot)
+            {
                 index = total;
+            }
 
             total++;
         }
@@ -330,42 +381,58 @@ bool SetFormationAction::Execute(Event event)
     if (formation == "melee")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new MeleeFormation(ai));
+        {
+            value->Set(new MeleeFormation(ai));
+        }
     }
     else if (formation == "queue")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new QueueFormation(ai));
+        {
+            value->Set(new QueueFormation(ai));
+        }
     }
     else if (formation == "chaos")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new ChaosFormation(ai));
+        {
+            value->Set(new ChaosFormation(ai));
+        }
     }
     else if (formation == "circle")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new CircleFormation(ai));
+        {
+            value->Set(new CircleFormation(ai));
+        }
     }
     else if (formation == "line")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new LineFormation(ai));
+        {
+            value->Set(new LineFormation(ai));
+        }
     }
     else if (formation == "shield")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new ShieldFormation(ai));
+        {
+            value->Set(new ShieldFormation(ai));
+        }
     }
     else if (formation == "arrow")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new ArrowFormation(ai));
+        {
+            value->Set(new ArrowFormation(ai));
+        }
     }
     else if (formation == "near" || formation == "default")
     {
         if (value->Get()) delete value->Get();
-        value->Set(new NearFormation(ai));
+        {
+            value->Set(new NearFormation(ai));
+        }
     }
     else
     {
@@ -403,7 +470,9 @@ WorldLocation MoveFormation::MoveLine(vector<Player*> line, float diff, float cx
 
         WorldLocation loc = MoveSingleLine(singleLine, diff, x, y,cz, orientation, range);
         if (!Formation::IsNullLocation(loc))
+        {
             return loc;
+        }
     }
 
     return Formation::NullLocation;
@@ -431,7 +500,9 @@ WorldLocation MoveFormation::MoveSingleLine(vector<Player*> line, float diff, fl
             float lz = cz;
             float ground = bot->GetMap()->GetHeight(lx, ly, lz + 0.5f);
             if (ground <= INVALID_HEIGHT)
+            {
                 return Formation::NullLocation;
+            }
 
             return WorldLocation(bot->GetMapId(), lx, ly, ground + 0.5f);
         }

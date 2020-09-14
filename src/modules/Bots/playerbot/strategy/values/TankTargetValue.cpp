@@ -23,7 +23,9 @@ public:
         {
             uint64 guid = group->GetTargetIcon(4);
             if (guid && creature->GetObjectGuid() == ObjectGuid(guid))
+            {
                 return;
+            }
         }
 
         float threat = threatManager->getThreat(bot);

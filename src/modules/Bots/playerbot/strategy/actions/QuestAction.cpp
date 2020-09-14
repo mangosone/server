@@ -11,13 +11,19 @@ bool QuestAction::Execute(Event event)
 
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (!guid)
+    {
         guid = master->GetSelectionGuid();
+    }
 
     if (!guid)
+    {
         return false;
+    }
 
     return ProcessQuests(guid);
 }
@@ -26,11 +32,15 @@ bool QuestAction::ProcessQuests(ObjectGuid questGiver)
 {
     GameObject *gameObject = ai->GetGameObject(questGiver);
     if (gameObject && gameObject->GetGoType() == GAMEOBJECT_TYPE_QUESTGIVER)
+    {
         return ProcessQuests(gameObject);
+    }
 
     Creature* creature = ai->GetCreature(questGiver);
     if (creature)
+    {
         return ProcessQuests(creature);
+    }
 
     return false;
 }
@@ -46,7 +56,9 @@ bool QuestAction::ProcessQuests(WorldObject* questGiver)
     }
 
     if (!bot->IsInFront(questGiver, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
+    {
         bot->SetFacingTo(bot->GetAngle(questGiver));
+    }
 
     bot->SetSelectionGuid(guid);
     bot->PrepareQuestMenu(guid);
@@ -57,7 +69,9 @@ bool QuestAction::ProcessQuests(WorldObject* questGiver)
         uint32 questID = menuItem.m_qId;
         Quest const* quest = sObjectMgr.GetQuestTemplate(questID);
         if (!quest)
+        {
             continue;
+        }
 
         ProcessQuest(quest, questGiver);
     }
@@ -72,18 +86,28 @@ bool QuestAction::AcceptQuest(Quest const* quest, uint64 questGiver)
     uint32 questId = quest->GetQuestId();
 
     if (bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
+    {
         out << "Already completed";
+    }
     else if (! bot->CanTakeQuest(quest, false))
     {
         if (! bot->SatisfyQuestStatus(quest, false))
+        {
             out << "Already on";
+        }
         else
+        {
             out << "Can't take";
+        }
     }
     else if (! bot->SatisfyQuestLog(false))
+    {
         out << "Quest log is full";
+    }
     else if (! bot->CanAddQuest(quest, false))
+    {
         out << "Bags are full";
+    }
 
     else
     {
@@ -120,13 +144,17 @@ bool QuestObjectiveCompletedAction::Execute(Event event)
         entry &= 0x7FFFFFFF;
         GameObjectInfo const* info = sObjectMgr.GetGameObjectInfo(entry);
         if (info)
+        {
             ai->TellMaster(chat->formatQuestObjective(info->name, available, required));
+        }
     }
     else
     {
         CreatureInfo const* info = sObjectMgr.GetCreatureTemplate(entry);
         if (info)
+        {
             ai->TellMaster(chat->formatQuestObjective(info->Name, available, required));
+        }
     }
 
     return true;

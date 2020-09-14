@@ -86,7 +86,9 @@ void LoadDisables()
         DisableData* data;
         bool newData = false;
         if (m_DisableMap[type].find(entry) != m_DisableMap[type].end())
+        {
             data = &m_DisableMap[type][entry];
+        }
         else
         {
             data = new DisableData();
@@ -111,10 +113,14 @@ void LoadDisables()
                 }
 
                 if (flags & SPELL_DISABLE_MAP)
+                {
                     data->params[0].insert(data0 & 0xFFFF);
+                }
 
                 if (flags & SPELL_DISABLE_AREA)
+                {
                     data->params[1].insert(data0 >> 16);
+                }
 
                 break;
             // checked later
@@ -135,7 +141,9 @@ void LoadDisables()
                     case MAP_INSTANCE:
                     case MAP_RAID:
                         if (flags)
+                        {
                             isFlagInvalid = true;
+                        }
                         break;
                     case MAP_BATTLEGROUND:
                     //case MAP_ARENA: [-ZERO]
@@ -249,7 +257,9 @@ void LoadDisables()
                 if ((flags & SPAWN_DISABLE_CHECK_GUID) != 0)
                 {
                     if (data0)
+                    {
                         data->params[0].insert(data0);
+                    }
                     else
                     {
                         ERROR_DB_STRICT_LOG("Disables type %u: required GUID is missing for entry %u, ignoring disable entry.", type, entry);
@@ -327,10 +337,14 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
                     {
                         std::set<uint32> const& mapIds = itr->second.params[0];
                         if (mapIds.find(unit->GetMapId()) != mapIds.end())
+                        {
                             return true;                                        // Spell is disabled on current map
+                        }
 
                         if (!(spellFlags & SPELL_DISABLE_AREA))
+                        {
                             return false;                                       // Spell is disabled on another map, but not this one, return false
+                        }
 
                         // Spell is disabled in an area, but not explicitly our current mapId. Continue processing.
                     }
@@ -339,7 +353,9 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
                     {
                         std::set<uint32> const& areaIds = itr->second.params[1];
                         if (areaIds.find(unit->GetAreaId()) != areaIds.end())
+                        {
                             return true;                                        // Spell is disabled in this area
+                        }
                         return false;                                           // Spell is disabled in another area, but not this one, return false
                     }
                     else

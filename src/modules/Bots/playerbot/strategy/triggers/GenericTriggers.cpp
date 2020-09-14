@@ -110,12 +110,16 @@ bool SpellCanBeCastTrigger::IsActive()
 bool RandomTrigger::IsActive()
 {
     if (time(0) - lastCheck < sPlayerbotAIConfig.repeatDelay / 1000)
+    {
         return false;
+    }
 
     lastCheck = time(0);
     int k = (int)(probability / sPlayerbotAIConfig.randomChangeMultiplier);
     if (k < 1) k = 1;
-    return (rand() % k) == 0;
+    {
+        return (rand() % k) == 0;
+    }
 }
 
 bool AndTrigger::IsActive()
@@ -154,15 +158,21 @@ bool HasAuraTrigger::IsActive()
 bool TankAoeTrigger::IsActive()
 {
     if (!AI_VALUE(uint8, "attacker count"))
+    {
         return false;
+    }
 
     Unit* currentTarget = AI_VALUE(Unit*, "current target");
     if (!currentTarget)
+    {
         return true;
+    }
 
     Unit* tankTarget = AI_VALUE(Unit*, "tank target");
     if (!tankTarget || currentTarget == tankTarget)
+    {
         return false;
+    }
 
     return currentTarget->getVictim() == AI_VALUE(Unit*, "self target");
 }

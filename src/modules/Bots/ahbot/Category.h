@@ -54,14 +54,20 @@ namespace ahbot
         virtual uint32 GetStackCount(ItemPrototype const* proto)
         {
             if (proto->Quality > ITEM_QUALITY_UNCOMMON)
+            {
                 return 1;
+            }
 
             uint32 maxStackSize = proto->GetMaxStackSize();
             if (maxStackSize == 1)
+            {
                 return 1;
+            }
 
             if (maxStackSize <= 10)
+            {
                 return urand(1, 10);
+            }
 
             return urand(1, 4) * maxStackSize / 5;
         }
@@ -87,14 +93,20 @@ namespace ahbot
         virtual uint32 GetStackCount(ItemPrototype const* proto)
         {
             if (proto->Quality > ITEM_QUALITY_UNCOMMON)
+            {
                 return 1;
+            }
 
             uint32 maxStackSize = proto->GetMaxStackSize();
             if (proto->Quality == ITEM_QUALITY_UNCOMMON && maxStackSize > 10)
+            {
                 maxStackSize = urand(1, 10);
+            }
 
             if (maxStackSize > 20)
+            {
                 maxStackSize = urand(1, 20);
+            }
 
             return maxStackSize;
         }
@@ -123,7 +135,9 @@ namespace ahbot
         {
             uint32 maxStack = proto->GetMaxStackSize();
             if (maxStack < 2)
+            {
                 return maxStack;
+            }
 
             switch (proto->Quality)
             {

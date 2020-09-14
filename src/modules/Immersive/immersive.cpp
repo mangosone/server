@@ -38,14 +38,18 @@ string formatMoney(uint32 copper)
     if (silver > 0 && gold < 50)
     {
         if (space) out << " ";
-        out << silver <<  "s";
+        {
+            out << silver <<  "s";
+        }
         space = true;
     }
 
     if (copper > 0 && gold < 10)
     {
         if (space) out << " ";
-        out << copper <<  "c";
+        {
+            out << copper <<  "c";
+        }
     }
 
     return out.str();
@@ -73,7 +77,9 @@ void Immersive::GetPlayerLevelInfo(Player *player, PlayerLevelInfo* info)
 #ifdef ENABLE_PLAYERBOTS
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(player->GetObjectGuid());
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
+    {
         return;
+    }
 #endif
 
     PlayerInfo const* playerInfo = sObjectMgr.GetPlayerInfo(player->getRace(), player->getClass());
@@ -81,7 +87,9 @@ void Immersive::GetPlayerLevelInfo(Player *player, PlayerLevelInfo* info)
 
     uint32 owner = player->GetObjectGuid().GetRawValue();
     for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
+    {
         info->stats[i] += GetValue(owner, Immersive::statValues[(Stats)i]);
+    }
 }
 
 void Immersive::OnGossipSelect(Player *player, uint32 gossipListId, GossipMenuItemData *menuData)
@@ -115,7 +123,9 @@ void Immersive::OnDeath(Player *player)
 
     map<Stats, int> loss;
     for (int j = STAT_STRENGTH; j < MAX_STATS; ++j)
+    {
         loss[(Stats)j] = 0;
+    }
 
     int totalLoss = 0;
     int lossPerDeath = 3;
@@ -141,7 +151,9 @@ void Immersive::OnDeath(Player *player)
     {
         uint32 value = loss[(Stats)i];
         if (!value) continue;
-        if (!first) out << ", "; else first = false;
+        {
+            if (!first) out << ", "; else first = false;
+        }
         out << "|cffffa0a0-" << value << "|cffa0a0ff " << statNames[(Stats)i];
         used = true;
     }
@@ -179,12 +191,16 @@ void Immersive::PrintHelp(Player *player, bool detailed)
         {
             uint32 value = GetValue(owner, statValues[(Stats)i]);
             if (!value) continue;
-            if (!first) out << ", "; else first = false;
+            {
+                if (!first) out << ", "; else first = false;
+            }
             out << "|cff00ff00+" << value << "|cffa0a0ff " << statNames[(Stats)i];
             used = true;
         }
         if (used)
+        {
             SendMessage(player, out.str().c_str());
+        }
     }
 }
 
@@ -230,7 +246,9 @@ void Immersive::ResetStats(Player *player)
     uint32 owner = player->GetObjectGuid().GetRawValue();
 
     for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
+    {
         SetValue(owner, statValues[(Stats)i], 0);
+    }
 
     uint32 usedStats = GetUsedStats(player);
     uint32 totalStats = GetTotalStats(player);
@@ -254,7 +272,9 @@ uint32 Immersive::GetUsedStats(Player *player)
 
     uint32 usedStats = 0;
     for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
+    {
         usedStats += GetValue(owner, statValues[(Stats)i]);
+    }
 
     return usedStats;
 }

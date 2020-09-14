@@ -19,7 +19,9 @@ public:
     bool operator()(GameObject* u)
     {
         if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo())
+        {
             return true;
+        }
 
         return false;
     }
@@ -32,7 +34,9 @@ private:
 bool RevealGatheringItemAction::Execute(Event event)
 {
     if (!bot->GetGroup())
+    {
         return false;
+    }
 
     list<GameObject*> targets;
     AnyGameObjectInObjectRangeCheck u_check(bot, sPlayerbotAIConfig.grindDistance);
@@ -44,7 +48,9 @@ bool RevealGatheringItemAction::Execute(Event event)
     {
         GameObject* go = *tIter;
         if (!go || !go->isSpawned() || bot->GetDistance2d(go) <= sPlayerbotAIConfig.lootDistance)
+        {
             continue;
+        }
 
         if (LockEntry const *lockInfo = sLockStore.LookupEntry(go->GetGOInfo()->GetLockId()))
         {
@@ -65,11 +71,15 @@ bool RevealGatheringItemAction::Execute(Event event)
         }
 
         if (go->GetGoType() == GAMEOBJECT_TYPE_FISHINGNODE && ai->HasSkill(SKILL_FISHING))
+        {
             result.push_back(go);
+        }
     }
 
     if (result.empty())
+    {
         return false;
+    }
 
     GameObject *go = result[urand(0, result.size() - 1)];
     if (!go) return false;

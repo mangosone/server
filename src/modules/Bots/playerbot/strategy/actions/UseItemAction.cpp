@@ -10,7 +10,9 @@ bool UseItemAction::Execute(Event event)
 {
     string name = event.getParam();
     if (name.empty())
+    {
         name = getName();
+    }
 
     list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", name);
     list<ObjectGuid> gos = chat->parseGameobjects(name);
@@ -25,14 +27,20 @@ bool UseItemAction::Execute(Event event)
             return UseItemOnItem(item, itemTarget);
         }
         else if (!items.empty())
+        {
             return UseItemAuto(*items.begin());
+        }
     }
     else
     {
         if (items.empty())
+        {
             return UseGameObject(*gos.begin());
+        }
         else
+        {
             return UseItemOnGameObject(*items.begin(), *gos.begin());
+        }
     }
 
     ai->TellMaster("No items (or game objects) available");
@@ -43,7 +51,9 @@ bool UseItemAction::UseGameObject(ObjectGuid guid)
 {
     GameObject* go = ai->GetGameObject(guid);
     if (!go || !go->isSpawned())
+    {
         return false;
+    }
 
     go->Use(bot);
     ostringstream out; out << "Using " << chat->formatGameobject(go);
@@ -69,17 +79,23 @@ bool UseItemAction::UseItemOnItem(Item* item, Item* itemTarget)
 bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
 {
     if (bot->CanUseItem(item) != EQUIP_ERR_OK)
+    {
         return false;
+    }
 
     if (bot->IsNonMeleeSpellCasted(true))
+    {
         return false;
+    }
     if (bot->IsInCombat())
     {
         for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
         {
             SpellEntry const *spellInfo = sSpellStore.LookupEntry(item->GetProto()->Spells[i].SpellId);
             if (spellInfo && IsNonCombatSpell(spellInfo))
+            {
                 return false;
+            }
         }
     }
     uint8 bagIndex = item->GetBagSlot();
@@ -99,9 +115,13 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     {
         uint32 count = item->GetCount();
         if (count > 1)
+        {
             out << " (" << count << " available) ";
+        }
         else
+        {
             out << " (the last one!)";
+        }
     }
 
     if (goGuid)
@@ -122,7 +142,9 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         {
             bool fit = SocketItem(itemTarget, item) || SocketItem(itemTarget, item, true);
             if (!fit)
+            {
                 ai->TellMaster("Socket does not fit");
+            }
             return fit;
         }
         else
@@ -174,31 +196,43 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     bot->clearUnitState(UNIT_STAT_FOLLOW);
 
     if (bot->isMoving())
+    {
         return false;
+    }
 
     for (int i = 0; i<MAX_ITEM_PROTO_SPELLS; i++)
     {
         uint32 spellId = item->GetProto()->Spells[i].SpellId;
         if (!spellId)
+        {
             continue;
+        }
 
         if (!ai->CanCastSpell(spellId, bot, false))
+        {
             continue;
+        }
 
         const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (pSpellInfo->Targets & TARGET_FLAG_ITEM)
         {
             Item* itemForSpell = AI_VALUE2(Item*, "item for spell", spellId);
             if (!itemForSpell)
+            {
                 continue;
+            }
 
             if (itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+            {
                 continue;
+            }
 
             if (bot->GetTrader())
             {
                 if (selfOnly)
+                {
                     return false;
+                }
 
                 *packet << (uint32)TARGET_FLAG_TRADE_ITEM << (uint8)1 << (uint64)TRADE_SLOT_NONTRADED;
                 targetSelected = true;
@@ -226,14 +260,18 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     }
 
     if (!targetSelected)
+    {
         return false;
+    }
 
     ItemPrototype const* proto = item->GetProto();
     if (proto->Class == ITEM_CLASS_CONSUMABLE && (proto->SubClass == ITEM_SUBCLASS_FOOD || proto->SubClass == ITEM_SUBCLASS_CONSUMABLE) &&
         (proto->Spells[0].SpellCategory == 11 || proto->Spells[0].SpellCategory == 59))
     {
         if (bot->IsInCombat())
+        {
             return false;
+        }
 
         ai->SetNextCheckDelay(30000);
     }

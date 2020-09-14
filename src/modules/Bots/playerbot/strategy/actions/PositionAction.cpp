@@ -15,7 +15,9 @@ void TellPosition(PlayerbotAI* ai, string name, ai::Position pos)
         out << " is set to " << x << "," << y;
     }
     else
+    {
         out << " is not set";
+    }
     ai->TellMaster(out);
 }
 
@@ -23,11 +25,15 @@ bool PositionAction::Execute(Event event)
 {
 	string param = event.getParam();
 	if (param.empty())
-		return false;
+ {
+     return false;
+ }
 
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai::PositionMap& posMap = context->GetValue<ai::PositionMap&>("position")->Get();
     if (param == "?")
@@ -35,7 +41,9 @@ bool PositionAction::Execute(Event event)
         for (ai::PositionMap::iterator i = posMap.begin(); i != posMap.end(); ++i)
         {
             if (i->second.isSet())
+            {
                 TellPosition(ai, i->first, i->second);
+            }
         }
         return true;
     }

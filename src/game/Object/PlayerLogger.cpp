@@ -53,7 +53,9 @@ PlayerLogger::~PlayerLogger()
 void PlayerLogger::Initialize(PlayerLogEntity entity, uint32 maxLength)
 {
     if (data[entity])
+    {
         data[entity]->clear();
+    }
     else
     {
         if (IsLoggingActive(entity))
@@ -85,7 +87,9 @@ void PlayerLogger::Initialize(PlayerLogEntity entity, uint32 maxLength)
         }
     }
     if (maxLength)
+    {
         data[entity]->reserve(maxLength);
+    }
 }
 
 void PlayerLogger::Clean(PlayerLogMask mask)
@@ -93,7 +97,9 @@ void PlayerLogger::Clean(PlayerLogMask mask)
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
     {
         if ((mask & CalcLogMask(PlayerLogEntity(i))) == 0)    // note that actual data presence is not checked here!
+        {
             continue;
+        }
         if (data[i] == NULL)
         {
             sLog.outError("PlayerLogging: flag for logtype %u set but no init was called! Ignored.", i);
@@ -111,10 +117,14 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
     {
         if ((mask & CalcLogMask(PlayerLogEntity(i))) == 0 || data[i] == NULL)
+        {
             continue;
+        }
 
         if (!insideTransaction)
+        {
             CharacterDatabase.BeginTransaction();
+        }
         written = true;
         for (uint8 id = 0; id < data[i]->size(); ++id)
         {
@@ -222,10 +232,14 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
         }
         Stop(PlayerLogEntity(i));
         if (removeSaved)
+        {
             data[i]->clear();
+        }
     }
     if (written && !insideTransaction)
+    {
         CharacterDatabase.CommitTransaction();
+    }
 
     return written;
 }
@@ -265,7 +279,9 @@ void PlayerLogger::CheckAndTruncate(PlayerLogMask mask, uint32 maxRecords)
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
     {
         if ((mask & CalcLogMask(PlayerLogEntity(i))) == 0)
+        {
             continue;
+        }
         if (data[i]->size() > maxRecords)
         {
             switch (PlayerLogEntity(i))
@@ -407,19 +423,27 @@ void PlayerLogger::LogProgress(ProgressType type, uint8 achieve, uint16 misc)
 void PlayerLogger::SetLogActiveMask(PlayerLogEntity entity, bool on)
 {
     if (on)
+    {
         logActiveMask |= CalcLogMask(entity);
+    }
     else
+    {
         logActiveMask &= ~uint8(CalcLogMask(entity));
+    }
 }
 
 Player* PlayerLogger::GetPlayer() const
 {
     Player* pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
     if (!pl)
+    {
         pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
+    }
 
     if (!pl)
+    {
         sLog.outError("PlayerLogger: cannot get current player! Ignoring the record.");
+    }
 
     return pl;
 }

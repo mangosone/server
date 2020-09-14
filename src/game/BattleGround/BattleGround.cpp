@@ -885,9 +885,13 @@ void BattleGround::EndBattleGround(Team winner)
             if (isArena() && isRated() && winner_arena_team && loser_arena_team)
             {
                 if (team == winner)
+                {
                     winner_arena_team->OfflineMemberLost(itr->first, loser_rating);
+                }
                 else
+                {
                     loser_arena_team->OfflineMemberLost(itr->first, winner_rating);
+                }
             }
             continue;
         }

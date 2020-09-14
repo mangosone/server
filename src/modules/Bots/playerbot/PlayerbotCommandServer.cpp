@@ -19,7 +19,9 @@ bool ReadLine(ACE_SOCK_Stream& client_stream, string* buffer, string* line)
         char buf[33];
         size_t n = client_stream.recv_n(buf, 1, 0);
         if (n == -1)
+        {
             return false;
+        }
 
         buf[n] = 0;
         *buffer += buf;
@@ -35,7 +37,9 @@ class PlayerbotCommandServerThread: public ACE_Task <ACE_MT_SYNCH>
 public:
     int svc(void) {
         if (!sPlayerbotAIConfig.commandServerPort) {
+        {
             return 0;
+        }
         }
 
         ostringstream s; s << "Starting Playerbot Command Server on port " << sPlayerbotAIConfig.commandServerPort;

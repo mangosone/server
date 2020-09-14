@@ -17,10 +17,14 @@ void Queue::Push(ActionBasket *action)
             if (action->getAction()->getName() == basket->getAction()->getName())
             {
 				if (basket->getRelevance() < action->getRelevance())
-					basket->setRelevance(action->getRelevance());
+    {
+        basket->setRelevance(action->getRelevance());
+    }
 				ActionNode *actionNode = action->getAction();
 				if (actionNode)
-				    delete actionNode;
+    {
+        delete actionNode;
+    }
                 delete action;
                 return;
             }
@@ -91,7 +95,9 @@ void Queue::RemoveExpired()
     {
         ActionBasket* basket = *iter;
         if (sPlayerbotAIConfig.expireActionTime && basket->isExpired(sPlayerbotAIConfig.expireActionTime / 1000))
+        {
             expired.push_back(basket);
+        }
     }
 
     for (std::list<ActionBasket*>::iterator iter = expired.begin(); iter != expired.end(); iter++)

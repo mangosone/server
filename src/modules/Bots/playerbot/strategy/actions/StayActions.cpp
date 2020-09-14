@@ -11,7 +11,9 @@ void StayActionBase::Stay()
 
     MotionMaster &mm = *bot->GetMotionMaster();
     if (mm.GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE || bot->IsFlying())
+    {
         return;
+    }
 
     mm.Clear();
     bot->InterruptMoving();
@@ -19,7 +21,9 @@ void StayActionBase::Stay()
 	bot->clearUnitState(UNIT_STAT_FOLLOW);
 
     if (!bot->IsStandState())
+    {
         bot->SetStandState(UNIT_STAND_STATE_STAND);
+    }
 }
 
 bool StayAction::Execute(Event event)

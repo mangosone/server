@@ -19,7 +19,9 @@ bool QueryItemUsageAction::Execute(Event event)
         ObjectGuid guid;
         data >> guid;
         if (guid != bot->GetObjectGuid())
+        {
             return false;
+        }
 
         uint32 received, created, isShowChatMessage, notUsed, itemId,
             suffixFactor, itemRandomPropertyId, count, invCount;
@@ -39,7 +41,9 @@ bool QueryItemUsageAction::Execute(Event event)
 
         ItemPrototype const *item = sItemStorage.LookupEntry<ItemPrototype>(itemId);
         if (!item)
+        {
             return false;
+        }
 
         ai->TellMaster(QueryItem(item, count, GetCount(item)));
         return true;
@@ -78,13 +82,19 @@ string QueryItemUsageAction::QueryItem(ItemPrototype const *item, uint32 count, 
     string quest = QueryQuestItem(item->ItemId);
     string price = QueryItemPrice(item);
     if (usage.empty())
+    {
         usage = (quest.empty() ? "Useless" : "Quest");
+    }
 
     out << chat->formatItem(item, count, total) << ": " << usage;
     if (!quest.empty())
+    {
         out << ", " << quest;
+    }
     if (!price.empty())
+    {
         out << ", " << price;
+    }
     return out.str();
 }
 
@@ -114,10 +124,14 @@ string QueryItemUsageAction::QueryItemUsage(ItemPrototype const *item)
 string QueryItemUsageAction::QueryItemPrice(ItemPrototype const *item)
 {
     if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+    {
         return "";
+    }
 
     if (item->Bonding == BIND_WHEN_PICKED_UP)
+    {
         return "";
+    }
 
     ostringstream msg;
     list<Item*> items = InventoryAction::parseItems(item->Name1);
@@ -136,13 +150,17 @@ string QueryItemUsageAction::QueryItemPrice(ItemPrototype const *item)
     ostringstream out; out << item->ItemId;
     ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
     if (usage == ITEM_USAGE_NONE)
+    {
         return msg.str();
+    }
 
     int32 buyPrice = auctionbot.GetBuyPrice(item) * sRandomPlayerbotMgr.GetBuyMultiplier(bot);
     if (buyPrice)
     {
         if (sellPrice) msg << " ";
-        msg << "Buy: " << chat->formatMoney(buyPrice);
+        {
+            msg << "Buy: " << chat->formatMoney(buyPrice);
+        }
     }
 
     return msg.str();
@@ -156,7 +174,9 @@ string QueryItemUsageAction::QueryQuestItem(uint32 itemId)
     {
         const Quest *questTemplate = sObjectMgr.GetQuestTemplate( i->first );
         if( !questTemplate )
+        {
             continue;
+        }
 
         uint32 questId = questTemplate->GetQuestId();
         QuestStatus status = bot->GetQuestStatus(questId);
@@ -177,13 +197,17 @@ string QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTem
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
     {
         if (questTemplate->ReqItemId[i] != itemId)
+        {
             continue;
+        }
 
         int required = questTemplate->ReqItemCount[i];
         int available = questStatus->m_itemcount[i];
 
         if (!required)
+        {
             continue;
+        }
 
         return chat->formatQuestObjective(chat->formatQuest(questTemplate), available, required);
     }

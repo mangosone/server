@@ -101,7 +101,9 @@ dtPolyRef PathFinder::getPathPolyByPosition(const dtPolyRef* polyPath, uint32 po
         float closestPoint[VERTEX_SIZE];
         dtStatus dtResult = m_navMeshQuery->closestPointOnPoly(polyPath[i], point, closestPoint, NULL);
         if (dtStatusFailed(dtResult))
+        {
             continue;
+        }
 
         float d = dtVdist2DSqr(point, closestPoint);
         if (d < minDist2d)

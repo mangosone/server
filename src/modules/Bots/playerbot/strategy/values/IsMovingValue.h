@@ -15,7 +15,9 @@ namespace ai
             Unit* chaseTarget;
 
             if (!target)
+            {
                 return false;
+            }
 
             switch (target->GetMotionMaster()->GetCurrentMovementGeneratorType())
             {
@@ -23,11 +25,18 @@ namespace ai
                 return true;
             case CHASE_MOTION_TYPE:
                 if (target->GetTypeId() == TYPEID_PLAYER)
-                    { chaseTarget = static_cast<ChaseMovementGenerator<Player> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget(); }
+                {
+                    chaseTarget = static_cast<ChaseMovementGenerator<Player> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget();
+                }
                 else
-                    { chaseTarget = static_cast<ChaseMovementGenerator<Creature> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget(); }
+                {
+                    chaseTarget = static_cast<ChaseMovementGenerator<Creature> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget();
+                }
 
-                if (!chaseTarget) return false;
+                if (!chaseTarget)
+                {
+                    return false;
+                }
                 Player* chaseTargetPlayer = sObjectMgr.GetPlayer(chaseTarget->GetObjectGuid());
                 return chaseTargetPlayer && !ai->IsTank(chaseTargetPlayer);
             }
@@ -45,7 +54,9 @@ namespace ai
             Unit* target = AI_VALUE(Unit*, qualifier);
 
             if (!target)
+            {
                 return false;
+            }
 
             return target->IsUnderWater() || target->IsInWater();
         }

@@ -45,7 +45,9 @@ namespace ai
 
 		    time_t now = time(0);
 			if (!lastCheckTime || now - lastCheckTime >= checkInterval) {
-			    lastCheckTime = now;
+   {
+       lastCheckTime = now;
+   }
 				return true;
 			}
 			return false;

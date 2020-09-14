@@ -414,7 +414,9 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
         }
 
         if (!sScriptMgr.OnGossipSelect(_player, pCreature, sender, action, code.empty() ? NULL : code.c_str()))
+        {
             _player->OnGossipSelect(pCreature, gossipListId, menuId);
+        }
     }
     else if (guid.IsGameObject())
     {
@@ -427,7 +429,9 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
         }
 
         if (!sScriptMgr.OnGossipSelect(_player, pGo, sender, action, code.empty() ? NULL : code.c_str()))
+        {
             _player->OnGossipSelect(pGo, gossipListId, menuId);
+        }
     }
     else if (guid.IsItem())
     {
@@ -972,7 +976,9 @@ void WorldSession::HandleRepairItemOpcode(WorldPacket& recv_data)
         Item* item = _player->GetItemByGuid(itemGuid);
 
         if (item)
+        {
             TotalCost = _player->DurabilityRepair(item->GetPos(), true, discountMod, (guildBank > 0));
+        }
     }
     else
     {

@@ -15,13 +15,17 @@ using namespace ai;
 bool LootAction::Execute(Event event)
 {
     if (!AI_VALUE(bool, "has available loot"))
+    {
         return false;
+    }
 
     LootObject prevLoot = AI_VALUE(LootObject, "loot target");
     LootObject const& lootObject = AI_VALUE(LootObjectStack*, "available loot")->GetLoot(sPlayerbotAIConfig.lootDistance);
 
     if (!prevLoot.IsEmpty() && prevLoot.guid != lootObject.guid)
+    {
         bot->GetSession()->DoLootRelease(prevLoot.guid);
+    }
 
     context->GetValue<LootObject>("loot target")->Set(lootObject);
     return true;
@@ -59,11 +63,15 @@ bool OpenLootAction::Execute(Event event)
 bool OpenLootAction::DoLoot(LootObject& lootObject)
 {
     if (lootObject.IsEmpty())
+    {
         return false;
+    }
 
     Creature* creature = ai->GetCreature(lootObject.guid);
     if (creature && bot->GetDistance(creature) > INTERACTION_DISTANCE)
+    {
         return false;
+    }
 
     if (creature && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
     {
@@ -78,7 +86,9 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     {
         SkillType skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
         if (!CanOpenLock(skill, lootObject.reqSkillValue))
+        {
             return false;
+        }
 
         bot->GetMotionMaster()->Clear();
         switch (skill)
@@ -96,18 +106,26 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
 
     GameObject* go = ai->GetGameObject(lootObject.guid);
     if (go && bot->GetDistance(go) > INTERACTION_DISTANCE)
+    {
         return false;
+    }
 
     bot->GetMotionMaster()->Clear();
     if (lootObject.skillId == SKILL_MINING)
+    {
         return ai->HasSkill(SKILL_MINING) ? ai->CastSpell(MINING, bot) : false;
+    }
 
     if (lootObject.skillId == SKILL_HERBALISM)
+    {
         return ai->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(HERB_GATHERING, bot) : false;
+    }
 
     uint32 spellId = GetOpeningSpell(lootObject);
     if (!spellId)
+    {
         return false;
+    }
 
     return ai->CastSpell(spellId, bot);
 }
@@ -116,7 +134,9 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject)
 {
     GameObject* go = ai->GetGameObject(lootObject.guid);
     if (go && go->isSpawned())
+    {
         return GetOpeningSpell(lootObject, go);
+    }
 
     return 0;
 }
@@ -128,30 +148,44 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
         uint32 spellId = itr->first;
 
 		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
-			continue;
+  {
+      continue;
+  }
 
 		if (spellId == MINING || spellId == HERB_GATHERING)
-			continue;
+  {
+      continue;
+  }
 
 		const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
 		if (!pSpellInfo)
-			continue;
+  {
+      continue;
+  }
 
         if (CanOpenLock(lootObject, pSpellInfo, go))
+        {
             return spellId;
+        }
     }
 
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); spellId++)
     {
         if (spellId == MINING || spellId == HERB_GATHERING)
+        {
             continue;
+        }
 
 		const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
 		if (!pSpellInfo)
-            continue;
+  {
+      continue;
+  }
 
         if (CanOpenLock(lootObject, pSpellInfo, go))
+        {
             return spellId;
+        }
     }
 
     return sPlayerbotAIConfig.openGoSpell;
@@ -162,15 +196,21 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
     for (int effIndex = 0; effIndex <= EFFECT_INDEX_2; effIndex++)
     {
         if (pSpellInfo->Effect[effIndex] != SPELL_EFFECT_OPEN_LOCK && pSpellInfo->Effect[effIndex] != SPELL_EFFECT_SKINNING)
+        {
             return false;
+        }
 
         uint32 lockId = go->GetGOInfo()->GetLockId();
         if (!lockId)
+        {
             return false;
+        }
 
         LockEntry const *lockInfo = sLockStore.LookupEntry(lockId);
         if (!lockInfo)
+        {
             return false;
+        }
 
         bool reqKey = false;                                    // some locks not have reqs
 
@@ -185,14 +225,20 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
             case LOCK_KEY_SKILL:
                 {
                     if(uint32(pSpellInfo->EffectMiscValue[effIndex]) != lockInfo->Index[j])
+                    {
                         continue;
+                    }
 
                     uint32 skillId = SkillByLockType(LockType(lockInfo->Index[j]));
                     if (skillId == SKILL_NONE)
+                    {
                         return true;
+                    }
 
                     if (CanOpenLock(skillId, lockInfo->Skill[j]))
+                    {
                         return true;
+                    }
                 }
             }
         }
@@ -248,21 +294,29 @@ bool StoreLootAction::Execute(Event event)
         p >> lootslot_type;     // 0 = can get, 1 = look only, 2 = master get
 
 		if (lootslot_type != LOOT_SLOT_NORMAL)
-			continue;
+  {
+      continue;
+  }
 
         if (loot_type != LOOT_SKINNING && !IsLootAllowed(itemid, ai))
+        {
             continue;
+        }
 
         ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemid);
         if (!proto)
+        {
             continue;
+        }
 
         if (sRandomPlayerbotMgr.IsRandomBot(bot))
         {
             uint32 price = itemcount * auctionbot.GetSellPrice(proto) * sRandomPlayerbotMgr.GetSellMultiplier(bot) + gold;
             uint32 lootAmount = sRandomPlayerbotMgr.GetLootAmount(bot);
             if (price)
+            {
                 sRandomPlayerbotMgr.SetLootAmount(bot, bot->GetGroup() ? lootAmount + price : 0);
+            }
 
             Group* group = bot->GetGroup();
             if (group)
@@ -270,7 +324,9 @@ bool StoreLootAction::Execute(Event event)
                 for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
                 {
                     if( ref->getSource() != bot)
+                    {
                         sGuildTaskMgr.CheckItemTask(itemid, itemcount, ref->getSource(), bot);
+                    }
                 }
             }
         }
@@ -297,18 +353,26 @@ bool StoreLootAction::IsLootAllowed(uint32 itemid, PlayerbotAI *ai)
 
     set<uint32>& lootItems = AI_VALUE(set<uint32>&, "always loot list");
     if (lootItems.find(itemid) != lootItems.end())
+    {
         return true;
+    }
 
     ItemPrototype const *proto = sObjectMgr.GetItemPrototype(itemid);
     if (!proto)
+    {
         return false;
+    }
 
     uint32 max = proto->MaxCount;
     if (max > 0 && ai->GetBot()->HasItemCount(itemid, max, true))
+    {
         return false;
+    }
 
     if (proto->StartQuest)
+    {
         return true;
+    }
 
     if (proto->Bonding == BIND_QUEST_ITEM ||
         proto->Bonding == BIND_QUEST_ITEM1 ||
@@ -319,12 +383,16 @@ bool StoreLootAction::IsLootAllowed(uint32 itemid, PlayerbotAI *ai)
             uint32 entry = ai->GetBot()->GetQuestSlotQuestId(slot);
             Quest const* quest = sObjectMgr.GetQuestTemplate(entry);
             if (!quest)
+            {
                 continue;
+            }
 
             for (int i = 0; i < 4; i++)
             {
                 if (quest->ReqItemId[i] == itemid && AI_VALUE2(uint8, "item count", proto->Name1) < quest->ReqItemCount[i])
+                {
                     return true;
+                }
             }
         }
     }
@@ -336,11 +404,15 @@ bool ReleaseLootAction::Execute(Event event)
 {
     list<ObjectGuid> gos = context->GetValue<list<ObjectGuid> >("nearest game objects")->Get();
     for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
+    {
         bot->GetSession()->DoLootRelease(*i);
+    }
 
     list<ObjectGuid> corpses = context->GetValue<list<ObjectGuid> >("nearest corpses")->Get();
     for (list<ObjectGuid>::iterator i = corpses.begin(); i != corpses.end(); i++)
+    {
         bot->GetSession()->DoLootRelease(*i);
+    }
 
     return true;
 }

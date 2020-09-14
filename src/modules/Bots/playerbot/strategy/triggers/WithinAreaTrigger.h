@@ -14,15 +14,21 @@ namespace ai
 
             LastMovement& movement = context->GetValue<LastMovement&>("last area trigger")->Get();
             if (!movement.lastAreaTrigger)
+            {
                 return false;
+            }
 
             AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(movement.lastAreaTrigger);
             if(!atEntry)
+            {
                 return false;
+            }
 
             AreaTrigger const* at = sObjectMgr.GetAreaTrigger(movement.lastAreaTrigger);
             if (!at)
+            {
                 return false;
+            }
 
             return IsPointInAreaTriggerZone(atEntry, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), 0.5f);
         }
@@ -31,14 +37,18 @@ namespace ai
         bool IsPointInAreaTriggerZone(AreaTriggerEntry const* atEntry, uint32 mapid, float x, float y, float z, float delta)
         {
             if (mapid != atEntry->mapid)
+            {
                 return false;
+            }
 
             if (atEntry->radius > 0)
             {
                 // if we have radius check it
                 float dist2 = (x - atEntry->x) * (x - atEntry->x) + (y - atEntry->y) * (y - atEntry->y) + (z - atEntry->z) * (z - atEntry->z);
                 if (dist2 > (atEntry->radius + delta) * (atEntry->radius + delta))
+                {
                     return false;
+                }
             }
             else
             {

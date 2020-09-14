@@ -420,7 +420,9 @@ struct FactionEntry
         {
             if ((BaseRepRaceMask[i] == 0 || (BaseRepRaceMask[i] & raceMask)) &&
                 (BaseRepClassMask[i] == 0 || (BaseRepClassMask[i] & classMask)))
-                { return i; }
+            {
+                return i;
+            }
         }
 
         return -1;

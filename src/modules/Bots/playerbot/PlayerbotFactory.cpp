@@ -48,7 +48,9 @@ void PlayerbotFactory::Refresh()
 
     uint32 money = urand(level * 1000, level * 5 * 1000);
     if (bot->GetMoney() < money)
+    {
         bot->SetMoney(money);
+    }
     bot->SaveToDB();
 }
 
@@ -62,19 +64,31 @@ void PlayerbotFactory::Prepare()
     if (!itemQuality)
     {
         if (level <= 10)
+        {
             itemQuality = urand(ITEM_QUALITY_NORMAL, ITEM_QUALITY_UNCOMMON);
+        }
         else if (level <= 20)
+        {
             itemQuality = urand(ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_RARE);
+        }
         else if (level <= 40)
+        {
             itemQuality = urand(ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_EPIC);
+        }
         else if (level < 60)
+        {
             itemQuality = urand(ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_EPIC);
+        }
         else
+        {
             itemQuality = urand(ITEM_QUALITY_RARE, ITEM_QUALITY_EPIC);
+        }
     }
 
     if (bot->IsDead())
+    {
         bot->ResurrectPlayer(1.0f, false);
+    }
 
     bot->CombatStop(true);
     bot->SetLevel(level);
@@ -170,24 +184,34 @@ void PlayerbotFactory::InitPet()
     if (!pet)
     {
         if (bot->getClass() != CLASS_HUNTER)
+        {
             return;
+        }
 
         Map* map = bot->GetMap();
         if (!map)
+        {
             return;
+        }
 
 		vector<uint32> ids;
         for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
         {
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
 			if (!co)
-				continue;
+   {
+       continue;
+   }
 
             if (!co->isTameable())
+            {
                 continue;
+            }
 
             if ((int)co->MinLevel > (int)bot->getLevel())
+            {
                 continue;
+            }
 
 			ids.push_back(id);
 		}
@@ -203,7 +227,9 @@ void PlayerbotFactory::InitPet()
 			int index = urand(0, ids.size() - 1);
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(ids[index]);
             if (!co)
+            {
                 continue;
+            }
 
             uint32 guid = map->GenerateLocalLowGuid(HIGHGUID_PET);
             CreatureCreatePos pos(map, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
@@ -254,11 +280,15 @@ void PlayerbotFactory::InitPet()
     for (PetSpellMap::const_iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
     {
         if(itr->second.state == PETSPELL_REMOVED)
+        {
             continue;
+        }
 
         uint32 spellId = itr->first;
         if(IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         pet->ToggleAutocast(spellId, true);
     }
@@ -271,7 +301,9 @@ void PlayerbotFactory::ClearSpells()
     {
         uint32 spellId = itr->first;
 		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
-			continue;
+  {
+      continue;
+  }
 
         spells.push_back(spellId);
     }
@@ -285,7 +317,9 @@ void PlayerbotFactory::ClearSpells()
 void PlayerbotFactory::InitSpells()
 {
     for (int i = 0; i < 15; i++)
+    {
         InitAvailableSpells();
+    }
 }
 
 void PlayerbotFactory::InitTalents()
@@ -299,7 +333,9 @@ void PlayerbotFactory::InitTalents()
     InitTalents(specNo);
 
     if (bot->GetFreeTalentPoints())
+    {
         InitTalents(2 - specNo);
+    }
 }
 
 
@@ -325,15 +361,21 @@ private:
     bool CanKeep(uint32 id)
     {
         if (keep.find(id) != keep.end())
+        {
             return false;
+        }
 
         if (sPlayerbotAIConfig.IsInRandomQuestItemList(id))
+        {
             return true;
+        }
 
 
         ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(id);
         if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK)
+        {
             return true;
+        }
 
         return false;
     }
@@ -347,33 +389,45 @@ private:
 bool PlayerbotFactory::CanEquipArmor(ItemPrototype const* proto)
 {
     if (bot->HasSkill(SKILL_SHIELD) && proto->SubClass == ITEM_SUBCLASS_ARMOR_SHIELD)
+    {
         return true;
+    }
 
     if (bot->HasSkill(SKILL_PLATE_MAIL))
     {
         if (proto->SubClass != ITEM_SUBCLASS_ARMOR_PLATE)
+        {
             return false;
+        }
     }
     else if (bot->HasSkill(SKILL_MAIL))
     {
         if (proto->SubClass != ITEM_SUBCLASS_ARMOR_MAIL)
+        {
             return false;
+        }
     }
     else if (bot->HasSkill(SKILL_LEATHER))
     {
         if (proto->SubClass != ITEM_SUBCLASS_ARMOR_LEATHER)
+        {
             return false;
+        }
     }
 
     if (proto->Quality <= ITEM_QUALITY_NORMAL)
+    {
         return true;
+    }
 
     uint8 sp = 0, ap = 0, tank = 0;
     for (int j = 0; j < MAX_ITEM_PROTO_STATS; ++j)
     {
         // for ItemStatValue != 0
         if(!proto->ItemStat[j].ItemStatValue)
+        {
             continue;
+        }
 
         AddItemStats(proto->ItemStat[j].ItemStatType, sp, ap, tank);
     }
@@ -389,17 +443,23 @@ bool PlayerbotFactory::CheckItemStats(uint8 sp, uint8 ap, uint8 tank)
     case CLASS_MAGE:
     case CLASS_WARLOCK:
         if (!sp || ap > sp || tank > sp)
+        {
             return false;
+        }
         break;
     case CLASS_PALADIN:
     case CLASS_WARRIOR:
         if ((!ap && !tank) || sp > ap || sp > tank)
+        {
             return false;
+        }
         break;
     case CLASS_HUNTER:
     case CLASS_ROGUE:
         if (!ap || sp > ap || sp > tank)
+        {
             return false;
+        }
         break;
     }
 
@@ -528,37 +588,61 @@ bool PlayerbotFactory::CanEquipWeapon(ItemPrototype const* proto)
 bool PlayerbotFactory::CanEquipItem(ItemPrototype const* proto, uint32 desiredQuality)
 {
     if (proto->Duration & 0x80000000)
+    {
         return false;
+    }
 
     if (proto->Quality != desiredQuality)
+    {
         return false;
+    }
 
     if (proto->Bonding == BIND_QUEST_ITEM || proto->Bonding == BIND_WHEN_USE)
+    {
         return false;
+    }
 
     if (proto->Class == ITEM_CLASS_CONTAINER)
+    {
         return true;
+    }
 
     uint32 requiredLevel = proto->RequiredLevel;
     if (!requiredLevel)
+    {
         return false;
+    }
 
     uint32 level = bot->getLevel();
     uint32 delta = 2;
     if (level < 15)
+    {
         delta = urand(7, 15);
+    }
     else if (proto->Class == ITEM_CLASS_WEAPON || proto->SubClass == ITEM_SUBCLASS_ARMOR_SHIELD)
+    {
         delta = urand(2, 3);
+    }
     else if (!(level % 10) || (level % 10) == 9)
+    {
         delta = 2;
+    }
     else if (level < 40)
+    {
         delta = urand(5, 10);
+    }
     else if (level < 60)
+    {
         delta = urand(3, 7);
+    }
     else if (level < 70)
+    {
         delta = urand(2, 5);
+    }
     else if (level < 80)
+    {
         delta = urand(2, 4);
+    }
 
     if (desiredQuality > ITEM_QUALITY_NORMAL &&
             (requiredLevel > level || requiredLevel < level - delta))
@@ -567,7 +651,9 @@ bool PlayerbotFactory::CanEquipItem(ItemPrototype const* proto, uint32 desiredQu
     for (uint32 gap = 60; gap <= 80; gap += 10)
     {
         if (level > gap && requiredLevel <= gap)
+        {
             return false;
+        }
     }
 
     return true;
@@ -582,11 +668,15 @@ void PlayerbotFactory::InitEquipment(bool incremental)
     for(uint8 slot = 0; slot < EQUIPMENT_SLOT_END; ++slot)
     {
         if (slot == EQUIPMENT_SLOT_TABARD || slot == EQUIPMENT_SLOT_BODY)
+        {
             continue;
+        }
 
         uint32 desiredQuality = itemQuality;
         if (urand(0, 100) < 100 * sPlayerbotAIConfig.randomGearLoweringChance && desiredQuality > ITEM_QUALITY_NORMAL) {
+        {
             desiredQuality--;
+        }
         }
 
         do
@@ -595,7 +685,9 @@ void PlayerbotFactory::InitEquipment(bool incremental)
             {
                 ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
                 if (!proto)
+                {
                     continue;
+                }
 
                 if (proto->Class != ITEM_CLASS_WEAPON &&
                     proto->Class != ITEM_CLASS_ARMOR &&
@@ -604,7 +696,9 @@ void PlayerbotFactory::InitEquipment(bool incremental)
                     continue;
 
                 if (!CanEquipItem(proto, desiredQuality))
+                {
                     continue;
+                }
 
                 if (proto->Class == ITEM_CLASS_ARMOR && (
                     slot == EQUIPMENT_SLOT_HEAD ||
@@ -618,16 +712,24 @@ void PlayerbotFactory::InitEquipment(bool incremental)
                         continue;
 
                 if (proto->Class == ITEM_CLASS_WEAPON && !CanEquipWeapon(proto))
+                {
                     continue;
+                }
 
                 if (slot == EQUIPMENT_SLOT_OFFHAND && bot->getClass() == CLASS_ROGUE && proto->Class != ITEM_CLASS_WEAPON)
+                {
                     continue;
+                }
                 if (slot == EQUIPMENT_SLOT_OFFHAND && bot->getClass() == CLASS_PALADIN && proto->SubClass != ITEM_SUBCLASS_ARMOR_SHIELD)
+                {
                     continue;
+                }
 
                 uint16 dest = 0;
                 if (CanEquipUnseenItem(slot, dest, itemId))
+                {
                     items[slot].push_back(itemId);
+                }
             }
         } while (items[slot].empty() && desiredQuality-- > ITEM_QUALITY_NORMAL);
     }
@@ -635,7 +737,9 @@ void PlayerbotFactory::InitEquipment(bool incremental)
     for(uint8 slot = 0; slot < EQUIPMENT_SLOT_END; ++slot)
     {
         if (slot == EQUIPMENT_SLOT_TABARD || slot == EQUIPMENT_SLOT_BODY)
+        {
             continue;
+        }
 
         vector<uint32>& ids = items[slot];
         if (ids.empty())
@@ -651,12 +755,16 @@ void PlayerbotFactory::InitEquipment(bool incremental)
             Item* oldItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
 
             if (incremental && !IsDesiredReplacement(oldItem)) {
+            {
                 continue;
+            }
             }
 
             uint16 dest;
             if (!CanEquipUnseenItem(slot, dest, newItemId))
+            {
                 continue;
+            }
 
             if (oldItem)
             {
@@ -680,7 +788,9 @@ void PlayerbotFactory::InitEquipment(bool incremental)
 bool PlayerbotFactory::IsDesiredReplacement(Item* item)
 {
     if (!item)
+    {
         return true;
+    }
 
     ItemPrototype const* proto = item->GetProto();
     int delta = 1 + (80 - bot->getLevel()) / 10;
@@ -690,7 +800,9 @@ bool PlayerbotFactory::IsDesiredReplacement(Item* item)
 void PlayerbotFactory::InitSecondEquipmentSet()
 {
     if (bot->getClass() == CLASS_MAGE || bot->getClass() == CLASS_WARLOCK || bot->getClass() == CLASS_PRIEST)
+    {
         return;
+    }
 
     map<uint32, vector<uint32> > items;
 
@@ -705,15 +817,21 @@ void PlayerbotFactory::InitSecondEquipmentSet()
         {
             ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
             if (!proto)
+            {
                 continue;
+            }
 
             if (!CanEquipItem(proto, desiredQuality))
+            {
                 continue;
+            }
 
             if (proto->Class == ITEM_CLASS_WEAPON)
             {
                 if (!CanEquipWeapon(proto))
+                {
                     continue;
+                }
 
                 Item* existingItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
                 if (existingItem)
@@ -742,14 +860,20 @@ void PlayerbotFactory::InitSecondEquipmentSet()
             else if (proto->Class == ITEM_CLASS_ARMOR && proto->SubClass == ITEM_SUBCLASS_ARMOR_SHIELD)
             {
                 if (!CanEquipArmor(proto))
+                {
                     continue;
+                }
 
                 Item* existingItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
                 if (existingItem && existingItem->GetProto()->SubClass == ITEM_SUBCLASS_ARMOR_SHIELD)
+                {
                     continue;
+                }
             }
             else
+            {
                 continue;
+            }
 
             items[proto->Class].push_back(itemId);
         }
@@ -789,10 +913,14 @@ void PlayerbotFactory::InitBags()
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto || proto->Class != ITEM_CLASS_CONTAINER)
+        {
             continue;
+        }
 
         if (!CanEquipItem(proto, ITEM_QUALITY_NORMAL))
+        {
             continue;
+        }
 
         ids.push_back(itemId);
     }
@@ -812,7 +940,9 @@ void PlayerbotFactory::InitBags()
 
             uint16 dest;
             if (!CanEquipUnseenItem(slot, dest, newItemId))
+            {
                 continue;
+            }
 
             Item* newItem = bot->EquipNewItem(dest, newItemId, true);
             if (newItem)
@@ -828,10 +958,14 @@ void PlayerbotFactory::InitBags()
 void PlayerbotFactory::EnchantItem(Item* item)
 {
     if (urand(0, 100) < 100 * sPlayerbotAIConfig.randomGearLoweringChance)
+    {
         return;
+    }
 
     if (bot->getLevel() < urand(40, 50))
+    {
         return;
+    }
 
     ItemPrototype const* proto = item->GetProto();
     int32 itemLevel = proto->ItemLevel;
@@ -841,50 +975,72 @@ void PlayerbotFactory::EnchantItem(Item* item)
     {
         SpellEntry const *entry = sSpellStore.LookupEntry(id);
         if (!entry)
+        {
             continue;
+        }
 
         int32 requiredLevel = (int32)entry->baseLevel;
         if (requiredLevel && (requiredLevel > itemLevel || requiredLevel < itemLevel - 35))
+        {
             continue;
+        }
 
         if (entry->maxLevel && level > entry->maxLevel)
+        {
             continue;
+        }
 
         uint32 spellLevel = entry->spellLevel;
         if (spellLevel && (spellLevel > level || spellLevel < level - 10))
+        {
             continue;
+        }
 
         for (int j = 0; j < 3; ++j)
         {
             if (entry->Effect[j] != SPELL_EFFECT_ENCHANT_ITEM)
+            {
                 continue;
+            }
 
             uint32 enchant_id = entry->EffectMiscValue[j];
             if (!enchant_id)
+            {
                 continue;
+            }
 
             SpellItemEnchantmentEntry const* enchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
             if (!enchant || enchant->slot != PERM_ENCHANTMENT_SLOT)
+            {
                 continue;
+            }
 
 			const SpellEntry *enchantSpell = sSpellStore.LookupEntry(enchant->spellid[0]);
             if (!enchantSpell || (enchantSpell->spellLevel && enchantSpell->spellLevel > level))
+            {
                 continue;
+            }
 
             uint8 sp = 0, ap = 0, tank = 0;
             for (int i = 0; i < 3; ++i)
             {
                 if (enchant->type[i] != ITEM_ENCHANTMENT_TYPE_STAT)
+                {
                     continue;
+                }
 
                 AddItemStats(enchant->spellid[i], sp, ap, tank);
             }
 
             if (!CheckItemStats(sp, ap, tank))
+            {
                 continue;
+            }
 
             if (!item->IsFitToSpellRequirements(entry))
+            {
                 continue;
+            }
 
             ids.push_back(enchant_id);
         }
@@ -901,7 +1057,9 @@ void PlayerbotFactory::EnchantItem(Item* item)
 
     SpellItemEnchantmentEntry const* enchant = sSpellItemEnchantmentStore.LookupEntry(id);
     if (!enchant)
+    {
         return;
+    }
 
     bot->ApplyEnchantment(item, PERM_ENCHANTMENT_SLOT, false);
     item->SetEnchantment(PERM_ENCHANTMENT_SLOT, id, 0, 0);
@@ -985,7 +1143,9 @@ void PlayerbotFactory::UpdateTradeSkills()
     for (int i = 0; i < sizeof(tradeSkills) / sizeof(uint32); ++i)
     {
         if (bot->GetSkillValue(tradeSkills[i]) == 1)
+        {
             bot->SetSkill(tradeSkills[i], 0, 0, 0);
+        }
     }
 }
 
@@ -993,15 +1153,25 @@ void PlayerbotFactory::InitSkills() //Cosine
 {
     uint32 maxValue = level * 5;
     if (bot->getLevel() >= 70)
+    {
         bot->SetSkill(SKILL_RIDING, 300, 300);
+    }
     else if (bot->getLevel() >= 60)
+    {
         bot->SetSkill(SKILL_RIDING, 225, 225);
+    }
     else if (bot->getLevel() >= 40)
+    {
         bot->SetSkill(SKILL_RIDING, 150, 150);
+    }
     else if (bot->getLevel() >= 20)
+    {
         bot->SetSkill(SKILL_RIDING, 75, 75);
+    }
     else
+    {
         bot->SetSkill(SKILL_RIDING, 0, 0);
+    }
 
     uint32 skillLevel = bot->getLevel() < 40 ? 0 : 1;
     switch (bot->getClass())
@@ -1111,38 +1281,54 @@ void PlayerbotFactory::InitAvailableSpells()
     {
         CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
         if (!co)
+        {
             continue;
+        }
 
         if (co->TrainerType != TRAINER_TYPE_TRADESKILLS && co->TrainerType != TRAINER_TYPE_CLASS)
+        {
             continue;
+        }
 
         if (co->TrainerType == TRAINER_TYPE_CLASS && co->TrainerClass != bot->getClass())
+        {
             continue;
+        }
 
         uint32 trainerId = co->TrainerTemplateId;
         if (!trainerId)
+        {
             trainerId = co->Entry;
+        }
 
         TrainerSpellData const* trainer_spells = sObjectMgr.GetNpcTrainerTemplateSpells(trainerId);
         if (!trainer_spells)
+        {
             trainer_spells = sObjectMgr.GetNpcTrainerSpells(trainerId);
+        }
 
         if (!trainer_spells)
+        {
             continue;
+        }
 
 		for (TrainerSpellMap::const_iterator itr = trainer_spells->spellList.begin(); itr != trainer_spells->spellList.end(); ++itr)
 		{
 			TrainerSpell const* tSpell = &itr->second;
 
 			if (!tSpell)
-				continue;
+   {
+       continue;
+   }
 
 			uint32 reqLevel = 0;
 
 			reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
 			TrainerSpellState state = bot->GetTrainerSpellState(tSpell, reqLevel);
 			if (state != TRAINER_SPELL_GREEN)
-				continue;
+   {
+       continue;
+   }
 
 			bot->learnSpell(tSpell->spell, false);
 		}
@@ -1168,14 +1354,20 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
     {
         TalentEntry const *talentInfo = sTalentStore.LookupEntry(i);
         if(!talentInfo)
+        {
             continue;
+        }
 
         TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry( talentInfo->TalentTab );
         if(!talentTabInfo || talentTabInfo->tabpage != specNo)
+        {
             continue;
+        }
 
         if( (classMask & talentTabInfo->ClassMask) == 0 )
+        {
             continue;
+        }
 
         spells[talentInfo->Row].push_back(talentInfo);
     }
@@ -1199,7 +1391,9 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
             {
                 uint32 spellId = talentInfo->RankID[rank];
                 if (!spellId)
+                {
                     continue;
+                }
                 bot->learnSpell(spellId, false);
                 bot->UpdateFreeTalentPoints(false);
             }
@@ -1217,25 +1411,33 @@ ObjectGuid PlayerbotFactory::GetRandomBot()
     {
         uint32 accountId = *i;
         if (!sAccountMgr.GetCharactersCount(accountId))
+        {
             continue;
+        }
 
         QueryResult *result = CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account = '%u'", accountId);
         if (!result)
+        {
             continue;
+        }
 
         do
         {
             Field* fields = result->Fetch();
             ObjectGuid guid = ObjectGuid(fields[0].GetUInt64());
             if (!sObjectMgr.GetPlayer(guid))
+            {
                 guids.push_back(guid);
+            }
         } while (result->NextRow());
 
         delete result;
     }
 
     if (guids.empty())
+    {
         return ObjectGuid();
+    }
 
     int index = urand(0, guids.size() - 1);
     return guids[index];
@@ -1265,7 +1467,9 @@ void PlayerbotFactory::InitQuests()
             Quest const *quest = i->second;
 
             if (!quest->GetRequiredClasses() || quest->IsRepeatable())
+            {
                 continue;
+            }
 
             AddPrevQuests(questId, classQuestIds);
             classQuestIds.remove(questId);
@@ -1287,7 +1491,9 @@ void PlayerbotFactory::InitQuests()
         bot->SetQuestStatus(questId, QUEST_STATUS_COMPLETE);
         bot->RewardQuest(quest, 0, bot, false);
         if (!(count++ % 10))
+        {
             ClearInventory();
+        }
     }
     ClearInventory();
 }
@@ -1301,11 +1507,15 @@ void PlayerbotFactory::ClearInventory()
 void PlayerbotFactory::InitAmmo()
 {
     if (bot->getClass() != CLASS_HUNTER && bot->getClass() != CLASS_ROGUE && bot->getClass() != CLASS_WARRIOR)
+    {
         return;
+    }
 
     Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
     if (!pItem)
+    {
         return;
+    }
 
     uint32 subClass = 0;
     switch (pItem->GetProto()->SubClass)
@@ -1320,12 +1530,16 @@ void PlayerbotFactory::InitAmmo()
     }
 
     if (!subClass)
+    {
         return;
+    }
 
     QueryResult* results = WorldDatabase.PQuery("select max(entry), max(RequiredLevel) from item_template where class = '%u' and subclass = '%u' and RequiredLevel <= '%u'",
             ITEM_CLASS_PROJECTILE, subClass, bot->getLevel());
     if (!results)
+    {
         return;
+    }
 
     Field* fields = results->Fetch();
     if (fields)
@@ -1335,7 +1549,9 @@ void PlayerbotFactory::InitAmmo()
         {
             Item* newItem = bot->StoreNewItemInInventorySlot(entry, 200);
             if (newItem)
+            {
                 newItem->AddToUpdateQueueOf(bot);
+            }
         }
         bot->SetAmmo(entry);
     }
@@ -1351,14 +1567,20 @@ void PlayerbotFactory::InitMounts()
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
         if (!spellInfo || spellInfo->EffectApplyAuraName[0] != SPELL_AURA_MOUNTED)
+        {
             continue;
+        }
 
         if (GetSpellCastTime(spellInfo) < 500 || GetSpellDuration(spellInfo) != -1)
+        {
             continue;
+        }
 
         int32 effect = max(spellInfo->EffectBasePoints[1], spellInfo->EffectBasePoints[2]);
         if (effect < 50)
+        {
             continue;
+        }
 
         spells[effect].push_back(spellId);
     }
@@ -1371,7 +1593,9 @@ void PlayerbotFactory::InitMounts()
             vector<uint32>& ids = i->second;
             uint32 index = urand(0, ids.size() - 1);
             if (index >= ids.size())
+            {
                 continue;
+            }
 
             bot->learnSpell(ids[index], false);
         }
@@ -1385,7 +1609,9 @@ void PlayerbotFactory::InitPotions()
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         if (proto->Class != ITEM_CLASS_CONSUMABLE ||
             proto->SubClass != ITEM_SUBCLASS_POTION ||
@@ -1394,19 +1620,27 @@ void PlayerbotFactory::InitPotions()
             continue;
 
         if (proto->RequiredLevel > bot->getLevel() || proto->RequiredLevel < bot->getLevel() - 10)
+        {
             continue;
+        }
 
         if (proto->RequiredSkill && !bot->HasSkill(proto->RequiredSkill))
+        {
             continue;
+        }
 
         if (proto->Area || proto->Map || proto->RequiredCityRank || proto->RequiredHonorRank)
+        {
             continue;
+        }
 
         for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
         {
             const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
             if (!spellInfo)
+            {
                 continue;
+            }
 
             for (int i = 0 ; i < 3; i++)
             {
@@ -1426,13 +1660,17 @@ void PlayerbotFactory::InitPotions()
         vector<uint32>& ids = items[effect];
         uint32 index = urand(0, ids.size() - 1);
         if (index >= ids.size())
+        {
             continue;
+        }
 
         uint32 itemId = ids[index];
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         Item* newItem = bot->StoreNewItemInInventorySlot(itemId, urand(1, proto->GetMaxStackSize()));
         if (newItem)
+        {
             newItem->AddToUpdateQueueOf(bot);
+        }
    }
 }
 
@@ -1443,7 +1681,9 @@ void PlayerbotFactory::InitFood()
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         if (proto->Class != ITEM_CLASS_CONSUMABLE ||
             proto->SubClass != ITEM_SUBCLASS_FOOD ||
@@ -1452,13 +1692,19 @@ void PlayerbotFactory::InitFood()
             continue;
 
         if (proto->RequiredLevel > bot->getLevel() || proto->RequiredLevel < bot->getLevel() - 10)
+        {
             continue;
+        }
 
         if (proto->RequiredSkill && !bot->HasSkill(proto->RequiredSkill))
+        {
             continue;
+        }
 
         if (proto->Area || proto->Map || proto->RequiredCityRank || proto->RequiredHonorRank)
+        {
             continue;
+        }
 
         items[proto->Spells[0].SpellCategory].push_back(itemId);
     }
@@ -1470,13 +1716,17 @@ void PlayerbotFactory::InitFood()
         vector<uint32>& ids = items[category];
         uint32 index = urand(0, ids.size() - 1);
         if (index >= ids.size())
+        {
             continue;
+        }
 
         uint32 itemId = ids[index];
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         Item* newItem = bot->StoreNewItemInInventorySlot(itemId, urand(1, proto->GetMaxStackSize()));
         if (newItem)
+        {
             newItem->AddToUpdateQueueOf(bot);
+        }
    }
 }
 
@@ -1496,23 +1746,35 @@ void PlayerbotFactory::InitInventory()
 void PlayerbotFactory::InitInventorySkill()
 {
     if (bot->HasSkill(SKILL_MINING)) {
+    {
         StoreItem(2901, 1); // Mining Pick
     }
+    }
     if (bot->HasSkill(SKILL_BLACKSMITHING) || bot->HasSkill(SKILL_ENGINEERING)) {
+    {
         StoreItem(5956, 1); // Blacksmith Hammer
     }
+    }
     if (bot->HasSkill(SKILL_ENGINEERING)) {
+    {
         StoreItem(6219, 1); // Arclight Spanner
     }
+    }
     if (bot->HasSkill(SKILL_JEWELCRAFTING)) {
+    {
         StoreItem(20815, 1); // Jeweler's Kit
+    }
         StoreItem(20824, 1); // Simple Grinder
     }
     if (bot->HasSkill(SKILL_ENCHANTING)) {
+    {
         StoreItem(16207, 1); // Runed Arcanite Rod
     }
+    }
     if (bot->HasSkill(SKILL_SKINNING)) {
+    {
         StoreItem(7005, 1); // Skinning Knife
+    }
     }
 }
 
@@ -1522,7 +1784,9 @@ Item* PlayerbotFactory::StoreItem(uint32 itemId, uint32 count)
     ItemPosCountVec sDest;
     InventoryResult msg = bot->CanStoreNewItem(INVENTORY_SLOT_BAG_0, NULL_SLOT, sDest, itemId, count);
     if (msg != EQUIP_ERR_OK)
+    {
         return NULL;
+    }
 
     return bot->StoreNewItem(sDest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
 }
@@ -1534,19 +1798,29 @@ void PlayerbotFactory::InitInventoryTrade()
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         if (proto->Class != ITEM_CLASS_TRADE_GOODS || proto->Bonding != NO_BIND)
+        {
             continue;
+        }
 
         if (proto->ItemLevel < bot->getLevel())
+        {
             continue;
+        }
 
         if (proto->RequiredLevel > bot->getLevel() || proto->RequiredLevel < bot->getLevel() - 10)
+        {
             continue;
+        }
 
         if (proto->RequiredSkill && !bot->HasSkill(proto->RequiredSkill))
+        {
             continue;
+        }
 
         ids.push_back(itemId);
     }
@@ -1559,12 +1833,16 @@ void PlayerbotFactory::InitInventoryTrade()
 
     uint32 index = urand(0, ids.size() - 1);
     if (index >= ids.size())
+    {
         return;
+    }
 
     uint32 itemId = ids[index];
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
     if (!proto)
+    {
         return;
+    }
 
     uint32 count = 1, stacks = 1;
     switch (proto->Quality)
@@ -1584,7 +1862,9 @@ void PlayerbotFactory::InitInventoryTrade()
     }
 
     for (uint32 i = 0; i < stacks; i++)
+    {
         StoreItem(itemId, count);
+    }
 }
 
 void PlayerbotFactory::InitInventoryEquip()
@@ -1593,27 +1873,37 @@ void PlayerbotFactory::InitInventoryEquip()
 
     uint32 desiredQuality = itemQuality;
     if (urand(0, 100) < 100 * sPlayerbotAIConfig.randomGearLoweringChance && desiredQuality > ITEM_QUALITY_NORMAL) {
+    {
         desiredQuality--;
+    }
     }
 
     for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         if (proto->Class != ITEM_CLASS_ARMOR && proto->Class != ITEM_CLASS_WEAPON || (proto->Bonding == BIND_WHEN_PICKED_UP ||
                 proto->Bonding == BIND_WHEN_USE))
             continue;
 
         if (proto->Class == ITEM_CLASS_ARMOR && !CanEquipArmor(proto))
+        {
             continue;
+        }
 
         if (proto->Class == ITEM_CLASS_WEAPON && !CanEquipWeapon(proto))
+        {
             continue;
+        }
 
         if (!CanEquipItem(proto, desiredQuality))
+        {
             continue;
+        }
 
         ids.push_back(itemId);
     }
@@ -1624,25 +1914,35 @@ void PlayerbotFactory::InitInventoryEquip()
     {
         uint32 index = urand(0, ids.size() - 1);
         if (index >= ids.size())
+        {
             continue;
+        }
 
         uint32 itemId = ids[index];
         if (StoreItem(itemId, 1) && count++ >= maxCount)
+        {
             break;
+        }
    }
 }
 
 void PlayerbotFactory::InitGuild()
 {
     if (bot->GetGuildId())
+    {
         return;
+    }
 
     if (sPlayerbotAIConfig.randomBotGuilds.empty())
+    {
         RandomPlayerbotFactory::CreateRandomGuilds();
+    }
 
     vector<uint32> guilds;
     for(list<uint32>::iterator i = sPlayerbotAIConfig.randomBotGuilds.begin(); i != sPlayerbotAIConfig.randomBotGuilds.end(); ++i)
+    {
         guilds.push_back(*i);
+    }
 
     if (guilds.empty())
     {
@@ -1660,5 +1960,7 @@ void PlayerbotFactory::InitGuild()
     }
 
     if (guild->GetMemberSize() < 10)
+    {
         guild->AddMember(bot->GetObjectGuid(), urand(GR_OFFICER, GR_INITIATE));
+    }
 }

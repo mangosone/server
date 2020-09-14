@@ -543,7 +543,9 @@ bool Item::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
     if (GetItemRandomPropertyId() < 0)
     {
         if (UpdateItemSuffixFactor())
+        {
             need_save = true;
+        }
     }
 
     // Remove bind flag for items vs NO_BIND set
@@ -1026,12 +1028,16 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
     if (spellInfo->EquippedItemClass != -1)                 // -1 == any item class
     {
         if (spellInfo->EquippedItemClass != int32(proto->Class))
-            { return false; }                                   //  wrong item class
+        {
+            return false;                                    //  wrong item class
+        }
 
         if (spellInfo->EquippedItemSubClassMask != 0)       // 0 == any subclass
         {
             if ((spellInfo->EquippedItemSubClassMask & (1 << proto->SubClass)) == 0)
-                { return false; }                               // subclass not present in mask
+            {
+                return false;                                // subclass not present in mask
+            }
         }
     }
 
@@ -1041,7 +1047,9 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
     if (spellInfo->EquippedItemInventoryTypeMask != 0 && (spellInfo->Targets & TARGET_FLAG_ITEM))    // 0 == any inventory type
     {
         if ((spellInfo->EquippedItemInventoryTypeMask  & (1 << proto->InventoryType)) == 0)
-            { return false; }                                   // inventory type not present in mask
+        {
+            return false;                                    // inventory type not present in mask
+        }
     }
 
     return true;
@@ -1131,14 +1139,18 @@ bool Item::GemsFitSockets() const
         if (!enchant_id)
         {
             if (SocketColor) fits &= false;
-            continue;
+            {
+                continue;
+            }
         }
 
         SpellItemEnchantmentEntry const* enchantEntry = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
         if (!enchantEntry)
         {
             if (SocketColor) fits &= false;
-            continue;
+            {
+                continue;
+            }
         }
 
         uint8 GemColor = 0;
@@ -1151,7 +1163,9 @@ bool Item::GemsFitSockets() const
             {
                 GemPropertiesEntry const* gemProperty = sGemPropertiesStore.LookupEntry(gemProto->GemProperties);
                 if (gemProperty)
+                {
                     GemColor = gemProperty->color;
+                }
             }
         }
 
@@ -1167,14 +1181,20 @@ uint8 Item::GetGemCountWithID(uint32 GemID) const
     {
         uint32 enchant_id = GetEnchantmentId(EnchantmentSlot(enchant_slot));
         if (!enchant_id)
+        {
             continue;
+        }
 
         SpellItemEnchantmentEntry const* enchantEntry = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
         if (!enchantEntry)
+        {
             continue;
+        }
 
         if (GemID == enchantEntry->GemID)
+        {
             ++count;
+        }
     }
     return count;
 }
@@ -1212,7 +1232,9 @@ void Item::SendTimeUpdate(Player* owner)
 Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 randomPropertyId)
 {
     if (count < 1)
-        { return NULL; }                                        // don't create item at zero count
+    {
+        return NULL;                                         // don't create item at zero count
+    }
 
     if (ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item))
     {

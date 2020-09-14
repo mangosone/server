@@ -14,10 +14,14 @@ namespace ai
         virtual bool Execute(Event event)
         {
             if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+            {
                 return false;
+            }
 
             if (bot->GetGroup())
+            {
                 return true;
+            }
 
             return sRandomPlayerbotMgr.ProcessBot(bot);
         }

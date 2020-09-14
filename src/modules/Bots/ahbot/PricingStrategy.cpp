@@ -12,7 +12,9 @@ uint32 PricingStrategy::GetSellPrice(ItemPrototype const* proto, uint32 auctionH
     double marketPrice = GetMarketPrice(proto->ItemId, auctionHouse);
 
     if (!ignoreMarket && marketPrice > 0)
+    {
         return marketPrice;
+    }
 
     uint32 now = time(0);
     double price = sAhBotConfig.GetItemPriceMultiplier(proto->Name1) *
@@ -117,7 +119,9 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
         float chance = fields[0].GetFloat();
 
         if (chance > 0 && chance <= 90.0)
+        {
             result = sqrt((100.0 - chance) / 10.0);
+        }
 
         delete results;
     }
@@ -139,7 +143,9 @@ double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auct
         uint32 count = fields[0].GetUInt32();
 
         if (count)
+        {
             result += count;
+        }
 
         delete results;
     }
@@ -167,7 +173,9 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
         uint32 count = fields[0].GetUInt32();
 
         if (count)
+        {
             result += count;
+        }
 
         delete results;
     }
@@ -178,7 +186,9 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
 double PricingStrategy::GetQualityMultiplier(ItemPrototype const* proto)
 {
     if (proto->Quality == ITEM_QUALITY_POOR)
+    {
         return 1.0;
+    }
 
     return sqrt((double)proto->Quality) * sAhBotConfig.priceQualityMultiplier;
 }
@@ -188,9 +198,13 @@ uint32 PricingStrategy::GetDefaultBuyPrice(ItemPrototype const* proto)
     uint32 price = 0;
 
     if (proto->SellPrice)
+    {
         price = proto->SellPrice;
+    }
     if (proto->BuyPrice)
+    {
         price = max(price, proto->BuyPrice / 4);
+    }
 
     price *= 2;
 
@@ -210,7 +224,9 @@ uint32 PricingStrategy::GetDefaultBuyPrice(ItemPrototype const* proto)
         }
     }
     if (!price) price = sAhBotConfig.defaultMinPrice * level * level / 40;
-    price = max(price, (uint32)100);
+    {
+        price = max(price, (uint32)100);
+    }
 
     return price;
 }
@@ -224,7 +240,9 @@ uint32 PricingStrategy::GetDefaultSellPrice(ItemPrototype const* proto)
 uint32 BuyOnlyRarePricingStrategy::GetBuyPrice(ItemPrototype const* proto, uint32 auctionHouse)
 {
     if (proto->Quality < ITEM_QUALITY_RARE)
+    {
         return 0;
+    }
 
     return PricingStrategy::GetBuyPrice(proto, auctionHouse);
 }
@@ -237,15 +255,21 @@ uint32 BuyOnlyRarePricingStrategy::GetSellPrice(ItemPrototype const* proto, uint
 uint32 PricingStrategy::RoundPrice(double price)
 {
     if (price < 100) {
+    {
         return (uint32) price;
+    }
     }
 
     if (price < 10000) {
+    {
         return (uint32) (price / 100.0) * 100;
+    }
     }
 
     if (price < 100000) {
+    {
         return (uint32) (price / 1000.0) * 1000;
+    }
     }
 
     return (uint32) (price / 10000.0) * 10000;

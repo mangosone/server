@@ -12,7 +12,9 @@ ObjectGuid NewPlayerNearbyValue::Calculate()
     {
         ObjectGuid guid = *i;
         if (alreadySeenPlayers.find(guid) == alreadySeenPlayers.end())
+        {
             return guid;
+        }
     }
 
     return ObjectGuid();

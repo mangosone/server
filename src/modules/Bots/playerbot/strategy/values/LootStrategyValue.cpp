@@ -61,13 +61,19 @@ LootStrategy *LootStrategyValue::all = new AllLootStrategy();
 LootStrategy* LootStrategyValue::instance(string strategy)
 {
     if (strategy == "*" || strategy == "all")
+    {
         return all;
+    }
 
     if (strategy == "g" || strategy == "gray")
+    {
         return gray;
+    }
 
     if (strategy == "d" || strategy == "e" || strategy == "disenchant" || strategy == "enchant")
+    {
         return disenchant;
+    }
 
     return normal;
 }

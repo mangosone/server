@@ -11,10 +11,14 @@ bool CastCustomSpellAction::Execute(Event event)
 
     Player* master = GetMaster();
     if (master && master->GetSelectionGuid())
+    {
         target = ai->GetUnit(master->GetSelectionGuid());
+    }
 
     if (!target)
+    {
         target = bot;
+    }
 
     string text = event.getParam();
     int pos = text.find_last_of(" ");
@@ -23,7 +27,9 @@ bool CastCustomSpellAction::Execute(Event event)
     {
         castCount = atoi(text.substr(pos + 1).c_str());
         if (castCount > 0)
+        {
             text = text.substr(0, pos);
+        }
     }
 
     uint32 spell = AI_VALUE2(uint32, "spell id", text);
@@ -66,7 +72,9 @@ bool CastCustomSpellAction::Execute(Event event)
     {
         msg << "Casting " << ChatHelper::formatSpell(pSpellInfo);
         if (target != bot)
+        {
             msg << " on " << target->GetName();
+        }
 
         if (castCount > 1)
         {

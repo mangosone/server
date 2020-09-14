@@ -29,7 +29,9 @@ bool TellAttackersAction::Execute(Event event)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || !unit->IsAlive())
+        {
             continue;
+        }
 
         ai->TellMaster(unit->GetName());
     }
@@ -37,7 +39,9 @@ bool TellAttackersAction::Execute(Event event)
     ai->TellMaster("--- Threat ---");
     HostileReference *ref = bot->GetHostileRefManager().getFirst();
     if (!ref)
+    {
         return true;
+    }
 
     while( ref )
     {

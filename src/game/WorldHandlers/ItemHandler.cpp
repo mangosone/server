@@ -50,7 +50,9 @@ void WorldSession::HandleSplitItemOpcode(WorldPacket& recv_data)
     }
 
     if (count == 0)
-        { return; }                                             // check count - if zero it's fake packet
+    {
+        return;                                              // check count - if zero it's fake packet
+    }
 
     if (!_player->IsValidPos(srcbag, srcslot, true))
     {
@@ -164,7 +166,9 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
 
     Item* pSrcItem  = _player->GetItemByPos(srcbag, srcslot);
     if (!pSrcItem)
-        { return; }                                             // only at cheat
+    {
+        return;                                              // only at cheat
+    }
 
     uint16 dest;
     InventoryResult msg = _player->CanEquipItem(NULL_SLOT, dest, pSrcItem, !pSrcItem->IsBag());
@@ -1268,7 +1272,9 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
     {
         ObjectGuid gemGuid = gemGuids[i];
         if (!gemGuid)
+        {
             continue;
+        }
 
         if (!gemGuid.IsItem())
         {
@@ -1305,12 +1311,16 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
 
     GemPropertiesEntry const* GemProps[MAX_GEM_SOCKETS];
     for (int i = 0; i < MAX_GEM_SOCKETS; ++i)               // get geminfo from dbc storage
+    {
         GemProps[i] = (Gems[i]) ? sGemPropertiesStore.LookupEntry(Gems[i]->GetProto()->GemProperties) : NULL;
+    }
 
     for (int i = 0; i < MAX_GEM_SOCKETS; ++i)               // check for hack maybe
     {
         if (!GemProps[i])
+        {
             continue;
+        }
 
         // tried to put gem in socket where no socket exists
         if (!itemProto->Socket[i].Color)
@@ -1343,7 +1353,9 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
     for (int i = 0; i < MAX_GEM_SOCKETS; ++i)
     {
         if (!Gems[i])
+        {
             continue;
+        }
 
         // continue check for case when attempt add 2 similar unique equipped gems in one item.
         ItemPrototype const* iGemProto = Gems[i]->GetProto();
@@ -1354,7 +1366,9 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
             for (int j = 0; j < MAX_GEM_SOCKETS; ++j)
             {
                 if (i == j)                                 // skip self
+                {
                     continue;
+                }
 
                 if (Gems[j])
                 {
@@ -1406,7 +1420,9 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
         {
             itemTarget->SetEnchantment(EnchantmentSlot(SOCK_ENCHANTMENT_SLOT + i), GemEnchants[i], 0, 0);
             if (Item* guidItem = gemGuids[i] ? _player->GetItemByGuid(gemGuids[i]) : NULL)
+            {
                 _player->DestroyItem(guidItem->GetBagSlot(), guidItem->GetSlot(), true);
+            }
         }
     }
 

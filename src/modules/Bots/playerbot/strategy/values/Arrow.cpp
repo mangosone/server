@@ -42,7 +42,9 @@ WorldLocation ArrowFormation::GetLocationInternal()
 
     float ground = master->GetMap()->GetHeight(x, y, z + 0.5f);
     if (ground <= INVALID_HEIGHT)
+    {
         return Formation::NullLocation;
+    }
 
     return WorldLocation(master->GetMapId(), x, y, 0.05f + ground);
 
@@ -52,7 +54,9 @@ WorldLocation ArrowFormation::GetLocationInternal()
 void ArrowFormation::Build()
 {
     if (built)
+    {
         return;
+    }
 
     FillSlotsExceptMaster();
     AddMasterToSlot();
@@ -63,13 +67,21 @@ void ArrowFormation::Build()
 FormationSlot* ArrowFormation::FindSlot(Player* member)
 {
     if (ai->IsTank(member))
+    {
         return &tanks;
+    }
     else if (ai->IsHeal(member))
+    {
         return &healers;
+    }
     else if (ai->IsRanged(member))
+    {
         return &ranged;
+    }
     else
+    {
         return &melee;
+    }
 }
 
 void ArrowFormation::FillSlotsExceptMaster()
@@ -82,9 +94,13 @@ void ArrowFormation::FillSlotsExceptMaster()
         Player* member = gref->getSource();
 
         if (member == bot)
+        {
             FindSlot(member)->AddLast(botUnit = new FormationUnit(index, false));
+        }
         else if (member != ai->GetMaster())
+        {
             FindSlot(member)->AddLast(new FormationUnit(index, false));
+        }
 
         gref = gref->next();
         index++;
@@ -127,7 +143,9 @@ UnitPosition MultiLineUnitPlacer::Place(FormationUnit *unit, uint32 index, uint3
 {
     SingleLineUnitPlacer placer(orientation);
     if (count <= 6)
+    {
         return placer.Place(unit, index, count);
+    }
 
     int lineNo = index / 6;
     int indexInLine = index % 6;

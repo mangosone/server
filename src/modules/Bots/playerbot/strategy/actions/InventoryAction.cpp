@@ -20,12 +20,16 @@ public:
             {
 				const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
 				if (!spellInfo)
-                    return false;
+    {
+        return false;
+    }
 
                 for (int i = 0 ; i < 3; i++)
                 {
                     if (spellInfo->Effect[i] == effectId)
+                    {
                         return true;
+                    }
                 }
             }
         }
@@ -58,10 +62,14 @@ private:
 void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask)
 {
     if (mask & ITERATE_ITEMS_IN_BAGS)
+    {
         IterateItemsInBags(visitor);
+    }
 
     if (mask & ITERATE_ITEMS_IN_EQUIP)
+    {
         IterateItemsInEquip(visitor);
+    }
 }
 
 void InventoryAction::IterateItemsInBags(IterateItemsVisitor* visitor)
@@ -69,19 +77,33 @@ void InventoryAction::IterateItemsInBags(IterateItemsVisitor* visitor)
     for(int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
         if (Item *pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
             if (!visitor->Visit(pItem))
+            {
                 return;
+            }
 
     for(int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
         if (Item *pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
             if (!visitor->Visit(pItem))
+            {
                 return;
+            }
 
     for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
         if (Bag *pBag = (Bag*)bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
                 if (Item* pItem = pBag->GetItemByPos(j))
+                {
                     if (!visitor->Visit(pItem))
+                    {
                         return;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
@@ -90,26 +112,38 @@ void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
     {
         Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
         if(!pItem)
+        {
             continue;
+        }
 
         if (!visitor->Visit(pItem))
+        {
             return;
+        }
     }
 }
 
 bool compare_items(const ItemPrototype *proto1, const ItemPrototype *proto2)
 {
     if (proto1->Class != proto2->Class)
+    {
         return proto1->Class > proto2->Class;
+    }
 
     if (proto1->SubClass != proto2->SubClass)
+    {
         return proto1->SubClass < proto2->SubClass;
+    }
 
     if (proto1->Quality != proto2->Quality)
+    {
         return proto1->Quality < proto2->Quality;
+    }
 
     if (proto1->ItemLevel != proto2->ItemLevel)
+    {
         return proto1->ItemLevel > proto2->ItemLevel;
+    }
 
     return false;
 }
@@ -187,7 +221,9 @@ void InventoryAction::TellItem(ItemPrototype const * proto, int count, bool soul
     ostringstream out;
     out << chat->formatItem(proto, count);
     if (soulbound)
+    {
         out << " (soulbound)";
+    }
     ai->TellMaster(out.str());
 }
 
@@ -196,8 +232,14 @@ list<Item*> InventoryAction::parseItems(string text)
     set<Item*> found;
     size_t pos = text.find(" ");
     int count = pos!=string::npos ? atoi(text.substr(pos + 1).c_str()) : TRADE_SLOT_TRADED_COUNT;
-    if (count < 1) count = 1;
-    else if (count > TRADE_SLOT_TRADED_COUNT) count = TRADE_SLOT_TRADED_COUNT;
+    if (count < 1)
+    {
+        count = 1;
+    }
+    else if (count > TRADE_SLOT_TRADED_COUNT)
+    {
+        count = TRADE_SLOT_TRADED_COUNT;
+    }
 
     if (text == "food")
     {
@@ -252,7 +294,9 @@ list<Item*> InventoryAction::parseItems(string text)
     {
         Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, fromSlot);
         if (item)
+        {
             found.insert(item);
+        }
     }
 
     ItemIds ids = chat->parseItems(text);
@@ -265,7 +309,9 @@ list<Item*> InventoryAction::parseItems(string text)
 
     list<Item*> result;
     for (set<Item*>::iterator i = found.begin(); i != found.end(); ++i)
+    {
         result.push_back(*i);
+    }
 
     result.sort(compare_items_by_level);
 

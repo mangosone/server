@@ -50,7 +50,9 @@ namespace ahbot
         static PricingStrategy* Create(string name, Category* category)
         {
             if (name == "buyOnlyRare")
+            {
                 return new BuyOnlyRarePricingStrategy(category);
+            }
 
             return new PricingStrategy(category);
         }

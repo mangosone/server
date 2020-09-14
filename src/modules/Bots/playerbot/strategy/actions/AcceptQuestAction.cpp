@@ -14,7 +14,9 @@ bool AcceptQuestAction::Execute(Event event)
     Player* master = GetMaster();
 
     if (!master)
+    {
         return false;
+    }
 
     Player *bot = ai->GetBot();
     uint64 guid = 0;
@@ -36,7 +38,9 @@ bool AcceptQuestAction::Execute(Event event)
                 break;
             }
             if (unit && text == "*" && bot->GetDistance(unit) <= INTERACTION_DISTANCE)
+            {
                 QuestAction::ProcessQuests(unit);
+            }
         }
         list<ObjectGuid> gos = AI_VALUE(list<ObjectGuid>, "nearest game objects");
         for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
@@ -48,7 +52,9 @@ bool AcceptQuestAction::Execute(Event event)
                 break;
             }
             if (go && text == "*" && bot->GetDistance(go) <= INTERACTION_DISTANCE)
+            {
                 QuestAction::ProcessQuests(go);
+            }
         }
     }
     else
@@ -59,11 +65,15 @@ bool AcceptQuestAction::Execute(Event event)
     }
 
     if (!quest || !guid)
+    {
         return false;
+    }
 
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
     if (!qInfo)
+    {
         return false;
+    }
 
     return AcceptQuest(qInfo, guid);
 }
@@ -80,7 +90,9 @@ bool AcceptQuestShareAction::Execute(Event event)
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
 
     if (!qInfo || !bot->GetDividerGuid())
+    {
         return false;
+    }
 
     quest = qInfo->GetQuestId();
     if( !bot->CanTakeQuest( qInfo, false ) )
@@ -104,14 +116,18 @@ bool AcceptQuestShareAction::Execute(Event event)
         bot->AddQuest( qInfo, master );
 
         if( bot->CanCompleteQuest( quest ) )
+        {
             bot->CompleteQuest( quest );
+        }
 
         // Runsttren: did not add typeid switch from WorldSession::HandleQuestgiverAcceptQuestOpcode!
         // I think it's not needed, cause typeid should be TYPEID_PLAYER - and this one is not handled
         // there and there is no default case also.
 
         if( qInfo->GetSrcSpell() > 0 )
+        {
             bot->CastSpell( bot, qInfo->GetSrcSpell(), true );
+        }
 
         ai->TellMaster("Quest accepted");
         return true;

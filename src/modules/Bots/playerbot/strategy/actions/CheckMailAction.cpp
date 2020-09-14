@@ -13,7 +13,9 @@ bool CheckMailAction::Execute(Event event)
     bot->GetSession()->HandleQueryNextMailTime(p);
 
     if (ai->GetMaster() || !bot->GetMailSize())
+    {
         return false;
+    }
 
     list<uint32> ids;
     for (PlayerMails::iterator i = bot->GetMailBegin(); i != bot->GetMailEnd(); ++i)
@@ -21,15 +23,21 @@ bool CheckMailAction::Execute(Event event)
         Mail* mail = *i;
 
         if (!mail || mail->state == MAIL_STATE_DELETED)
+        {
             continue;
+        }
 
         Player* owner = sObjectMgr.GetPlayer((uint64)mail->sender);
         if (!owner)
+        {
             continue;
+        }
 
         uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(owner->GetObjectGuid());
         if (sPlayerbotAIConfig.IsInRandomAccountList(account))
+        {
             continue;
+        }
 
         ProcessMail(mail, owner);
         ids.push_back(mail->messageID);
@@ -52,13 +60,17 @@ bool CheckMailAction::Execute(Event event)
 void CheckMailAction::ProcessMail(Mail* mail, Player* owner)
 {
     if (!mail->HasItems())
+    {
         return;
+    }
 
     for (MailItemInfoVec::iterator i = mail->items.begin(); i != mail->items.end(); ++i)
     {
         Item *item = bot->GetMItem(i->item_guid);
         if (!item)
+        {
             continue;
+        }
 
         if (!sGuildTaskMgr.CheckItemTask(i->item_template, item->GetCount(), owner, bot, true))
         {

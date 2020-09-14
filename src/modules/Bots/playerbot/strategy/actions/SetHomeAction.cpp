@@ -10,7 +10,9 @@ bool SetHomeAction::Execute(Event event)
 {
     Player* master = ai->GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ObjectGuid selection = master->GetSelectionGuid();
     if (selection)
@@ -34,7 +36,9 @@ bool SetHomeAction::Execute(Event event)
     {
         Creature *unit = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_INNKEEPER);
         if (!unit)
+        {
             continue;
+        }
 
         bot->GetSession()->SendBindPoint(unit);
         ai->TellMaster("This inn is my new home");

@@ -126,7 +126,9 @@ bool Group::Create(ObjectGuid guid, const char* name)
 
         Player* leader = sObjectMgr.GetPlayer(guid);
         if (leader)
+        {
             m_difficulty = leader->GetDifficulty();
+        }
 
         Player::ConvertInstancesToGroup(leader, this, guid);
 
@@ -187,7 +189,9 @@ bool Group::LoadGroupFromDB(Field* fields)
 
     uint32 diff = fields[14].GetUInt8();
     if (diff >= MAX_DIFFICULTY)
+    {
         diff = DUNGEON_DIFFICULTY_NORMAL;
+    }
 
     m_difficulty = Difficulty(diff);
     m_mainTankGuid = ObjectGuid(HIGHGUID_PLAYER, fields[0].GetUInt32());
@@ -767,7 +771,9 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     Roll::PlayerVote::iterator itr = roll->playerVote.find(playerGUID);
     // this condition means that player joins to the party after roll begins
     if (itr == roll->playerVote.end())
-        { return true; }                                        // result used for need iterator ++, so avoid for end of list
+    {
+        return true;                                         // result used for need iterator ++, so avoid for end of list
+    }
 
     if (roll->getLoot())
         if (roll->getLoot()->items.empty())
@@ -1079,7 +1085,9 @@ static void GetDataForXPAtKill_helper(Player* player, Unit const* victim, uint32
     uint32 gray_level = MaNGOS::XP::GetGrayLevel(player->getLevel());
     if (victim->getLevel() > gray_level && (!not_gray_member_with_max_level
                                             || not_gray_member_with_max_level->getLevel() < player->getLevel()))
-        { not_gray_member_with_max_level = player; }
+    {
+        not_gray_member_with_max_level = player;
+    }
 }
 
 void Group::GetDataForXPAtKill(Unit const* victim, uint32& count, uint32& sum_level, Player*& member_with_max_level, Player*& not_gray_member_with_max_level, Player* additional)
@@ -1647,7 +1655,9 @@ void Group::ChangeMembersGroup(ObjectGuid guid, uint8 group)
     }
     else
         // This methods handles itself groupcounter decrease
-        { ChangeMembersGroup(player, group); }
+    {
+        ChangeMembersGroup(player, group);
+    }
 }
 
 // only for online members
@@ -1833,13 +1843,17 @@ void Group::SetDifficulty(Difficulty difficulty)
 {
     m_difficulty = difficulty;
     if (!isBGGroup())
+    {
         CharacterDatabase.PExecute("UPDATE `groups` SET `difficulty` = %u WHERE `groupId`='%u'", m_difficulty, m_Id);
+    }
 
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
     {
         Player* player = itr->getSource();
         if (!player->GetSession() || player->getLevel() < LEVELREQUIREMENT_HEROIC)
+        {
             continue;
+        }
         player->SetDifficulty(difficulty);
         player->SendDungeonDifficulty(true);
     }
@@ -1947,7 +1961,9 @@ InstanceGroupBind* Group::GetBoundInstance(uint32 mapid, Player* player)
 
     // some instances only have one difficulty
     if (!mapEntry->SupportsHeroicMode())
+    {
         difficulty = DUNGEON_DIFFICULTY_NORMAL;
+    }
 
     BoundInstancesMap::iterator itr = m_boundInstances[difficulty].find(mapid);
     if (itr != m_boundInstances[difficulty].end())
@@ -2132,7 +2148,9 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
             }
 
             if (!pGroupGuy->IsAtGroupRewardDistance(pVictim))
-                { continue; }                               // member (alive or dead) or his corpse at req. distance
+            {
+                continue;                                // member (alive or dead) or his corpse at req. distance
+            }
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
         }

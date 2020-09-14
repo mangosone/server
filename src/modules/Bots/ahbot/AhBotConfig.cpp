@@ -19,7 +19,9 @@ void LoadSet(string value, T &res)
     {
         uint32 id = atoi((*i).c_str());
         if (!id)
+        {
             continue;
+        }
 
         res.insert(id);
     }
@@ -36,7 +38,9 @@ bool AhBotConfig::Initialize()
     enabled = config.GetBoolDefault("AhBot.Enabled", true);
 
     if (!enabled)
+    {
         sLog.outString("AhBot is Disabled in ahbot.conf");
+    }
 
     guid = (uint64)config.GetIntDefault("AhBot.GUID", 0);
     updateInterval = config.GetIntDefault("AhBot.UpdateIntervalInSeconds", 300);

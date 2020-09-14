@@ -315,7 +315,9 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, S
         EventProcFlag = spellProcEvent->procFlags;
     }
     else
-        { EventProcFlag = spellProto->procFlags; }       // else get from spell proto
+    {
+        EventProcFlag = spellProto->procFlags;        // else get from spell proto
+    }
     // Continue if no trigger exist
     if (!EventProcFlag)
     {
@@ -334,7 +336,9 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, S
         bool allow = ((Player*)this)->isHonorOrXPTarget(pVictim);
         // Shadow Word: Death - can trigger from every kill
         if (holder->GetId() == 32409)
+        {
             allow = true;
+        }
         if (!allow)
         {
             return false;
@@ -732,7 +736,9 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
 
                     target = this;
                     if (roll_chance_i(10))
+                    {
                         ((Player*)this)->Say("This is Madness!", LANG_UNIVERSAL);
+                    }
                     break;
                 }
                 // Sunwell Exalted Caster Neck (Shattered Sun Pendant of Acumen neck)
@@ -1124,10 +1130,14 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                 {
                     // Shadow Word: Pain
                     if (procSpell->SpellFamilyFlags & UI64LIT(0x0000000000008000))
+                    {
                         triggered_spell_id = 40441;
+                    }
                     // Renew
                     else if (procSpell->SpellFamilyFlags & UI64LIT(0x0000000000000010))
+                    {
                         triggered_spell_id = 40440;
+                    }
                     else
                     {
                         return SPELL_AURA_PROC_FAILED;
@@ -1345,10 +1355,14 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                 float damageBasePoints;
                 if (item && item->GetProto()->InventoryType == INVTYPE_2HWEAPON)
                     // two hand weapon
-                    { damageBasePoints = 1.20f * triggerAmount * 1.2f * 1.03f * speed / 100.0f + 1; }
+                {
+                    damageBasePoints = 1.20f * triggerAmount * 1.2f * 1.03f * speed / 100.0f + 1;
+                }
                 else
                     // one hand weapon/no weapon
-                    { damageBasePoints = 0.85f * ceil(triggerAmount * 1.2f * 1.03f * speed / 100.0f) - 1; }
+                {
+                    damageBasePoints = 0.85f * ceil(triggerAmount * 1.2f * 1.03f * speed / 100.0f) - 1;
+                }
 
                 int32 damagePoint = int32(damageBasePoints + 0.03f * (GetWeaponDamageRange(BASE_ATTACK, MINDAMAGE) + GetWeaponDamageRange(BASE_ATTACK, MAXDAMAGE)) / 2.0f) + 1;
 
@@ -1590,7 +1604,9 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
 
                     // apply cooldown before cast to prevent processing itself
                     if (cooldown)
+                    {
                         ((Player*)this)->AddSpellCooldown(dummySpell->Id, 0, time(NULL) + cooldown);
+                    }
 
                     // Attack Twice
                     for (uint32 i = 0; i < 2; ++i)
@@ -1698,12 +1714,16 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
 
                 // Remove cooldown (Chain Lightning - have Category Recovery time)
                 if (procSpell->SpellFamilyFlags & UI64LIT(0x0000000000000002))
+                {
                     ((Player*)this)->RemoveSpellCooldown(spellId);
+                }
 
                 CastSpell(pVictim, spellId, true, castItem, triggeredByAura);
 
                 if (cooldown && GetTypeId() == TYPEID_PLAYER)
+                {
                     ((Player*)this)->AddSpellCooldown(dummySpell->Id, 0, time(NULL) + cooldown);
+                }
 
                 return SPELL_AURA_PROC_OK;
             }
@@ -1792,7 +1812,9 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
     int32  basepoints[MAX_EFFECT_INDEX] = {0, 0, 0};
 
     if (triggeredByAura->GetModifier()->m_auraname == SPELL_AURA_PROC_TRIGGER_SPELL_WITH_VALUE)
+    {
         basepoints[0] = triggerAmount;
+    }
 
     Item* castItem = triggeredByAura->GetCastItemGuid() && GetTypeId() == TYPEID_PLAYER
                      ? ((Player*)this)->GetItemByGuid(triggeredByAura->GetCastItemGuid()) : NULL;
@@ -2332,7 +2354,9 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
                 }
 
                 if (pVictim && pVictim->IsAlive())
+                {
                     pVictim->GetThreatManager().modifyThreatPercent(this, -10);
+                }
 
                 basepoints[0] = triggerAmount * GetMaxHealth() / 100;
                 trigger_spell_id = 31616;
@@ -2613,9 +2637,13 @@ SpellAuraProcResult Unit::HandleMendingAuraProc(Unit* /*pVictim*/, uint32 /*dama
     {
         float radius;
         if (spellProto->EffectRadiusIndex[effIdx])
+        {
             radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(spellProto->EffectRadiusIndex[effIdx]));
+        }
         else
+        {
             radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(spellProto->rangeIndex));
+        }
 
         if (Player* caster = ((Player*)triggeredByAura->GetCaster()))
         {
@@ -2730,7 +2758,9 @@ SpellAuraProcResult Unit::HandleManaShieldAuraProc(Unit* pVictim, uint32 /*damag
     CastSpell(target, triggered_spell_id, true, castItem, triggeredByAura);
 
     if (cooldown && GetTypeId() == TYPEID_PLAYER)
+    {
         ((Player*)this)->AddSpellCooldown(triggered_spell_id, 0, time(NULL) + cooldown);
+    }
 
     return SPELL_AURA_PROC_OK;
 }
@@ -2750,7 +2780,9 @@ SpellAuraProcResult Unit::HandleAttackPowerAttackerBonusAuraProc(Unit* /*pVictim
 
                 triggeredByAura->GetModifier()->m_amount += basevalue / 10;
                 if (triggeredByAura->GetModifier()->m_amount > basevalue * 4)
+                {
                     triggeredByAura->GetModifier()->m_amount = basevalue * 4;
+                }
             }
             break;
         }

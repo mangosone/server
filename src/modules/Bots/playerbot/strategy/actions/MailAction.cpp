@@ -25,7 +25,9 @@ public:
         ostringstream out;
         out << "#" << (index+1) << " ";
         if (!mail->money && !mail->has_items)
+        {
             out << "|cffffffff" << mail->subject;
+        }
 
         if (mail->money)
         {
@@ -111,7 +113,9 @@ private:
         for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; slot++)
         {
             if (bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
+            {
                 totalused++;
+            }
         }
         uint32 totalfree = 16 - totalused;
         for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
@@ -120,7 +124,9 @@ private:
             {
                 ItemPrototype const* pBagProto = pBag->GetProto();
                 if (pBagProto->Class == ITEM_CLASS_CONTAINER && pBagProto->SubClass == ITEM_SUBCLASS_CONTAINER)
+                {
                     totalfree += pBag->GetFreeSlots();
+                }
             }
 
         }
@@ -171,7 +177,9 @@ bool MailAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (!MailProcessor::FindMailbox(ai))
     {
@@ -206,14 +214,18 @@ bool MailAction::Execute(Event event)
     }
 
     if (!processor->Before(ai))
+    {
         return false;
+    }
 
     vector<Mail*> mailList;
     time_t cur_time = time(0);
     for (PlayerMails::iterator itr = bot->GetMailBegin(); itr != bot->GetMailEnd(); ++itr)
     {
         if ((*itr)->state == MAIL_STATE_DELETED || cur_time < (*itr)->deliver_time)
+        {
             continue;
+        }
 
         Mail *mail = *itr;
         mailList.push_back(mail);
@@ -223,7 +235,9 @@ bool MailAction::Execute(Event event)
     for (map<int, Mail*>::iterator i = filtered.begin(); i != filtered.end(); ++i)
     {
         if (!processor->Process(i->first, i->second, ai))
+        {
             break;
+        }
     }
 
     return processor->After(ai);

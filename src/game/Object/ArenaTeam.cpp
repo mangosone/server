@@ -187,7 +187,9 @@ bool ArenaTeam::AddMember(ObjectGuid playerGuid)
         if (sWorld.getConfig(CONFIG_UINT32_ARENA_SEASON_ID) >= 6)
         {
             if (m_stats.rating < 1000)
+            {
                 newmember.personal_rating = m_stats.rating;
+            }
             else
             {
                 newmember.personal_rating = 1000;
@@ -649,7 +651,9 @@ float ArenaTeam::GetChanceAgainst(uint32 own_rating, uint32 enemy_rating)
 
     if (sWorld.getConfig(CONFIG_UINT32_ARENA_SEASON_ID) >= 6)
         if (enemy_rating < 1500)
+        {
             enemy_rating = 1500;
+        }
     return 1.0f / (1.0f + exp(log(10.0f) * (float)((float)enemy_rating - (float)own_rating) / 400.0f));
 }
 

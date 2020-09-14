@@ -32,7 +32,9 @@ bool LootStrategyAction::Execute(Event event)
             {
                 ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(*i);
                 if (!proto)
+                {
                     continue;
+                }
 
                 out << chat->formatItem(proto);
             }
@@ -71,7 +73,9 @@ bool LootStrategyAction::Execute(Event event)
             {
                 set<uint32>::iterator j = alwaysLootItems.find(itemid);
                 if (j != alwaysLootItems.end())
+                {
                     alwaysLootItems.erase(j);
+                }
 
                 ai->TellMaster("Item(s) removed from always loot list");
             }

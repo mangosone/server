@@ -144,7 +144,9 @@ void LoadSkillDiscoveryTable()
     sLog.outString();
     sLog.outString(">> Loaded %u skill discovery definitions", count);
     if (!ssNonDiscoverableEntries.str().empty())
+    {
         sLog.outErrorDb("Some items can't be successfully discovered: have in chance field value < 0.000001 in `skill_discovery_template` DB table . List:\n%s", ssNonDiscoverableEntries.str().c_str());
+    }
 }
 
 uint32 GetSkillDiscoverySpell(uint32 skillId, uint32 spellId, Player* player)

@@ -40,7 +40,9 @@ namespace ai
         {
             time_t now = time(0);
             if (!lastCheckTime || checkInterval < 2 || now - lastCheckTime >= checkInterval) {
+            {
                 lastCheckTime = now;
+            }
                 value = Calculate();
             }
             return value;

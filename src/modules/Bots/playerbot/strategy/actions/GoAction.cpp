@@ -14,7 +14,9 @@ bool GoAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     string param = event.getParam();
     if (param == "?")

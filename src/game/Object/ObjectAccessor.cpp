@@ -125,7 +125,9 @@ void ObjectAccessor::SaveAllPlayers()
    for (iter = smap.begin(); iter != smap.end(); ++iter){
        if (Player* player = iter->second->GetPlayer()){
            if (player->IsInWorld()){
+           {
                player->SaveToDB();
+           }
            }
        }
    }

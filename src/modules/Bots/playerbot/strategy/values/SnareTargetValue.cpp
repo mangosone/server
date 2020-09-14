@@ -16,10 +16,14 @@ Unit* SnareTargetValue::Calculate()
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || unit == target)
+        {
             continue;
+        }
 
         if (bot->GetDistance(unit) > sPlayerbotAIConfig.spellDistance)
+        {
             continue;
+        }
 
         Unit* chaseTarget;
         switch (unit->GetMotionMaster()->GetCurrentMovementGeneratorType())
@@ -28,13 +32,21 @@ Unit* SnareTargetValue::Calculate()
             return unit;
         case CHASE_MOTION_TYPE:
             if (unit->GetTypeId() == TYPEID_PLAYER)
-                { chaseTarget = static_cast<ChaseMovementGenerator<Player> const*>(unit->GetMotionMaster()->GetCurrent())->GetTarget(); }
+            {
+                chaseTarget = static_cast<ChaseMovementGenerator<Player> const*>(unit->GetMotionMaster()->GetCurrent())->GetTarget();
+            }
             else
-                { chaseTarget = static_cast<ChaseMovementGenerator<Creature> const*>(unit->GetMotionMaster()->GetCurrent())->GetTarget(); }
+            {
+                chaseTarget = static_cast<ChaseMovementGenerator<Creature> const*>(unit->GetMotionMaster()->GetCurrent())->GetTarget();
+            }
 
-            if (!chaseTarget) continue;
+            if (!chaseTarget)
+            {
+                continue;
+            }
             Player* chaseTargetPlayer = sObjectMgr.GetPlayer(chaseTarget->GetObjectGuid());
-            if (chaseTargetPlayer && !ai->IsTank(chaseTargetPlayer)) {
+            if (chaseTargetPlayer && !ai->IsTank(chaseTargetPlayer))
+            {
                 return unit;
             }
         }

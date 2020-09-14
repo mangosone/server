@@ -61,7 +61,9 @@ void WorldSession::SendNameQueryOpcode(Player* p)
         }
     }
     else
+    {
         data << uint8(0);                                   // is not declined
+    }
 
     SendPacket(&data);
 }
@@ -132,7 +134,9 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
         }
     }
     else
+    {
         data << uint8(0);                                   // is not declined
+    }
 
     session->SendPacket(&data);
     delete result;
@@ -246,7 +250,9 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
                     Name = gl->Name[loc_idx];
                 }
                 if (gl->CastBarCaption.size() > size_t(loc_idx) && !gl->CastBarCaption[loc_idx].empty())
+                {
                     CastBarCaption = gl->CastBarCaption[loc_idx];
+                }
             }
         }
         DETAIL_LOG("WORLD: CMSG_GAMEOBJECT_QUERY '%s' - Entry: %u. ", info->name, entryID);

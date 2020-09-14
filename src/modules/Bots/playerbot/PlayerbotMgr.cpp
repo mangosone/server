@@ -12,7 +12,9 @@ class CharacterHandler;
 PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
 {
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); spellId++)
+    {
         sSpellStore.LookupEntry(spellId);
+    }
 }
 
 PlayerbotHolder::~PlayerbotHolder()
@@ -46,8 +48,12 @@ void PlayerbotHolder::LogoutAllBots()
     while (true)
     {
         PlayerBotMap::const_iterator itr = GetPlayerBotsBegin();
-        if (itr == GetPlayerBotsEnd()) break;
+        if (itr == GetPlayerBotsEnd())
+        {
+            break;
+        }
         Player* bot= itr->second;
+
         LogoutPlayerBot(bot->GetObjectGuid().GetRawValue());
     }
 }
@@ -125,7 +131,9 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     {
         sLog.outString("%d/%d Bot %s logged in", playerBots.size(), sRandomPlayerbotMgr.GetMaxAllowedBotCount(), bot->GetName());
         if (sConfig.GetBoolDefault("BeepAtStart", true) && playerBots.size() == sRandomPlayerbotMgr.GetMaxAllowedBotCount())
+        {
             printf("\a");
+        }
     }
     else sLog.outString("Bot %s logged in", bot->GetName());
 }
@@ -133,7 +141,9 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
 string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId, uint32 masterGuildId)
 {
     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
+    {
         return "bot system is disabled";
+    }
 
     uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(guid);
@@ -144,16 +154,22 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admi
     {
         Player* bot = sObjectMgr.GetPlayer(guid);
         if (bot->GetGuildId() != masterGuildId)
+        {
             return "not in your guild";
+        }
     }
 
     if (!isRandomAccount && !isMasterAccount && !admin)
+    {
         return "not in your account";
+    }
 
     if (cmd == "add" || cmd == "login")
     {
         if (sObjectMgr.GetPlayer(guid))
+        {
             return "player already logged in";
+        }
 
         AddPlayerBot(guid.GetRawValue(), masterAccountId);
         return "ok";
@@ -161,10 +177,14 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admi
     else if (cmd == "remove" || cmd == "logout" || cmd == "rm")
     {
         if (!sObjectMgr.GetPlayer(guid))
+        {
             return "player is offline";
+        }
 
         if (!GetPlayerBot(guid.GetRawValue()))
+        {
             return "not your bot";
+        }
 
         LogoutPlayerBot(guid.GetRawValue());
         return "ok";
@@ -174,7 +194,9 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admi
     {
         Player* bot = GetPlayerBot(guid.GetRawValue());
         if (!bot)
+        {
             return "bot not found";
+        }
 
         Player* master = bot->GetPlayerbotAI()->GetMaster();
         if (master)
@@ -247,7 +269,9 @@ bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* handler, char const* a
 
     list<string> messages = mgr->HandlePlayerbotCommand(args, player);
     if (messages.empty())
+    {
         return true;
+    }
 
     for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
     {
@@ -306,11 +330,15 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
             ObjectGuid member = i->guid;
 
             if (member.GetRawValue() == master->GetObjectGuid().GetRawValue())
+            {
                 continue;
+            }
 
             string bot;
             if (sObjectMgr.GetPlayerNameByGUID(member, bot))
+            {
                 bots.insert(bot);
+            }
         }
     }
 
@@ -320,7 +348,9 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
         {
             Player* bot = i->second;
             if (bot && bot->IsInWorld())
+            {
                 bots.insert(bot->GetName());
+            }
         }
     }
 
@@ -454,7 +484,14 @@ string PlayerbotHolder::ListBots(Player* master)
     out << "Bot roster: ";
     for (list<string>::iterator i = names.begin(); i != names.end(); ++i)
     {
-        if (first) first = false; else out << ", ";
+        if (first)
+        {
+            first = false;
+        }
+        else
+        {
+            out << ", ";
+        }
         string name = *i;
         out << online[name] << name << " " << classes[name];
     }
@@ -480,7 +517,9 @@ void PlayerbotMgr::HandleCommand(uint32 type, const string& text)
 {
     Player *master = GetMaster();
     if (!master)
+    {
         return;
+    }
 
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
@@ -492,7 +531,9 @@ void PlayerbotMgr::HandleCommand(uint32 type, const string& text)
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == master)
+        {
             bot->GetPlayerbotAI()->HandleCommand(type, text, *master);
+        }
     }
 }
 
@@ -508,7 +549,9 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
+        {
             bot->GetPlayerbotAI()->HandleMasterIncomingPacket(packet);
+        }
     }
 
     switch (packet.GetOpcode())
@@ -533,7 +576,9 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
+        {
             bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
+        }
     }
 }
 
@@ -548,7 +593,9 @@ void PlayerbotMgr::SaveToDB()
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
+        {
             bot->SaveToDB();
+        }
     }
 }
 
@@ -561,7 +608,9 @@ void PlayerbotMgr::OnBotLoginInternal(Player * const bot)
 void PlayerbotMgr::OnPlayerLogin(Player* player)
 {
     if (!sPlayerbotAIConfig.botAutologin)
+    {
         return;
+    }
 
     uint32 accountId = player->GetSession()->GetAccountId();
     QueryResult* results = CharacterDatabase.PQuery(
@@ -575,7 +624,9 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
         {
             Field* fields = results->Fetch();
             if (first) first = false; else out << ",";
-            out << fields[0].GetString();
+            {
+                out << fields[0].GetString();
+            }
         } while (results->NextRow());
 
         delete results;

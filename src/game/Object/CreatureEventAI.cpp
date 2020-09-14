@@ -1395,7 +1395,9 @@ void CreatureEventAI::Reset()
             case EVENT_T_TIMER_OOC:
             {
                 if (i->UpdateRepeatTimer(m_creature, event.timer.initialMin, event.timer.initialMax))
+                {
                     i->Enabled = true;
+                }
                 break;
             }
             // default:
@@ -1679,10 +1681,14 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
                 {
                     // Do not decrement timers if event cannot trigger in this phase
                     if (!(i->Event.event_inverse_phase_mask & (1 << m_Phase)))
+                    {
                         i->Time -= m_EventDiff;
+                    }
                 }
                 else
+                {
                     i->Time = 0;
+                }
             }
 
             // Skip processing of events that have time remaining or are disabled

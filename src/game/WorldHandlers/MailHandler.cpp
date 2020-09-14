@@ -422,7 +422,9 @@ void WorldSession::HandleMailReturnToSender(WorldPacket& recv_data)
     {
         MailDraft draft;
         if (m->mailTemplateId)
-            { draft.SetMailTemplate(m->mailTemplateId, false); }// items already included
+        {
+            draft.SetMailTemplate(m->mailTemplateId, false); // items already included
+        }
         else
         {
             draft.SetSubjectAndBodyId(m->subject, m->itemTextId);
@@ -633,7 +635,9 @@ void WorldSession::HandleGetMailList(WorldPacket& recv_data)
         size_t next_mail_size = 2 + 4 + 1 + 8 + 4 * 8 + ((*itr)->subject.size() + 1) + 1 + item_count * (1 + 4 + 4 + 6 * 3 * 4 + 4 + 4 + 1 + 4 + 4 + 4);
 
         if (data.wpos() + next_mail_size > maxPacketSize)
+        {
             break;
+        }
 
         data << uint16(next_mail_size);                     // Message size
         data << uint32((*itr)->messageID);                  // Message ID

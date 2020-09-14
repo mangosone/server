@@ -51,7 +51,9 @@ bool Player::UpdateStats(Stats stat)
     {
         Pet* pet = GetPet();
         if (pet)
+        {
             pet->UpdateStats(stat);
+        }
     }
 
     switch (stat)
@@ -144,7 +146,9 @@ void Player::UpdateResistances(uint32 school)
 
         Pet* pet = GetPet();
         if (pet)
+        {
             pet->UpdateResistances(school);
+        }
     }
     else
     {
@@ -168,7 +172,9 @@ void Player::UpdateArmor()
     {
         Modifier* mod = (*i)->GetModifier();
         if (mod->m_miscvalue & SPELL_SCHOOL_MASK_NORMAL)
+        {
             value += int32(GetStat(Stats((*i)->GetMiscBValue())) * mod->m_amount / 100.0f);
+        }
     }
 
     value *= GetModifierValue(unitMod, TOTAL_PCT);
@@ -177,7 +183,9 @@ void Player::UpdateArmor()
 
     Pet* pet = GetPet();
     if (pet)
+    {
         pet->UpdateArmor();
+    }
 }
 
 float Player::GetHealthBonusFromStamina()
@@ -352,7 +360,9 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
 
         Pet* pet = GetPet();                                // update pet's AP
         if (pet)
+        {
             pet->UpdateAttackPowerAndDamage();
+        }
     }
     else
     {
@@ -622,14 +632,20 @@ void Player::UpdateExpertise(WeaponAttackType attack)
     {
         // item neutral spell
         if ((*itr)->GetSpellProto()->EquippedItemClass == -1)
+        {
             expertise += (*itr)->GetModifier()->m_amount;
+        }
         // item dependent spell
         else if (weapon && weapon->IsFitToSpellRequirements((*itr)->GetSpellProto()))
+        {
             expertise += (*itr)->GetModifier()->m_amount;
+        }
     }
 
     if (expertise < 0)
+    {
         expertise = 0;
+    }
 
     switch (attack)
     {
@@ -846,13 +862,17 @@ bool Pet::UpdateStats(Stats stat)
     if (stat == STAT_STAMINA)
     {
         if (owner)
+        {
             value += float(owner->GetStat(stat)) * 0.3f;
+        }
     }
     // warlock's and mage's pets gain 30% of owner's intellect
     else if (stat == STAT_INTELLECT && getPetType() == SUMMON_PET)
     {
         if (owner && (owner->getClass() == CLASS_WARLOCK || owner->getClass() == CLASS_MAGE))
+        {
             value += float(owner->GetStat(stat)) * 0.3f;
+        }
     }
 
     SetStat(stat, int32(value));
@@ -900,7 +920,9 @@ void Pet::UpdateResistances(uint32 school)
         Unit* owner = GetOwner();
         // hunter and warlock pets gain 40% of owner's resistance
         if (owner && (getPetType() == HUNTER_PET || (getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK)))
+        {
             value += float(owner->GetResistance(SpellSchools(school))) * 0.4f;
+        }
 
         SetResistance(SpellSchools(school), int32(value));
     }
@@ -919,7 +941,9 @@ void Pet::UpdateArmor()
     Unit* owner = GetOwner();
     // hunter and warlock pets gain 35% of owner's armor value
     if (owner && (getPetType() == HUNTER_PET || (getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK)))
+    {
         bonus_armor = 0.35f * float(owner->GetArmor());
+    }
 
     value  = GetModifierValue(unitMod, BASE_VALUE);
     value *= GetModifierValue(unitMod, BASE_PCT);
@@ -992,7 +1016,9 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
             int32 shadow = int32(owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_SHADOW)) - owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_NEG + SPELL_SCHOOL_SHADOW);
             int32 maximum  = (fire > shadow) ? fire : shadow;
             if (maximum < 0)
+            {
                 maximum = 0;
+            }
             SetBonusDamage(int32(maximum * 0.15f));
             bonusAP = maximum * 0.57f;
         }
@@ -1001,7 +1027,9 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
         {
             int32 frost = int32(owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FROST)) - owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_NEG + SPELL_SCHOOL_FROST);
             if (frost < 0)
+            {
                 frost = 0;
+            }
             SetBonusDamage(int32(frost * 0.4f));
         }
     }

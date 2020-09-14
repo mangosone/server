@@ -19,7 +19,9 @@ void PlayerbotDbStore::Load(PlayerbotAI *ai)
     uint64 guid = ai->GetBot()->GetObjectGuid().GetRawValue();
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
+    {
         return;
+    }
 
     QueryResult* results = CharacterDatabase.PQuery("SELECT `key`,`value` FROM `ai_playerbot_db_store` WHERE `guid` = '%u'", guid);
     if (results)
@@ -48,7 +50,9 @@ void PlayerbotDbStore::Save(PlayerbotAI *ai)
     uint64 guid = ai->GetBot()->GetObjectGuid().GetRawValue();
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
+    {
         return;
+    }
 
     Reset(ai);
 
@@ -78,7 +82,9 @@ void PlayerbotDbStore::Save(PlayerbotAI *ai)
     for (set<uint32>::iterator i = ss.begin(); i != ss.end(); ++i)
     {
         if (first) first = false; else outSs << ",";
-        outSs << *i;
+        {
+            outSs << *i;
+        }
     }
     SaveValue(guid, "ss", outSs.str());
 
@@ -103,7 +109,9 @@ string PlayerbotDbStore::FormatStrategies(string type, list<string> strategies)
     ostringstream out;
     out << type << " ";
     for(list<string>::iterator i = strategies.begin(); i != strategies.end(); ++i)
+    {
         out << "+" << (*i).c_str() << ",";
+    }
 
 	string res = out.str();
     return res.substr(0, res.size() - 1);
@@ -114,7 +122,9 @@ void PlayerbotDbStore::Reset(PlayerbotAI *ai)
     uint64 guid = ai->GetBot()->GetObjectGuid().GetRawValue();
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
+    {
         return;
+    }
 
     CharacterDatabase.PExecute("DELETE FROM `ai_playerbot_db_store` WHERE `guid` = '%u'", guid);
 }

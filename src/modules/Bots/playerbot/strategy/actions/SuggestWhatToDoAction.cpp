@@ -21,7 +21,9 @@ SuggestWhatToDoAction::SuggestWhatToDoAction(PlayerbotAI* ai, string name) : Inv
 bool SuggestWhatToDoAction::Execute(Event event)
 {
     if (!sRandomPlayerbotMgr.IsRandomBot(bot) || bot->GetGroup() || bot->GetInstanceId())
+    {
         return false;
+    }
 
     int index = rand() % suggestions.size();
     (this->*suggestions[index])();
@@ -66,11 +68,15 @@ vector<uint32> SuggestWhatToDoAction::GetIncompletedQuests()
     {
         uint32 questId = bot->GetQuestSlotQuestId(slot);
         if (!questId)
+        {
             continue;
+        }
 
         QuestStatus status = bot->GetQuestStatus(questId);
         if (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_NONE)
+        {
             result.push_back(questId);
+        }
     }
 
     return result;
@@ -80,7 +86,9 @@ void SuggestWhatToDoAction::specificQuest()
 {
     vector<uint32> quests = GetIncompletedQuests();
     if (quests.empty())
+    {
         return;
+    }
 
     int index = rand() % quests.size();
 
@@ -93,17 +101,23 @@ void SuggestWhatToDoAction::newQuest()
 {
     vector<uint32> quests = GetIncompletedQuests();
     if (quests.size() < MAX_QUEST_LOG_SIZE - 5)
+    {
         spam("I would like to pick up and do a new quest. Just invite me!");
+    }
 }
 
 void SuggestWhatToDoAction::grindMaterials()
 {
     if (bot->getLevel() <= 5)
+    {
         return;
+    }
 
     QueryResult *result = CharacterDatabase.PQuery("SELECT distinct category, multiplier FROM ahbot_category where category not in ('other', 'quest', 'trade', 'reagent') and multiplier > 3 order by multiplier desc limit 10");
     if (!result)
+    {
         return;
+    }
 
     map<string, double> categories;
     do
@@ -115,7 +129,9 @@ void SuggestWhatToDoAction::grindMaterials()
     for (map<string, double>::iterator i = categories.begin(); i != categories.end(); ++i)
     {
         if (urand(0, 10) < 3) {
+        {
             string name = i->first;
+        }
             double multiplier = i->second;
 
             for (int j = 0; j < ahbot::CategoryList::instance.size(); j++)
@@ -156,7 +172,9 @@ void SuggestWhatToDoAction::grindMaterials()
 void SuggestWhatToDoAction::grindReputation()
 {
     if (bot->getLevel() > 15)
+    {
         spam("I think we should do something to improve our reputation");
+    }
 }
 
 void SuggestWhatToDoAction::nothing()
@@ -173,10 +191,14 @@ void SuggestWhatToDoAction::spam(string msg)
 {
     Player* player = sRandomPlayerbotMgr.GetRandomPlayer();
     if (!player || !player->IsInWorld())
+    {
         return;
+    }
 
     if (!ai->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_TALK, true, player))
+    {
         return;
+    }
 
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
         player->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
@@ -196,12 +218,16 @@ public:
     {
         ItemPrototype const* proto = item->GetProto();
         if (proto->Quality != quality)
+        {
             return true;
+        }
 
         if (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Bonding == NO_BIND)
         {
             if(proto->Quality == ITEM_QUALITY_NORMAL && item->GetCount() > 1 && item->GetCount() == item->GetMaxStackCount())
+            {
                 stacks.push_back(proto->ItemId);
+            }
 
             items.push_back(proto->ItemId);
             count[proto->ItemId] += item->GetCount();
@@ -227,13 +253,21 @@ bool SuggestTradeAction::Execute(Event event)
 {
     uint32 quality = urand(0, 100);
     if (quality > 90)
+    {
         quality = ITEM_QUALITY_EPIC;
+    }
     else if (quality >75)
+    {
         quality = ITEM_QUALITY_RARE;
+    }
     else if (quality > 50)
+    {
         quality = ITEM_QUALITY_UNCOMMON;
+    }
     else
+    {
         quality = ITEM_QUALITY_NORMAL;
+    }
 
     uint32 item = 0, count = 0;
     while (quality-- > ITEM_QUALITY_POOR)
@@ -263,15 +297,21 @@ bool SuggestTradeAction::Execute(Event event)
     }
 
     if (!item || !count)
+    {
         return false;
+    }
 
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(item);
     if (!proto)
+    {
         return false;
+    }
 
     uint32 price = auctionbot.GetSellPrice(proto) * sRandomPlayerbotMgr.GetSellMultiplier(bot) * count;
     if (!price)
+    {
         return false;
+    }
 
     ostringstream out; out << "Selling " << chat->formatItem(proto, count) << " for " << chat->formatMoney(price);
     spam(out.str());

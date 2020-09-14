@@ -8,11 +8,15 @@ Unit* LineTargetValue::Calculate()
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return NULL;
+    }
 
     Group* group = master->GetGroup();
     if (!group)
+    {
         return NULL;
+    }
 
     Player *prev = master;
     Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
@@ -20,10 +24,14 @@ Unit* LineTargetValue::Calculate()
     {
         Player *player = sObjectMgr.GetPlayer(itr->guid);
         if( !player || !player->IsAlive() || player == master)
+        {
             continue;
+        }
 
         if (player == bot)
+        {
             return prev;
+        }
 
         prev = player;
     }

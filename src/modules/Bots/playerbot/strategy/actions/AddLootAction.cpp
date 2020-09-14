@@ -18,7 +18,9 @@ bool AddLootAction::Execute(Event event)
 {
     ObjectGuid guid = event.getObject();
     if (!guid)
+    {
         return false;
+    }
 
     return AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
 }
@@ -29,11 +31,15 @@ bool AddAllLootAction::Execute(Event event)
 
     list<ObjectGuid> gos = context->GetValue<list<ObjectGuid> >("nearest game objects")->Get();
     for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
+    {
         added |= AddLoot(*i);
+    }
 
     list<ObjectGuid> corpses = context->GetValue<list<ObjectGuid> >("nearest corpses")->Get();
     for (list<ObjectGuid>::iterator i = corpses.begin(); i != corpses.end(); i++)
+    {
         added |= AddLoot(*i);
+    }
 
     return added;
 }
@@ -59,16 +65,24 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
 
     WorldObject *wo = loot.GetWorldObject(bot);
     if (loot.IsEmpty() || !wo)
+    {
         return false;
+    }
 
     if (!bot->IsWithinLOSInMap(wo))
+    {
         return false;
+    }
 
     if (loot.skillId == SKILL_NONE)
+    {
         return false;
+    }
 
     if (!loot.IsLootPossible(bot))
+    {
         return false;
+    }
 
     if (bot->GetDistance2d(wo) > sPlayerbotAIConfig.tooCloseDistance)
     {

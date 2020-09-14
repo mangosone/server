@@ -19,7 +19,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (!Accept(item->GetProto()))
+            {
                 return true;
+            }
 
             result.push_back(item);
             return true;
@@ -51,7 +53,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (bot->CanUseItem(item->GetProto()) == EQUIP_ERR_OK)
+            {
                 return FindItemVisitor::Visit(item);
+            }
 
             return true;
         }
@@ -73,10 +77,14 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->GetProto()->Quality != quality)
+            {
                 return true;
+            }
 
             if (result.size() >= (size_t)count)
+            {
                 return false;
+            }
 
             result.push_back(item);
             return true;
@@ -101,7 +109,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->IsSoulBound())
+            {
                 return true;
+            }
 
             return FindItemsByQualityVisitor::Visit(item);
         }
@@ -116,13 +126,19 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->IsSoulBound())
+            {
                 return true;
+            }
 
             if (item->GetProto()->Class != itemClass || item->GetProto()->SubClass != itemSubClass)
+            {
                 return true;
+            }
 
             if (result.size() >= (size_t)count)
+            {
                 return false;
+            }
 
             result.push_back(item);
             return true;
@@ -152,7 +168,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->GetProto()->ItemId == itemId)
+            {
                 count += item->GetCount();
+            }
 
             return true;
         }
@@ -177,7 +195,9 @@ namespace ai
         {
             const ItemPrototype* proto = item->GetProto();
             if (proto && !proto->Name1 && strstri(proto->Name1, name.c_str()))
+            {
                 count += item->GetCount();
+            }
 
             return true;
         }
@@ -231,7 +251,9 @@ namespace ai
             uint32 id = item->GetProto()->ItemId;
 
             if (items.find(id) == items.end())
+            {
                 items[id] = 0;
+            }
 
             items[id] += item->GetCount();
             soulbound[id] = item->IsSoulBound();
@@ -245,7 +267,9 @@ namespace ai
         ItemCountByQuality() : IterateItemsVisitor()
         {
             for (uint32 i = 0; i < MAX_ITEM_QUALITY; ++i)
+            {
                 count[i] = 0;
+            }
         }
 
         virtual bool Visit(Item* item)

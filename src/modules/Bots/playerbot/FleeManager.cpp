@@ -12,13 +12,17 @@ void FleeManager::calculateDistanceToPlayers(FleePoint *point)
 {
 	Group* group = bot->GetGroup();
 	if (!group)
-		return;
+ {
+     return;
+ }
 
 	for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
     {
 		Player* player = gref->getSource();
 		if(player == bot)
-			continue;
+  {
+      continue;
+  }
 
 		float d = player->GetDistance2d(point->x, point->y);
 		point->toAllPlayers.probe(d);
@@ -47,7 +51,9 @@ void FleeManager::calculateDistanceToCreatures(FleePoint *point)
     {
 		Unit* unit = bot->GetPlayerbotAI()->GetUnit(*i);
 		if (!unit)
-		    continue;
+  {
+      continue;
+  }
 
 		float d = unit->GetDistance2d(point->x, point->y);
 		distance.probe(d);
@@ -70,21 +76,29 @@ void FleeManager::calculatePossibleDestinations(list<FleePoint*> &points)
             bot->UpdateGroundPositionZ(x, y, z);
 
             if (!bot->IsWithinLOS(x, y, z))
+            {
                 continue;
+            }
 
             Map* map = bot->GetMap();
             const TerrainInfo* terrain = map->GetTerrain();
             if (terrain && terrain->IsInWater(x, y, z))
+            {
                 continue;
+            }
 
             FleePoint *point = new FleePoint(x, y, z);
             calculateDistanceToPlayers(point);
             calculateDistanceToCreatures(point);
 
             if (point->isReasonable())
+            {
                 points.push_back(point);
+            }
             else
+            {
                 delete point;
+            }
         }
 	}
 }

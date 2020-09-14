@@ -10,7 +10,9 @@ map<InventoryResult, string> InventoryChangeFailureAction::messages;
 bool InventoryChangeFailureAction::Execute(Event event)
 {
     if (!ai->GetMaster())
+    {
         return false;
+    }
 
     if (messages.empty())
     {
@@ -86,7 +88,9 @@ bool InventoryChangeFailureAction::Execute(Event event)
     uint8 err;
     p >> err;
     if (err == EQUIP_ERR_OK)
+    {
         return false;
+    }
 
     string msg = messages[(InventoryResult)err];
     if (!msg.empty())

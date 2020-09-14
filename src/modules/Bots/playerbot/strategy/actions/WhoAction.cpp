@@ -12,7 +12,9 @@ using namespace ai;
 inline int strcmpi(const char* s1, const char* s2)
 {
     for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    return *s1 - *s2;
+    {
+        return *s1 - *s2;
+    }
 }
 #endif
 
@@ -20,7 +22,9 @@ bool WhoAction::Execute(Event event)
 {
     Player* owner = event.getOwner();
     if (!owner)
+    {
         return false;
+    }
 
     ostringstream out;
     string text = event.getParam();
@@ -29,7 +33,9 @@ bool WhoAction::Execute(Event event)
         out << QuerySkill(text);
 
         if (sRandomPlayerbotMgr.IsRandomBot(bot))
+        {
             out << QueryTrade(text);
+        }
     }
     else
     {
@@ -39,12 +45,16 @@ bool WhoAction::Execute(Event event)
     if (ai->GetMaster())
     {
         if (!out.str().empty()) out << ", ";
-        out << "playing with " << ai->GetMaster()->GetName();
+        {
+            out << "playing with " << ai->GetMaster()->GetName();
+        }
     }
 
     string tell = out.str();
     if (tell.empty())
+    {
         return false;
+    }
 
     // ignore random bot chat filter
 	bot->Whisper(tell, LANG_UNIVERSAL, owner->GetObjectGuid());
@@ -62,7 +72,9 @@ string WhoAction::QueryTrade(string text)
         Item* sell = *i;
         int32 sellPrice = auctionbot.GetSellPrice(sell->GetProto()) * sRandomPlayerbotMgr.GetSellMultiplier(bot) * sell->GetCount();
         if (!sellPrice)
+        {
             continue;
+        }
 
         out << "Selling " << chat->formatItem(sell->GetProto(), sell->GetCount()) << " for " << chat->formatMoney(sellPrice);
         return out.str();
@@ -76,7 +88,9 @@ string WhoAction::QuerySkill(string text)
     ostringstream out;
     uint32 skill = chat->parseSkill(text);
     if (!skill || !ai->HasSkill((SkillType)skill))
+    {
         return "";
+    }
 
     string skillName = chat->formatSkill(skill);
     uint32 spellId = AI_VALUE2(uint32, "spell id", skillName);
@@ -116,14 +130,18 @@ string WhoAction::QuerySpec(string text)
     if (visitor.count[ITEM_QUALITY_RARE])
     {
         if (needSlash) out << "/";
-        out << "|h|cff8080ff" << visitor.count[ITEM_QUALITY_RARE] << "|h|cffffffff";
+        {
+            out << "|h|cff8080ff" << visitor.count[ITEM_QUALITY_RARE] << "|h|cffffffff";
+        }
         needSlash = true;
     }
 
     if (visitor.count[ITEM_QUALITY_UNCOMMON])
     {
         if (needSlash) out << "/";
-        out << "|h|cff00ff00" << visitor.count[ITEM_QUALITY_UNCOMMON] << "|h|cffffffff";
+        {
+            out << "|h|cff00ff00" << visitor.count[ITEM_QUALITY_UNCOMMON] << "|h|cffffffff";
+        }
         needSlash = true;
     }
 

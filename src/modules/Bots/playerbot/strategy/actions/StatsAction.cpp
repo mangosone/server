@@ -40,7 +40,9 @@ void StatsAction::ListBagSlots(ostringstream &out)
     {
         const Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
         if (pItem)
+        {
             totalused++;
+        }
     }
     uint32 totalfree = 16 - totalused;
     // list out items in other removable backpacks
@@ -61,9 +63,13 @@ void StatsAction::ListBagSlots(ostringstream &out)
 
 	string color = "ff00ff00";
 	if (totalfree < total / 2)
-		color = "ffffff00";
+ {
+     color = "ffffff00";
+ }
 	if (totalfree < total / 4)
-		color = "ffff0000";
+ {
+     color = "ffff0000";
+ }
     out << "|h|c" << color << totalfree << "/" << total << "|h|cffffffff Bag";
 }
 
@@ -75,10 +81,14 @@ void StatsAction::ListXP( ostringstream &out )
     uint32 xpPercent = 0;
 
     if (nextLevelXP)
+    {
         xpPercent = 100 * curXP / nextLevelXP;
+    }
     uint32 restPercent = 0;
     if (restXP)
+    {
         restPercent = 2 * (100 * restXP / nextLevelXP);
+    }
 
     out << "|cff00ff00" << xpPercent << "|cffffd333/|cff00ff00" << restPercent << "%|cffffffff XP";
 }
@@ -103,9 +113,13 @@ void StatsAction::ListRepairCost(ostringstream &out)
 
     string color = "ff00ff00";
     if (repairPercent < 50)
+    {
         color = "ffffff00";
+    }
     if (repairPercent < 25)
+    {
         color = "ffff0000";
+    }
     out << "|c" << color << (uint32)ceil(repairPercent) << "% (" << chat->formatMoney(totalCost) << ")|cffffffff Dur";
 }
 
@@ -115,11 +129,15 @@ uint32 StatsAction::EstRepair(uint16 pos)
 
     uint32 TotalCost = 0;
     if(!item)
+    {
         return TotalCost;
+    }
 
     uint32 maxDurability = item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY);
     if(!maxDurability)
+    {
         return TotalCost;
+    }
 
     uint32 curDurability = item->GetUInt32Value(ITEM_FIELD_DURABILITY);
 
@@ -147,7 +165,9 @@ uint32 StatsAction::EstRepair(uint16 pos)
         uint32 costs = uint32(LostDurability*dmultiplier*double(dQualitymodEntry->quality_mod));
 
         if (costs==0)                                   //fix for ITEM_QUALITY_ARTIFACT
+        {
             costs = 1;
+        }
 
         TotalCost = costs;
     }
@@ -158,15 +178,21 @@ double StatsAction::RepairPercent(uint16 pos)
 {
     Item* item = bot->GetItemByPos(pos);
     if (!item)
+    {
         return 100;
+    }
 
     uint32 maxDurability = item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY);
     if(!maxDurability)
+    {
         return 100;
+    }
 
     uint32 curDurability = item->GetUInt32Value(ITEM_FIELD_DURABILITY);
     if (!curDurability)
+    {
         return 0;
+    }
 
     return curDurability * 100.0 / maxDurability;
 }

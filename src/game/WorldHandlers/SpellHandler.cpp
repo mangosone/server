@@ -163,7 +163,9 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
 
         // send spell error
         if (SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellid))
+        {
             Spell::SendCastResult(_player, spellInfo, cast_count, SPELL_FAILED_BAD_TARGETS);
+        }
         return;
     }
 
@@ -641,9 +643,13 @@ void WorldSession::HandleGetMirrorimageData(WorldPacket& recv_data)
         data << (uint32)pPlayer->GetGuildId();
 
         if (pPlayer->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM))
+        {
             data << (uint32)0;
+        }
         else
+        {
             data << (uint32)pPlayer->GetItemDisplayIdInSlot(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_HEAD);
+        }
 
         data << (uint32)pPlayer->GetItemDisplayIdInSlot(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_SHOULDERS);
         data << (uint32)pPlayer->GetItemDisplayIdInSlot(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_BODY);
@@ -655,9 +661,13 @@ void WorldSession::HandleGetMirrorimageData(WorldPacket& recv_data)
         data << (uint32)pPlayer->GetItemDisplayIdInSlot(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_HANDS);
 
         if (pPlayer->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK))
+        {
             data << (uint32)0;
+        }
         else
+        {
             data << (uint32)pPlayer->GetItemDisplayIdInSlot(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_BACK);
+        }
 
         data << (uint32)pPlayer->GetItemDisplayIdInSlot(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_TABARD);
     }

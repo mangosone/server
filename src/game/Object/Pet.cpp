@@ -999,7 +999,9 @@ void Pet::Unsummon(PetSaveMode mode, Unit* owner /*= NULL*/)
             // not save secondary permanent pet as current
             if (mode == PET_SAVE_AS_CURRENT && p_owner->GetTemporaryUnsummonedPetNumber() &&
                 p_owner->GetTemporaryUnsummonedPetNumber() != GetCharmInfo()->GetPetNumber())
-                { mode = PET_SAVE_NOT_IN_SLOT; }
+                {
+                    mode = PET_SAVE_NOT_IN_SLOT;
+                }
 
             if (mode == PET_SAVE_REAGENTS)
             {
@@ -1471,7 +1473,9 @@ uint32 Pet::GetCurrentFoodBenefitLevel(uint32 itemlevel)
     }
     // -15 or less
     else
-        { return 0; }                                           // food too low level
+    {
+        return 0;                                            // food too low level
+    }
 }
 
 void Pet::_LoadSpellCooldowns()
@@ -1896,7 +1900,9 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
         for (PetSpellMap::const_iterator itr2 = m_spells.begin(); itr2 != m_spells.end(); ++itr2)
         {
             if (itr2->second.state == PETSPELL_REMOVED)
+            {
                 continue;
+            }
 
             uint32 const oldspell_id = itr2->first;
 
@@ -2170,7 +2176,9 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
     if (apply)
     {
         for (i = 0; i < m_autospells.size() && m_autospells[i] != spellid; ++i)
-            { ; }                                               // just search
+        {
+            ;                                                // just search
+        }
 
         if (i == m_autospells.size())
         {
@@ -2190,7 +2198,9 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
     {
         AutoSpellList::iterator itr2 = m_autospells.begin();
         for (i = 0; i < m_autospells.size() && m_autospells[i] != spellid; ++i, ++itr2)
-            { ; }                                               // just search
+        {
+            ;                                                // just search
+        }
 
         if (i < m_autospells.size())
         {
@@ -2339,13 +2349,19 @@ void Pet::CastOwnerTalentAuras()
         if (IsAlive())
         {
             if (pOwner->HasSpell(34455)) // Ferocious Inspiration Rank 1
+            {
                 CastSpell(this, 34457, true); // Ferocious Inspiration 1%
+            }
 
             if (pOwner->HasSpell(34459)) // Ferocious Inspiration Rank 2
+            {
                 CastSpell(this, 34457, true); // Ferocious Inspiration 2%
+            }
 
             if (pOwner->HasSpell(34460)) // Ferocious Inspiration Rank 3
+            {
                 CastSpell(this, 34457, true); // Ferocious Inspiration 3%
+            }
         }
     } // End Ferocious Inspiration Talent
 }
@@ -2423,7 +2439,9 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     Unit* unitOwner = GetOwner();
     Player *owner = unitOwner ? unitOwner->ToPlayer() : NULL;
     if (!owner)
+    {
         return Unit::UpdateSpeed(mtype, forced, ratio);         // NPC pets are usual creatures
+    }
 
     int32 main_speed_mod  = 0;
     float stack_bonus     = 1.0f;
@@ -2439,10 +2457,14 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                 AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
                 for (AuraList::const_iterator it = auras.begin(); it != auras.end(); ++it)
                     if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
+                    {
                         main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
+                    }
             }
             else
+            {
                 main_speed_mod = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SPEED);
+            }
 
             stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
             non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
@@ -2475,7 +2497,9 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     float speed = std::max(non_stack_bonus, stack_bonus) * ownerSpeed;
 
     if (main_speed_mod)
-      speed = speed * (100.0f + main_speed_mod) / 100.0f;
+    {
+        speed = speed * (100.0f + main_speed_mod) / 100.0f;
+    }
 
     switch (mtype)
     {

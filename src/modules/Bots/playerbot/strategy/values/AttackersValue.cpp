@@ -17,16 +17,22 @@ list<ObjectGuid> AttackersValue::Calculate()
 
     Group* group = bot->GetGroup();
     if (group)
+    {
         AddAttackersOf(group, targets);
+    }
 
     RemoveNonThreating(targets);
 
     list<ObjectGuid> result;
 	for (set<Unit*>::iterator i = targets.begin(); i != targets.end(); i++)
-		result.push_back((*i)->GetObjectGuid());
+ {
+     result.push_back((*i)->GetObjectGuid());
+ }
 
     if (bot->duel && bot->duel->opponent)
+    {
         result.push_back(bot->duel->opponent->GetObjectGuid());
+    }
 
 	return result;
 }
@@ -38,7 +44,9 @@ void AttackersValue::AddAttackersOf(Group* group, set<Unit*>& targets)
     {
         Player *member = sObjectMgr.GetPlayer(itr->guid);
         if (!member || !member->IsAlive() || member == bot)
+        {
             continue;
+        }
 
         AddAttackersOf(member, targets);
     }
@@ -47,14 +55,18 @@ void AttackersValue::AddAttackersOf(Group* group, set<Unit*>& targets)
 void AttackersValue::AddAttackersOf(Player* player, set<Unit*>& targets)
 {
     if (player->IsBeingTeleported())
+    {
         return;
+    }
 
 	list<Unit*> units;
 	MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(player, sPlayerbotAIConfig.sightDistance);
     MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(units, u_check);
     Cell::VisitAllObjects(player, searcher, sPlayerbotAIConfig.sightDistance);
 	for (list<Unit*>::iterator i = units.begin(); i != units.end(); i++)
-		targets.insert(*i);
+ {
+     targets.insert(*i);
+ }
 }
 
 void AttackersValue::RemoveNonThreating(set<Unit*>& targets)
@@ -69,7 +81,9 @@ void AttackersValue::RemoveNonThreating(set<Unit*>& targets)
             targets.erase(tIter2);
         }
         else
+        {
             ++tIter;
+        }
     }
 }
 

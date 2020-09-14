@@ -51,7 +51,9 @@ bool ListSpellsAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (skillSpells.empty())
     {
@@ -59,7 +61,9 @@ bool ListSpellsAction::Execute(Event event)
         {
             SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
             if (skillLine)
+            {
                 skillSpells[skillLine->spellId] = skillLine;
+            }
         }
     }
 
@@ -122,29 +126,42 @@ bool ListSpellsAction::Execute(Event event)
 
     uint32 slot = chat->parseSlot(filter);
     if (slot != EQUIPMENT_SLOT_END)
+    {
         filter = "";
+    }
 
     list<pair<uint32, string> > spells;
-    for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr) {
+    for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
+    {
         const uint32 spellId = itr->first;
 
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         SkillLineAbilityEntry const* skillLine = skillSpells[spellId];
         if (skill != SKILL_NONE && (!skillLine || skillLine->skillId != skill))
+        {
             continue;
+        }
 
         string comp = pSpellInfo->SpellName[0];
         if (!(ignoreList.find(comp) == std::string::npos && alreadySeenList.find(comp) == std::string::npos))
+        {
             continue;
+        }
 
         if (!filter.empty() && !strstri(pSpellInfo->SpellName[0], filter.c_str()))
+        {
             continue;
+        }
 
         bool first = true;
         int craftCount = -1;
@@ -152,7 +169,9 @@ bool ListSpellsAction::Execute(Event event)
         for (uint32 x = 0; x < MAX_SPELL_REAGENTS; ++x)
         {
             if (pSpellInfo->Reagent[x] <= 0)
-                { continue; }
+            {
+                continue;
+            }
 
             uint32 itemid = pSpellInfo->Reagent[x];
             uint32 reagentsRequired = pSpellInfo->ReagentCount[x];
@@ -161,7 +180,15 @@ bool ListSpellsAction::Execute(Event event)
                 ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemid);
                 if (proto)
                 {
-                    if (first) { materials << ": "; first = false; } else materials << ", ";
+                    if (first)
+                    {
+                        materials << ": ";
+                        first = false;
+                    }
+                    else
+                    {
+                        materials << ", ";
+                    }
                     materials << chat->formatItem(proto, reagentsRequired);
 
                     FindItemByIdVisitor visitor(itemid);
@@ -171,13 +198,19 @@ bool ListSpellsAction::Execute(Event event)
                     {
                         uint32 craftable = reagentsInInventory / reagentsRequired;
                         if (craftCount < 0 || craftCount > craftable)
+                        {
                             craftCount = craftable;
+                        }
                     }
 
                     if (reagentsInInventory)
+                    {
                         materials << "|cffffff00(x" << reagentsInInventory << ")|r ";
+                    }
                     else if (buyable)
+                    {
                         materials << "|cffffff00(buy)|r ";
+                    }
                 }
             }
         }
@@ -196,7 +229,9 @@ bool ListSpellsAction::Execute(Event event)
                     if (proto)
                     {
                         if (craftCount)
+                        {
                             out << "|cffffff00(x" << craftCount << ")|r ";
+                        }
                         out << chat->formatItem(proto);
 
                         if ((minLevel || maxLevel) && (!proto->RequiredLevel || proto->RequiredLevel < minLevel || proto->RequiredLevel > maxLevel))
@@ -216,13 +251,19 @@ bool ListSpellsAction::Execute(Event event)
         }
 
         if (out.str().empty())
+        {
             out << chat->formatSpell(pSpellInfo);
+        }
 
         if (filtered)
+        {
             continue;
+        }
 
         if (craftableOnly && !craftCount)
+        {
             continue;
+        }
 
         out << materials.str();
 
@@ -235,18 +276,28 @@ bool ListSpellsAction::Execute(Event event)
 
             out << " - ";
             if (SkillValue >= GrayLevel)
+            {
                 out << " |cff808080gray";
+            }
             else if (SkillValue >= GreenLevel)
+            {
                 out << " |cff80be80green";
+            }
             else if (SkillValue >= YellowLevel)
+            {
                 out << " |cffffff00yellow";
+            }
             else
+            {
                 out << " |cffff8040orange";
+            }
             out << "|r";
         }
 
         if (out.str().empty())
+        {
             continue;
+        }
 
         spells.push_back(pair<uint32, string>(spellId, out.str()));
         alreadySeenList += pSpellInfo->SpellName[0];

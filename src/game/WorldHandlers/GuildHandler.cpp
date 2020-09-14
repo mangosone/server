@@ -843,7 +843,9 @@ void WorldSession::HandleGuildBankMoneyWithdrawn(WorldPacket & /* recv_data */)
 
     if (uint32 GuildId = GetPlayer()->GetGuildId())
         if (Guild* pGuild = sGuildMgr.GetGuildById(GuildId))
+        {
             pGuild->SendMoneyInfo(this, GetPlayer()->GetGUIDLow());
+        }
 }
 
 void WorldSession::HandleGuildPermissions(WorldPacket& /* recv_data */)
@@ -1170,9 +1172,13 @@ void WorldSession::HandleGuildBankSwapItems(WorldPacket& recv_data)
 
     // BankToChar swap or char to bank remaining
     if (ToChar)                                             // Bank -> Char cases
+    {
         pGuild->MoveFromBankToChar(_player, BankTab, BankTabSlot, PlayerBag, PlayerSlot, SplitedAmount);
+    }
     else                                                    // Char -> Bank cases
+    {
         pGuild->MoveFromCharToBank(_player, PlayerBag, PlayerSlot, BankTab, BankTabSlot, SplitedAmount);
+    }
 }
 
 void WorldSession::HandleGuildBankBuyTab(WorldPacket& recv_data)

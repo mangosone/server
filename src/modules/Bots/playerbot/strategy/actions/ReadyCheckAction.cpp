@@ -17,11 +17,17 @@ string formatPercent(string name, uint8 value, float percent)
 
     string color;
     if (percent > 75)
+    {
         color = "|cff00ff00";
+    }
     else if (percent > 50)
+    {
         color = "|cffffff00";
+    }
     else
+    {
         color = "|cffff0000";
+    }
 
     out << "|cffffffff[" << name << "]" << color << "x" << (int)value;
     return out.str();
@@ -148,7 +154,9 @@ bool ReadyCheckAction::Execute(Event event)
     {
         p >> player;
         if (player == bot->GetObjectGuid())
+        {
             return false;
+        }
     }
 
 	return ReadyCheck();

@@ -11,9 +11,13 @@ NextAction* toNextAction(string action)
 {
     vector<string> tokens = split(action, '!');
     if (tokens.size() == 2 && !tokens[0].empty())
+    {
         return new NextAction(tokens[0], atof(tokens[1].c_str()));
+    }
     else if (tokens.size() == 1 && !tokens[0].empty())
+    {
         return new NextAction(tokens[0], ACTION_NORMAL);
+    }
 
     sLog.outError("Invalid action '%s'", action.c_str());
     return NULL;
@@ -28,7 +32,9 @@ NextAction** toNextActionArray(string actions)
     {
         NextAction* na = toNextAction(*i);
         if (na)
+        {
             res[index++] = na;
+        }
     }
 	res[index++] = NULL;
     return res;
@@ -38,7 +44,9 @@ TriggerNode* toTriggerNode(string actionLine)
 {
     vector<string> tokens = split(actionLine, '>');
     if (tokens.size() == 2)
+    {
         return new TriggerNode(tokens[0], toNextActionArray(tokens[1]));
+    }
 
     sLog.outError("Invalid action line '%s'", actionLine.c_str());
     return NULL;
@@ -52,7 +60,9 @@ void CustomStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         {
             LoadActionLines((uint32)ai->GetBot()->GetGUIDLow());
             if (this->actionLines.empty())
+            {
                 LoadActionLines(0);
+            }
         }
         else
         {
@@ -66,7 +76,9 @@ void CustomStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
                     smatch match = *j;
                     string actionLine = match[1].str();
                     if (!actionLine.empty())
+                    {
                         this->actionLines.push_back(actionLine);
+                    }
                 }
             }
         }
@@ -76,7 +88,9 @@ void CustomStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     {
         TriggerNode* tn = toTriggerNode(*i);
         if (tn)
+        {
             triggers.push_back(tn);
+        }
     }
 }
 

@@ -15,7 +15,9 @@ bool SkipSpellsListAction::Execute(Event event)
 
     SpellIds spellIds = parseIds(cmd);
     if (!spellIds.empty()) {
+    {
         skipSpells.clear();
+    }
         for (SpellIds::iterator i = spellIds.begin(); i != spellIds.end(); ++i)
         {
             skipSpells.insert(*i);
@@ -46,10 +48,14 @@ bool SkipSpellsListAction::Execute(Event event)
         {
             SpellEntry const* spell = sSpellStore.LookupEntry(*i);
             if (!spell)
+            {
                 continue;
+            }
 
             if (first) first = false; else out << ", ";
-            out << chat->formatSpell(spell);
+            {
+                out << chat->formatSpell(spell);
+            }
         }
         ai->TellMaster(out);
     }
@@ -57,7 +63,9 @@ bool SkipSpellsListAction::Execute(Event event)
     {
         bool remove = cmd.size() > 1 && cmd.substr(0, 1) == "-";
         if (remove)
+        {
             cmd = cmd.substr(1);
+        }
 
         uint32 spellId = chat->parseSpell(cmd);
         if (!spellId)
@@ -68,7 +76,9 @@ bool SkipSpellsListAction::Execute(Event event)
 
         SpellEntry const* spell = sSpellStore.LookupEntry(spellId);
         if (!spell)
+        {
             return false;
+        }
 
         if (remove)
         {
@@ -109,13 +119,17 @@ SpellIds SkipSpellsListAction::parseIds(string text)
     {
         int endPos = text.find(',', pos);
         if (endPos == -1)
+        {
             endPos = text.size();
+        }
 
         string idC = text.substr(pos, endPos - pos);
         uint32 id = atol(idC.c_str());
         pos = endPos + 1;
         if (id)
+        {
             spellIds.insert(id);
+        }
     }
 
     return spellIds;

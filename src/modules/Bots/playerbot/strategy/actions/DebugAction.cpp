@@ -9,7 +9,9 @@ bool DebugAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     string text = event.getParam();
     string response = ai->HandleRemoteCommand(text);

@@ -15,12 +15,16 @@ public:
     virtual bool Visit(Item* item)
     {
         if (bot->CanUseItem(item->GetProto()) != EQUIP_ERR_OK)
+        {
             return true;
+        }
 
         const ItemPrototype* proto = item->GetProto();
 
         if (proto->Class != ITEM_CLASS_CONSUMABLE)
+        {
             return true;
+        }
 
         if (proto->SubClass != ITEM_SUBCLASS_ELIXIR && 
             proto->SubClass != ITEM_SUBCLASS_FLASK &&
@@ -34,17 +38,25 @@ public:
         {
             uint32 spellId = proto->Spells[i].SpellId;
             if (!spellId)
+            {
                 continue;
+            }
 
             if (bot->HasAura(spellId))
+            {
                 return true;
+            }
 
             Item* itemForSpell = *bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<Item*>("item for spell", spellId);
             if (itemForSpell && itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+            {
                 return true;
+            }
         
             if (items.find(proto->SubClass) == items.end())
+            {
                 items[proto->SubClass] = list<Item*>();
+            }
 
             items[proto->SubClass].push_back(item);
             break;
@@ -99,7 +111,9 @@ bool BuffAction::Execute(Event event)
         if (oldSubClass != subClass)
         {
             if (!items.empty())
+            {
                 TellHeader(subClass);
+            }
             oldSubClass = subClass;
         }
         for (list<Item*>::iterator j = items.begin(); j != items.end(); ++j)

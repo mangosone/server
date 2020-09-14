@@ -23,7 +23,9 @@ static bool substrContainsInMap(string searchTerm, map<string, T> searchIn)
     {
 		string term = i->first;
 		if (term.size() > 1 && searchTerm.find(term) != string::npos)
-            return true;
+  {
+      return true;
+  }
     }
 
     return false;
@@ -187,14 +189,18 @@ string ChatHelper::formatMoney(uint32 copper)
     if (silver > 0 && gold < 50)
     {
         if (space) out << " ";
-        out << silver <<  "s";
+        {
+            out << silver <<  "s";
+        }
         space = true;
     }
 
 	if (copper > 0 && gold < 10)
 	{
         if (space) out << " ";
-		out << copper <<  "c";
+        {
+            out << copper <<  "c";
+        }
 	}
 
     return out.str();
@@ -223,9 +229,13 @@ uint32 ChatHelper::parseMoney(string& text)
             acum = "";
         }
         else if (text[i] == ' ')
+        {
             break;
+        }
         else if (text[i] >= 48 && text[i] <= 57)
+        {
             acum += text[i];
+        }
         else
         {
             copper = 0;
@@ -244,16 +254,22 @@ ItemIds ChatHelper::parseItems(string& text)
     {
         int i = text.find("Hitem:", pos);
         if (i == -1)
+        {
             break;
+        }
         pos = i + 6;
         int endPos = text.find(':', pos);
         if (endPos == -1)
+        {
             break;
+        }
         string idC = text.substr(pos, endPos - pos);
         uint32 id = atol(idC.c_str());
         pos = endPos;
         if (id)
+        {
             itemIds.insert(id);
+        }
     }
 
     return itemIds;
@@ -291,10 +307,14 @@ string ChatHelper::formatItem(ItemPrototype const * proto, int count, int total)
         << "]|h|r";
 
     if (count > 1)
+    {
         out << "x" << count;
+    }
 
     if (total > 0)
+    {
         out << " (" << total << ")";
+    }
 
     return out.str();
 }
@@ -302,7 +322,9 @@ string ChatHelper::formatItem(ItemPrototype const * proto, int count, int total)
 ChatMsg ChatHelper::parseChat(string& text)
 {
     if (chats.find(text) != chats.end())
+    {
         return chats[text];
+    }
 
     return CHAT_MSG_SYSTEM;
 }
@@ -344,12 +366,16 @@ list<ObjectGuid> ChatHelper::parseGameobjects(string& text)
         // extract GO guid
         int i = text.find("Hfound:", pos);     // base H = 11
         if (i == -1)     // break if error
+        {
             break;
+        }
 
         pos = i + 7;     //start of window in text 11 + 7 = 18
         int endPos = text.find(':', pos);     // end of window in text 22
         if (endPos == -1)     //break if error
+        {
             break;
+        }
         istringstream stream(text.substr(pos, endPos - pos));
         uint64 guid; stream >> guid;
 
@@ -357,7 +383,9 @@ list<ObjectGuid> ChatHelper::parseGameobjects(string& text)
         pos = endPos + 1;
         endPos = text.find(':', pos);     // end of window in text
         if (endPos == -1)     //break if error
+        {
             break;
+        }
 
         std::string entryC = text.substr(pos, endPos - pos);     // get string within window i.e entry
         uint32 entry = atol(entryC.c_str());     // convert ascii to float
@@ -365,7 +393,9 @@ list<ObjectGuid> ChatHelper::parseGameobjects(string& text)
         ObjectGuid lootCurrent = ObjectGuid(guid);
 
         if (guid)
+        {
             gos.push_back(lootCurrent);
+        }
     }
 
     return gos;
@@ -384,7 +414,9 @@ string ChatHelper::formatQuestObjective(string name, int available, int required
 uint32 ChatHelper::parseItemQuality(string text)
 {
     if (itemQualities.find(text) == itemQualities.end())
+    {
         return MAX_ITEM_QUALITY;
+    }
 
     return itemQualities[text];
 }
@@ -418,7 +450,9 @@ bool ChatHelper::parseItemClass(string text, uint32 *itemClass, uint32 *itemSubC
 uint32 ChatHelper::parseSlot(string text)
 {
     if (slots.find(text) != slots.end())
+    {
         return slots[text];
+    }
 
     return EQUIPMENT_SLOT_END;
 }
@@ -469,7 +503,9 @@ string ChatHelper::formatRace(uint8 race)
 uint32 ChatHelper::parseSkill(string& text)
 {
     if (skills.find(text) != skills.end())
+    {
         return skills[text];
+    }
 
     return SKILL_NONE;
 }
@@ -479,7 +515,9 @@ string ChatHelper::formatSkill(uint32 skill)
     for (map<string, uint32>::iterator i = skills.begin(); i != skills.end(); ++i)
     {
         if (i->second == skill)
+        {
             return i->first;
+        }
     }
 
     return "";

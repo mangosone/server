@@ -191,7 +191,9 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) c
         if (isType(TYPEMASK_UNIT))
         {
             if (((Unit*)this)->getVictim())
+            {
                 updateFlags |= UPDATEFLAG_HAS_ATTACKING_TARGET;
+            }
         }
     }
 
@@ -264,9 +266,13 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
         {
             Player* player = ((Player*)unit);
             if (player->GetTransport())
+            {
                 player->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+            }
             else
+            {
                 player->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
+            }
         }
 
         // Update movement info time
@@ -286,7 +292,9 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 
         // 0x08000000
         if (unit->m_movementInfo.GetMovementFlags() & MOVEFLAG_SPLINE_ENABLED)
+        {
             Movement::PacketBuilder::WriteCreate(*unit->movespline, *data);
+        }
     }
     // 0x40
     else if (updateFlags & UPDATEFLAG_HAS_POSITION)
@@ -326,9 +334,13 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
                 break;
             case TYPEID_PLAYER:
                 if (updateFlags & UPDATEFLAG_SELF)
+                {
                     *data << uint32(0x00000015);            // unk, can be 0x15 or 0x22
+                }
                 else
+                {
                     *data << uint32(0x00000008);            // unk, can be 0x7 or 0x8
+                }
                 break;
             default:
                 *data << uint32(0x00000000);                // unk
@@ -359,9 +371,13 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     if (updateFlags & UPDATEFLAG_HAS_ATTACKING_TARGET)      // packed guid (current target guid)
     {
         if (((Unit*)this)->getVictim())
+        {
             *data << ((Unit*)this)->getVictim()->GetPackGUID();
+        }
         else
+        {
             data->appendPackGUID(0);
+        }
     }
 
     // 0x2
@@ -444,7 +460,9 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                         if (appendValue & UNIT_NPC_FLAG_TRAINER)
                         {
                             if (!((Creature*)this)->IsTrainerOf(target, false))
+                            {
                                 appendValue &= ~(UNIT_NPC_FLAG_TRAINER | UNIT_NPC_FLAG_TRAINER_CLASS | UNIT_NPC_FLAG_TRAINER_PROFESSION);
+                            }
                         }
 
                         if (appendValue & UNIT_NPC_FLAG_STABLEMASTER)
@@ -464,12 +482,18 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                     {
                         // IsPerCasterAuraState set if related pet caster aura state set already
                         if (((Unit*)this)->HasAuraStateForCaster(AURA_STATE_CONFLAGRATE, target->GetObjectGuid()))
+                        {
                             *data << m_uint32Values[index];
+                        }
                         else
+                        {
                             *data << (m_uint32Values[index] & ~(1 << (AURA_STATE_CONFLAGRATE - 1)));
+                        }
                     }
                     else
+                    {
                         *data << m_uint32Values[index];
+                    }
                 }
                 // FIXME: Some values at server stored in float format but must be sent to client in uint32 format
                 else if (index >= UNIT_FIELD_BASEATTACKTIME && index <= UNIT_FIELD_RANGEDATTACKTIME)
@@ -569,10 +593,14 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                         }
                     }
                     else
-                        { *data << uint32(0); }                 // disable quest object
+                    {
+                        *data << uint32(0);                  // disable quest object
+                    }
                 }
                 else
-                    { *data << m_uint32Values[index]; }         // other cases
+                {
+                    *data << m_uint32Values[index];          // other cases
+                }
             }
         }
     }
@@ -1340,15 +1368,23 @@ void WorldObject::GetRandomPoint(float x, float y, float z, float distance, floa
     // angle to face `obj` to `this`
     float angle;
     if (!ori)
+    {
         angle = rand_norm_f() * 2 * M_PI_F;
+    }
     else
+    {
         angle = *ori;
+    }
 
     float new_dist;
     if (minDist == 0.0f)
+    {
         new_dist = rand_norm_f() * distance;
+    }
     else
+    {
         new_dist = minDist + rand_norm_f() * (distance - minDist);
+    }
 
     rand_x = x + new_dist * cos(angle);
     rand_y = y + new_dist * sin(angle);
@@ -1363,7 +1399,9 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
 {
     float new_z = GetMap()->GetHeight(x, y, z);
     if (new_z > INVALID_HEIGHT)
-    { z = new_z + 0.05f; }                                  // just to be sure that we are not a few pixel under the surface
+    {
+        z = new_z + 0.05f;                                   // just to be sure that we are not a few pixel under the surface
+    }
 }
 
 void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=NULL*/) const
@@ -1423,7 +1461,9 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
             {
                 float ground_z = atMap->GetHeight(x, y, z);
                 if (z < ground_z)
+                {
                     z = ground_z;
+                }
             }
             break;
         }
@@ -1690,7 +1730,9 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 
 #ifdef ENABLE_ELUNA
     if (Unit* summoner = ToUnit())
+    {
         sEluna->OnSummoned(pCreature, summoner);
+    }
 #endif /* ENABLE_ELUNA */
 
     // Creature Linking, Initial load is handled like respawn
@@ -1841,7 +1883,9 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
     if (!sWorld.getConfig(CONFIG_BOOL_DETECT_POS_COLLISION))
     {
         if (searcher)
-            { searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); }      // update to LOS height if available
+        {
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
+        }
         else
         {
             UpdateGroundPositionZ(x, y, z);
@@ -1871,7 +1915,9 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
     if (selector.CheckOriginalAngle())
     {
         if (searcher)
-            { searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); }      // update to LOS height if available
+        {
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
+        }
         else
         {
             UpdateGroundPositionZ(x, y, z);
@@ -1897,7 +1943,9 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
         z = GetPositionZ();
 
         if (searcher)
-            { searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); }      // update to LOS height if available
+        {
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
+        }
         else
         {
             UpdateGroundPositionZ(x, y, z);
@@ -1917,7 +1965,9 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
         y = first_y;
 
         if (searcher)
-            { searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); }      // update to LOS height if available
+        {
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
+        }
         else
         {
             UpdateGroundPositionZ(x, y, z);
@@ -1935,7 +1985,9 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
         z = GetPositionZ();
 
         if (searcher)
-            { searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); }      // update to LOS height if available
+        {
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
+        }
         else
         {
             UpdateGroundPositionZ(x, y, z);
@@ -1952,7 +2004,9 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
     y = first_y;
 
     if (searcher)
-        { searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); }          // update to LOS height if available
+    {
+        searcher->UpdateAllowedPositionZ(x, y, z, GetMap());           // update to LOS height if available
+    }
     else
     {
         UpdateGroundPositionZ(x, y, z);

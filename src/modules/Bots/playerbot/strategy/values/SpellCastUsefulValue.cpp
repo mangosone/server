@@ -9,18 +9,24 @@ bool SpellCastUsefulValue::Calculate()
 {
     uint32 spellid = AI_VALUE2(uint32, "spell id", qualifier);
 	if (!spellid)
-		return true; // there can be known alternatives
+ {
+     return true; // there can be known alternatives
+ }
 
 	SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
 	if (!spellInfo)
-		return true; // there can be known alternatives
+ {
+     return true; // there can be known alternatives
+ }
 
 	if (spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_1 ||
 		spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_2)
 	{
 		Spell* spell = bot->GetCurrentSpell(CURRENT_MELEE_SPELL);
 		if (spell && spell->m_spellInfo->Id == spellid && spell->IsNextMeleeSwingSpell() && bot->hasUnitState(UNIT_STAT_MELEE_ATTACKING))
-			return false;
+  {
+      return false;
+  }
 	}
 	else
 	{
@@ -29,7 +35,9 @@ bool SpellCastUsefulValue::Calculate()
         {
             Spell* const pSpell = bot->FindCurrentSpellBySpellId(lastSpellId);
             if (pSpell)
+            {
                 return false;
+            }
         }
 	}
 
@@ -45,27 +53,37 @@ bool SpellCastUsefulValue::Calculate()
     {
         Item *item = AI_VALUE2(Item*, "item for spell", spellid);
         if (item && item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+        {
             return false;
+        }
     }
 
     set<uint32>& skipSpells = AI_VALUE(set<uint32>&, "skip spells list");
     if (skipSpells.find(spellid) != skipSpells.end())
+    {
         return false;
+    }
 
     const string spellName = spellInfo->SpellName[0];
     for (set<uint32>::iterator i = skipSpells.begin(); i != skipSpells.end(); ++i)
     {
         SpellEntry const *spell = sSpellStore.LookupEntry(*i);
         if (!spell)
+        {
             continue;
+        }
 
         wstring wnamepart;
         if (!Utf8toWStr(spell->SpellName[0], wnamepart))
+        {
             continue;
+        }
 
         wstrToLower(wnamepart);
         if (!spellName.empty() && spellName.length() == wnamepart.length() && Utf8FitTo(spellName, wnamepart))
+        {
             return false;
+        }
     }
 
 	return true;
