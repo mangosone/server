@@ -1765,6 +1765,7 @@ GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, 
     pGameObj->SetRespawnTime(despwtime/IN_MILLISECONDS);
 
     map->Add(pGameObj);
+    pGameObj->AIM_Initialize();
 
     return pGameObj;
 }

@@ -48,15 +48,24 @@
 #include "vmap/GameObjectModel.h"
 #include "CreatureAISelector.h"
 #include "SQLStorages.h"
+#include "GameObjectAI.h"
+#include <memory>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
 
+enum
+{
+    GO_DIRE_MAUL_FIXED_TRAP = 179512,
+    NPC_SLIPKIK_GUARD = 14323
+};
+
 GameObject::GameObject() : WorldObject(),
     loot(this),
     m_model(NULL),
+    m_displayInfo(NULL),
     m_goInfo(NULL),
-    m_displayInfo(NULL)
+    m_AI_locked(false)
 {
     m_objectType |= TYPEMASK_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
@@ -77,6 +86,13 @@ GameObject::GameObject() : WorldObject(),
     m_groupLootTimer = 0;
     m_groupLootId = 0;
     m_lootGroupRecipientId = 0;
+
+    m_isInUse = false;
+    m_reStockTimer = 0;
+    m_rearmTimer = 0;
+    m_despawnTimer = 0;
+
+    m_AI_locked;
 }
 
 GameObject::~GameObject()
@@ -312,6 +328,28 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     }
                     break;
                 }
+                case GAMEOBJECT_TYPE_CHEST:
+                {
+                    if (m_goInfo->chest.chestRestockTime)
+                    {
+                        if (m_reStockTimer != 0)
+                        {
+                            if (m_reStockTimer <= time(nullptr))
+                            {
+                                m_reStockTimer = 0;
+                                m_lootState = GO_READY;
+                                loot.clear();
+                                MarkFlagUpdateForClient(GAMEOBJECT_DYN_FLAGS);
+                            }
+                        }
+                        else
+                        {
+                            m_lootState = GO_READY;
+                        }
+                        return;
+                    }
+                    m_lootState = GO_READY;
+                }
                 default:
                     break;
             }
@@ -385,6 +423,12 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                         return;
                     }
 
+                    // cannot use more than trap charges
+                    if (m_useTimes >= goInfo->GetCharges())
+                    {
+                        return;
+                    }
+
                     // FIXME: this is activation radius (in different casting radius that must be selected from spell data)
                     // TODO: move activated state code (cast itself) to GO_ACTIVATED, in this place only check activating and set state
                     float radius = float(goInfo->trap.radius);
@@ -413,7 +457,17 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     Cell::VisitAllObjects(this, checker, radius);
                     if (enemy)
                     {
-                        Use(enemy);
+                        bool useTrap = true;
+                        // prevent use if GO entry is "Fixed Trap" and target is not SLIKIK
+                        if (GetEntry() == GO_DIRE_MAUL_FIXED_TRAP && enemy->GetEntry() != NPC_SLIPKIK_GUARD)
+                        {
+                            useTrap = false;
+                        }
+
+                        if (useTrap)
+                        {
+                            Use(enemy);
+                        }
                     }
                 }
 
@@ -437,6 +491,31 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     if (GetGOInfo()->GetAutoCloseTime() && (m_cooldownTime < time(NULL)))
                     {
                         ResetDoorOrButton();
+                    }
+                    break;
+                case GAMEOBJECT_TYPE_CHEST:
+                    if (true)
+                    {
+                        if (!loot.empty())
+                            m_despawnTimer = time(nullptr) + 5 * MINUTE; // TODO:: need to add a define?
+                        else if (m_despawnTimer != 0 && m_despawnTimer <= time(nullptr))
+                            m_lootState = GO_JUST_DEACTIVATED;
+
+                        // TODO : Missing Loot::Update() method found in CMangos
+                    }
+                    break;
+                case GAMEOBJECT_TYPE_TRAP:
+                    if (m_rearmTimer == 0)
+                    {
+                        m_rearmTimer = time(nullptr) + GetRespawnDelay();
+                        SetGoState(GO_STATE_ACTIVE_ALTERNATIVE);
+                    }
+
+                    if (m_rearmTimer < time(nullptr))
+                    {
+                        SetGoState(GO_STATE_READY);
+                        m_lootState = GO_READY;
+                        m_rearmTimer = 0;
                     }
                     break;
                 case GAMEOBJECT_TYPE_GOOBER:
@@ -548,7 +627,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
             }
 
             // Remove wild summoned after use
-            if (!HasStaticDBSpawnData() && (!GetSpellId() || GetGOInfo()->GetDespawnPossibility()))
+            if (!HasStaticDBSpawnData() && (!GetSpellId() || GetGOInfo()->GetDespawnPossibility() || GetGOInfo()->IsDespawnAtAction()))
             {
                 if (Unit* owner = GetOwner())
                 {
@@ -612,6 +691,14 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
 
             break;
         }
+    }
+
+    if (AI())
+    {
+        // do not allow the AI to be changed during update
+        m_AI_locked = true;
+        AI()->UpdateAI(update_diff);   // AI not react good at real update delays (while freeze in non-active part of map)
+        m_AI_locked = false;
     }
 }
 
@@ -786,6 +873,8 @@ bool GameObject::LoadFromDB(uint32 guid, Map* map)
         }
     }
 
+    AIM_Initialize();
+
     return true;
 }
 
@@ -904,6 +993,73 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
                 return false;
             }
         }*/
+
+        float visibleDistance = GetMap()->GetVisibilityDistance() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f);
+
+
+        // special invisibility cases
+        // special invisibility cases
+        switch (GetGOInfo()->type)
+        {
+            case GAMEOBJECT_TYPE_TRAP:
+            {
+                if (GetGOInfo()->trap.stealthed == 0 && GetGOInfo()->trap.stealthAffected == 0)
+                {
+                    break;
+                }
+
+                Unit* owner = GetOwner();
+
+                if (!owner || u->IsHostileTo(owner))
+                {
+
+                    visibleDistance = 10.5f;
+                    //2^3=8 and 300 - from spell 2836, EFFECT_INDEX_1 - SPELL_AURA_MOD_INVISIBILITY_DETECTION; TODO check 200 and improve
+                    if (u->GetMaxPositiveAuraModifierByMiscValue(SPELL_AURA_MOD_INVISIBILITY_DETECTION, 8) < 200)
+                    {
+                        if (u->getClass() != CLASS_ROGUE)
+                        {
+                            return false;       // a wild or enemy trap cannot be seen by non-rogues without proper invis detection
+                        }
+                        visibleDistance = 0.0f; // minimal detection distance, will be normalized below
+                    }
+
+                    if (owner)
+                    {
+                        // apply to the "owner" and "u" the rules for usual stealth detection; the fragment is taken from Unit::IsVisibleForOrDetect
+                        // Visible distance based on stealth value (stealth rank 4 300MOD, 10.5 - 3 = 7.5)
+                        visibleDistance -= (owner->getLevel() / 20.0f);  // for rogue stealth (4 spells): modifier = 5*level
+
+                        // Visible distance is modified by
+                        //-Level Diff (every level diff = 1.0f in visible distance)
+                        visibleDistance += int32(u->GetLevelForTarget(owner)) - int32(owner->GetLevelForTarget(u));
+                    }
+
+                    //-Stealth Detection(negative like paranoia)
+                    visibleDistance += (int32(u->GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH_DETECT))) / 5.0f;
+
+                    // normalize visible distance
+                    if (visibleDistance > MAX_PLAYER_STEALTH_DETECT_RANGE)
+                    {
+                        visibleDistance = MAX_PLAYER_STEALTH_DETECT_RANGE;
+                    }
+                    else if (visibleDistance < GetGOInfo()->trap.radius + INTERACTION_DISTANCE)
+                    {
+                        visibleDistance = GetGOInfo()->trap.radius + INTERACTION_DISTANCE;
+                    }
+                }
+
+            }
+
+            case GAMEOBJECT_TYPE_SPELL_FOCUS:
+            {
+                if (GetGOInfo()->spellFocus.serverOnly == 1)
+                {
+                    return false;
+                }
+                break;
+            }
+        }
 
         // Smuggled Mana Cell required 10 invisibility type detection/state
         if (GetEntry() == 187039 && ((u->m_detectInvisibilityMask | u->m_invisibilityMask) & (1 << 10)) == 0)
@@ -1050,6 +1206,7 @@ void GameObject::SummonLinkedTrapIfAny()
         linkedGO->SetUInt32Value(GAMEOBJECT_LEVEL, GetUInt32Value(GAMEOBJECT_LEVEL));
     }
 
+    linkedGO->AIM_Initialize();
     GetMap()->Add(linkedGO);
 }
 
@@ -1326,6 +1483,11 @@ void GameObject::Use(Unit* user)
             if (GetDisplayId() == 4392 || GetDisplayId() == 4472 || GetDisplayId() == 4491 || GetDisplayId() == 6785 || GetDisplayId() == 3073)
             {
                 SendGameObjectCustomAnim();
+            }
+
+            if (!scriptReturnValue && user->GetTypeId() == TYPEID_UNIT)
+            {
+                sScriptMgr.OnGameObjectUse(user, this);
             }
 
             // TODO: Despawning of traps? (Also related to code in ::Update)
@@ -2667,4 +2829,19 @@ void GameObject::SendObjectDeSpawnAnim()
     WorldPacket data(SMSG_GAMEOBJECT_DESPAWN_ANIM, 8);
     data << GetObjectGuid();
     SendMessageToSet(&data, true);
+}
+
+bool  GameObject::AIM_Initialize()
+{
+
+    // make sure nothing can change the AI during AI update
+    if (m_AI_locked)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "AIM_Initialize: failed to init, locked.");
+        return false;
+    }
+
+    m_AI.reset(sScriptMgr.GetGameObjectAI(this));
+
+    return true;
 }
