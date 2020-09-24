@@ -835,6 +835,8 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
             {
                 case 46650:                                 // Open Brutallus Back Door
                     return true;
+                case 5249 : // Ice Block - fixed trap dire maul
+                    return false;
                 default:
                     break;
             }
@@ -1062,6 +1064,7 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
             }
             break;
         }
+
         default:
             break;
     }

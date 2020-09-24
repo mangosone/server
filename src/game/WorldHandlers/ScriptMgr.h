@@ -38,6 +38,7 @@ class Aura;
 class Creature;
 class CreatureAI;
 class GameObject;
+class GameObjectAI;
 class InstanceData;
 class Item;
 class Map;
@@ -166,6 +167,7 @@ enum DBScriptCommand                                        // resSource, resTar
                                                             // dataint1: Delay (>= 0) in Seconds
     SCRIPT_COMMAND_CHANGE_ENTRY             = 39,           // resSource = Creature, datalong=creature entry
                                                             // dataint1 = entry
+    SCRIPT_COMMAND_DESPAWN_GO               = 40,           // resTarget = GameObject
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -418,6 +420,12 @@ struct ScriptInfo
             uint32 empty1;                                  // datalong2
         } changeEntry;
 
+        struct                                              // SCRIPT_COMMAND_DESPAWN_GO (40)
+        {
+            uint32 goGuid;                                  //datalong
+            uint32 respawnTime;                             //datalong2
+        } despawnGo;
+
         struct
         {
             uint32 data[2];
@@ -446,6 +454,8 @@ struct ScriptInfo
             case SCRIPT_COMMAND_OPEN_DOOR:
             case SCRIPT_COMMAND_CLOSE_DOOR:
                 return changeDoor.goGuid;
+            case SCRIPT_COMMAND_DESPAWN_GO:
+                return despawnGo.goGuid;
             default:
                 return 0;
         }
@@ -622,6 +632,9 @@ class ScriptMgr
         static bool CanSpellEffectStartDBScript(SpellEntry const* spellinfo, SpellEffectIndex effIdx);
 
         CreatureAI* GetCreatureAI(Creature* pCreature);
+
+        GameObjectAI* GetGameObjectAI(GameObject* pGo);
+
         InstanceData* CreateInstanceData(Map* pMap);
 
         char const* GetScriptLibraryVersion() const;
@@ -637,6 +650,7 @@ class ScriptMgr
         uint32 GetDialogStatus(Player* pPlayer, Creature* pCreature);
         uint32 GetDialogStatus(Player* pPlayer, GameObject* pGameObject);
         bool OnGameObjectUse(Player* pPlayer, GameObject* pGameObject);
+        bool OnGameObjectUse(Unit* pUnit, GameObject* pGameObject);
         bool OnItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets);
         bool OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry);
         bool OnProcessEvent(uint32 eventId, Object* pSource, Object* pTarget, bool isStart);
