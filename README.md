@@ -16,8 +16,8 @@ THE BURNING CRUSADE BRANCH
 ===
 ### A World of Warcraft server for the WOW Expansion The Burning Crusade
 ----
-*Mangos* is open source project, built in [C++][7], it's fast, runs on multiple
-platforms, can store game data in [MySQL][40] and [MariaDB][41]. It also has
+*Mangos* is an open source project, built in [C++][7], it's fast, runs on multiple
+platforms, can store game data in [MySQL][40] and [MariaDB][41]. It also has 
 optional support for SOAP, and aims to be 100% compatible with [World of Warcraft][2]
 in its TBC version, namely [patch 2.4.3][4].
 
@@ -43,7 +43,7 @@ adapts to your chosen operating system and compiler.
 
 Operating systems
 -----------------
-Currently we support running *Mangos* on these operating systems:
+Currently we support running *Mangos* on the following operating systems:
 
 * **Windows**, 32 bit and 64 bit. [Windows][20] Server 2008 (or newer) or Windows 7 (or newer) is recommended.
 * **Linux**, 32 bit and 64 bit. [Debian 7][21] and [Ubuntu 12.04 LTS][22] are
