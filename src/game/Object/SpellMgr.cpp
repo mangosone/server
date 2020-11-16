@@ -156,7 +156,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
             modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_CASTING_TIME, castTime, spell);
         }
 
-        if (!spellInfo->HasAttribute(SPELL_ATTR_UNK4) && !spellInfo->HasAttribute(SPELL_ATTR_TRADESPELL))
+        if (!spellInfo->HasAttribute(SPELL_ATTR_ABILITY) && !spellInfo->HasAttribute(SPELL_ATTR_TRADESPELL))
         {
             castTime = int32(castTime * spell->GetCaster()->GetFloatValue(UNIT_MOD_CAST_SPEED));
         }
@@ -628,7 +628,7 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
                 return SPELL_BLESSING;
             }
 
-            if (spellInfo->IsFitToFamilyMask(UI64LIT(0x00000820180400)) && spellInfo->HasAttribute(SPELL_ATTR_EX3_UNK9))
+            if (spellInfo->IsFitToFamilyMask(UI64LIT(0x00000820180400)) && spellInfo->HasAttribute(SPELL_ATTR_EX3_TRIGGERED_CAN_TRIGGER_SPECIAL))
             {
                 return SPELL_JUDGEMENT;
             }
@@ -667,7 +667,7 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
     if ((IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_CREATURES) ||
          IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_RESOURCES)  ||
          IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_STEALTHED)) &&
-            (spellInfo->HasAttribute(SPELL_ATTR_EX_UNK17) || spellInfo->HasAttribute(SPELL_ATTR_EX6_UNK10)))
+            (spellInfo->HasAttribute(SPELL_ATTR_EX_UNAUTOCASTABLE_BY_CHARMED) || spellInfo->HasAttribute(SPELL_ATTR_EX6_UNK10)))
          {
              return SPELL_TRACKER;
          }
@@ -982,7 +982,7 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                                 return false;
                             }
                     // but not this if this first effect (don't found better check)
-                    if (spellproto->HasAttribute(SPELL_ATTR_UNK26) && effIndex == EFFECT_INDEX_0)
+                    if (spellproto->HasAttribute(SPELL_ATTR_AURA_IS_DEBUFF) && effIndex == EFFECT_INDEX_0)
                     {
                         return false;
                     }
@@ -1076,7 +1076,7 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
     }
 
     // AttributesEx check
-    if (spellproto->HasAttribute(SPELL_ATTR_EX_NEGATIVE))
+    if (spellproto->HasAttribute(SPELL_ATTR_EX_CANT_BE_REFLECTED))
     {
         return false;
     }
