@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 15
+    #define WORLD_DB_STRUCTURE_NR 16
     #define WORLD_DB_CONTENT_NR 001
-    #define WORLD_DB_UPDATE_DESCRIPTION "GM_Commands_localization"
+    #define WORLD_DB_UPDATE_DESCRIPTION "Refactor areatrigger_teleport"
 #endif // __REVISION_H__

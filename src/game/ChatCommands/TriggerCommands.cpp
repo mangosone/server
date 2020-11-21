@@ -112,6 +112,9 @@ bool ChatHandler::HandleTriggerCommand(char* args)
 
         float dist2 = MAP_SIZE * MAP_SIZE;
 
+        // TODO: Conditions System Change
+        Player* pl = m_session->GetPlayer();
+
         // Search triggers
         for (uint32 id = 0; id < sAreaTriggerStore.GetNumRows(); ++id)
         {
@@ -155,7 +158,9 @@ bool ChatHandler::HandleTriggerCommand(char* args)
     AreaTrigger const* at = sObjectMgr.GetAreaTrigger(atEntry->id);
     if (at)
     {
-        PSendSysMessage(LANG_TRIGGER_REQ_LEVEL, at->requiredLevel);
+        // TODO: Conditions System Change
+        PSendSysMessage(LANG_TRIGGER_CONDITION, at->condition);
+        //PSendSysMessage(LANG_TRIGGER_REQ_LEVEL, at->requiredLevel);
     }
 
     if (uint32 quest_id = sObjectMgr.GetQuestForAreaTrigger(atEntry->id))
@@ -164,7 +169,8 @@ bool ChatHandler::HandleTriggerCommand(char* args)
         ShowQuestListHelper(quest_id, loc_idx, pl);
     }
 
-    if (at)
+    // TODO: Conditions System Change
+    /*if (at)
     {
         if (at->requiredItem || at->requiredItem2)
         {
@@ -199,8 +205,7 @@ bool ChatHandler::HandleTriggerCommand(char* args)
                 ShowItemListHelper(at->heroicKey2, loc_idx, pl);
             }
         }
-    }
-
+    }*/
     return true;
 }
 

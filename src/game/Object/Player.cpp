@@ -22094,15 +22094,31 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
 
     switch (lockStatus)
     {
-        case AREA_LOCKSTATUS_TOO_LOW_LEVEL:
+        // TODO: Conditions System Change
+        //case AREA_LOCKSTATUS_TOO_LOW_LEVEL:
+        case AREA_LOCKSTATUS_LEVEL_TOO_LOW:
             GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MINREQUIRED), miscRequirement);
             break;
+        // TODO: Conditions System Change
+//        case AREA_LOCKSTATUS_LEVEL_TOO_HIGH:
+//            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MAXREQUIRED), miscRequirement);
+//            break;
+//        case AREA_LOCKSTATUS_LEVEL_NOT_EQUAL:
+//            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_EQUALREQUIRED), miscRequirement);
+//            break;
         case AREA_LOCKSTATUS_ZONE_IN_COMBAT:
             GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_ZONE_IN_COMBAT);
             break;
         case AREA_LOCKSTATUS_INSTANCE_IS_FULL:
             GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_MAX_PLAYERS);
             break;
+        // TODO: Conditions System Change
+//        case AREA_LOCKSTATUS_WRONG_TEAM:
+//            if (miscRequirement == 469)
+//                GetSession()->SendAreaTriggerMessage("%s", GetSession()->GetMangosString(LANG_WRONG_TEAM_ALLIANCE));
+//            else
+//                GetSession()->SendAreaTriggerMessage("%s", GetSession()->GetMangosString(LANG_WRONG_TEAM_HORDE));
+//            break;
         case AREA_LOCKSTATUS_QUEST_NOT_COMPLETED:
             if (mapEntry->MapID == 269)                     // Exception for Black Morass
             {
@@ -22116,7 +22132,12 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
             }
             // No break here!
         case AREA_LOCKSTATUS_MISSING_ITEM:
-            GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_DIFFICULTY, GetDifficulty());
+        // TODO: Conditions System Change
+//            GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_DIFFICULTY, GetDifficulty());
+            if (AreaTrigger const* at = sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
+            {
+                GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_REQUIRED_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
+            }
             break;
         case AREA_LOCKSTATUS_MISSING_DIFFICULTY:
         {
@@ -24357,17 +24378,18 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
         return AREA_LOCKSTATUS_OK;
     }
 
+        // TODO: Conditions System Change
     // Level Requirements
-    if (getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL))
-    {
-        miscRequirement = at->requiredLevel;
-        return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
-    }
-    if (!isRegularTargetMap && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL) && getLevel() < uint32(maxLevelForExpansion[mapEntry->Expansion()]))
-    {
-        miscRequirement = maxLevelForExpansion[mapEntry->Expansion()];
-        return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
-    }
+//    if (getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL))
+//    {
+//        miscRequirement = at->requiredLevel;
+//        return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
+//    }
+//    if (!isRegularTargetMap && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL) && getLevel() < uint32(maxLevelForExpansion[mapEntry->Expansion()]))
+//    {
+//        miscRequirement = maxLevelForExpansion[mapEntry->Expansion()];
+//        return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
+//    }
 
     // Raid Requirements
     if (mapEntry->IsRaid() && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_RAID))
@@ -24376,7 +24398,8 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
             return AREA_LOCKSTATUS_RAID_LOCKED;
         }
 
-    // Item Requirements: must have requiredItem OR requiredItem2, report the first one that's missing
+        // TODO: Conditions System Change
+/*    // Item Requirements: must have requiredItem OR requiredItem2, report the first one that's missing
     if (at->requiredItem)
     {
         if (!HasItemCount(at->requiredItem, 1) &&
@@ -24416,6 +24439,60 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
     {
         miscRequirement = at->requiredQuestHeroic;
         return AREA_LOCKSTATUS_QUEST_NOT_COMPLETED;
+    }
+*/
+    if (at->condition) //condition validity is checked at startup
+    {
+        ConditionEntry fault;
+        if (!sObjectMgr.IsPlayerMeetToCondition(at->condition, this, GetMap(),NULL, CONDITION_AREA_TRIGGER, &fault))
+        {
+            switch (fault.type)
+            {
+                case CONDITION_LEVEL:
+                {
+                    if (sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL))
+                        break;
+                    else
+                    {
+                        miscRequirement = fault.param1;
+                        switch (fault.param2)
+                        {
+                            case 0: { return AREA_LOCKSTATUS_LEVEL_NOT_EQUAL; }
+                            case 1: { return AREA_LOCKSTATUS_LEVEL_TOO_HIGH; }
+                            case 2: { return AREA_LOCKSTATUS_LEVEL_TOO_LOW; }
+                        }
+                    }
+                }
+
+                case CONDITION_ITEM:
+                {
+                    miscRequirement = fault.param1;
+                    return AREA_LOCKSTATUS_MISSING_ITEM;
+                }
+
+                case CONDITION_QUESTREWARDED:
+                {
+                    miscRequirement = fault.param1;
+                    return AREA_LOCKSTATUS_QUEST_NOT_COMPLETED;
+                }
+
+                case CONDITION_TEAM:
+                {
+                    miscRequirement = fault.param1;
+                    return AREA_LOCKSTATUS_WRONG_TEAM;
+                }
+
+        // TODO: Conditions System Change
+//                case CONDITION_PVP_RANK:
+//                {
+//                    miscRequirement = fault.param1;
+//                    return AREA_LOCKSTATUS_NOT_ALLOWED;
+//                }
+
+                default:
+                    return AREA_LOCKSTATUS_UNKNOWN_ERROR;
+            }
+        }
     }
 
     // If the map is not created, assume it is possible to enter it.

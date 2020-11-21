@@ -64,32 +64,39 @@ typedef UNORDERED_MAP<uint32, GameTele > GameTeleMap;
 
 struct AreaTrigger
 {
-    uint8  requiredLevel;
-    uint32 requiredItem;
-    uint32 requiredItem2;
-    uint32 heroicKey;
-    uint32 heroicKey2;
-    uint32 requiredQuest;
-    uint32 requiredQuestHeroic;
+        // TODO: Conditions System Change
+//    uint8  requiredLevel;
+//    uint32 requiredItem;
+//    uint32 requiredItem2;
+//    uint32 heroicKey;
+//    uint32 heroicKey2;
+//    uint32 requiredQuest;
+//    uint32 requiredQuestHeroic;
     uint32 target_mapId;
     float  target_X;
     float  target_Y;
     float  target_Z;
     float  target_Orientation;
+        // TODO: Conditions System Change
+    uint32 condition;
 
     // Operators
     bool IsMinimal() const
     {
-        return requiredLevel == 0 && requiredItem == 0 && requiredItem2 == 0 && heroicKey == 0 &&
-               heroicKey2 == 0 && requiredQuest == 0 && requiredQuestHeroic == 0;
+        // TODO: Conditions System Change
+        return condition == 0;
+//        return requiredLevel == 0 && requiredItem == 0 && requiredItem2 == 0 && heroicKey == 0 &&
+//               heroicKey2 == 0 && requiredQuest == 0 && requiredQuestHeroic == 0;
     }
 
-    bool IsLessOrEqualThan(AreaTrigger const* l) const      // Expected to have same map
-    {
-        MANGOS_ASSERT(target_mapId == l->target_mapId);
-        return requiredLevel <= l->requiredLevel && requiredItem <= l->requiredItem && requiredItem2 <= l->requiredItem2
-               && heroicKey <= l->heroicKey && heroicKey2 <= l->heroicKey2 && requiredQuest <= l->requiredQuest && requiredQuestHeroic <= l->requiredQuestHeroic;
-    }
+        // TODO: Conditions System Change
+    bool IsLessOrEqualThan(AreaTrigger const* l) const;
+//    bool IsLessOrEqualThan(AreaTrigger const* l) const      // Expected to have same map
+//    {
+//        MANGOS_ASSERT(target_mapId == l->target_mapId);
+//        return requiredLevel <= l->requiredLevel && requiredItem <= l->requiredItem && requiredItem2 <= l->requiredItem2
+//               && heroicKey <= l->heroicKey && heroicKey2 <= l->heroicKey2 && requiredQuest <= l->requiredQuest && requiredQuestHeroic <= l->requiredQuestHeroic;
+//    }
 };
 
 typedef std::map < uint32/*player guid*/, uint32/*instance*/ > CellCorpseSet;
@@ -363,8 +370,19 @@ enum ConditionSource                                        // From where was th
     CONDITION_AREA_TRIGGER          = 10,                   // Used to check a condition from CMSG_AREATRIGGER
 };
 
+        // TODO: Conditions System Change
+struct ConditionEntry
+{
+    ConditionEntry() : type(CONDITION_NONE), param1(0), param2(0) {}
+    ConditionType type;
+    uint32 param1;
+    uint32 param2;
+};
+
 class PlayerCondition
 {
+        // TODO: Conditions System Change
+    friend struct AreaTrigger;
     public:
         // Default constructor, required for SQL Storage (Will give errors if used elsewise)
         PlayerCondition() : m_entry(0), m_condition(CONDITION_AND), m_value1(0), m_value2(0) {}
@@ -382,7 +400,13 @@ class PlayerCondition
         static bool CanBeUsedWithoutPlayer(uint16 entry);
 
         // Checks if the player meets the condition
-        bool Meets(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
+        // TODO: Conditions System Change
+        // if the param entry is not null, it will be filled at return as follows:
+        //  - if function fails, entry will contain the first faulty condition
+        //  - if function succeeds, entry will contain the last condition checked (if chained)
+        // entry is only useful on failure case
+        bool Meets(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry = NULL) const;
+//        bool Meets(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
 
     private:
         bool CheckParamRequirements(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
@@ -1067,7 +1091,9 @@ class ObjectMgr
         LocaleConstant GetLocaleForIndex(int i);
 
         // Check if a player meets condition conditionId
-        bool IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
+        // TODO: Conditions System Change
+        bool IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry = NULL) const;
+//        bool IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
 
         GameTele const* GetGameTele(uint32 id) const
         {
