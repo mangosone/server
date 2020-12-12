@@ -402,7 +402,7 @@ void WaypointManager::Load()
     {
         for (std::set<uint32>::const_iterator itr = movementScriptSet.begin(); itr != movementScriptSet.end(); ++itr)
         {
-            sLog.outErrorDb("Table `dbscripts_on_creature_movement` contain unused script, id %u.", *itr);
+            sLog.outErrorDb("Table `creature_movement_template` contain unused script, id %u.", *itr);
         }
         sLog.outString();
     }
