@@ -24,20 +24,20 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "2115053"
+    #define REVISION_NR "2116001"
 
     #define REALMD_DB_VERSION_NR 21
-    #define REALMD_DB_STRUCTURE_NR 2
+    #define REALMD_DB_STRUCTURE_NR 3
     #define REALMD_DB_CONTENT_NR 001
-    #define REALMD_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
+    #define REALMD_DB_UPDATE_DESCRIPTION "Update Row format and engine"
 
     #define CHAR_DB_VERSION_NR 21
-    #define CHAR_DB_STRUCTURE_NR 4
+    #define CHAR_DB_STRUCTURE_NR 5
     #define CHAR_DB_CONTENT_NR 001
-    #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
+    #define CHAR_DB_UPDATE_DESCRIPTION "Update deprecated ROW_FORMAT"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 15
-    #define WORLD_DB_CONTENT_NR 053
-    #define WORLD_DB_UPDATE_DESCRIPTION "NPC_1434_position_fix"
+    #define WORLD_DB_STRUCTURE_NR 16
+    #define WORLD_DB_CONTENT_NR 001
+    #define WORLD_DB_UPDATE_DESCRIPTION "Update deprecated ROW_FORMAT"
 #endif // __REVISION_H__
