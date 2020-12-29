@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 MaNGOS project <https://getmangos.eu>
+ * Copyright (C) 2015-2021 MaNGOS <https://getmangos.eu>
  * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
@@ -26,7 +26,7 @@
 #include "ObjectMgr.h"
 #include "ProgressBar.h"
 
-class ChatCommand; // Forward declaration of 
+class ChatCommand; // Forward declaration of
 
 INSTANTIATE_SINGLETON_1(CommandMgr);
 
@@ -114,7 +114,7 @@ void CommandMgr::GetCommandHelpLocaleString(uint32 commandId, int32 loc_idx, std
             if (namePtr && il->HelpText.size() > size_t(loc_idx) && !il->HelpText[loc_idx].empty())
             {
                 *namePtr = il->HelpText[loc_idx];
-            }           
+            }
         }
     }
 }
