@@ -567,7 +567,6 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
     else
     {
 
-
         if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
         {
             return false;
