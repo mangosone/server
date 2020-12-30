@@ -13,6 +13,8 @@ in recent versions.
 Many Thanks to all the groups and individuals who contributed to this release.
 - 210+ Commits since the previous release.
 
+Code Changes:
+=============
 * Removed the old SD2 scripts and Added the new unified SD3 Submodule
 * Removed the individual extractor projects and added a unified Extractors Submodule
 
@@ -434,6 +436,104 @@ Many Thanks to all the groups and individuals who contributed to this release.
 * Validate the spawn distance passed to RandomMovementGenerator constructor.
 * Various Unit.cpp Fixes
 
+DB Changes:
+===========
+* [French] Updated Translations
+* [Locale] Fix 'replace_BaseEnglish_with_xxx' file
+* [Locale] Fix up installation script
+* [Locales] Add multi translations. Thanks Elmsroth and Gromchek
+* [Localisation] Added Command Help files
+* [Localisation] Format updates and minor changes. Thanks all authors
+* [Localisation] Multiple updates. Thanks Gromchek and everyone else
+* [Localisation] Updated Quest texts
+* [Localisation] Updated various texts
+* [Localisation] various Script Text translations. Thanks Gromcheck/Elmsroth
+* [Localisation] Various updates. Thanks galathil and other contributors
+* [Realm] fix account table errors
+* [Realm] fix missing comma
+* [Russian] Added some new translations
+* Add flags for Terrorclaw
+* Add missing Fel Fire aura to Warbringer Arix'Amal.
+* Add missing spawns of NPC 12125
+* Add missing Spirit Healer
+* Add missing table to backup scripts
+* Add rogue file back into the sequence
+* Add script for NPC 14488 EventAI.
+* Add Velendris Whitemorn gossip.
+* Add XT:9 pathing
+* Added missing item 13325
+* Added some missed dates
+* Area 52 Big Bruiser 20484 EventAI.
+* Area 52 Bruiser 20485 EventAI.
+* Asghar 22025 EventAI
+* Attempt to fix 21_20_001 not applying
+* Brainwashed Noble 596
+* carriage returns - quest
+* Change Christmas Tree (Medium) size.
+* Clefthoof Calf 19183 EventAI added.
+* Correct spawn for Krun Spinebreaker's Corpse.
+* Creature Linking by Entry
+* creature_linking_template Map 429 update
+* Dangerous! - object
+* Database cleanup, based on findings from Magnet
+* DB script for command localization
+* Dire Maul Spawn updates Part 1, 2 and 3.
+* Felfire Diemetradon 21408 AI.
+* Fix a typo
+* Fix docker config
+* Fix for the quest 7636 (#110)
+* Fix Jessel, Manny, Nova, Jane and Kitty; Picked from M2 DB. (#100)
+* Fix position of a Menethil Sentry.
+* Fix Q Winters Presents (#104)
+* Fix quest 3861 - CLUCK
+* Fix some more startup errors
+* Fix some startup errors
+* Fix target for  Empty cursed jar, Empty tainted jar and Empty pure sample jar.
+* Fix targeting of spell 12613
+* Fix Terrorclaw Respawn Time.
+* Fix texts for quest 6461
+* Fix typo in revision number
+* Fix typo 'Skuller' -> 'Skulker'
+* Fix upper case in OfferRewardText for quest 8288
+* fixed a minor typo
+* Fixed file name version
+* Fixed text for item 10022
+* GM_tickets_handling_fixes
+* Illidari Jailor AI script
+* Implement script for Warbringer Arix'Amal.
+* Improve Broken Skeleton 16805.
+* Laris Geardawdl complete rework.
+* Little Timmy now has one White Kitten.
+* Minor banner update
+* More DB quest cleanup based on Magnet findings
+* More quest text fixes from Magnet
+* Move file into correct folder
+* Overlord Gorefist 18160
+* q.354 'Deaths in the Family'
+* q.770 Should only be available to horde.
+* Quick fix to Velendris Whitemorn gossip update.
+* Remove obsolete file
+* Remove static Ancestral Spirit Wolf spawn.
+* Remove unnecessary spacing from mangos_string
+* Revert "Brainwashed Noble 596"
+* Revert "Creature Linking by Entry"
+* Revert "fixed a minor typo"
+* Skyguard Rations and Enriched Terocone Juice.
+* Slaag 22199 - Frenzy should be used at any HP%
+* Some minor corrections
+* Support for quest 7636.
+* Target type for Empty pure sample jar - Part 2.
+* The Big Command Help Sync Pt2
+* The big Command help syncup
+* Tidy up loadDB file
+* Tidy up loadDB file pt2
+* Update barrel locations (#103)
+* Update deprecated row_format_fixed
+* Updated from findings in Magnet
+* Updates to InstallDatabases.sh (#112)
+* WIP: Setup database with docker (#166)
+* Wrath Lord 20929
+
 
 0.20 (2015-02-31) - Points of departure
 ---------------------------------------
@@ -570,7 +670,7 @@ Many Thanks to all the groups and individuals who contributed to this release.
 * Updated Scripts to revision 2795
 * Updated shutdown function to work the same as Zero
 * Use shiny new function to play music with the spell (c2208)
-		
+  
 
 0.19 (2014-07-xx) - The Genius of Tom Rus (Not released publically)
 --------------------------------
