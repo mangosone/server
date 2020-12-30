@@ -28,65 +28,107 @@ server code, and furthered the development of a few [World of Warcraft][1] serve
 
 Authors
 -------
-For Authors prior to Release 0.19, please see the file [Historic Authors](Authors_historic.md)
+For Authors prior to Release 0.21, please see the file [Historic Authors](Authors_historic.md)
 
 We are grateful to the following who contributed to Release 0.21:
 
-* Antzmangos/billy1arm
-* Chuck5ta
-* Foereaper
-* H0zen
-* Olion17
-
-
 * 249CAAFE40
+* aleigood
 * Andrewmunro
-* Antzmangos/billy1arm
+* Antz/billy1arm
+* Armand-Gabriel-Camner
+* Artox
+* bdebae
+* beefbroccoli
+* Blumfield
 * Boxa
+* Bryan Meulmeester
 * cabfever
 * cala
 * Chuck5ta
+* chaosvex
 * Cyberium
+* Cylae
 * Dalon
+* domgho
 * Evacomaroski
 * EvilDead666
+* evil-at-wow
 * Exxenoz
+* fgreinus
 * Foereaper
 * GiantCrocodile
 * Grz3s
 * Hallabro
+* Helladan
+* hlarsen
+* H0zen
 * iLeopard66
+* inifield
 * Jackpoz
+* Jeremy lb
 * Jonascone
+* katz1
+* Kel
+* krullgor
+* kvipka
 * Laise
 * Laizerox
 * LfxGroove
+* Lidocain
 * LilleCarl
 * MadMaxMangos
+* Markus
 * Meladath
+* mityada
+* MrMarvin
+* namreev
 * Neo2003
 * Neotmiren
 * Nymph2013
-* olion17
+* Olion17
+* Oniryck
 * Patman64
+* Pavel Belev
+* Phatcat
 * Rage311
+* robinsch
 * Rochet2
+* Ryan Ashley
 * Salja
 * Sanctum32
+* santalex
 * Schmoozerd
+* Scott Stout
+* shauren
 * ShinDarth
+* sidsukana
 * Sikevux
+* Simon SandstrÃ¶m
+* Simplaf234
+* spp-
+* Sterling Alexander
 * Stfx
+* Subv
+* SylvainNeau
+* theLuda
+* themadfitz
 * The-Great-Sephiroth
+* Tid
+* Tim Forbes
 * Tobschinski
 * Trimken
+* Vale the Violet Mote
 * VladimirMangos
+* virusav
 * vstar0v0
-* Warkdev
 * Xfurry
+* xfury
+* Warkdev
+* Zac Jones
 * Zackbcom
+* Zilvermoon
 * Zwisus
-
 
 
 [1]: http://blizzard.com/games/wow/ "World of Warcraft"
