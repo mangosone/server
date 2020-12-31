@@ -122,6 +122,10 @@ enum BattleGroundSpells
     SPELL_AURA_PLAYER_INACTIVE      = 43681,                // Inactive
 };
 
+/**
+ * @brief
+ *
+ */
 enum BattleGroundTimeIntervals
 {
     RESURRECTION_INTERVAL           = 30000,                // ms
@@ -1092,7 +1096,6 @@ class BattleGround
          * @brief
          *
          * @param player
-         * @param plr_guid
          */
         void EventPlayerLoggedIn(Player* player);
         /**
@@ -1277,7 +1280,7 @@ class BattleGround
         bool IsPlayerInBattleGround(ObjectGuid guid);
 
         /* virtual score-array - get's used in bg-subclasses */
-        int32 m_TeamScores[PVP_TEAM_COUNT]; /**< TODO */
+        int32 m_TeamScores[PVP_TEAM_COUNT];
 
         /**
          * @brief
@@ -1380,6 +1383,7 @@ class BattleGround
 
         /* Arena team ids by team */
         uint32 m_ArenaTeamIds[PVP_TEAM_COUNT];
+
         int32 m_ArenaTeamRatingChanges[PVP_TEAM_COUNT];
 
         /* Limits */

@@ -134,6 +134,7 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId, uint8 SpawnMode)
     m_persistentState->SetUsedByMapState(this);
 
     m_weatherSystem = new WeatherSystem(this);
+
 #ifdef ENABLE_ELUNA
     sEluna->OnCreate(this);
 #endif /* ENABLE_ELUNA */
@@ -772,8 +773,7 @@ Map::Remove(T* obj, bool remove)
     }
 }
 
-void
-Map::PlayerRelocation(Player* player, float x, float y, float z, float orientation)
+void Map::PlayerRelocation(Player* player, float x, float y, float z, float orientation)
 {
     MANGOS_ASSERT(player);
 

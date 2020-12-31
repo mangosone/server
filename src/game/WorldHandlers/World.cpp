@@ -1230,15 +1230,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Tavern Area Triggers...");
     sObjectMgr.LoadTavernAreaTriggers();
 
-    //sLog.outString("Loading AreaTrigger script names...");
-    //sScriptMgr.LoadAreaTriggerScripts();
-
-    //sLog.outString("Loading event id script names...");
-    //sScriptMgr.LoadEventIdScripts();
-
-    //sLog.outString("Loading spell script names...");
-    //sScriptMgr.LoadSpellIdScripts();
-
 #ifdef ENABLE_SD3
     sLog.outString("Loading all script bindings...");
     sScriptMgr.LoadScriptBinding();
@@ -1836,9 +1827,9 @@ namespace MaNGOS
                     do_helper(data_list, &str[0]);
                 }
                 else
-            {
-                do_helper(data_list, (char*)text);
-            }
+                {
+                    do_helper(data_list, (char*)text);
+                }
             }
         private:
             char* lineFromMessage(char*& pos)
