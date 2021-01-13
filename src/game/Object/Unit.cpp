@@ -9365,13 +9365,13 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
         switch (effect_index)
         {
             case EFFECT_INDEX_0:
-                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_EFFECT1, value);
+                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_ATTACK_POWER, value);
                 break;
             case EFFECT_INDEX_1:
                 modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_EFFECT2, value);
                 break;
             case EFFECT_INDEX_2:
-                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_EFFECT3, value);
+                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_HASTE, value);
                 break;
         }
     }

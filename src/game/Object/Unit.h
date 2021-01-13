@@ -102,7 +102,7 @@ enum SpellModOp
     SPELLMOD_DAMAGE                 = 0,
     SPELLMOD_DURATION               = 1,
     SPELLMOD_THREAT                 = 2,
-    SPELLMOD_EFFECT1                = 3,
+    SPELLMOD_ATTACK_POWER           = 3,
     SPELLMOD_CHARGES                = 4,
     SPELLMOD_RANGE                  = 5,
     SPELLMOD_RADIUS                 = 6,
@@ -122,7 +122,7 @@ enum SpellModOp
     SPELLMOD_EFFECT_PAST_FIRST      = 20,
     SPELLMOD_CASTING_TIME_OLD       = 21,
     SPELLMOD_DOT                    = 22,
-    SPELLMOD_EFFECT3                = 23,
+    SPELLMOD_HASTE                  = 23,
     SPELLMOD_SPELL_BONUS_DAMAGE     = 24,
     // spellmod 25 unused
     // SPELLMOD_FREQUENCY_OF_SUCCESS   = 26,                // not used in 2.4.3
