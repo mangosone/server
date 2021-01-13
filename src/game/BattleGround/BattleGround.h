@@ -410,7 +410,10 @@ class BattleGround
          *
          * @return BattleGroundTypeId
          */
-        BattleGroundTypeId GetTypeID() const { return m_TypeID; }
+        BattleGroundTypeId GetTypeID() const
+        {
+            return m_TypeID;
+        }
         /**
          * @brief
          *

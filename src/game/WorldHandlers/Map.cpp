@@ -579,13 +579,13 @@ void Map::Update(const uint32& t_diff)
     {
         for (m_activeNonPlayersIter = m_activeNonPlayers.begin(); m_activeNonPlayersIter != m_activeNonPlayers.end();)
         {
-            // skip not in world
             WorldObject* obj = *m_activeNonPlayersIter;
 
             // step before processing, in this case if Map::Remove remove next object we correctly
             // step to next-next, and if we step to end() then newly added objects can wait next update.
             ++m_activeNonPlayersIter;
 
+            // skip not in world
             if (!obj->IsInWorld() || !obj->IsPositionValid())
             {
                 continue;

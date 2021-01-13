@@ -6360,6 +6360,8 @@ void Aura::HandleShapeshiftBoosts(bool apply)
         case FORM_CREATURECAT:
         case FORM_CREATUREBEAR:
             break;
+        default:
+            break;
     }
 
     if (apply)
@@ -7433,6 +7435,7 @@ void Aura::PeriodicDummyTick()
 {
     SpellEntry const* spell = GetSpellProto();
     Unit* target = GetTarget();
+
     switch (spell->SpellFamilyName)
     {
         case SPELLFAMILY_GENERIC:
@@ -8613,10 +8616,12 @@ void SpellAuraHolder::Update(uint32 diff)
     }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (Aura* aura = m_auras[i])
         {
             aura->UpdateAura(diff);
         }
+    }
 
     // Channeled aura required check distance from caster
     if (IsChanneledSpell(m_spellProto) && GetCasterGuid() != m_target->GetObjectGuid())
