@@ -651,40 +651,40 @@ enum NPCFlags
  */
 enum MovementFlags
 {
-    MOVEFLAG_NONE                   = 0x00000000,
-    MOVEFLAG_FORWARD                = 0x00000001,           /// verified
-    MOVEFLAG_BACKWARD               = 0x00000002,           /// verified
-    MOVEFLAG_STRAFE_LEFT            = 0x00000004,           /// verified
-    MOVEFLAG_STRAFE_RIGHT           = 0x00000008,           /// verified
-    MOVEFLAG_TURN_LEFT              = 0x00000010,           /// verified
-    MOVEFLAG_TURN_RIGHT             = 0x00000020,           /// verified
-    MOVEFLAG_PITCH_UP               = 0x00000040,           /// not confirmed
-    MOVEFLAG_PITCH_DOWN             = 0x00000080,           /// not confirmed
-    MOVEFLAG_WALK_MODE              = 0x00000100,           /// verified
-    MOVEFLAG_ONTRANSPORT            = 0x00000200,               // Used for flying on some creatures
-    MOVEFLAG_LEVITATING               = 0x00000400,
-    MOVEFLAG_ROOT            = 0x00000800,
-    MOVEFLAG_FALLING            = 0x00001000,
-    MOVEFLAG_FALLINGFAR         = 0x00004000,
-    MOVEFLAG_SWIMMING           = 0x00200000,               // appears with fly flag also
-    MOVEFLAG_ASCENDING          = 0x00400000,               // swim up also
-    MOVEFLAG_CAN_FLY            = 0x00800000,
-    MOVEFLAG_FLYING             = 0x01000000,
-    MOVEFLAG_FLYING2            = 0x02000000,               // Actual flying mode
-    MOVEFLAG_SPLINE_ELEVATION   = 0x04000000,               // used for flight paths
-    MOVEFLAG_SPLINE_ENABLED     = 0x08000000,               // used for flight paths
-    MOVEFLAG_WATERWALKING       = 0x10000000,               // prevent unit from falling through water
-    MOVEFLAG_SAFE_FALL          = 0x20000000,               // active rogue safe fall spell (passive)
-    MOVEFLAG_HOVER              = 0x40000000
+    MOVEFLAG_NONE             = 0x00000000,
+    MOVEFLAG_FORWARD          = 0x00000001,           /// verified
+    MOVEFLAG_BACKWARD         = 0x00000002,           /// verified
+    MOVEFLAG_STRAFE_LEFT      = 0x00000004,           /// verified
+    MOVEFLAG_STRAFE_RIGHT     = 0x00000008,           /// verified
+    MOVEFLAG_TURN_LEFT        = 0x00000010,           /// verified
+    MOVEFLAG_TURN_RIGHT       = 0x00000020,           /// verified
+    MOVEFLAG_PITCH_UP         = 0x00000040,           /// not confirmed
+    MOVEFLAG_PITCH_DOWN       = 0x00000080,           /// not confirmed
+    MOVEFLAG_WALK_MODE        = 0x00000100,           /// verified
+    MOVEFLAG_ONTRANSPORT      = 0x00000200,           /// Used for flying on some creatures
+    MOVEFLAG_LEVITATING       = 0x00000400,
+    MOVEFLAG_ROOT             = 0x00000800,
+    MOVEFLAG_FALLING          = 0x00001000,
+    MOVEFLAG_FALLINGFAR       = 0x00004000,
+    MOVEFLAG_SWIMMING         = 0x00200000,           /// appears with fly flag also
+    MOVEFLAG_ASCENDING        = 0x00400000,           /// swim up also
+    MOVEFLAG_CAN_FLY          = 0x00800000,
+    MOVEFLAG_FLYING           = 0x01000000,
+    MOVEFLAG_FLYING2          = 0x02000000,           /// Actual flying mode
+    MOVEFLAG_SPLINE_ELEVATION = 0x04000000,           /// used for flight paths
+    MOVEFLAG_SPLINE_ENABLED   = 0x08000000,           /// used for flight paths
+    MOVEFLAG_WATERWALKING     = 0x10000000,           /// prevent unit from falling through water
+    MOVEFLAG_SAFE_FALL        = 0x20000000,           /// active rogue safe fall spell (passive)
+    MOVEFLAG_HOVER            = 0x40000000
 };
 
 // flags that use in movement check for example at spell casting
 MovementFlags const movementFlagsMask = MovementFlags(
-        MOVEFLAG_FORWARD | MOVEFLAG_BACKWARD  | MOVEFLAG_STRAFE_LEFT | MOVEFLAG_STRAFE_RIGHT |
-        MOVEFLAG_PITCH_UP | MOVEFLAG_PITCH_DOWN | MOVEFLAG_ROOT |
-        MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR | MOVEFLAG_ASCENDING   |
-        MOVEFLAG_FLYING  | MOVEFLAG_SPLINE_ELEVATION
-                                        );
+    MOVEFLAG_FORWARD | MOVEFLAG_BACKWARD | MOVEFLAG_STRAFE_LEFT | MOVEFLAG_STRAFE_RIGHT |
+    MOVEFLAG_PITCH_UP | MOVEFLAG_PITCH_DOWN | MOVEFLAG_ROOT |
+    MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR | MOVEFLAG_ASCENDING |
+    MOVEFLAG_FLYING  | MOVEFLAG_SPLINE_ELEVATION
+    );
 
 MovementFlags const movementOrTurningFlagsMask = MovementFlags(
             movementFlagsMask | MOVEFLAG_TURN_LEFT | MOVEFLAG_TURN_RIGHT
@@ -3868,6 +3868,7 @@ class Unit : public WorldObject
         bool m_isSpawningLinked;
 
     private:
+
         void CleanupDeletedAuras();
         void UpdateSplineMovement(uint32 t_diff);
 
