@@ -121,7 +121,7 @@ The repository of as much information as we can pack in. Details regarding the D
 
 Found an issue or something which doesn't seem right, please log it in the relevant section of the Bug Tracker.
 
-* [**Bug Tracker**](https://www.getmangos.eu/bug-tracker/mangos-zero/)
+* [**Bug Tracker**](https://www.getmangos.eu/bug-tracker/mangos-one/)
 
 **Installation Guides**
 ----
@@ -165,8 +165,7 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
-[2]: http://blizzard.com/games/wow/ "World of Warcraft · Classic / Vanilla"
-[3]: http://wowpedia.org/Beta#World_of_Warcraft "World of Warcraft - Classic Beta"
+[2]: http://blizzard.com/games/wow/ "World of Warcraft · TBC"
 [4]: http://www.wowpedia.org/Patch_2.4.3 "WoW The Burning Crusade · Patch 2.4.3 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
 
