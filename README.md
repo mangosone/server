@@ -2,16 +2,16 @@
 [<img src='https://www.getmangos.eu/!assets_mangos/logo.png' border=0>](https://www.getmangos.eu)
 
 Build Status:<br><b>Linux/MAC:</b>
-[<img src='https://travis-ci.org/mangosone/server.png' border=0 valign="iddle">](https://travis-ci.org/mangosone/server/builds)
+[<img src='https://travis-ci.org/mangosone/server.png' border=0 valign="middle">](https://travis-ci.org/mangosone/server/builds)
 <b>Windows:</b>
-[<img src='https://ci.appveyor.com/api/projects/status/github/mangosone/server?branch=develop21&svg=true' border=0 valign="middle">](https://ci.appveyor.com/project/MaNGOS/server-80qcn/history)
+[<img src='https://ci.appveyor.com/api/projects/status/github/mangosone/server?branch=master&svg=true' border=0 valign="middle">](https://ci.appveyor.com/project/MaNGOS/server-80qcn/history)
  <b>Codacy Status:</b> 
-[<img src='https://api.codacy.com/project/badge/Grade/789ade9bc10449c99d97b11bc7a2f83b' border=0 valign="middle"/>](https://www.codacy.com/app/MaNGOS/MangosOne?utm_source=github.com&utm_medium=referral&utm_content=mangosone/server&utm_campaign=Badge_Grade)
+[<img src='https://api.codacy.com/project/badge/Grade/789ade9bc10449c99d97b11bc7a2f83b' border=0 valign="middle"/>](https://app.codacy.com/gh/mangosone/server/dashboard)
 
 ---
 
 [<img src="https://www.getmangos.eu/!assets_mangos/Mangos1.png" width="48" valign="middle"/>](http://getmangos.eu)
- **MangosOne - The Burning Crusade World of Warcraft server**
+ **MangosOne - The Burning Crusade WoW server**
 ===
 
 **Mangos** is an open source project written in [C++][7]. It's fast, runs on multiple
@@ -165,7 +165,7 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
-[2]: http://blizzard.com/games/wow/ "World of Warcraft · TBC"
+[2]: https://worldofwarcraft.com/ "World of Warcraft
 [4]: http://www.wowpedia.org/Patch_2.4.3 "WoW The Burning Crusade · Patch 2.4.3 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
 
