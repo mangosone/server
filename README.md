@@ -95,7 +95,7 @@ Optional dependencies
 
 <br>We have a small, but extremely friendly and helpful community managed by MadMax and Antz.
 <br>Any trolling or unpleasantness is swiftly dealt with !!
-- Our discord/forum motto is "Be nice or Be somewhere else"
+* Our discord/forum motto is "Be nice or Be somewhere else"
 
 **Official Website**
 ----
@@ -165,10 +165,9 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
-[2]: https://worldofwarcraft.com/ "World of Warcraft
+[2]: https://worldofwarcraft.com/ "World of Warcraft"
 [4]: http://www.wowpedia.org/Patch_2.4.3 "WoW The Burning Crusade · Patch 2.4.3 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
-
 [10]: https://getmangos.eu/ "mangos · project site"
 [12]: https://github.com/mangosone "MaNGOS One · github organization"
 [13]: https://github.com/mangosone/server "MaNGOS One · server repository"
