@@ -35,6 +35,8 @@
 #include "MapPersistentStateMgr.h"
 #include "ObjectMgr.h"
 
+#define MOVEMENT_DELAY_MS 500
+
 #if defined(WIN32) && !defined(__MINGW32__)
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
@@ -327,30 +329,15 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     /*----------------*/
 
     // Calculate timestamp
-    int32 move_time, mstime;
-    mstime = mTimeStamp();
+    const uint32 mstime = mTimeStamp();
     if (m_clientTimeDelay == 0)
     {
         m_clientTimeDelay = mstime - movementInfo.GetTime();
     }
 
-    /* if(movementInfo.GetTime() - (mstime + m_clientTimeDelay) < 0)
-    {
-        move_time = mstime + 500;
-        move_time -= (movementInfo.GetTime() - (mstime + m_clientTimeDelay));
-        movementInfo.UpdateTime(move_time);
-    }
-    else
-    {
-    int calc_var = (movementInfo.GetTime() - (mstime + m_clientTimeDelay));
-    if(calc_var < 0)
-    {
-        calc_var *= -1;
-    }
-    calc_var += 500 + mstime;
-    move_time = calc_var; */
+    uint32 delay = mstime + m_clientTimeDelay;
+    uint32 move_time = movementInfo.GetTime() - delay + mstime + MOVEMENT_DELAY_MS;
 
-    move_time = (movementInfo.GetTime() - (mstime - m_clientTimeDelay)) + 500 + mstime;
     movementInfo.UpdateTime(move_time);
 
     if (!VerifyMovementInfo(movementInfo))
@@ -651,7 +638,7 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
 
 void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 {
-    movementInfo.UpdateTime(WorldTimer::getMSTime());
+    //movementInfo.UpdateTime(WorldTimer::getMSTime());
 
     Unit* mover = _player->GetMover();
 
