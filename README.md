@@ -2,7 +2,7 @@
 [<img src='https://www.getmangos.eu/!assets_mangos/logo2.png' border=0>][3]
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>Build Status:</b>
- Linux/MAC: [<img src='https://travis-ci.org/mangosone/server.png' border=0 valign="middle">][10]
+ Linux/MAC: [<img src='https://travis-ci.com/mangosone/server.png' border=0 valign="middle">][10]
  Windows: [<img src='https://ci.appveyor.com/api/projects/status/github/mangosone/server?branch=master&svg=true' border=0 valign="middle">][11]
  <br><b>Repository Status:</b> 
 [<img src='https://api.codacy.com/project/badge/Grade/789ade9bc10449c99d97b11bc7a2f83b' border=0 valign="middle"/>][12]
