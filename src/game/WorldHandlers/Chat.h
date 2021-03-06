@@ -51,32 +51,32 @@ class Unit;
 
 class ChatCommand
 {
-public:
-    uint32             Id;
-    const char* Name;
-    uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
-    bool               AllowConsole;
-    bool (ChatHandler::* Handler)(char* args);
-    std::string        Help;
-    ChatCommand* ChildCommands;
+    public:
+        uint32             Id;
+        const char* Name;
+        uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
+        bool               AllowConsole;
+        bool (ChatHandler::* Handler)(char* args);
+        std::string        Help;
+        ChatCommand* ChildCommands;
 
-      ChatCommand(
+        ChatCommand(
           const char* pName,
           uint32 pSecurityLevel,
           bool pAllowConsole,
           bool (ChatHandler::* pHandler)(char* args),
           std::string pHelp,
           ChatCommand* pChildCommands
-      )
+        )
          : Id(-1)
-      {
+        {
           Name = pName;
           SecurityLevel = pSecurityLevel;
           AllowConsole = pAllowConsole;
           Handler = pHandler;
           Help = pHelp;
           ChildCommands = pChildCommands;
-      }
+        }
 };
 
 enum ChatCommandSearchResult
@@ -578,6 +578,8 @@ class ChatHandler
         bool HandleSummonCommand(char* args);
         bool HandleAppearCommand(char* args);
         bool HandleGroupgoCommand(char* args);
+        bool HandleAuraGroupCommand(char* args);
+        bool HandleUnAuraGroupCommand(char* args);
         bool HandleRecallCommand(char* args);
         bool HandleAnnounceCommand(char* args);
         bool HandleNotifyCommand(char* args);
@@ -649,6 +651,9 @@ class ChatHandler
         bool HandleMmap(char* args);
         bool HandleMmapTestArea(char* args);
         bool HandleMmapTestHeight(char* args);
+
+        bool HandleFreezePlayerCommand(char* args);
+        bool HandleUnfreezePlayerCommand(char* args);
 
 #ifdef ENABLE_PLAYERBOTS
 
@@ -789,5 +794,7 @@ class CliHandler : public ChatHandler
         void* m_callbackArg;
         Print* m_print;
 };
+
+bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
 #endif
