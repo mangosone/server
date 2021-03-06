@@ -147,8 +147,8 @@ string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
         return "";
     }
 
-	fields = result->Fetch();
-	delete result;
+    fields = result->Fetch();
+    delete result;
     return fields[0].GetString();
 }
 
@@ -166,7 +166,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
                 Field* fields = results->Fetch();
                 sAccountMgr.DeleteAccount(fields[0].GetUInt32());
             } while (results->NextRow());
-			delete results;
+            delete results;
         }
 
         CharacterDatabase.Execute("DELETE FROM ai_playerbot_random_bots");
@@ -180,7 +180,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
         QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
         if (results)
         {
-			delete results;
+            delete results;
             continue;
         }
 
@@ -210,7 +210,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
 
         Field* fields = results->Fetch();
         uint32 accountId = fields[0].GetUInt32();
-		delete results;
+        delete results;
 
         sPlayerbotAIConfig.randomBotAccounts.push_back(accountId);
 
@@ -257,11 +257,11 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
                     uint32 guid = fields[0].GetUInt32();
                     randomBots.push_back(guid);
                 } while (results2->NextRow());
-				delete results2;
+                delete results2;
             }
 
         } while (results->NextRow());
-		delete results;
+        delete results;
     }
 
     if (sPlayerbotAIConfig.deleteRandomBotGuilds)
@@ -358,7 +358,7 @@ string RandomPlayerbotFactory::CreateRandomGuildName()
     }
 
     fields = result->Fetch();
-	delete result;
+    delete result;
     return fields[0].GetString();
 }
 

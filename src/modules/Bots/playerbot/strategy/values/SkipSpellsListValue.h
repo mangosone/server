@@ -4,8 +4,8 @@
 namespace ai
 {
     class SkipSpellsListValue : public ManualSetValue<set<uint32>&>
-	{
-	public:
+    {
+    public:
         SkipSpellsListValue(PlayerbotAI* ai) : ManualSetValue<set<uint32>&>(ai, list) {}
 
     private:

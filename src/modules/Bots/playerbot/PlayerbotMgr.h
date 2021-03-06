@@ -20,7 +20,7 @@ public:
     virtual ~PlayerbotHolder();
 
     void AddPlayerBot(uint64 guid, uint32 masterAccountId);
-	void HandlePlayerBotLoginCallback(QueryResult * dummy, SqlQueryHolder * holder);
+    void HandlePlayerBotLoginCallback(QueryResult * dummy, SqlQueryHolder * holder);
 
     void LogoutPlayerBot(uint64 guid);
     Player* GetPlayerBot (uint64 guid) const;

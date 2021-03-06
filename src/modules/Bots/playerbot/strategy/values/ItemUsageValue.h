@@ -15,8 +15,8 @@ namespace ai
     };
 
     class ItemUsageValue : public CalculatedValue<ItemUsage>, public Qualified
-	{
-	public:
+    {
+    public:
         ItemUsageValue(PlayerbotAI* ai) : CalculatedValue<ItemUsage>(ai) {}
 
     public:
@@ -25,5 +25,5 @@ namespace ai
     private:
         ItemUsage QueryItemUsageForEquip(ItemPrototype const * proto);
         bool IsItemUsefulForSkill(ItemPrototype const * proto);
-	};
+    };
 }

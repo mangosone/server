@@ -21,8 +21,8 @@ static bool substrContainsInMap(string searchTerm, map<string, T> searchIn)
 {
     for (typename map<string, T>::iterator i = searchIn.begin(); i != searchIn.end(); ++i)
     {
-		string term = i->first;
-		if (term.size() > 1 && searchTerm.find(term) != string::npos)
+        string term = i->first;
+        if (term.size() > 1 && searchTerm.find(term) != string::npos)
   {
       return true;
   }
@@ -168,11 +168,11 @@ ChatHelper::ChatHelper(PlayerbotAI* ai) : PlayerbotAIAware(ai)
 string ChatHelper::formatMoney(uint32 copper)
 {
     ostringstream out;
-	if (!copper)
-	{
-		out << "0";
-		return out.str();
-	}
+    if (!copper)
+    {
+        out << "0";
+        return out.str();
+    }
 
     uint32 gold = uint32(copper / 10000);
     copper -= (gold * 10000);
@@ -195,13 +195,13 @@ string ChatHelper::formatMoney(uint32 copper)
         space = true;
     }
 
-	if (copper > 0 && gold < 10)
-	{
+    if (copper > 0 && gold < 10)
+    {
         if (space) out << " ";
         {
             out << copper <<  "c";
         }
-	}
+    }
 
     return out.str();
 }

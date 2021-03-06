@@ -25,11 +25,11 @@ void replaceAll(std::string& str, const std::string& from, const std::string& to
 
 bool SayAction::Execute(Event event)
 {
-	if (stringTable.empty())
-	{
-		QueryResult* results = CharacterDatabase.PQuery("SELECT name, text, type FROM ai_playerbot_speech");
-		if (results)
-		{
+    if (stringTable.empty())
+    {
+        QueryResult* results = CharacterDatabase.PQuery("SELECT name, text, type FROM ai_playerbot_speech");
+        if (results)
+        {
             do
             {
                 Field* fields = results->Fetch();
@@ -42,11 +42,11 @@ bool SayAction::Execute(Event event)
                     stringTable[name].push_back(text);
                 }
             } while (results->NextRow());
-			delete results;
-		}
-	}
-	if (probabilityTable.empty())
-	{
+            delete results;
+        }
+    }
+    if (probabilityTable.empty())
+    {
         QueryResult* results = CharacterDatabase.PQuery("SELECT name, probability FROM ai_playerbot_speech_probability");
         if (results)
         {
@@ -58,9 +58,9 @@ bool SayAction::Execute(Event event)
 
                 probabilityTable[name] = probability;
             } while (results->NextRow());
-			delete results;
-		}
-	}
+            delete results;
+        }
+    }
 
     vector<string> &strings = stringTable[qualifier];
     if (strings.empty()) return false;
@@ -87,19 +87,19 @@ bool SayAction::Execute(Event event)
 
     if (bot->GetMap())
     {
-		const TerrainInfo * terrain = bot->GetMap()->GetTerrain();
-		if (terrain)
-		{
-			uint32 areaId = terrain->GetAreaId(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-			if (areaId)
-			{
-				AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
-				if (area)
-				{
-					replaceAll(text, "<subzone>", area->area_name[0]);
-				}
-			}
-		}
+        const TerrainInfo * terrain = bot->GetMap()->GetTerrain();
+        if (terrain)
+        {
+            uint32 areaId = terrain->GetAreaId(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+            if (areaId)
+            {
+                AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
+                if (area)
+                {
+                    replaceAll(text, "<subzone>", area->area_name[0]);
+                }
+            }
+        }
     }
 
     if (text.find("/y ") == 0)

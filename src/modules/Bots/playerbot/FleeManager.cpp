@@ -10,64 +10,64 @@ using namespace std;
 
 void FleeManager::calculateDistanceToPlayers(FleePoint *point)
 {
-	Group* group = bot->GetGroup();
-	if (!group)
+    Group* group = bot->GetGroup();
+    if (!group)
  {
      return;
  }
 
-	for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
+    for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
     {
-		Player* player = gref->getSource();
-		if(player == bot)
+        Player* player = gref->getSource();
+        if(player == bot)
   {
       continue;
   }
 
-		float d = player->GetDistance2d(point->x, point->y);
-		point->toAllPlayers.probe(d);
-		switch (player->getClass()) {
-			case CLASS_HUNTER:
-			case CLASS_MAGE:
-			case CLASS_PRIEST:
-			case CLASS_WARLOCK:
-				point->toRangedPlayers.probe(d);
-				break;
-			case CLASS_PALADIN:
-			case CLASS_ROGUE:
-			case CLASS_WARRIOR:
-				point->toMeleePlayers.probe(d);
-				break;
-		}
-	}
+        float d = player->GetDistance2d(point->x, point->y);
+        point->toAllPlayers.probe(d);
+        switch (player->getClass()) {
+            case CLASS_HUNTER:
+            case CLASS_MAGE:
+            case CLASS_PRIEST:
+            case CLASS_WARLOCK:
+                point->toRangedPlayers.probe(d);
+                break;
+            case CLASS_PALADIN:
+            case CLASS_ROGUE:
+            case CLASS_WARRIOR:
+                point->toMeleePlayers.probe(d);
+                break;
+        }
+    }
 }
 
 void FleeManager::calculateDistanceToCreatures(FleePoint *point)
 {
-	RangePair &distance = point->toCreatures;
+    RangePair &distance = point->toCreatures;
 
-	list<ObjectGuid> units = *bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<list<ObjectGuid> >("possible targets");
-	for (list<ObjectGuid>::iterator i = units.begin(); i != units.end(); ++i)
+    list<ObjectGuid> units = *bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<list<ObjectGuid> >("possible targets");
+    for (list<ObjectGuid>::iterator i = units.begin(); i != units.end(); ++i)
     {
-		Unit* unit = bot->GetPlayerbotAI()->GetUnit(*i);
-		if (!unit)
+        Unit* unit = bot->GetPlayerbotAI()->GetUnit(*i);
+        if (!unit)
   {
       continue;
   }
 
-		float d = unit->GetDistance2d(point->x, point->y);
-		distance.probe(d);
-	}
+        float d = unit->GetDistance2d(point->x, point->y);
+        distance.probe(d);
+    }
 }
 
 void FleeManager::calculatePossibleDestinations(list<FleePoint*> &points)
 {
-	float botPosX = bot->GetPositionX();
-	float botPosY = bot->GetPositionY();
-	float botPosZ = bot->GetPositionZ();
+    float botPosX = bot->GetPositionX();
+    float botPosY = bot->GetPositionY();
+    float botPosZ = bot->GetPositionZ();
 
-	for (float distance = sPlayerbotAIConfig.tooCloseDistance; distance <= maxAllowedDistance; distance += 1.0f)
-	{
+    for (float distance = sPlayerbotAIConfig.tooCloseDistance; distance <= maxAllowedDistance; distance += 1.0f)
+    {
         for (float angle = followAngle; angle < followAngle + 2 * M_PI; angle += M_PI / 8)
         {
             float x = botPosX + cos(angle) * distance;
@@ -100,39 +100,39 @@ void FleeManager::calculatePossibleDestinations(list<FleePoint*> &points)
                 delete point;
             }
         }
-	}
+    }
 }
 
 void FleeManager::cleanup(list<FleePoint*> &points)
 {
-	for (list<FleePoint*>::iterator i = points.begin(); i != points.end(); i++)
+    for (list<FleePoint*>::iterator i = points.begin(); i != points.end(); i++)
     {
-		FleePoint* point = *i;
-		delete point;
-	}
-	points.clear();
+        FleePoint* point = *i;
+        delete point;
+    }
+    points.clear();
 }
 
 bool FleePoint::isReasonable()
 {
-	return toCreatures.min >= 0 && toCreatures.max >= 0 &&
-	        toAllPlayers.min >= 0 && toAllPlayers.max >= 0 &&
-	        toAllPlayers.min <= sPlayerbotAIConfig.spellDistance &&
-	        toAllPlayers.max <= sPlayerbotAIConfig.sightDistance &&
-	        toCreatures.min >= sPlayerbotAIConfig.tooCloseDistance &&
-	        toCreatures.max >= sPlayerbotAIConfig.shootDistance;
+    return toCreatures.min >= 0 && toCreatures.max >= 0 &&
+            toAllPlayers.min >= 0 && toAllPlayers.max >= 0 &&
+            toAllPlayers.min <= sPlayerbotAIConfig.spellDistance &&
+            toAllPlayers.max <= sPlayerbotAIConfig.sightDistance &&
+            toCreatures.min >= sPlayerbotAIConfig.tooCloseDistance &&
+            toCreatures.max >= sPlayerbotAIConfig.shootDistance;
 }
 
 FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
 {
-	FleePoint* best = NULL;
-	for (list<FleePoint*>::iterator i = points.begin(); i != points.end(); i++)
+    FleePoint* best = NULL;
+    for (list<FleePoint*>::iterator i = points.begin(); i != points.end(); i++)
     {
-		FleePoint* point = *i;
-		if (!best || (point->toCreatures.min - best->toCreatures.min) >= 0.5f)
-		{
+        FleePoint* point = *i;
+        if (!best || (point->toCreatures.min - best->toCreatures.min) >= 0.5f)
+        {
             best = point;
-		}
+        }
         else if ((point->toCreatures.min - best->toCreatures.min) >= 0)
         {
             if (point->toRangedPlayers.max >= 0 && best->toRangedPlayers.max >= 0 &&
@@ -146,15 +146,15 @@ FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
                 best = point;
             }
         }
-	}
+    }
 
-	return best;
+    return best;
 }
 
 bool FleeManager::CalculateDestination(float* rx, float* ry, float* rz)
 {
-	list<FleePoint*> points;
-	calculatePossibleDestinations(points);
+    list<FleePoint*> points;
+    calculatePossibleDestinations(points);
 
     FleePoint* point = selectOptimalDestination(points);
     if (!point)
@@ -163,10 +163,10 @@ bool FleeManager::CalculateDestination(float* rx, float* ry, float* rz)
         return false;
     }
 
-	*rx = point->x;
-	*ry = point->y;
-	*rz = point->z;
+    *rx = point->x;
+    *ry = point->y;
+    *rz = point->z;
 
     cleanup(points);
-	return true;
+    return true;
 }

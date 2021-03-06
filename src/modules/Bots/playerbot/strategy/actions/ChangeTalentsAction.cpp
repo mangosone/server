@@ -6,5 +6,5 @@ using namespace ai;
 
 bool ChangeTalentsAction::Execute(Event event)
 {
-	return false;
+    return false;
 }

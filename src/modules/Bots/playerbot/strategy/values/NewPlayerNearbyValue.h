@@ -4,15 +4,15 @@
 namespace ai
 {
     class NewPlayerNearbyValue : public CalculatedValue<ObjectGuid>
-	{
-	public:
+    {
+    public:
         NewPlayerNearbyValue(PlayerbotAI* ai) : CalculatedValue<ObjectGuid>(ai, "new player nearby") {}
         virtual ObjectGuid Calculate();
     };
 
     class AlreadySeenPlayersValue : public ManualSetValue<set<ObjectGuid>& >
-	{
-	public:
+    {
+    public:
         AlreadySeenPlayersValue(PlayerbotAI* ai) : ManualSetValue<set<ObjectGuid>& >(ai, data, "already seen players") {}
 
     private:

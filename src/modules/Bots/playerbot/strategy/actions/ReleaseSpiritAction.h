@@ -6,9 +6,9 @@
 
 namespace ai
 {
-	class ReleaseSpiritAction : public Action {
-	public:
-		ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
+    class ReleaseSpiritAction : public Action {
+    public:
+        ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
 
     public:
         virtual bool Execute(Event event)

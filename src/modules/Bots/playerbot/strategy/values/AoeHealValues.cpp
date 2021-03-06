@@ -28,22 +28,22 @@ uint8 AoeHealValue::Calculate()
     }
 
     uint8 count = 0;
-	Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
-	for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
-	{
-		Player *player = sObjectMgr.GetPlayer(itr->guid);
-		if( !player || !player->IsAlive())
+    Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
+    for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+    {
+        Player *player = sObjectMgr.GetPlayer(itr->guid);
+        if( !player || !player->IsAlive())
   {
       continue;
   }
 
-	    float percent = (static_cast<float> (player->GetHealth()) / player->GetMaxHealth()) * 100;
-	    if (percent <= range)
+        float percent = (static_cast<float> (player->GetHealth()) / player->GetMaxHealth()) * 100;
+        if (percent <= range)
      {
          count++;
      }
-	}
+    }
 
-	return count;
+    return count;
 }
 

@@ -26,8 +26,8 @@ namespace ai
 
     template<class T>
     class CalculatedValue : public UntypedValue, public Value<T>
-	{
-	public:
+    {
+    public:
         CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
             checkInterval(checkInterval)
         {
@@ -35,7 +35,7 @@ namespace ai
         }
         virtual ~CalculatedValue() {}
 
-	public:
+    public:
         virtual T Get()
         {
             time_t now = time(0);
@@ -54,10 +54,10 @@ namespace ai
         virtual T Calculate() = 0;
 
     protected:
-		int checkInterval;
-		time_t lastCheckTime;
+        int checkInterval;
+        time_t lastCheckTime;
         T value;
-	};
+    };
 
     class Uint8CalculatedValue : public CalculatedValue<uint8>
     {

@@ -18,8 +18,8 @@ public:
         {
             for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
             {
-				const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
-				if (!spellInfo)
+                const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
+                if (!spellInfo)
     {
         return false;
     }

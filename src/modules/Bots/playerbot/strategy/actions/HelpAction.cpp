@@ -44,13 +44,13 @@ string HelpAction::CombineSupported(set<string> commands)
     ostringstream out;
 
     for (set<string>::iterator i = commands.begin(); i != commands.end(); )
-	{
+    {
         out << *i;
-		if (++i != commands.end())
+        if (++i != commands.end())
   {
       out << ", ";
   }
-	}
+    }
 
     return out.str();
 }

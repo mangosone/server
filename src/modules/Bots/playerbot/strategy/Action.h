@@ -47,8 +47,8 @@ namespace ai
     };
 
     class Action : public AiNamedObject
-	{
-	public:
+    {
+    public:
         Action(PlayerbotAI* ai, string name = "action") : verbose(false), AiNamedObject(ai, name) { }
         virtual ~Action(void) {}
 
@@ -69,7 +69,7 @@ namespace ai
 
     protected:
         bool verbose;
-	};
+    };
 
     class ActionNode
     {
@@ -109,29 +109,29 @@ namespace ai
 
     //---------------------------------------------------------------------------------------------------------------------
 
-	class ActionBasket
-	{
-	public:
+    class ActionBasket
+    {
+    public:
         ActionBasket(ActionNode* action, float relevance, bool skipPrerequisites, Event event) :
           action(action), relevance(relevance), skipPrerequisites(skipPrerequisites), event(event) {
             created = time(0);
         }
         virtual ~ActionBasket(void) {}
-	public:
-		float getRelevance() {return relevance;}
-		ActionNode* getAction() {return action;}
+    public:
+        float getRelevance() {return relevance;}
+        ActionNode* getAction() {return action;}
         Event getEvent() { return event; }
         bool isSkipPrerequisites() { return skipPrerequisites; }
         void AmendRelevance(float k) {relevance *= k; }
         void setRelevance(float relevance) { this->relevance = relevance; }
         bool isExpired(time_t secs) { return time(0) - created >= secs; }
-	private:
-		ActionNode* action;
-		float relevance;
+    private:
+        ActionNode* action;
+        float relevance;
         bool skipPrerequisites;
         Event event;
         time_t created;
-	};
+    };
 
     //---------------------------------------------------------------------------------------------------------------------
 

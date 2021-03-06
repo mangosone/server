@@ -5,8 +5,8 @@ namespace ai
 {
     typedef list<string> Outfit;
     class OutfitListValue : public ManualSetValue<Outfit&>
-	{
-	public:
+    {
+    public:
         OutfitListValue(PlayerbotAI* ai) : ManualSetValue<Outfit&>(ai, list) {}
 
     private:

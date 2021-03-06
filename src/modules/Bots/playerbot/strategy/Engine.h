@@ -62,22 +62,22 @@ namespace ai
     public:
         Engine(PlayerbotAI* ai, AiObjectContext *factory);
 
-	    void Init();
+        void Init();
         void addStrategy(string name);
-		void addStrategies(string first, ...);
+        void addStrategies(string first, ...);
         bool removeStrategy(string name);
         bool HasStrategy(string name);
         void removeAllStrategies();
         void toggleStrategy(string name);
         std::string ListStrategies();
         list<string> GetStrategies();
-		bool ContainsStrategy(StrategyType type);
-		void ChangeStrategy(string names);
-		string GetLastAction() { return lastAction; }
+        bool ContainsStrategy(StrategyType type);
+        void ChangeStrategy(string names);
+        string GetLastAction() { return lastAction; }
 
     public:
-	    virtual bool DoNextAction(Unit*, int depth = 0);
-	    ActionResult ExecuteAction(string name);
+        virtual bool DoNextAction(Unit*, int depth = 0);
+        ActionResult ExecuteAction(string name);
 
     public:
         void AddActionExecutionListener(ActionExecutionListener* listener)
@@ -90,7 +90,7 @@ namespace ai
         }
 
     public:
-	    virtual ~Engine(void);
+        virtual ~Engine(void);
 
     private:
         bool MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, Event event, const char* pushType);
@@ -107,8 +107,8 @@ namespace ai
         void LogValues();
 
     protected:
-	    Queue queue;
-	    std::list<TriggerNode*> triggers;
+        Queue queue;
+        std::list<TriggerNode*> triggers;
         std::list<Multiplier*> multipliers;
         AiObjectContext* aiObjectContext;
         std::map<string, Strategy*> strategies;
@@ -116,7 +116,7 @@ namespace ai
         std::string lastAction;
 
     public:
-		bool testMode;
+        bool testMode;
 
     private:
         ActionExecutionListeners actionExecutionListeners;

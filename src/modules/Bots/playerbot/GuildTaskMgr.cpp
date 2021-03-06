@@ -56,13 +56,13 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
         return;
     }
 
-	Guild *guild = sGuildMgr.GetGuildById(guildMaster->GetGuildId());
+    Guild *guild = sGuildMgr.GetGuildById(guildMaster->GetGuildId());
     DenyReason reason = PLAYERBOT_DENY_NONE;
     PlayerbotSecurityLevel secLevel = guildMaster->GetPlayerbotAI()->GetSecurity()->LevelFor(player, &reason);
     if (secLevel == PLAYERBOT_SECURITY_DENY_ALL || (secLevel == PLAYERBOT_SECURITY_TALK && reason != PLAYERBOT_DENY_FAR))
     {
         sLog.outDebug("%s / %s: skipping guild task update - not enough security level, reason = %u",
-			guild->GetName().c_str(), player->GetName(), reason);
+            guild->GetName().c_str(), player->GetName(), reason);
         return;
     }
 
@@ -87,7 +87,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
         if (task == GUILD_TASK_TYPE_NONE)
         {
             sLog.outError( "%s / %s: error creating guild task",
-				guild->GetName().c_str(), player->GetName());
+                guild->GetName().c_str(), player->GetName());
         }
 
         uint32 time = urand(sPlayerbotAIConfig.minGuildTaskChangeTime, sPlayerbotAIConfig.maxGuildTaskChangeTime);
@@ -96,7 +96,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
                 urand(sPlayerbotAIConfig.minGuildTaskAdvertisementTime, sPlayerbotAIConfig.maxGuildTaskAdvertisementTime));
 
         sLog.outDebug("%s / %s: guild task %u is set for %u secs",
-				guild->GetName().c_str(), player->GetName(),
+                guild->GetName().c_str(), player->GetName(),
                 task, time);
         return;
     }
@@ -105,7 +105,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
     if (!advertisement)
     {
         sLog.outDebug("%s / %s: sending advertisement",
-				guild->GetName().c_str(), player->GetName());
+                guild->GetName().c_str(), player->GetName());
         if (SendAdvertisement(owner, guildId))
         {
             SetTaskValue(owner, guildId, "advertisement", 1,
@@ -114,7 +114,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
         else
         {
             sLog.outError( "%s / %s: error sending advertisement",
-					guild->GetName().c_str(), player->GetName());
+                    guild->GetName().c_str(), player->GetName());
         }
     }
 
@@ -122,7 +122,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
     if (!thanks)
     {
         sLog.outDebug("%s / %s: sending thanks",
-				guild->GetName().c_str(), player->GetName());
+                guild->GetName().c_str(), player->GetName());
         if (SendThanks(owner, guildId))
         {
             SetTaskValue(owner, guildId, "thanks", 1, 2 * sPlayerbotAIConfig.maxGuildTaskChangeTime);
@@ -131,7 +131,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
         else
         {
             sLog.outError( "%s / %s: error sending thanks",
-					guild->GetName().c_str(), player->GetName());
+                    guild->GetName().c_str(), player->GetName());
         }
     }
 
@@ -139,7 +139,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
     if (!reward)
     {
         sLog.outDebug("%s / %s: sending reward",
-				guild->GetName().c_str(), player->GetName());
+                guild->GetName().c_str(), player->GetName());
         if (Reward(owner, guildId))
         {
             SetTaskValue(owner, guildId, "reward", 1, 2 * sPlayerbotAIConfig.maxGuildTaskChangeTime);
@@ -148,7 +148,7 @@ void GuildTaskMgr::Update(Player* player, Player* guildMaster)
         else
         {
             sLog.outError( "%s / %s: error sending reward",
-					guild->GetName().c_str(), player->GetName());
+                    guild->GetName().c_str(), player->GetName());
         }
     }
 }
@@ -203,10 +203,10 @@ bool GuildTaskMgr::CreateKillTask(uint32 owner, uint32 guildId)
 
     uint32 rank = !urand(0, 2) ? CREATURE_ELITE_RAREELITE : CREATURE_ELITE_RARE;
     vector<uint32> ids;
-	for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
-	{
-		CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
-		if (!co)
+    for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
+    {
+        CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
+        if (!co)
   {
       continue;
   }
@@ -554,7 +554,7 @@ bool GuildTaskMgr::IsGuildTaskItem(uint32 itemId, uint32 guildId)
             value = 0;
         }
 
-		delete results;
+        delete results;
     }
 
     return value;
@@ -589,8 +589,8 @@ map<uint32,uint32> GuildTaskMgr::GetTaskValues(uint32 owner, string type, uint32
 
     } while (results->NextRow());
 
-	delete results;
-	return result;
+    delete results;
+    return result;
 }
 
 uint32 GuildTaskMgr::GetTaskValue(uint32 owner, uint32 guildId, string type, uint32 *validIn /* = NULL */)
@@ -615,8 +615,8 @@ uint32 GuildTaskMgr::GetTaskValue(uint32 owner, uint32 guildId, string type, uin
         if (validIn) *validIn = secs;
     }
 
-	delete results;
-	return value;
+    delete results;
+    return value;
 }
 
 uint32 GuildTaskMgr::SetTaskValue(uint32 owner, uint32 guildId, string type, uint32 value, uint32 validIn)
@@ -785,7 +785,7 @@ bool GuildTaskMgr::HandleConsoleCommand(ChatHandler* handler, char const* args)
             } while (result->NextRow());
 
             Field* fields = result->Fetch();
-			delete result;
+            delete result;
         }
 
         return true;
@@ -850,7 +850,7 @@ bool GuildTaskMgr::HandleConsoleCommand(ChatHandler* handler, char const* args)
             } while (result->NextRow());
 
             Field* fields = result->Fetch();
-			delete result;
+            delete result;
             return true;
         }
     }
@@ -867,25 +867,25 @@ bool GuildTaskMgr::CheckItemTask(uint32 itemId, uint32 obtained, Player* ownerPl
     }
 
     uint32 owner = (uint32)ownerPlayer->GetGUIDLow();
-	Guild *guild = sGuildMgr.GetGuildById(bot->GetGuildId());
-	if (!guild)
+    Guild *guild = sGuildMgr.GetGuildById(bot->GetGuildId());
+    if (!guild)
  {
      return false;
  }
 
-	if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+    if (!sRandomPlayerbotMgr.IsRandomBot(bot))
  {
      return false;
  }
 
     sLog.outDebug("%s / %s: checking guild task",
-			guild->GetName().c_str(), ownerPlayer->GetName());
+            guild->GetName().c_str(), ownerPlayer->GetName());
 
     uint32 itemTask = GetTaskValue(owner, guildId, "itemTask");
     if (itemTask != itemId)
     {
         sLog.outDebug("%s / %s: item %u is not guild task item (%u)",
-				guild->GetName().c_str(), ownerPlayer->GetName(),
+                guild->GetName().c_str(), ownerPlayer->GetName(),
                 itemId, itemTask);
         SendCompletionMessage(ownerPlayer, "made a mistake with");
         return false;
@@ -914,7 +914,7 @@ bool GuildTaskMgr::CheckItemTask(uint32 itemId, uint32 obtained, Player* ownerPl
     if (obtained >= count)
     {
         sLog.outDebug("%s / %s: guild task complete",
-				guild->GetName().c_str(), ownerPlayer->GetName());
+                guild->GetName().c_str(), ownerPlayer->GetName());
         SetTaskValue(owner, guildId, "reward", 1, rewardTime - 15);
         SetTaskValue(owner, guildId, "itemCount", 0, 0);
         SetTaskValue(owner, guildId, "thanks", 0, 0);
@@ -923,7 +923,7 @@ bool GuildTaskMgr::CheckItemTask(uint32 itemId, uint32 obtained, Player* ownerPl
     else
     {
         sLog.outDebug("%s / %s: guild task progress %u/%u",
-				guild->GetName().c_str(), ownerPlayer->GetName(), obtained, count);
+                guild->GetName().c_str(), ownerPlayer->GetName(), obtained, count);
         SetTaskValue(owner, guildId, "itemCount", count - obtained, sPlayerbotAIConfig.maxGuildTaskChangeTime);
         SetTaskValue(owner, guildId, "thanks", 1, rewardTime - 30);
         SendCompletionMessage(ownerPlayer, "made a progress with");
@@ -1017,7 +1017,7 @@ bool GuildTaskMgr::Reward(uint32 owner, uint32 guildId)
 
 void GuildTaskMgr::CheckKillTask(Player* player, Unit* victim)
 {
-	Group *group = player->GetGroup();
+    Group *group = player->GetGroup();
     if (group)
     {
         for (GroupReference *gr = group->GetFirstMember(); gr; gr = gr->next())

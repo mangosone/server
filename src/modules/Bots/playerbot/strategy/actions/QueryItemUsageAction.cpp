@@ -112,11 +112,11 @@ string QueryItemUsageAction::QueryItemUsage(ItemPrototype const *item)
         return "Tradeskill";
     case ITEM_USAGE_USE:
         return "Use";
-	case ITEM_USAGE_GUILD_TASK:
-		return "Guild task";
-	case ITEM_USAGE_DISENCHANT:
-		return "Disenchant";
-	}
+    case ITEM_USAGE_GUILD_TASK:
+        return "Guild task";
+    case ITEM_USAGE_DISENCHANT:
+        return "Disenchant";
+    }
 
     return "";
 }

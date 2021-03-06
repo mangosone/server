@@ -194,11 +194,11 @@ void PlayerbotFactory::InitPet()
             return;
         }
 
-		vector<uint32> ids;
+        vector<uint32> ids;
         for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
         {
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
-			if (!co)
+            if (!co)
    {
        continue;
    }
@@ -213,8 +213,8 @@ void PlayerbotFactory::InitPet()
                 continue;
             }
 
-			ids.push_back(id);
-		}
+            ids.push_back(id);
+        }
 
         if (ids.empty())
         {
@@ -222,9 +222,9 @@ void PlayerbotFactory::InitPet()
             return;
         }
 
-		for (int i = 0; i < 100; i++)
-		{
-			int index = urand(0, ids.size() - 1);
+        for (int i = 0; i < 100; i++)
+        {
+            int index = urand(0, ids.size() - 1);
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(ids[index]);
             if (!co)
             {
@@ -300,7 +300,7 @@ void PlayerbotFactory::ClearSpells()
     for(PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
     {
         uint32 spellId = itr->first;
-		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
   {
       continue;
   }
@@ -1015,7 +1015,7 @@ void PlayerbotFactory::EnchantItem(Item* item)
                 continue;
             }
 
-			const SpellEntry *enchantSpell = sSpellStore.LookupEntry(enchant->spellid[0]);
+            const SpellEntry *enchantSpell = sSpellStore.LookupEntry(enchant->spellid[0]);
             if (!enchantSpell || (enchantSpell->spellLevel && enchantSpell->spellLevel > level))
             {
                 continue;
@@ -1312,26 +1312,26 @@ void PlayerbotFactory::InitAvailableSpells()
             continue;
         }
 
-		for (TrainerSpellMap::const_iterator itr = trainer_spells->spellList.begin(); itr != trainer_spells->spellList.end(); ++itr)
-		{
-			TrainerSpell const* tSpell = &itr->second;
+        for (TrainerSpellMap::const_iterator itr = trainer_spells->spellList.begin(); itr != trainer_spells->spellList.end(); ++itr)
+        {
+            TrainerSpell const* tSpell = &itr->second;
 
-			if (!tSpell)
+            if (!tSpell)
    {
        continue;
    }
 
-			uint32 reqLevel = 0;
+            uint32 reqLevel = 0;
 
-			reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
-			TrainerSpellState state = bot->GetTrainerSpellState(tSpell, reqLevel);
-			if (state != TRAINER_SPELL_GREEN)
+            reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
+            TrainerSpellState state = bot->GetTrainerSpellState(tSpell, reqLevel);
+            if (state != TRAINER_SPELL_GREEN)
    {
        continue;
    }
 
-			bot->learnSpell(tSpell->spell, false);
-		}
+            bot->learnSpell(tSpell->spell, false);
+        }
     }
 }
 

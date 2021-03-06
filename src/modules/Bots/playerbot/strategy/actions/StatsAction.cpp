@@ -61,12 +61,12 @@ void StatsAction::ListBagSlots(ostringstream &out)
 
     }
 
-	string color = "ff00ff00";
-	if (totalfree < total / 2)
+    string color = "ff00ff00";
+    if (totalfree < total / 2)
  {
      color = "ffffff00";
  }
-	if (totalfree < total / 4)
+    if (totalfree < total / 4)
  {
      color = "ffff0000";
  }

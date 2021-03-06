@@ -50,23 +50,23 @@ public:
         ACE_INET_Addr server(serverPort);
         ACE_SOCK_Acceptor client_responder(server);
 
-		while (true)
-		{
-			ACE_SOCK_Stream client_stream;
-			ACE_Time_Value timeout(5);
-			ACE_INET_Addr client;
-			if (-1 != client_responder.accept(client_stream, &client, &timeout))
-			{
-				string buffer, request;
-				while (ReadLine(client_stream, &buffer, &request))
-				{
-				    string response = sImmersiveServer.HandleCommand(request);
+        while (true)
+        {
+            ACE_SOCK_Stream client_stream;
+            ACE_Time_Value timeout(5);
+            ACE_INET_Addr client;
+            if (-1 != client_responder.accept(client_stream, &client, &timeout))
+            {
+                string buffer, request;
+                while (ReadLine(client_stream, &buffer, &request))
+                {
+                    string response = sImmersiveServer.HandleCommand(request);
                     client_stream.send_n(response.c_str(), response.size(), 0);
-					request = "";
-				}
-				client_stream.close();
-			}
-		}
+                    request = "";
+                }
+                client_stream.close();
+            }
+        }
 
         return 0;
     }

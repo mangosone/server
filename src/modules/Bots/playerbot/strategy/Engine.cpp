@@ -108,12 +108,12 @@ void Engine::Init()
         MultiplyAndPush(strategy->getDefaultActions(), 0.0f, false, emptyEvent, "default");
     }
 
-	if (testMode)
-	{
+    if (testMode)
+    {
         FILE* file = fopen("test.log", "w");
         fprintf(file, "\n");
         fclose(file);
-	}
+    }
 }
 
 
@@ -291,7 +291,7 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
 
 ActionResult Engine::ExecuteAction(string name)
 {
-	bool result = false;
+    bool result = false;
 
     ActionNode *actionNode = CreateActionNode(name);
     if (!actionNode)
@@ -323,7 +323,7 @@ ActionResult Engine::ExecuteAction(string name)
     result = ListenAndExecute(action, emptyEvent);
     MultiplyAndPush(action->getContinuers(), 0.0f, false, emptyEvent, "default");
     delete actionNode;
-	return result ? ACTION_RESULT_OK : ACTION_RESULT_FAILED;
+    return result ? ACTION_RESULT_OK : ACTION_RESULT_FAILED;
 }
 
 void Engine::addStrategy(string name)
@@ -347,23 +347,23 @@ void Engine::addStrategy(string name)
 
 void Engine::addStrategies(string first, ...)
 {
-	addStrategy(first);
+    addStrategy(first);
 
-	va_list vl;
-	va_start(vl, first);
+    va_list vl;
+    va_start(vl, first);
 
-	const char* cur;
-	do
-	{
-		cur = va_arg(vl, const char*);
-		if (cur)
+    const char* cur;
+    do
+    {
+        cur = va_arg(vl, const char*);
+        if (cur)
   {
       addStrategy(cur);
   }
-	}
-	while (cur);
+    }
+    while (cur);
 
-	va_end(vl);
+    va_end(vl);
 }
 
 bool Engine::removeStrategy(string name)
@@ -502,15 +502,15 @@ void Engine::PushAgain(ActionNode* actionNode, float relevance, Event event)
 
 bool Engine::ContainsStrategy(StrategyType type)
 {
-	for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
-	{
-		Strategy* strategy = i->second;
-		if (strategy->GetType() & type)
+    for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
+    {
+        Strategy* strategy = i->second;
+        if (strategy->GetType() & type)
   {
       return true;
   }
-	}
-	return false;
+    }
+    return false;
 }
 
 Action* Engine::InitializeAction(ActionNode* actionNode)

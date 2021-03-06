@@ -11,5 +11,5 @@ using namespace ai;
 
 bool GuildBankAction::Execute(Event event)
 {
-	return false;
+    return false;
 }

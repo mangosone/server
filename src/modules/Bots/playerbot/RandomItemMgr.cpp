@@ -153,9 +153,9 @@ RandomItemList RandomItemMgr::Query(RandomItemType type)
 {
     RandomItemList items;
 
-	for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
-	{
-		ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+    for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+    {
+        ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
         {
             continue;

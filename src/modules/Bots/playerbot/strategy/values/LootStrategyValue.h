@@ -5,8 +5,8 @@
 namespace ai
 {
     class LootStrategyValue : public ManualSetValue<LootStrategy*>
-	{
-	public:
+    {
+    public:
         LootStrategyValue(PlayerbotAI* ai) : ManualSetValue<LootStrategy*>(ai, normal) {}
         virtual ~LootStrategyValue() { delete defaultValue; }
 

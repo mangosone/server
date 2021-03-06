@@ -5,8 +5,8 @@
 namespace ai
 {
     class IsMovingValue : public BoolCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         IsMovingValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
         virtual bool Calculate()
@@ -45,8 +45,8 @@ namespace ai
     };
 
     class IsSwimmingValue : public BoolCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         IsSwimmingValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
         virtual bool Calculate()

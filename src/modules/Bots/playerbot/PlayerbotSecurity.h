@@ -30,7 +30,7 @@ class PlayerbotSecurity
     public:
         PlayerbotSecurity(Player* const bot);
 
-	public:
+    public:
         PlayerbotSecurityLevel LevelFor(Player* from, DenyReason* reason = NULL, bool ignoreGroup = false);
         bool CheckLevelFor(PlayerbotSecurityLevel level, bool silent, Player* from, bool ignoreGroup = false);
 

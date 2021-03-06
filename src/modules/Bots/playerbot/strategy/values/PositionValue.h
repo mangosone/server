@@ -19,11 +19,11 @@ namespace ai
     typedef map<string, Position> PositionMap;
 
     class PositionValue : public ManualSetValue<PositionMap&>
-	{
-	public:
+    {
+    public:
         PositionValue(PlayerbotAI* ai);
 
-	private:
+    private:
         PositionMap positions;
     };
 }

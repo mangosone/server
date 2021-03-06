@@ -30,10 +30,10 @@ namespace ahbot
     public:
         virtual bool Contains(ItemPrototype const* proto)
         {
-			return Trade::Contains(proto) &&
-					proto->SubClass != ITEM_SUBCLASS_PARTS &&
-					proto->SubClass != ITEM_SUBCLASS_DEVICES &&
-					proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
+            return Trade::Contains(proto) &&
+                    proto->SubClass != ITEM_SUBCLASS_PARTS &&
+                    proto->SubClass != ITEM_SUBCLASS_DEVICES &&
+                    proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
         }
 
         virtual string GetName() { return "othertrade"; }

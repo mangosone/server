@@ -5,12 +5,12 @@
 namespace ai
 {
     class NearestUnitsValue : public ObjectGuidListCalculatedValue
-	{
-	public:
+    {
+    public:
         NearestUnitsValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
             ObjectGuidListCalculatedValue(ai, "nearest units", 2), range(range) {}
 
-	public:
+    public:
         list<ObjectGuid> Calculate()
         {
             list<Unit*> targets;
@@ -34,5 +34,5 @@ namespace ai
 
     protected:
         float range;
-	};
+    };
 }

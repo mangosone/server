@@ -26,7 +26,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
 
         virtual void UpdateAIInternal(uint32 elapsed);
 
-	public:
+    public:
         static bool HandlePlayerbotConsoleCommand(ChatHandler* handler, char const* args);
         bool IsRandomBot(Player* bot);
         bool IsRandomBot(uint32 bot);
@@ -52,8 +52,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         bool ProcessBot(Player* player);
         void Revive(Player* player);
 
-	protected:
-	    virtual void OnBotLoginInternal(Player * const bot) {}
+    protected:
+        virtual void OnBotLoginInternal(Player * const bot) {}
 
     private:
         uint32 GetEventValue(uint32 bot, string event);

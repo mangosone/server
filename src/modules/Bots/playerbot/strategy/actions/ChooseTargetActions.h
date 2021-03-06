@@ -75,7 +75,7 @@ namespace ai
             bot->SetSelectionGuid(ObjectGuid());
             ai->ChangeEngine(BOT_STATE_NON_COMBAT);
             ai->InterruptSpell();
-			return true;
+            return true;
         }
     };
 

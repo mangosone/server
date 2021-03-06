@@ -7,45 +7,45 @@ using namespace ai;
 
 bool GossipHelloAction::Execute(Event event)
 {
-	ObjectGuid guid;
+    ObjectGuid guid;
 
-	WorldPacket &p = event.getPacket();
-	if (p.empty())
-	{
-		Player* master = GetMaster();
-		if (master)
+    WorldPacket &p = event.getPacket();
+    if (p.empty())
+    {
+        Player* master = GetMaster();
+        if (master)
   {
       guid = master->GetSelectionGuid();
   }
-	}
-	else
-	{
-		p.rpos(0);
-		p >> guid;
-	}
+    }
+    else
+    {
+        p.rpos(0);
+        p >> guid;
+    }
 
-	if (!guid)
+    if (!guid)
  {
      return false;
  }
 
-	Creature *pCreature = bot->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
-	if (!pCreature)
-	{
-		DEBUG_LOG("[PlayerbotMgr]: HandleMasterIncomingPacket - Received  CMSG_GOSSIP_HELLO %s not found or you can't interact with him.", guid.GetString().c_str());
-		return false;
-	}
+    Creature *pCreature = bot->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
+    if (!pCreature)
+    {
+        DEBUG_LOG("[PlayerbotMgr]: HandleMasterIncomingPacket - Received  CMSG_GOSSIP_HELLO %s not found or you can't interact with him.", guid.GetString().c_str());
+        return false;
+    }
 
-	GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->GossipMenuId);
-	if (pMenuItemBounds.first == pMenuItemBounds.second)
+    GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->GossipMenuId);
+    if (pMenuItemBounds.first == pMenuItemBounds.second)
  {
      return false;
  }
 
-	string text = event.getParam();
-	int menuToSelect = -1;
-	if (text.empty())
-	{
+    string text = event.getParam();
+    int menuToSelect = -1;
+    if (text.empty())
+    {
         WorldPacket p1;
         p1 << guid;
         bot->GetSession()->HandleGossipHelloOpcode(p1);
@@ -55,23 +55,23 @@ bool GossipHelloAction::Execute(Event event)
         ai->TellMasterNoFacing(out.str());
 
         TellGossipMenus();
-	}
-	else if (!bot->PlayerTalkClass)
-	{
-	    ai->TellMaster("I need to talk first");
-	    return false;
-	}
-	else
-	{
-	    menuToSelect = atoi(text.c_str());
-	    if (menuToSelect > 0) menuToSelect--;
+    }
+    else if (!bot->PlayerTalkClass)
+    {
+        ai->TellMaster("I need to talk first");
+        return false;
+    }
+    else
+    {
+        menuToSelect = atoi(text.c_str());
+        if (menuToSelect > 0) menuToSelect--;
      {
          ProcessGossip(menuToSelect);
      }
-	}
+    }
 
-	bot->TalkedToCreature(pCreature->GetEntry(), pCreature->GetObjectGuid());
-	return true;
+    bot->TalkedToCreature(pCreature->GetEntry(), pCreature->GetObjectGuid());
+    return true;
 }
 
 void GossipHelloAction::TellGossipText(uint32 textId)

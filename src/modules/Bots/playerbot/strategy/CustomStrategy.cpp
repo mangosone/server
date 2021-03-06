@@ -36,7 +36,7 @@ NextAction** toNextActionArray(string actions)
             res[index++] = na;
         }
     }
-	res[index++] = NULL;
+    res[index++] = NULL;
     return res;
 }
 

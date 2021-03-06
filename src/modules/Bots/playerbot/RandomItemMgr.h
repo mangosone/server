@@ -34,7 +34,7 @@ class RandomItemMgr
             return instance;
         }
 
-	public:
+    public:
         static bool HandleConsoleCommand(ChatHandler* handler, char const* args);
         RandomItemList Query(RandomItemType type, RandomItemPredicate* predicate);
         uint32 GetRandomItem(RandomItemType type, RandomItemPredicate* predicate = NULL);

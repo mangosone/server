@@ -6,22 +6,22 @@ using namespace ai;
 
 bool CastSpellAction::Execute(Event event)
 {
-	return ai->CastSpell(spell, GetTarget());
+    return ai->CastSpell(spell, GetTarget());
 }
 
 bool CastSpellAction::isPossible()
 {
-	return ai->CanCastSpell(spell, GetTarget());
+    return ai->CanCastSpell(spell, GetTarget());
 }
 
 bool CastSpellAction::isUseful()
 {
-	return GetTarget() && AI_VALUE2(bool, "spell cast useful", spell);
+    return GetTarget() && AI_VALUE2(bool, "spell cast useful", spell);
 }
 
 bool CastAuraSpellAction::isUseful()
 {
-	return CastSpellAction::isUseful() && !ai->HasAura(spell, GetTarget());
+    return CastSpellAction::isUseful() && !ai->HasAura(spell, GetTarget());
 }
 
 bool CastEnchantItemAction::isPossible()
@@ -37,12 +37,12 @@ bool CastEnchantItemAction::isPossible()
 
 bool CastHealingSpellAction::isUseful()
 {
-	return CastAuraSpellAction::isUseful() && AI_VALUE2(uint8, "health", GetTargetName()) < (100 - estAmount);
+    return CastAuraSpellAction::isUseful() && AI_VALUE2(uint8, "health", GetTargetName()) < (100 - estAmount);
 }
 
 bool CastAoeHealSpellAction::isUseful()
 {
-	return CastSpellAction::isUseful() && AI_VALUE2(uint8, "aoe heal", "medium") > 0;
+    return CastSpellAction::isUseful() && AI_VALUE2(uint8, "aoe heal", "medium") > 0;
 }
 
 

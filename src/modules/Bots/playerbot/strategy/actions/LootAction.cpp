@@ -147,18 +147,18 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
     {
         uint32 spellId = itr->first;
 
-		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
   {
       continue;
   }
 
-		if (spellId == MINING || spellId == HERB_GATHERING)
+        if (spellId == MINING || spellId == HERB_GATHERING)
   {
       continue;
   }
 
-		const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
-		if (!pSpellInfo)
+        const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
+        if (!pSpellInfo)
   {
       continue;
   }
@@ -176,8 +176,8 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
             continue;
         }
 
-		const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
-		if (!pSpellInfo)
+        const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
+        if (!pSpellInfo)
   {
       continue;
   }
@@ -293,7 +293,7 @@ bool StoreLootAction::Execute(Event event)
         p.read_skip<uint32>();  // randomPropertyId
         p >> lootslot_type;     // 0 = can get, 1 = look only, 2 = master get
 
-		if (lootslot_type != LOOT_SLOT_NORMAL)
+        if (lootslot_type != LOOT_SLOT_NORMAL)
   {
       continue;
   }

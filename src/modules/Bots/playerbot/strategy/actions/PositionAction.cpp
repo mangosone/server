@@ -23,8 +23,8 @@ void TellPosition(PlayerbotAI* ai, string name, ai::Position pos)
 
 bool PositionAction::Execute(Event event)
 {
-	string param = event.getParam();
-	if (param.empty())
+    string param = event.getParam();
+    if (param.empty())
  {
      return false;
  }
@@ -57,12 +57,12 @@ bool PositionAction::Execute(Event event)
 
     string name = params[0];
     string action = params[1];
-	ai::Position pos = posMap[name];
-	if (action == "?")
-	{
-	    TellPosition(ai, name, pos);
-	    return true;
-	}
+    ai::Position pos = posMap[name];
+    if (action == "?")
+    {
+        TellPosition(ai, name, pos);
+        return true;
+    }
 
     vector<string> coords = split(action, ',');
     if (coords.size() == 3)
@@ -75,32 +75,32 @@ bool PositionAction::Execute(Event event)
         return true;
     }
 
-	if (action == "set")
-	{
-	    pos.Set( bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-	    posMap[name] = pos;
+    if (action == "set")
+    {
+        pos.Set( bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+        posMap[name] = pos;
 
-	    ostringstream out; out << "Position " << name << " is set";
-	    ai->TellMaster(out);
-	    return true;
-	}
+        ostringstream out; out << "Position " << name << " is set";
+        ai->TellMaster(out);
+        return true;
+    }
 
-	if (action == "reset")
-	{
-	    pos.Reset();
-	    posMap[name] = pos;
+    if (action == "reset")
+    {
+        pos.Reset();
+        posMap[name] = pos;
 
-	    ostringstream out; out << "Position " << name << " is reset";
-	    ai->TellMaster(out);
-	    return true;
-	}
+        ostringstream out; out << "Position " << name << " is reset";
+        ai->TellMaster(out);
+        return true;
+    }
 
     return false;
 }
 
 bool MoveToPositionAction::Execute(Event event)
 {
-	ai::Position pos = context->GetValue<ai::PositionMap&>("position")->Get()[qualifier];
+    ai::Position pos = context->GetValue<ai::PositionMap&>("position")->Get()[qualifier];
     if (!pos.isSet())
     {
         ostringstream out; out << "Position " << qualifier << " is not set";

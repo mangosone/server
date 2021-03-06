@@ -14,7 +14,7 @@ namespace ai
         virtual WorldLocation GetLocation() { return NullLocation; }
         virtual float GetMaxDistance() { return sPlayerbotAIConfig.followDistance; }
         static WorldLocation NullLocation;
-		static bool IsNullLocation(WorldLocation const& loc);
+        static bool IsNullLocation(WorldLocation const& loc);
 
     protected:
         float GetFollowAngle();
@@ -45,8 +45,8 @@ namespace ai
     };
 
     class FormationValue : public ManualSetValue<Formation*>
-	{
-	public:
+    {
+    public:
         FormationValue(PlayerbotAI* ai);
         ~FormationValue() { if (value) { delete value; value = NULL; } }
     };

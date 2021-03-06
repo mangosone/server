@@ -10,13 +10,13 @@ public:
 public:
     ~Queue(void) {}
 public:
-	void Push(ActionBasket *action);
-	void Push(ActionBasket **actions);
-	ActionNode* Pop();
+    void Push(ActionBasket *action);
+    void Push(ActionBasket **actions);
+    ActionNode* Pop();
     ActionBasket* Peek();
-	int Size();
-	void RemoveExpired();
+    int Size();
+    void RemoveExpired();
 private:
-	std::list<ActionBasket*> actions;
+    std::list<ActionBasket*> actions;
 };
 }

@@ -4,12 +4,12 @@
 namespace ai
 {
     class SnareTargetValue : public UnitCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         SnareTargetValue(PlayerbotAI* ai) :
             UnitCalculatedValue(ai, "snare target") {}
 
     protected:
         virtual Unit* Calculate();
-	};
+    };
 }
