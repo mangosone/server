@@ -36,9 +36,9 @@
 #include "MapManager.h"
 #include "Database/DatabaseEnv.h"
 
-#ifdef ENABLE_ELUNA 
-#include "LuaEngine.h" 
-#endif /* ENABLE_ELUNA */ 
+#ifdef ENABLE_ELUNA
+#include "LuaEngine.h"
+#endif /* ENABLE_ELUNA */
 
 #define WORLD_SLEEP_CONST 50
 
@@ -97,12 +97,12 @@ int WorldThread::svc()
             prevSleepTime = 0;
         }
 #ifdef _WIN32
-        if (m_ServiceStatus == 0) //service stopped
+        if (m_ServiceStatus == 0) // service stopped
         {
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
 
-        while (m_ServiceStatus == 2) //service paused
+        while (m_ServiceStatus == 2) // service paused
             Sleep(1000);
 #endif
     }
