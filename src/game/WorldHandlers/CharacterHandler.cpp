@@ -46,6 +46,7 @@
 #include "Language.h"
 #include "Chat.h"
 #include "SpellMgr.h"
+#include "GameTime.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -852,7 +853,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 #endif
 
     /* Sync player's in-game time with server time */
-    pCurrChar->SetInGameTime(WorldTimer::getMSTime());
+    pCurrChar->SetInGameTime(GameTime::GetGameTimeMS());
 
     /* Send logon notification to player's group
      * This is sent after player is added to the world so that player receives it too */
