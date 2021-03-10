@@ -48,7 +48,7 @@ public:
         ACE_INET_Addr server(sPlayerbotAIConfig.commandServerPort);
         ACE_SOCK_Acceptor client_responder(server);
 
-        while (true) 
+        while (true)
         {
             ACE_SOCK_Stream client_stream;
             ACE_Time_Value timeout(5);
@@ -56,7 +56,7 @@ public:
             if (-1 != client_responder.accept(client_stream, &client, &timeout))
             {
                 string buffer, request;
-                while (ReadLine(client_stream, &buffer, &request)) 
+                while (ReadLine(client_stream, &buffer, &request))
                 {
                     string response = sRandomPlayerbotMgr.HandleRemoteCommand(request) + "\n";
                     client_stream.send_n(response.c_str(), response.size(), 0);

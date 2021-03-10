@@ -82,11 +82,11 @@ uint32 SpellIdValue::Calculate()
         if (foundSpellId > 0) {
         if (usesNoReagents && !foundMatchUsesNoReagents)
         {
-            
+
         }
         else if (spellId > foundSpellId)
         {
-            
+
         }
             else
             {

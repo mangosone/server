@@ -96,7 +96,7 @@ void PlayerbotFactory::Prepare()
         {
         bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);
         }
-    
+
     if (!sPlayerbotAIConfig.randomBotShowCloak)
         {
         bot->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
@@ -547,7 +547,7 @@ bool PlayerbotFactory::CanEquipWeapon(ItemPrototype const* proto)
                    proto->SubClass != ITEM_SUBCLASS_WEAPON_AXE2 &&
                    proto->SubClass != ITEM_SUBCLASS_WEAPON_DAGGER &&
                    proto->SubClass != ITEM_SUBCLASS_WEAPON_FIST &&
-                   proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF)    
+                   proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF)
                    return false;
                break;
     case CLASS_DRUID:

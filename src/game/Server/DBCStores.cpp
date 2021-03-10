@@ -461,7 +461,7 @@ void LoadDBCStores(const std::string& dataPath)
             uint32 cls = 1;
             for (uint32 m = 1; !(m & talentTabInfo->ClassMask) && cls < MAX_CLASSES; m <<= 1, ++cls)
             {
-                
+
             }
 
             sTalentTabPages[cls][talentTabInfo->tabpage] = talentTabId;

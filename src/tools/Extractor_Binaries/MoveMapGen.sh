@@ -30,7 +30,7 @@ EXCLUDE_MAPS_FILE="mmap_excluded.txt"
 
 ## Does an exclude file exist ?
 if [ "$EXCLUDE_MAPS" == "" ]
-then 
+then
   ## Exclude file provided?
   if [ -f "$EXCLUDE_MAPS_FILE" ]
   then ## Yes, read the file
@@ -244,23 +244,23 @@ createSummary()
       "2" )
         echo "2 CPUs selected:"
         echo "==============="
-		echo " CPU 1: Maps: $MAP_Continent1 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium9 $MAP_Medium10 $MAP_Medium12 $MAP_Medium15 $MAP_Small1 $MAP_Small2 $MAP_Small5 $MAP_Small6 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
-		echo " CPU 2: Maps: $MAP_Continent2 $MAP_Continent3 $MAP_Medium7 $MAP_Medium8 $MAP_Medium11 $MAP_Medium13 $MAP_Medium14 $MAP_Medium16 $MAP_Medium17 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1"
+        echo " CPU 1: Maps: $MAP_Continent1 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium9 $MAP_Medium10 $MAP_Medium12 $MAP_Medium15 $MAP_Small1 $MAP_Small2 $MAP_Small5 $MAP_Small6 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
+        echo " CPU 2: Maps: $MAP_Continent2 $MAP_Continent3 $MAP_Medium7 $MAP_Medium8 $MAP_Medium11 $MAP_Medium13 $MAP_Medium14 $MAP_Medium16 $MAP_Medium17 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1"
         ;;
       "3" )
         echo "3 CPUs selected:"
         echo "==============="
-		echo " CPU 1: Maps: $MAP_Continent1 $MAP_Medium10 $MAP_Medium11 $MAP_Small5 $MAP_Small13 $MAP_LIST_Junk1 $MAP_LIST_Junk7"
-		echo " CPU 2: Maps: $MAP_Continent2 $MAP_Big4 $MAP_Big5 $MAP_Big8 $MAP_Medium1 $MAP_Medium2 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Small6 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk2"
-		echo " CPU 3: Maps: $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big6 $MAP_Big7 $MAP_Big9 $MAP_Medium3 $MAP_Medium9 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small19 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
+        echo " CPU 1: Maps: $MAP_Continent1 $MAP_Medium10 $MAP_Medium11 $MAP_Small5 $MAP_Small13 $MAP_LIST_Junk1 $MAP_LIST_Junk7"
+        echo " CPU 2: Maps: $MAP_Continent2 $MAP_Big4 $MAP_Big5 $MAP_Big8 $MAP_Medium1 $MAP_Medium2 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Small6 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk2"
+        echo " CPU 3: Maps: $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big6 $MAP_Big7 $MAP_Big9 $MAP_Medium3 $MAP_Medium9 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small19 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
         ;;
       "4" )
         echo "4 CPUs selected:"
         echo "==============="
-		echo " CPU 1: Maps: $MAP_Continent1"
-		echo " CPU 2: Maps: $MAP_Continent2 $MAP_LIST_Junk4 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
-		echo " CPU 3: Maps: $MAP_Continent3 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8"
-		echo " CPU 4: Maps: $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk7"
+        echo " CPU 1: Maps: $MAP_Continent1"
+        echo " CPU 2: Maps: $MAP_Continent2 $MAP_LIST_Junk4 $MAP_LIST_Junk9 $MAP_LIST_Junk10"
+        echo " CPU 3: Maps: $MAP_Continent3 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8"
+        echo " CPU 4: Maps: $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk7"
         ;;
       * )
         badParam
@@ -283,7 +283,7 @@ case "$1" in
   "1" )
     createHeader $1
     createSummary $1
-	createMMaps $MAP_Continent1 $MAP_Continent2 $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
+    createMMaps $MAP_Continent1 $MAP_Continent2 $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
     ;;
   "2" )
     createHeader $1
@@ -294,17 +294,17 @@ case "$1" in
   "3" )
     createHeader $1
     createSummary $1
-	createMMaps $MAP_Continent1 $MAP_Medium10 $MAP_Medium11 $MAP_Small5 $MAP_Small13 $MAP_LIST_Junk1 $MAP_LIST_Junk7 &
-	createMMaps $MAP_Continent2 $MAP_Big4 $MAP_Big5 $MAP_Big8 $MAP_Medium1 $MAP_Medium2 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Small6 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk2 &
-	createMMaps $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big6 $MAP_Big7 $MAP_Big9 $MAP_Medium3 $MAP_Medium9 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small19 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
+    createMMaps $MAP_Continent1 $MAP_Medium10 $MAP_Medium11 $MAP_Small5 $MAP_Small13 $MAP_LIST_Junk1 $MAP_LIST_Junk7 &
+    createMMaps $MAP_Continent2 $MAP_Big4 $MAP_Big5 $MAP_Big8 $MAP_Medium1 $MAP_Medium2 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Small6 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small20 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk2 &
+    createMMaps $MAP_Continent3 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big6 $MAP_Big7 $MAP_Big9 $MAP_Medium3 $MAP_Medium9 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small7 $MAP_Small19 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
     ;;
   "4" )
     createHeader $1
     createSummary $1
-	createMMaps $MAP_Continent1 &
-	createMMaps $MAP_Continent2 $MAP_LIST_Junk4 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
-	createMMaps $MAP_Continent3 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 &
-	createMMaps $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk7 &
+    createMMaps $MAP_Continent1 &
+    createMMaps $MAP_Continent2 $MAP_LIST_Junk4 $MAP_LIST_Junk9 $MAP_LIST_Junk10 &
+    createMMaps $MAP_Continent3 $MAP_Small21 $MAP_Small22 $MAP_Small23 $MAP_Small24 $MAP_Small25 $MAP_Small26 $MAP_Small27 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk8 &
+    createMMaps $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Big7 $MAP_Big8 $MAP_Big9 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Medium10 $MAP_Medium11 $MAP_Medium12 $MAP_Medium13 $MAP_Medium14 $MAP_Medium15 $MAP_Medium16 $MAP_Medium17 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_Small20 $MAP_Small28 $MAP_Small29 $MAP_Small30 $MAP_Small31 $MAP_Small32 $MAP_Small33 $MAP_Small34 $MAP_Small35 $MAP_LIST_Junk1 $MAP_LIST_Junk7 &
     ;;
   "offmesh" )
     echo "`date`: Recreate offmeshs from file $OFFMESH_FILE" | tee -a $LOG_FILE

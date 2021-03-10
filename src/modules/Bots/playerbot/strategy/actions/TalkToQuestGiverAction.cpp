@@ -31,10 +31,10 @@ void TalkToQuestGiverAction::ProcessQuest(Quest const* quest, WorldObject* quest
     ai->TellMaster(out);
 }
 
-void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questGiver, ostringstream& out) 
+void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questGiver, ostringstream& out)
 {
     uint32 questID = quest->GetQuestId();
-        
+
     if (bot->GetQuestRewardStatus(questID))
     {
         return;
@@ -55,7 +55,7 @@ void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questG
     }
 }
 
-void TalkToQuestGiverAction::RewardNoItem(Quest const* quest, WorldObject* questGiver, ostringstream& out) 
+void TalkToQuestGiverAction::RewardNoItem(Quest const* quest, WorldObject* questGiver, ostringstream& out)
 {
     if (bot->CanRewardQuest(quest, false))
     {
@@ -68,7 +68,7 @@ void TalkToQuestGiverAction::RewardNoItem(Quest const* quest, WorldObject* quest
     }
 }
 
-void TalkToQuestGiverAction::RewardSingleItem(Quest const* quest, WorldObject* questGiver, ostringstream& out) 
+void TalkToQuestGiverAction::RewardSingleItem(Quest const* quest, WorldObject* questGiver, ostringstream& out)
 {
     int index = 0;
     ItemPrototype const *item = sObjectMgr.GetItemPrototype(quest->RewChoiceItemId[index]);
@@ -84,7 +84,7 @@ void TalkToQuestGiverAction::RewardSingleItem(Quest const* quest, WorldObject* q
     }
 }
 
-void TalkToQuestGiverAction::AskToSelectReward(Quest const* quest, ostringstream& out) 
+void TalkToQuestGiverAction::AskToSelectReward(Quest const* quest, ostringstream& out)
 {
     ostringstream msg;
     msg << "Choose reward: ";

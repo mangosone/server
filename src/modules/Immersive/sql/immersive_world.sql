@@ -43,6 +43,6 @@ INSERT INTO `gossip_menu_option`
 
 -- add to trainers
 INSERT INTO `gossip_menu_option`
-(`menu_id`, `id`, `option_icon`, `option_text`, `option_id`, `npc_option_npcflag`, `action_menu_id`, `action_poi_id`, `action_script_id`, `box_coded`, `box_money`, `box_text`, `condition_id`) 
+(`menu_id`, `id`, `option_icon`, `option_text`, `option_id`, `npc_option_npcflag`, `action_menu_id`, `action_poi_id`, `action_script_id`, `box_coded`, `box_money`, `box_text`, `condition_id`)
 SELECT menu_id, 61, 3, 'Manage attributes', 1, 16, 60001, 0, 0, 0, 0, 'Immersive', 0 FROM `gossip_menu_option` where `action_menu_id` = 4461;
 

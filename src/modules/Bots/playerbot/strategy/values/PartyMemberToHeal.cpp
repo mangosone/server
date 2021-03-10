@@ -22,7 +22,7 @@ public:
 
 Unit* PartyMemberToHeal::Calculate()
 {
-    
+
     IsTargetOfHealingSpell predicate;
 
     Group* group = bot->GetGroup();
@@ -33,7 +33,7 @@ Unit* PartyMemberToHeal::Calculate()
 
     bool isRaid = bot->GetGroup()->isRaidGroup();
     MinValueCalculator calc(100);
-    for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next()) 
+    for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
     {
         Player* player = gref->getSource();
         if (!Check(player) || !player->IsAlive())
@@ -48,7 +48,7 @@ Unit* PartyMemberToHeal::Calculate()
         }
 
         Pet* pet = player->GetPet();
-        if (pet && CanHealPet(pet)) 
+        if (pet && CanHealPet(pet))
         {
             health = pet->GetHealthPercent();
             if (isRaid || health < sPlayerbotAIConfig.mediumHealth || !IsTargetOfSpellCast(player, predicate))
@@ -60,7 +60,7 @@ Unit* PartyMemberToHeal::Calculate()
     return (Unit*)calc.param;
 }
 
-bool PartyMemberToHeal::CanHealPet(Pet* pet) 
+bool PartyMemberToHeal::CanHealPet(Pet* pet)
 {
     return MINI_PET != pet->getPetType();
 }

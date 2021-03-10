@@ -27,9 +27,9 @@ endif()
 #Base files
 file(GLOB Immersive_Source ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
     source_group("Immersive" FILES ${Immersive_Source})
-        
+
 #Define base source library
-set(LIBRARY_SRCS 
+set(LIBRARY_SRCS
     ${Immersive_Source}
     ${immersive_PCH}
 )
@@ -91,7 +91,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/immersive.conf.dist DESTINATION ${CONF
 
 if(WIN32 AND MSVC)
   add_custom_command(TARGET ${LIBRARY_NAME}
-    POST_BUILD 
+    POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/immersive.conf.dist" "${CONF_COPY_DIR}"
   )
 endif()

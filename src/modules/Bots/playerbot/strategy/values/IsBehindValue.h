@@ -8,7 +8,7 @@ namespace ai
     public:
         IsBehindValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
-        virtual bool Calculate() 
+        virtual bool Calculate()
         {
             Unit* target = AI_VALUE(Unit*, qualifier);
             if (!target)
@@ -16,7 +16,7 @@ namespace ai
                 return false;
             }
 
-            
+
             float targetOrientation = target->GetOrientation();
             float orientation = bot->GetOrientation();
             float distance = bot->GetDistance(target);
