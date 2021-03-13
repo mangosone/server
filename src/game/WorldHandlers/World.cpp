@@ -1702,7 +1702,7 @@ void World::Update(uint32 diff)
 
     ///- Update the game time and check for shutdown time
     _UpdateGameTime();
-
+    GameTime::UpdateGameTimers();
     sWorldUpdateTime.UpdateWithDiff(diff);
 
     ///-Update mass mailer tasks if any
