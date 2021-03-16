@@ -140,15 +140,15 @@ string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
     uint32 maxId = fields[0].GetUInt32();
     delete result;
 
-    result = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name WHERE e.guid IS NULL and n.gender = '%u' order by rand() limit 1", gender);
-    if (!result)
+    QueryResult* result2 = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name WHERE e.guid IS NULL and n.gender = '%u' order by rand() limit 1", gender);
+    if (!result2)
     {
-        sLog.outError("No more names left for random bots");
+        sLog.outError("No more names left for random bots for gender: '%u'", gender);
         return "";
     }
 
-    fields = result->Fetch();
-    delete result;
+    fields = result2->Fetch();
+    delete result2;
     return fields[0].GetString();
 }
 
@@ -194,7 +194,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
         sLog.outDebug( "Account %s created for random bots", accountName.c_str());
     }
 
-    LoginDatabase.PExecute("UPDATE account SET expansion = '%u' where username like '%s%%'", 2, sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
+    LoginDatabase.PExecute("UPDATE account SET expansion = '%u' where username like '%s%%'", 1, sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
 
     int totalRandomBotChars = 0;
     for (int accountNumber = 0; accountNumber < sPlayerbotAIConfig.randomBotAccountCount; ++accountNumber)

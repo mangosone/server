@@ -24,7 +24,7 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "2201001"
+    #define REVISION_NR "2201075"
 
     #define REALMD_DB_VERSION_NR 22
     #define REALMD_DB_STRUCTURE_NR 1
@@ -32,9 +32,9 @@
     #define REALMD_DB_UPDATE_DESCRIPTION "Release 22"
 
     #define CHAR_DB_VERSION_NR 22
-    #define CHAR_DB_STRUCTURE_NR 1
+    #define CHAR_DB_STRUCTURE_NR 03
     #define CHAR_DB_CONTENT_NR 001
-    #define CHAR_DB_UPDATE_DESCRIPTION "Release 22"
+    #define CHAR_DB_UPDATE_DESCRIPTION "Fix Playerbots pt7"
 
     #define WORLD_DB_VERSION_NR 22
     #define WORLD_DB_STRUCTURE_NR 1
