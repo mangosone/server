@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 22
     #define WORLD_DB_STRUCTURE_NR 1
-    #define WORLD_DB_CONTENT_NR 001
-    #define WORLD_DB_UPDATE_DESCRIPTION "Release 22"
+    #define WORLD_DB_CONTENT_NR 024
+    #define WORLD_DB_UPDATE_DESCRIPTION "update_additem_command_syntax"
 #endif // __REVISION_H__
