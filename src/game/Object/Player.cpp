@@ -16909,8 +16909,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     //"resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
     // 39           40                41                42                    43          44          45              46           47              48
     //"arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, watchedFaction, drunk,"
-    // 49      50      51      52      53      54      55             56              57      58           59
-    //"health, power1, power2, power3, power4, power5, exploredZones, equipmentCache, ammoId, knownTitles, actionBars  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    // 49      50      51      52      53      54      55             56              57      58              59         60
+    //"health, power1, power2, power3, power4, power5, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, createdDate FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     QueryResult* result = holder->GetResult(PLAYER_LOGIN_QUERY_LOADFROM);
 
     if (!result)
@@ -17451,6 +17451,9 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         uint32 savedpower = fields[50+i].GetUInt32();
         SetPower(Powers(i), savedpower > GetMaxPower(Powers(i)) ? GetMaxPower(Powers(i)) : savedpower);
     }
+
+    uint32 createdDate = fields[60].GetUInt32();
+    SetCreatedDate(createdDate);
 
     DEBUG_FILTER_LOG(LOG_FILTER_PLAYER_STATS, "The value of player %s after load item and aura is: ", m_name.c_str());
     outDebugStatsValues();
@@ -18860,7 +18863,7 @@ void Player::SaveToDB()
                               "`arenaPoints`, `totalHonorPoints`, `todayHonorPoints`, `yesterdayHonorPoints`, `totalKills`, "
                               "`todayKills`, `yesterdayKills`, `chosenTitle`, "
                               "`watchedFaction`, `drunk`, `health`, `power1`, `power2`, `power3`, "
-                              "`power4`, `power5`, `exploredZones`, `equipmentCache`, `ammoId`, `knownTitles`, `actionBars`) "
+                              "`power4`, `power5`, `exploredZones`, `equipmentCache`, `ammoId`, `knownTitles`, `actionBars`, `createdDate`) "
                               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, "
@@ -18868,7 +18871,7 @@ void Player::SaveToDB()
                               "?, ?, ?, ?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, ?, ?, ?, "
-                              "?, ?, ?, ?, ?, ?, ?) ");
+                              "?, ?, ?, ?, ?, ?, ?, ?) ");
 
     uberInsert.addUInt32(GetGUIDLow());
     uberInsert.addUInt32(GetSession()->GetAccountId());
@@ -18968,11 +18971,11 @@ void Player::SaveToDB()
     // FIXME: at this moment send to DB as unsigned, including unit32(-1)
     uberInsert.addUInt32(GetUInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX));
 
-    uberInsert.addUInt16(uint16(GetUInt32Value(PLAYER_BYTES_3) & 0xFFFE));
+    uberInsert.addUInt16(uint16(GetUInt32Value(PLAYER_BYTES_3) & 0xFFFE)); // DrunkState
 
     uberInsert.addUInt32(GetHealth());
 
-    for (uint32 i = 0; i < MAX_POWERS; ++i)
+    for (uint32 i = 0; i < MAX_POWERS; ++i)  // power1 to power5
     {
         uberInsert.addUInt32(GetPower(Powers(i)));
     }
@@ -18981,7 +18984,7 @@ void Player::SaveToDB()
     {
         ss << GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + i) << " ";
     }
-    uberInsert.addString(ss);
+    uberInsert.addString(ss); // exploredZOnes
 
     for (uint32 i = 0; i < EQUIPMENT_SLOT_END; ++i)         // string: item id, ench (perm/temp)
     {
@@ -18991,7 +18994,7 @@ void Player::SaveToDB()
         uint32 ench2 = GetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + i * MAX_VISIBLE_ITEM_OFFSET + 1 + TEMP_ENCHANTMENT_SLOT);
         ss << uint32(MAKE_PAIR32(ench1, ench2)) << " ";
     }
-    uberInsert.addString(ss);
+    uberInsert.addString(ss); // EquipmentCache
 
     uberInsert.addUInt32(GetUInt32Value(PLAYER_AMMO_ID));
 
@@ -19001,7 +19004,8 @@ void Player::SaveToDB()
     }
     uberInsert.addString(ss);
 
-    uberInsert.addUInt32(uint32(GetByteValue(PLAYER_FIELD_BYTES, 2)));
+    uberInsert.addUInt32(uint32(GetByteValue(PLAYER_FIELD_BYTES, 2))); // actionbars
+    uberInsert.addUInt32(GetCreatedDate());
 
     uberInsert.Execute();
 
