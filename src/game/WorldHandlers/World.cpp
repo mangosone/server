@@ -1742,6 +1742,7 @@ void World::Update(uint32 diff)
     sRandomPlayerbotMgr.UpdateAI(diff);
     sRandomPlayerbotMgr.UpdateSessions(diff);
 #endif
+
     /// <li> Handle session updates
     UpdateSessions(diff);
 
@@ -2041,11 +2042,14 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
         }
 
         if (WorldSession* sess = FindSession(account))
+        {
             if (std::string(sess->GetPlayerName()) != author)
             {
                 sess->KickPlayer();
             }
-    } while (resultAccounts->NextRow());
+        }
+    }
+    while (resultAccounts->NextRow());
 
     delete resultAccounts;
     return BAN_SUCCESS;

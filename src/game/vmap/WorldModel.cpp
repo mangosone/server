@@ -384,10 +384,12 @@ namespace VMAP
             result = false;
         }
         if (count)
+        {
             if (result && fwrite(&triangles[0], sizeof(MeshTriangle), count, wf) != count)
             {
                 result = false;
             }
+        }
 
         // write mesh BIH
         if (result && fwrite("MBIH", 1, 4, wf) != 4)
@@ -410,10 +412,12 @@ namespace VMAP
             result = false;
         }
         if (chunkSize)
+        {
             if (result)
             {
                 result = iLiquid->WriteToFile(wf);
             }
+        }
 
         return result;
     }
