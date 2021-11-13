@@ -75,7 +75,7 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
     stripLineInvisibleChars(ticketText);
 
     // Since invisible char are replaced with a ' ' if any leading space is added we remove it :
-    &ltrim(ticketText);
+    ltrim(ticketText);
 
     GMTicketResponse responce = GMTICKET_RESPONSE_UPDATE_SUCCESS;
     if (GMTicket* ticket = sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid()))
