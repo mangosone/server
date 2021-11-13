@@ -75,18 +75,18 @@ static char const* const areatriggerKeys[] =
     NULL
 };
 
-bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const* zPtr, float const* ortPtr)
+bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const zPtr, float const ortPtr)
 {
     float z;
     float ort = player->GetOrientation();
     z = zPtr;
     if (zPtr > 0.0f)
     {
-        z = *zPtr;
+        z = zPtr;
 
-        if (ortPtr)
+        if (ortPtr > 0.0f)
         {
-            ort = *ortPtr;
+            ort = ortPtr;
         }
 
         // check full provided coordinates
@@ -420,7 +420,7 @@ bool ChatHandler::HandleAppearCommand(char* args)
             return false;
         }
 
-        return HandleGoHelper(_player, map, x, y, &z);
+        return HandleGoHelper(_player, map, x, y, z);
     }
 
     return true;
@@ -553,7 +553,7 @@ bool ChatHandler::HandleRecallCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(target, target->m_recallMap, target->m_recallX, target->m_recallY, &target->m_recallZ, &target->m_recallO);
+    return HandleGoHelper(target, target->m_recallMap, target->m_recallX, target->m_recallY, target->m_recallZ, target->m_recallO);
 }
 
 bool ChatHandler::HandleGPSCommand(char* args)
@@ -838,7 +838,7 @@ bool ChatHandler::HandleGoTaxinodeCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, node->map_id, node->x, node->y, &node->z);
+    return HandleGoHelper(_player, node->map_id, node->x, node->y, node->z);
 }
 
 bool ChatHandler::HandleGoCommand(char* args)
@@ -877,7 +877,7 @@ bool ChatHandler::HandleGoCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, mapid, x, y, &z);
+    return HandleGoHelper(_player, mapid, x, y, z);
 }
 
 // teleport at coordinates
@@ -935,7 +935,7 @@ bool ChatHandler::HandleGoXYZCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, mapid, x, y, &z);
+    return HandleGoHelper(_player, mapid, x, y, z);
 }
 
 // teleport at coordinates
@@ -1187,7 +1187,7 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
         }
     }
 
-    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, &data->posZ);
+    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
 }
 
 // teleport to gameobject
@@ -1333,7 +1333,7 @@ bool ChatHandler::HandleGoObjectCommand(char* args)
         }
     }
 
-    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, &data->posZ);
+    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
 }
 
 bool ChatHandler::HandleGoGraveyardCommand(char* args)
@@ -1354,7 +1354,7 @@ bool ChatHandler::HandleGoGraveyardCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, gy->map_id, gy->x, gy->y, &gy->z);
+    return HandleGoHelper(_player, gy->map_id, gy->x, gy->y, gy->z);
 }
 
 bool ChatHandler::HandleGoTriggerCommand(char* args)
@@ -1407,11 +1407,11 @@ bool ChatHandler::HandleGoTriggerCommand(char* args)
             return false;
         }
 
-        return HandleGoHelper(_player, at->target_mapId, at->target_X, at->target_Y, &at->target_Z);
+        return HandleGoHelper(_player, at->target_mapId, at->target_X, at->target_Y, at->target_Z);
     }
     else
     {
-        return HandleGoHelper(_player, atEntry->mapid, atEntry->x, atEntry->y, &atEntry->z);
+        return HandleGoHelper(_player, atEntry->mapid, atEntry->x, atEntry->y, atEntry->z);
     }
 }
 
@@ -1524,7 +1524,7 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
             ChatHandler(target).PSendSysMessage(LANG_TELEPORTED_TO_BY, GetNameLink().c_str());
         }
 
-        return HandleGoHelper(target, tele->mapId, tele->position_x, tele->position_y, &tele->position_z, &tele->orientation);
+        return HandleGoHelper(target, tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
     }
     else
     {
@@ -1565,7 +1565,7 @@ bool ChatHandler::HandleTeleCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, tele->mapId, tele->position_x, tele->position_y, &tele->position_z, &tele->orientation);
+    return HandleGoHelper(_player, tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
 }
 
 // Teleport group to given game_tele.entry
