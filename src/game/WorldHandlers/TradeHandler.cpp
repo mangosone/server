@@ -651,7 +651,9 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    if (pOther->GetTeam() != _player->GetTeam())
+    // Checking faction restrictions but allow a GM to start a trade even if not in same faction
+    // TOD : Still missing sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_TRADE)  : HAS TO BE PORTED FROM M0 !
+    if (pOther->GetTeam() != _player->GetTeam() && GetSecurity() == SEC_PLAYER)
     {
         SendTradeStatus(TRADE_STATUS_WRONG_FACTION);
         return;
@@ -660,6 +662,17 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
     if (!pOther->IsWithinDistInMap(_player, 10.0f, false))
     {
         SendTradeStatus(TRADE_STATUS_TARGET_TO_FAR);
+        return;
+    }
+
+    // Check visibility in order to avoid hanging trade sessions
+    if (GetSecurity() > SEC_PLAYER && GetPlayer()->GetVisibility() == VISIBILITY_OFF &&
+        (pOther->GetSession()->GetSecurity() < GetSecurity()
+            || (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
+            )
+        )
+    {
+        SendTradeStatus(TRADE_STATUS_TRADE_CANCELED);
         return;
     }
 
