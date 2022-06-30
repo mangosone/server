@@ -1245,4 +1245,4 @@ bool ChatHandler::HandleLookupTaxiNodeCommand(char* args)
     }
     return true;
 }
->>>>>>> fd0175b98 (Properly normalize string to UTF-8)
+

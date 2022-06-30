@@ -97,8 +97,8 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
         return AOR_NAME_TOO_LONG;                           // username's too long
     }
 
-    normalizeString(username);
-    normalizeString(password);
+    Utf8ToUpperOnlyLatin(username);
+    Utf8ToUpperOnlyLatin(password);
 
     if (GetId(username))
     {
