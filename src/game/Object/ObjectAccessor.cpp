@@ -122,12 +122,13 @@ void ObjectAccessor::SaveAllPlayers()
 {
    SessionMap const& smap = sWorld.GetAllSessions();
    SessionMap::const_iterator iter;
-   for (iter = smap.begin(); iter != smap.end(); ++iter){
-       if (Player* player = iter->second->GetPlayer()){
-           if (player->IsInWorld()){
+   for (iter = smap.begin(); iter != smap.end(); ++iter)
+   {
+       if (Player* player = iter->second->GetPlayer())
+       {
+           if (player->IsInWorld())
            {
                player->SaveToDB();
-           }
            }
        }
    }
