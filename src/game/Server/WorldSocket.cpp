@@ -763,7 +763,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         return -1;
     }
 
-    // Must be done before WorldSession is created
+    // Warden: Must be done before WorldSession is created
     if (wardenActive && os != "Win" && os != "OSX")
     {
         WorldPacket Packet(SMSG_AUTH_RESPONSE, 1);
@@ -822,7 +822,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // In case needed sometime the second arg is in microseconds 1 000 000 = 1 sec
     ACE_OS::sleep(ACE_Time_Value(0, 10000));
 
-    // Initialize Warden system only if it is enabled by config
+    // Warden: Initialize Warden system only if it is enabled by config
     if (wardenActive)
     {
         m_Session->InitWarden(uint16(BuiltNumberClient), &K, os);
