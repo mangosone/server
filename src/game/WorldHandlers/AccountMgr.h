@@ -38,7 +38,8 @@ enum AccountOpResult
     AOR_DB_INTERNAL_ERROR
 };
 
-#define MAX_ACCOUNT_STR 32
+#define MAX_ACCOUNT_STR 16
+#define MAX_PASSWORD_STR 16
 
 /* A class that is used to manage accounts. */
 class AccountMgr
