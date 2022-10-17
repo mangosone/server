@@ -49,8 +49,8 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
     }
     // calculate extents
     int axis = -1, rightOrig;
-    float clipL = G3D::fnan();
-    float clipR = G3D::fnan();
+    float clipL;
+    float clipR;
     float prevClip = G3D::fnan();
     float split = G3D::fnan();
     bool wasLeft = true;
@@ -272,7 +272,7 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
     }
 }
 
-bool BIH::writeToFile(FILE* wf) const
+bool BIH::WriteToFile(FILE* wf) const
 {
     uint32 treeSize = tree.size();
     uint32 check = 0;
@@ -286,7 +286,7 @@ bool BIH::writeToFile(FILE* wf) const
     return check == (3 + 3 + 2 + treeSize + count);
 }
 
-bool BIH::readFromFile(FILE* rf)
+bool BIH::ReadFromFile(FILE* rf)
 {
     uint32 treeSize;
     Vector3 lo, hi;
