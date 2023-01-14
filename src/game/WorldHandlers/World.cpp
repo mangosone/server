@@ -2308,7 +2308,9 @@ void World::InitDailyQuestResetTime()
 
     // generate time by config
     time_t curTime = time(NULL);
-    tm localTm = *localtime(&curTime);
+    tm localTm;
+    localtime_r(&curTime, &localTm);
+
     localTm.tm_hour = getConfig(CONFIG_UINT32_QUEST_DAILY_RESET_HOUR);
     localTm.tm_min  = 0;
     localTm.tm_sec  = 0;
