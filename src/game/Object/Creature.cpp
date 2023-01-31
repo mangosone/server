@@ -203,7 +203,7 @@ void Creature::AddToWorld()
     Unit::AddToWorld();
 
     // Make active if required
-    if (sWorld.isForceLoadMap(GetMapId()) || (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE))
+    if (sWorld.isForceLoadMap(GetMapId()) || (GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE))
     {
         SetActiveObjectState(true);
     }
@@ -2039,7 +2039,7 @@ bool Creature::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectInd
     }
 
     // Taunt immunity special flag check
-    if (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NOT_TAUNTABLE)
+    if (GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_NOT_TAUNTABLE)
     {
         // Taunt aura apply check
         if (spellInfo->Effect[index] == SPELL_EFFECT_APPLY_AURA)
@@ -2197,7 +2197,7 @@ bool Creature::IsVisibleInGridForPlayer(Player* pl) const
         return true;
     }
 
-    if (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_INVISIBLE)
+    if (GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_INVISIBLE)
     {
         return false;
     }
@@ -2251,7 +2251,7 @@ void Creature::CallAssistance()
     {
         SetNoCallAssistance(true);
 
-        if (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NO_CALL_ASSIST)
+        if (GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_NO_CALL_ASSIST)
         {
             return;
         }
