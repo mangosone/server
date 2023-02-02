@@ -1129,9 +1129,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Item Templates...");            // must be after LoadRandomEnchantmentsTable and LoadPageTexts
     sObjectMgr.LoadItemPrototypes();
 
-    sLog.outString("Loading Item Texts...");
-    sObjectMgr.LoadItemTexts();
-
     sLog.outString("Loading Creature Model Based Info Data...");
     sObjectMgr.LoadCreatureModelInfo();
 

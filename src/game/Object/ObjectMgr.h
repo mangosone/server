@@ -460,8 +460,6 @@ class ObjectMgr
         ObjectMgr();
         ~ObjectMgr();
 
-        typedef UNORDERED_MAP<uint32, Item*> ItemMap;
-
         typedef UNORDERED_MAP<uint32, Group*> GroupMap;
 
         typedef UNORDERED_MAP<uint32, ArenaTeam*> ArenaTeamMap;
@@ -704,7 +702,6 @@ class ObjectMgr
         void LoadTavernAreaTriggers();
         void LoadGameObjectForQuests();
 
-        void LoadItemTexts();
         void LoadPageTexts();
 
         void LoadPlayerInfo();
@@ -811,10 +808,6 @@ class ObjectMgr
         {
             return m_GuildIds.Generate();
         }
-        uint32 GenerateItemTextID()
-        {
-            return m_ItemTextGuids.Generate();
-        }
         uint32 GenerateMailID()
         {
             return m_MailIds.Generate();
@@ -823,18 +816,14 @@ class ObjectMgr
         {
             return m_PetNumbers.Generate();
         }
-
-        uint32 CreateItemText(std::string text);
-        void AddItemText(uint32 itemTextId, std::string text)
-        {
-            mItemTexts[itemTextId] = text;
-        }
         std::string GetItemText(uint32 id)
         {
-            ItemTextMap::const_iterator itr = mItemTexts.find(id);
-            if (itr != mItemTexts.end())
+            if (QueryResult* result = CharacterDatabase.PQuery("SELECT `body` FROM `mail` WHERE `id` = '%u'", id))
             {
-                return itr->second;
+                Field* fields = result->Fetch();
+                std::string body = fields[0].GetCppString();
+                delete result;
+                return body;
             }
             else
             {
@@ -1221,7 +1210,6 @@ class ObjectMgr
         IdGenerator<uint32> m_ArenaTeamIds;
         IdGenerator<uint32> m_AuctionIds;
         IdGenerator<uint32> m_GuildIds;
-        IdGenerator<uint32> m_ItemTextIds;
         IdGenerator<uint32> m_MailIds;
         IdGenerator<uint32> m_PetNumbers;
 
@@ -1236,7 +1224,6 @@ class ObjectMgr
         // first free low guid for selected guid type
         ObjectGuidGenerator<HIGHGUID_PLAYER>     m_CharGuids;
         ObjectGuidGenerator<HIGHGUID_ITEM>       m_ItemGuids;
-        ObjectGuidGenerator<HIGHGUID_ITEM>       m_ItemTextGuids;
         ObjectGuidGenerator<HIGHGUID_CORPSE>     m_CorpseGuids;
         ObjectGuidGenerator<HIGHGUID_GROUP>      m_GroupGuids;
 
@@ -1244,7 +1231,6 @@ class ObjectMgr
 
         typedef UNORDERED_MAP<uint32, GossipText> GossipTextMap;
         typedef UNORDERED_MAP<uint32, uint32> QuestAreaTriggerMap;
-        typedef UNORDERED_MAP<uint32, std::string> ItemTextMap;
         typedef std::set<uint32> TavernAreaTriggerSet;
         typedef std::set<uint32> GameObjectForQuestSet;
 
@@ -1253,8 +1239,6 @@ class ObjectMgr
 
         GroupMap            mGroupMap;
         ArenaTeamMap        mArenaTeamMap;
-
-        ItemTextMap         mItemTexts;
 
         QuestAreaTriggerMap mQuestAreaTriggerMap;
         TavernAreaTriggerSet mTavernAreaTriggerSet;

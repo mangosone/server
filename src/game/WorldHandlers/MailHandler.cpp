@@ -46,9 +46,27 @@
 
 bool WorldSession::CheckMailBox(ObjectGuid guid)
 {
-    if (!GetPlayer()->GetGameObjectIfCanInteractWith(guid, GAMEOBJECT_TYPE_MAILBOX))
+    // GM case
+    if (guid == GetPlayer()->GetObjectGuid())
     {
-        DEBUG_LOG("Mailbox %s not found or you can't interact with him.", guid.GetString().c_str());
+        // command case will return only if player have real access to command
+        if (!ChatHandler(GetPlayer()).FindCommand("mailbox"))
+        {
+            DEBUG_LOG("%s attempt open mailbox in cheating way.", guid.GetString().c_str());
+            return false;
+        }
+    }
+    // mailbox case
+    else if (guid.IsGameObject())
+    {
+        if (!GetPlayer()->GetGameObjectIfCanInteractWith(guid, GAMEOBJECT_TYPE_MAILBOX))
+        {
+            DEBUG_LOG("Mailbox %s not found or %s can't interact with him.", guid.GetString().c_str(), GetPlayer()->GetGuidStr().c_str());
+            return false;
+        }
+    }
+    else
+    {
         return false;
     }
 
@@ -434,7 +452,7 @@ void WorldSession::HandleMailReturnToSender(WorldPacket& recv_data)
         }
         else
         {
-            draft.SetSubjectAndBodyId(m->subject, m->itemTextId);
+            draft.SetSubjectAndBody(m->subject, m->body);
         }
 
         if (m->HasItems())
@@ -535,7 +553,7 @@ void WorldSession::HandleMailTakeItem(WorldPacket& recv_data)
             // check player existence
             if (sender || sender_accId)
             {
-                MailDraft(m->subject)
+                MailDraft(m->subject, "")
                 .SetMoney(m->COD)
                 .SendMailTo(MailReceiver(sender, sender_guid), _player, MAIL_CHECK_MASK_COD_PAYMENT);
             }
@@ -666,7 +684,7 @@ void WorldSession::HandleGetMailList(WorldPacket& recv_data)
         }
 
         data << uint32((*itr)->COD);                        // COD
-        data << uint32((*itr)->itemTextId);                 // item text
+        data << uint32((*itr)->messageID);                  // Use the MessageID to look up the Body later
         data << uint32(0);                                  // unknown
         data << uint32((*itr)->stationery);                 // stationery (Stationery.dbc)
         data << uint32((*itr)->money);                      // copper
@@ -727,19 +745,19 @@ void WorldSession::HandleGetMailList(WorldPacket& recv_data)
  */
 void WorldSession::HandleItemTextQuery(WorldPacket& recv_data)
 {
-    uint32 itemTextId;
+    uint32 itemId;
     uint32 mailId;                                          // this value can be item id in bag, but it is also mail id
     uint32 unk;                                             // maybe something like state - 0x70000000
 
-    recv_data >> itemTextId >> mailId >> unk;
+    recv_data >> itemId >> mailId >> unk;
 
     /// TODO: some check needed, if player has item with guid mailId, or has mail with id mailId
 
-    DEBUG_LOG("CMSG_ITEM_TEXT_QUERY itemguid: %u, mailId: %u, unk: %u", itemTextId, mailId, unk);
+    DEBUG_LOG("CMSG_ITEM_TEXT_QUERY itemguid: %u, mailId: %u, unk: %u", itemId, mailId, unk);
 
     WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, (4 + 10)); // guess size
-    data << itemTextId;
-    data << sObjectMgr.GetItemText(itemTextId);
+    data << itemId;
+    data << sObjectMgr.GetItemText(itemId);                     // CString TODO: max length 8000
     SendPacket(&data);
 }
 
@@ -767,25 +785,10 @@ void WorldSession::HandleMailCreateTextItem(WorldPacket& recv_data)
     Player* pl = _player;
 
     Mail* m = pl->GetMail(mailId);
-    if (!m || (!m->itemTextId && !m->mailTemplateId) || m->state == MAIL_STATE_DELETED || m->deliver_time > time(NULL))
+    if (!m || (m->body.empty() && !m->mailTemplateId) || m->state == MAIL_STATE_DELETED || m->deliver_time > time(NULL))
     {
         pl->SendMailResult(mailId, MAIL_MADE_PERMANENT, MAIL_ERR_INTERNAL_ERROR);
         return;
-    }
-
-    uint32 itemTextId = m->itemTextId;
-
-    // in mail template case we need create new item text
-    if (!itemTextId)
-    {
-        MailTemplateEntry const* mailTemplateEntry = sMailTemplateStore.LookupEntry(m->mailTemplateId);
-        if (!mailTemplateEntry)
-        {
-            pl->SendMailResult(mailId, MAIL_MADE_PERMANENT, MAIL_ERR_INTERNAL_ERROR);
-            return;
-        }
-
-        itemTextId = sObjectMgr.CreateItemText(mailTemplateEntry->content[GetSessionDbcLocale()]);
     }
 
     Item* bodyItem = new Item;                              // This is not bag and then can be used new Item.
@@ -795,7 +798,7 @@ void WorldSession::HandleMailCreateTextItem(WorldPacket& recv_data)
         return;
     }
 
-    bodyItem->SetUInt32Value(ITEM_FIELD_ITEM_TEXT_ID, itemTextId);
+    bodyItem->SetUInt32Value(ITEM_FIELD_ITEM_TEXT_ID, mailId);
     bodyItem->SetGuidValue(ITEM_FIELD_CREATOR, ObjectGuid(HIGHGUID_PLAYER, m->sender));
 
     DETAIL_LOG("HandleMailCreateTextItem mailid=%u", mailId);

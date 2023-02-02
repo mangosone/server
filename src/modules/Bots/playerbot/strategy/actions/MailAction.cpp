@@ -158,9 +158,9 @@ public:
         ostringstream out, body;
         out << "|cffffffff" << mail->subject;
         ai->TellMaster(out.str());
-        if (mail->itemTextId)
+        if (mail->messageID)
         {
-            body << "\n" << sObjectMgr.GetItemText(mail->itemTextId);
+            body << "\n" << sObjectMgr.GetItemText(mail->messageID);
             ai->TellMaster(body.str());
         }
         return true;
