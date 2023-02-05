@@ -40,6 +40,7 @@ struct ItemPrototype;
 struct AuctionEntry;
 struct AuctionHouseEntry;
 struct DeclinedName;
+struct TradeStatusInfo;
 
 class ObjectGuid;
 class Creature;
@@ -277,7 +278,7 @@ class WorldSession
 
         void SendBattlegGroundList(ObjectGuid guid, BattleGroundTypeId bgTypeId);
 
-        void SendTradeStatus(TradeStatus status);
+        void SendTradeStatus(const TradeStatusInfo& status);
         void SendUpdateTrade(bool trader_state = true);
         void SendCancelTrade();
 
@@ -858,5 +859,7 @@ class WorldSession
         int32 m_clientTimeDelay;
         ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
 };
+
 #endif
+
 /// @}

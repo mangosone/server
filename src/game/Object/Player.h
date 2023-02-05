@@ -429,6 +429,7 @@ enum PlayerFlags
     PLAYER_FLAGS_SANCTUARY              = 0x00010000,       // player entered sanctuary
     PLAYER_FLAGS_TAXI_BENCHMARK         = 0x00020000,       // taxi benchmark mode (on/off) (2.0.1)
     PLAYER_FLAGS_PVP_TIMER              = 0x00040000,       // 3.0.2, pvp timer active (after you disable pvp manually)
+    PLAYER_FLAGS_XP_USER_DISABLED       = 0x02000000,
 };
 
 // used for PLAYER__FIELD_KNOWN_TITLES field (uint64), (1<<bit_index) without (-1)
@@ -892,6 +893,19 @@ struct BGData
     bool m_needSave;                                        ///< true, if saved to DB fields modified after prev. save (marked as "saved" above)
 };
 
+struct TradeStatusInfo
+{
+    TradeStatusInfo() : Status(TRADE_STATUS_BUSY), TraderGuid(), Result(EQUIP_ERR_OK),
+        IsTargetResult(false), ItemLimitCategoryId(0), Slot(0) { }
+
+    TradeStatus Status;
+    ObjectGuid TraderGuid;
+    InventoryResult Result;
+    bool IsTargetResult;
+    uint32 ItemLimitCategoryId;
+    uint8 Slot;
+};
+
 class TradeData
 {
     public:                                                 // constructors
@@ -1059,7 +1073,10 @@ class Player : public Unit
         }
 
         PlayerTaxi m_taxi;
-        void InitTaxiNodesForLevel() { m_taxi.InitTaxiNodesForLevel(getRace(), getLevel()); }
+        void InitTaxiNodesForLevel()
+        {
+            m_taxi.InitTaxiNodesForLevel(getRace(), getLevel());
+        }
         bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 0);
         bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
         // mount_id can be used in scripting calls
@@ -1138,12 +1155,12 @@ class Player : public Unit
         void SetRestBonus(float rest_bonus_new);
 
         /**
-        * \brief: compute rest bonus
-        * \param: time_t timePassed > time from last check
-        * \param: bool offline      > is the player was offline?
-        * \param: bool inRestPlace  > if it was offline, is the player was in city/tavern/inn?
-        * \returns: float
-        **/
+         * \brief: compute rest bonus
+         * \param: time_t timePassed > time from last check
+         * \param: bool offline > is the player was offline?
+         * \param: bool inRestPlace > if it was offline, is the player was in city/tavern/inn?
+         * \returns: float
+         **/
         float ComputeRest(time_t timePassed, bool offline = false, bool inRestPlace = false);
 
         RestType GetRestType() const
@@ -1275,6 +1292,7 @@ class Player : public Unit
         {
             return m_ammoDPS;
         }
+
         bool CheckAmmoCompatibility(const ItemPrototype* ammo_proto) const;
         void QuickEquipItem(uint16 pos, Item* pItem);
         void VisualizeItem(uint8 slot, Item* pItem);
@@ -2367,6 +2385,9 @@ class Player : public Unit
         bool IsPetNeedBeTemporaryUnsummoned() const { return !IsInWorld() || !IsAlive() || IsMounted() /*+in flight*/; }
 
         void SendCinematicStart(uint32 CinematicSequenceId);
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
+        void SendMovieStart(uint32 MovieId);
+#endif
 
         /*********************************************************/
         /***                 INSTANCE SYSTEM                   ***/
@@ -2428,6 +2449,8 @@ class Player : public Unit
         bool HasTitle(uint32 bitIndex) const;
         bool HasTitle(CharTitlesEntry const* title) const { return HasTitle(title->bit_index); }
         void SetTitle(CharTitlesEntry const* title, bool lost = false);
+
+        bool canSeeSpellClickOn(Creature const* creature) const;
 
 #ifdef ENABLE_PLAYERBOTS
         //EquipmentSets& GetEquipmentSets() { return m_EquipmentSets; }

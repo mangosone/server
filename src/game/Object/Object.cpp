@@ -45,6 +45,7 @@
 #include "CreatureLinkingMgr.h"
 #include "Chat.h"
 #include "GameTime.h"
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include "ElunaEventMgr.h"
@@ -206,6 +207,7 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) c
     buf << uint8(m_objectTypeId);
 
     BuildMovementUpdate(&buf, updateFlags);
+
     UpdateMask updateMask;
     updateMask.SetCount(m_valuesCount);
     _SetCreateBits(&updateMask, target);
@@ -458,6 +460,11 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
                     if (GetTypeId() == TYPEID_UNIT)
                     {
+                        if (!target->canSeeSpellClickOn((Creature*)this))
+                        {
+                            appendValue &= ~UNIT_NPC_FLAG_SPELLCLICK;
+                        }
+
                         if (appendValue & UNIT_NPC_FLAG_TRAINER)
                         {
                             if (!((Creature*)this)->IsTrainerOf(target, false))
@@ -524,8 +531,10 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
                     /* Initiate pointer to creature so we can check loot */
                     if (Creature* my_creature = (Creature*)this)
+                    {
                         /* If the creature is NOT fully looted */
                         if (!my_creature->loot.isLooted())
+                        {
                             /* If the lootable flag is NOT set */
                             if (!(send_value & UNIT_DYNFLAG_LOOTABLE))
                             {
@@ -534,13 +543,16 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                                 /* Update it in the packet */
                                 send_value = send_value | UNIT_DYNFLAG_LOOTABLE;
                             }
-
+                        }
+                    }
                     /* If we're not allowed to loot the target, destroy the lootable flag */
                     if (!target->isAllowedToLoot((Creature*)this))
+                    {
                         if (send_value & UNIT_DYNFLAG_LOOTABLE)
                         {
                             send_value = send_value & ~UNIT_DYNFLAG_LOOTABLE;
                         }
+                    }
 
                     /* If we are allowed to loot it and mob is tapped by us, destroy the tapped flag */
                     bool is_tapped = target->IsTappedByMeOrMyGroup((Creature*)this);
@@ -553,7 +565,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
                     *data << send_value;
                 }
-                else
+                else                                        // Unhandled index, just send
                 {
                     // send in current format (float as float, uint32 as uint32)
                     *data << m_uint32Values[index];
@@ -595,7 +607,8 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                     }
                     else
                     {
-                        *data << uint32(0);                  // disable quest object
+                        // disable quest object
+                        *data << uint32(0);
                     }
                 }
                 else
@@ -942,7 +955,6 @@ bool Object::PrintEntryError(char const* descr) const
     // always false for continue assert fail
     return false;
 }
-
 
 void Object::BuildUpdateDataForPlayer(Player* pl, UpdateDataMapType& update_players)
 {
@@ -1431,6 +1443,10 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                     {
                         z = max_z;
                     }
+                    else if (z < ground_z)
+                    {
+                        z = ground_z;
+                    }
                 }
             }
             else
@@ -1455,6 +1471,10 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                     if (z > max_z)
                     {
                         z = max_z;
+                    }
+                    else if (z < ground_z)
+                    {
+                        z = ground_z;
                     }
                 }
             }
@@ -1716,7 +1736,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 
     pCreature->SetRespawnCoord(pos);
 
-    //Set run/walk mode
+    // Set run or walk before any other movement starts
     pCreature->SetWalk(!setRun);
 
     // Active state set before added to map

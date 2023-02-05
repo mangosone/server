@@ -417,13 +417,15 @@ void TradeData::SetAccepted(bool state, bool crosssend /*= false*/)
 
     if (!state)
     {
+        TradeStatusInfo info;
+        info.Status = TRADE_STATUS_BACK_TO_TRADE;
         if (crosssend)
         {
-            m_trader->GetSession()->SendTradeStatus(TRADE_STATUS_BACK_TO_TRADE);
+            m_trader->GetSession()->SendTradeStatus(info);
         }
         else
         {
-            m_player->GetSession()->SendTradeStatus(TRADE_STATUS_BACK_TO_TRADE);
+            m_player->GetSession()->SendTradeStatus(info);
         }
     }
 }
@@ -676,11 +678,12 @@ Player::~Player()
 
     // clean up player-instance binds, may unload some instance saves
     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
+    {
         for (BoundInstancesMap::iterator itr = m_boundInstances[i].begin(); itr != m_boundInstances[i].end(); ++itr)
         {
             itr->second.state->RemovePlayer(this);
         }
-
+    }
     delete m_declinedname;
 }
 
@@ -1099,6 +1102,7 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
         default:
             return 0;
     }
+    return 0;
 }
 
 void Player::UpdateMirrorTimers()
@@ -1390,7 +1394,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
                 RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
             }
         }
-    }
+    }// Speed collect rest bonus (section/in hour)
 
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING))
     {
@@ -6955,6 +6959,15 @@ void Player::SendCinematicStart(uint32 CinematicSequenceId)
     data << uint32(CinematicSequenceId);
     SendDirectMessage(&data);
 }
+
+#if defined (WOTLK) || defined (CATA) || defined (MISTS)
+void Player::SendMovieStart(uint32 MovieId)
+{
+    WorldPacket data(SMSG_TRIGGER_MOVIE, 4);
+    data << uint32(MovieId);
+    SendDirectMessage(&data);
+}
+#endif
 
 void Player::CheckAreaExploreAndOutdoor()
 {
@@ -24146,6 +24159,23 @@ void Player::ResummonPetTemporaryUnSummonedIfAny()
     }
 
     m_temporaryUnsummonedPetNumber = 0;
+}
+
+bool Player::canSeeSpellClickOn(Creature const* c) const
+{
+    if (!c->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK))
+    {
+        return false;
+    }
+
+    SpellClickInfoMapBounds clickPair = sObjectMgr.GetSpellClickInfoMapBounds(c->GetEntry());
+    for (SpellClickInfoMap::const_iterator itr = clickPair.first; itr != clickPair.second; ++itr)
+        if (itr->second.IsFitToRequirements(this, c))
+        {
+            return true;
+        }
+
+    return false;
 }
 
 void Player::_SaveBGData()

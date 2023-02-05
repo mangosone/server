@@ -113,6 +113,8 @@ DBCStorage <MailTemplateEntry> sMailTemplateStore(MailTemplateEntryfmt);
 
 DBCStorage <MapEntry> sMapStore(MapEntryfmt);
 
+DBCStorage <MovieEntry> sMovieStore(MovieEntryfmt);
+
 DBCStorage <QuestSortEntry> sQuestSortStore(QuestSortEntryfmt);
 
 DBCStorage <RandomPropertiesPointsEntry> sRandomPropertiesPointsStore(RandomPropertiesPointsfmt);
