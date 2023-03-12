@@ -141,32 +141,32 @@ const std::string& WorldSocket::GetRemoteAddress(void) const
 
 int WorldSocket::SendPacket(const WorldPacket& pkt)
 {
+    ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
+
+    if (closing_)
     {
-        ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
-    
-        if (closing_)
+        return -1;
+    }
+
+    WorldPacket pct = pkt;
+
+    if (iSendPacket(pct) == -1)
+    {
+        WorldPacket* npct;
+
+        ACE_NEW_RETURN(npct, WorldPacket(pct), -1);
+
+        // NOTE maybe check of the size of the queue can be good ?
+        // to make it bounded instead of unbounded
+        if (m_PacketQueue.enqueue_tail(npct) == -1)
         {
+            delete npct;
+            sLog.outError("WorldSocket::SendPacket: m_PacketQueue.enqueue_tail failed");
             return -1;
         }
-    
-        WorldPacket pct = pkt;
-    
-        if (iSendPacket(pct) == -1)
-        {
-            WorldPacket* npct;
-    
-            ACE_NEW_RETURN(npct, WorldPacket(pct), -1);
-    
-            // NOTE maybe check of the size of the queue can be good ?
-            // to make it bounded instead of unbounded
-            if (m_PacketQueue.enqueue_tail(npct) == -1)
-            {
-                delete npct;
-                sLog.outError("WorldSocket::SendPacket: m_PacketQueue.enqueue_tail failed");
-                return -1;
-            }
-        }
-	}
+    }
+
+    Guard.release();
 
     if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
     {
@@ -273,6 +273,34 @@ int WorldSocket::handle_input(ACE_HANDLE)
     ACE_NOTREACHED(return -1);
 }
 
+int WorldSocket::handle_input(ACE_HANDLE)
+{
+    if (closing_)
+    {
+        return -1;
+    }
+
+    switch (handle_input_missing_data())
+    {
+    case -1:
+    {
+        if ((errno == EWOULDBLOCK) || (errno == EAGAIN))
+        {
+            return 0;
+        }
+    }
+    case 0:
+    {
+        errno = ECONNRESET;
+        return -1;
+    }
+    default:
+        return 0;
+    }
+
+    ACE_NOTREACHED(return -1);
+}
+
 int WorldSocket::handle_output(ACE_HANDLE)
 {
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
@@ -286,7 +314,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
 
     if (send_len == 0)
     {
-        reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+        Guard.release();
+        if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            return -1;
         return 0;
     }
 
@@ -304,10 +334,12 @@ int WorldSocket::handle_output(ACE_HANDLE)
     else if (n == -1)
     {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
-            {
+        {
+            Guard.release();
+            if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+                return -1;
             return 0;
-            }
-
+        }
         return -1;
     }
     else if (n < (ssize_t)send_len) // now n > 0
@@ -317,21 +349,33 @@ int WorldSocket::handle_output(ACE_HANDLE)
         // move the data to the base of the buffer
         m_OutBuffer->crunch();
 
+        Guard.release();
+        if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            return -1;
         return 0;
     }
     else // now n == send_len
     {
         m_OutBuffer->reset();
 
-        if(!iFlushPacketQueue()) //no more packets in queue
+        if (!iFlushPacketQueue()) //no more packets in queue
         {
-            reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+            Guard.release();
+            if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+                return -1;
+            return 0;
         }
-        return 0;
+        else
+        {
+            Guard.release();
+            if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+                return -1;
+            return 0;
+        }
     }
-
     ACE_NOTREACHED(return 0);
 }
+
 
 int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
 {
