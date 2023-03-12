@@ -273,34 +273,6 @@ int WorldSocket::handle_input(ACE_HANDLE)
     ACE_NOTREACHED(return -1);
 }
 
-int WorldSocket::handle_input(ACE_HANDLE)
-{
-    if (closing_)
-    {
-        return -1;
-    }
-
-    switch (handle_input_missing_data())
-    {
-    case -1:
-    {
-        if ((errno == EWOULDBLOCK) || (errno == EAGAIN))
-        {
-            return 0;
-        }
-    }
-    case 0:
-    {
-        errno = ECONNRESET;
-        return -1;
-    }
-    default:
-        return 0;
-    }
-
-    ACE_NOTREACHED(return -1);
-}
-
 int WorldSocket::handle_output(ACE_HANDLE)
 {
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
