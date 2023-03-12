@@ -141,30 +141,32 @@ const std::string& WorldSocket::GetRemoteAddress(void) const
 
 int WorldSocket::SendPacket(const WorldPacket& pkt)
 {
-    ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
-
-    if (closing_)
     {
-        return -1;
-    }
-
-    WorldPacket pct = pkt;
-
-    if (iSendPacket(pct) == -1)
-    {
-        WorldPacket* npct;
-
-        ACE_NEW_RETURN(npct, WorldPacket(pct), -1);
-
-        // NOTE maybe check of the size of the queue can be good ?
-        // to make it bounded instead of unbounded
-        if (m_PacketQueue.enqueue_tail(npct) == -1)
+        ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
+    
+        if (closing_)
         {
-            delete npct;
-            sLog.outError("WorldSocket::SendPacket: m_PacketQueue.enqueue_tail failed");
             return -1;
         }
-    }
+    
+        WorldPacket pct = pkt;
+    
+        if (iSendPacket(pct) == -1)
+        {
+            WorldPacket* npct;
+    
+            ACE_NEW_RETURN(npct, WorldPacket(pct), -1);
+    
+            // NOTE maybe check of the size of the queue can be good ?
+            // to make it bounded instead of unbounded
+            if (m_PacketQueue.enqueue_tail(npct) == -1)
+            {
+                delete npct;
+                sLog.outError("WorldSocket::SendPacket: m_PacketQueue.enqueue_tail failed");
+                return -1;
+            }
+        }
+	}
 
     if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
     {
