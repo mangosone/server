@@ -166,6 +166,8 @@ int WorldSocket::SendPacket(const WorldPacket& pkt)
         }
     }
 
+    Guard.release();
+
     if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
     {
         sLog.outError("SendPacket failed setting WRITE mask, peer = %s", GetRemoteAddress().c_str());
@@ -284,7 +286,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
 
     if (send_len == 0)
     {
-        reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+        Guard.release();
+        if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            return -1;
         return 0;
     }
 
@@ -302,10 +306,12 @@ int WorldSocket::handle_output(ACE_HANDLE)
     else if (n == -1)
     {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
-            {
+        {
+            Guard.release();
+            if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+                return -1;
             return 0;
-            }
-
+        }
         return -1;
     }
     else if (n < (ssize_t)send_len) // now n > 0
@@ -315,21 +321,33 @@ int WorldSocket::handle_output(ACE_HANDLE)
         // move the data to the base of the buffer
         m_OutBuffer->crunch();
 
+        Guard.release();
+        if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            return -1;
         return 0;
     }
     else // now n == send_len
     {
         m_OutBuffer->reset();
 
-        if(!iFlushPacketQueue()) //no more packets in queue
+        if (!iFlushPacketQueue()) //no more packets in queue
         {
-            reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+            Guard.release();
+            if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+                return -1;
+            return 0;
         }
-        return 0;
+        else
+        {
+            Guard.release();
+            if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+                return -1;
+            return 0;
+        }
     }
-
     ACE_NOTREACHED(return 0);
 }
+
 
 int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
 {
