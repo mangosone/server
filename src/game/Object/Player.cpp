@@ -4462,7 +4462,8 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
 
     // check level requirement
     bool prof = SpellMgr::IsProfessionSpell(trainer_spell->spell);
-    if (prof || trainer_spell->reqLevel && (trainer_spell->reqLevel) < reqLevel)
+    // Get the player's level and compare it with the required level of the spell
+    if (prof || (trainer_spell->reqLevel && (getLevel() < trainer_spell->reqLevel)))
     {
         return TRAINER_SPELL_RED;
     }
