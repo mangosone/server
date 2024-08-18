@@ -624,6 +624,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     uint32 clientSeed;
     uint32 unk2;
     uint32 BuiltNumberClient;
+    uint8 expansion = 0;
     std::string account;
     BigNumber v, s, g, N, K;
     const bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
