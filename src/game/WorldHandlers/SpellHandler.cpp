@@ -69,7 +69,7 @@ void WorldSession::HandleUseItemOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    DETAIL_LOG("WORLD: CMSG_USE_ITEM packet, bagIndex: %u, slot: %u, spell_count: %u , cast_count: %u, Item: %u, data length = " SIZEFMTD, bagIndex, slot, spell_count, cast_count, pItem->GetEntry(), recvPacket.size());
+    DETAIL_LOG("WORLD: CMSG_USE_ITEM packet, bagIndex: %u, slot: %u, spell_count: %u , cast_count: %u, Item: %u, data length = %zu", bagIndex, slot, spell_count, cast_count, pItem->GetEntry(), recvPacket.size());
 
     ItemPrototype const* proto = pItem->GetProto();
     if (!proto)
@@ -328,7 +328,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    DEBUG_LOG("WORLD: got cast spell packet, spellId - %u, cast_count: %u data length = " %zu,
+    DEBUG_LOG("WORLD: got cast spell packet, spellId - %u, cast_count: %u data length =  %zu",
               spellId, cast_count, recvPacket.size());
 
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
