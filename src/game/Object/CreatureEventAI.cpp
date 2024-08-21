@@ -94,7 +94,7 @@ void CreatureEventAI::GetAIInformation(ChatHandler& reader)
 }
 
 // For Non Dungeon map only allow non-difficulty flags or EFLAG_NORMAL mode
-inline bool IsEventFlagsFitForNormalMap(uint8 eFlags)
+inline static bool IsEventFlagsFitForNormalMap(uint8 eFlags)
 {
     return !(eFlags & (EFLAG_NORMAL | EFLAG_HEROIC)) ||
            (eFlags & EFLAG_NORMAL);
