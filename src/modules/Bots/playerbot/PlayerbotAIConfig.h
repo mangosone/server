@@ -88,4 +88,3 @@ private:
 };
 
 #define sPlayerbotAIConfig MaNGOS::Singleton<PlayerbotAIConfig>::Instance()
-

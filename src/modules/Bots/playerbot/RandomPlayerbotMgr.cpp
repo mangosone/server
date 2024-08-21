@@ -22,7 +22,6 @@ using namespace MaNGOS;
 
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
-
 RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0)
 {
     sPlayerbotCommandServer.Start();
@@ -313,7 +312,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         float y = loc.coord_y + urand(0, sPlayerbotAIConfig.grindDistance) - sPlayerbotAIConfig.grindDistance / 2;
         float z = loc.coord_z;
 
-        Map * map = sMapMgr.FindMap(loc.mapid);
+        Map* map = sMapMgr.FindMap(loc.mapid);
         if (!map)
         {
             continue;
@@ -366,20 +365,20 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, uint32 mapId, float teleX, 
     Refresh(bot);
 
     vector<WorldLocation> locs;
-    QueryResult * results = WorldDatabase.PQuery("select position_x, position_y, position_z from creature where map = '%u' and abs(position_x - '%f') < '%u' and abs(position_y - '%f') < '%u'",
+    QueryResult* results = WorldDatabase.PQuery("SELECT `position_x`, `position_y`, `position_z` FROM `creature` WHERE `map` = '%u' AND ABS(`position_x` - '%f') < '%u' AND ABS(`position_y` - '%f') < '%u'",
         +mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
     if (results)
     {
         do
-             {
-            Field * fields = results->Fetch();
+        {
+            Field* fields = results->Fetch();
             float x = fields[0].GetFloat();
             float y = fields[1].GetFloat();
             float z = fields[2].GetFloat();
             WorldLocation loc(mapId, x, y, z, 0);
             locs.push_back(loc);
-            } while (results->NextRow());
-            delete results;
+        } while (results->NextRow());
+        delete results;
     }
 
     RandomTeleport(bot, locs);
@@ -480,10 +479,10 @@ uint32 RandomPlayerbotMgr::GetZoneLevel(uint16 mapId, float teleX, float teleY, 
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
 
     uint32 level;
-    QueryResult* results = WorldDatabase.PQuery("select avg(t.minlevel) minlevel, avg(t.maxlevel) maxlevel from creature c "
-        "inner join creature_template t on c.id = t.entry "
-        "where map = '%u' and minlevel > 1 and abs(position_x - '%f') < '%u' and abs(position_y - '%f') < '%u'",
-        mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
+    QueryResult *results = WorldDatabase.PQuery("SELECT AVG(`t`.`minlevel`) `minlevel`, AVG(`t`.`maxlevel`) `maxlevel` FROM `creature` `c` "
+            "INNER JOIN `creature_template` `t` ON `c`.`id` = `t`.`entry` "
+            "WHERE `map` = '%u' AND `minlevel` > 1 AND ABS(`position_x` - '%f') < '%u' AND ABS(`position_y` - '%f') < '%u'",
+            mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
 
     if (results)
     {
@@ -564,7 +563,7 @@ list<uint32> RandomPlayerbotMgr::GetBots()
     list<uint32> bots;
 
     QueryResult* results = CharacterDatabase.Query(
-        "select bot from ai_playerbot_random_bots where owner = 0 and event = 'add'");
+            "SELECT `bot` FROM `ai_playerbot_random_bots` WHERE `owner` = 0 AND `event` = 'add'");
 
     if (results)
     {
@@ -585,8 +584,8 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
     uint32 value = 0;
 
     QueryResult* results = CharacterDatabase.PQuery(
-        "select `value`, `time`, validIn from ai_playerbot_random_bots where owner = 0 and bot = '%u' and event = '%s'",
-        bot, event.c_str());
+            "SELECT `value`, `time`, `validIn` FROM `ai_playerbot_random_bots` WHERE `owner` = 0 AND `bot` = '%u' AND `event` = '%s'",
+            bot, event.c_str());
 
     if (results)
     {
@@ -606,13 +605,13 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
 
 uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value, uint32 validIn)
 {
-    CharacterDatabase.PExecute("delete from ai_playerbot_random_bots where owner = 0 and bot = '%u' and event = '%s'",
-        bot, event.c_str());
+    CharacterDatabase.PExecute("DELETE FROM `ai_playerbot_random_bots` WHERE `owner` = 0 and `bot` = '%u' and `event` = '%s'",
+            bot, event.c_str());
     if (value)
     {
         CharacterDatabase.PExecute(
-            "insert into ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) values ('%u', '%u', '%u', '%u', '%s', '%u')",
-            0, bot, (uint32)time(0), validIn, event.c_str(), value);
+                "INSERT INTO `ai_playerbot_random_bots` (`owner`, `bot`, `time`, `validIn`, `event`, `value`) VALUES ('%u', '%u', '%u', '%u', '%s', '%u')",
+                0, bot, (uint32)time(0), validIn, event.c_str(), value);
     }
 
     return value;
@@ -636,7 +635,7 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
 
     if (cmd == "reset")
     {
-        CharacterDatabase.PExecute("delete from ai_playerbot_random_bots");
+        CharacterDatabase.PExecute("DELETE FROM `ai_playerbot_random_bots`");
         sLog.outString("Random bots were reset for all players. Please restart the Server.");
         return true;
     }
@@ -657,7 +656,7 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
         for (list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); ++i)
         {
             uint32 account = *i;
-            if (QueryResult* results = CharacterDatabase.PQuery("SELECT guid FROM characters where account = '%u'", account))
+            if (QueryResult *results = CharacterDatabase.PQuery("SELECT `guid` FROM `characters` where `account` = '%u'", account))
             {
                 do
                 {
@@ -708,9 +707,9 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
                 sRandomPlayerbotMgr.IncreaseLevel(bot);
             }
             uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotRandomizeTime, sPlayerbotAIConfig.maxRandomBotRandomizeTime);
-            CharacterDatabase.PExecute("update ai_playerbot_random_bots set validIn = '%u' where event = 'randomize' and bot = '%u'",
+            CharacterDatabase.PExecute("UPDATE `ai_playerbot_random_bots` SET `validIn` = '%u' WHERE `event` = 'randomize' AND `bot` = '%u'",
                 randomTime, bot->GetGUIDLow());
-            CharacterDatabase.PExecute("update ai_playerbot_random_bots set validIn = '%u' where event = 'logout' and bot = '%u'",
+            CharacterDatabase.PExecute("UPDATE `ai_playerbot_random_bots` SET `validIn` = '%u' WHERE `event` = 'logout' AND `bot` = '%u'",
                 sPlayerbotAIConfig.maxRandomBotInWorldTime, bot->GetGUIDLow());
         }
         return true;
@@ -921,10 +920,11 @@ void RandomPlayerbotMgr::PrintStats()
 
         uint32 from = i * 10;
         uint32 to = min(from + 9, maxLevel);
-        if (!from) from = 1;
+        if (!from)
         {
-            sLog.outString("    %d..%d: %d alliance, %d horde", from, to, alliance[i], horde[i]);
+            from = 1;
         }
+        sLog.outString("    %d..%d: %d alliance, %d horde", from, to, alliance[i], horde[i]);
     }
     sLog.outString("Per race:");
     for (uint8 race = RACE_HUMAN; race < MAX_RACES; ++race)

@@ -50,7 +50,7 @@ AiPlayerbot.RandomClassSpecProbability.11.2 = 45
 #
 
 # Prefix for bot chat commands (e.g. follow, stay)
-AiPlayerbot.CommandPrefix =
+AiPlayerbot.CommandPrefix = ~
 
 # Max AI iterations per tick
 #AiPlayerbot.IterationsPerTick = 10

@@ -74,10 +74,11 @@ void Engine::Reset()
     do
     {
         action = queue.Pop();
-        if (!action) break;
+        if (!action)
         {
-            delete action;
+            break;
         }
+        delete action;
     } while (true);
 
     for (list<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
@@ -136,7 +137,8 @@ bool Engine::DoNextAction(Unit* unit, int depth)
     int iterationsPerTick = queue.Size() * sPlayerbotAIConfig.iterationsPerTick;
     do {
         basket = queue.Peek();
-        if (basket) {
+        if (basket)
+        {
             float relevance = basket->getRelevance(); // just for reference
             bool skipPrerequisites = basket->isSkipPrerequisites();
             Event event = basket->getEvent();
@@ -357,9 +359,9 @@ void Engine::addStrategies(string first, ...)
     {
         cur = va_arg(vl, const char*);
         if (cur)
-  {
-      addStrategy(cur);
-  }
+        {
+            addStrategy(cur);
+        }
     }
     while (cur);
 
@@ -506,9 +508,9 @@ bool Engine::ContainsStrategy(StrategyType type)
     {
         Strategy* strategy = i->second;
         if (strategy->GetType() & type)
-  {
-      return true;
-  }
+        {
+            return true;
+        }
     }
     return false;
 }

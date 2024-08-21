@@ -23,9 +23,9 @@ static bool substrContainsInMap(string searchTerm, map<string, T> searchIn)
     {
         string term = i->first;
         if (term.size() > 1 && searchTerm.find(term) != string::npos)
-  {
-      return true;
-  }
+        {
+            return true;
+        }
     }
 
     return false;

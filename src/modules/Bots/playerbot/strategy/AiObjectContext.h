@@ -63,7 +63,7 @@ namespace ai
                     continue;
                 }
 
-                out << "{" << *i << "=" << text << "}";
+                out << "{" << *i << "=" << text << "} ";
             }
             return out.str();
         }

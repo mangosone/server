@@ -31,12 +31,12 @@ namespace ahbot
         virtual bool Contains(ItemPrototype const* proto)
         {
             return Trade::Contains(proto) &&
-                    proto->SubClass != ITEM_SUBCLASS_PARTS &&
-                    proto->SubClass != ITEM_SUBCLASS_DEVICES &&
-                    proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
+                proto->SubClass != ITEM_SUBCLASS_PARTS &&
+                proto->SubClass != ITEM_SUBCLASS_DEVICES &&
+                proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
         }
 
-        virtual string GetName() { return "othertrade"; }
+        virtual string GetName() { return "OtherTrade"; }
         virtual string GetLabel() { return "devices and explosives"; }
     };
 };

@@ -95,4 +95,3 @@ namespace ahbot
 };
 
 #define auctionbot MaNGOS::Singleton<ahbot::AhBot>::Instance()
-

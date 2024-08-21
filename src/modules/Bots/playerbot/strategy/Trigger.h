@@ -35,7 +35,7 @@ namespace ai
         virtual bool IsActive() { return false; }
         virtual NextAction** getHandlers() { return NULL; }
         void Update() {}
-        virtual void Reset() { }
+        virtual void Reset() {}
         virtual Unit* GetTarget();
         virtual Value<Unit*>* GetTargetValue();
         virtual string GetTargetName() { return "self target"; }
@@ -44,10 +44,9 @@ namespace ai
             if (checkInterval < 2) return true;
 
             time_t now = time(0);
-            if (!lastCheckTime || now - lastCheckTime >= checkInterval) {
-   {
-       lastCheckTime = now;
-   }
+            if (!lastCheckTime || now - lastCheckTime >= checkInterval)
+            {
+                lastCheckTime = now;
                 return true;
             }
             return false;

@@ -126,10 +126,9 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     return true;
 }
 
-
 string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
 {
-    QueryResult* result = CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_names");
+    QueryResult *result = CharacterDatabase.Query("SELECT MAX(`name_id`) FROM `ai_playerbot_names`");
     if (!result)
     {
         sLog.outError("No more names left for random bots");

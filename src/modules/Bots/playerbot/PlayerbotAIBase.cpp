@@ -40,7 +40,7 @@ void PlayerbotAIBase::SetNextCheckDelay(const uint32 delay)
 
     if (nextAICheckDelay > sPlayerbotAIConfig.globalCoolDown)
     {
-        sLog.outDebug( "set next check delay: %d", nextAICheckDelay);
+        sLog.outDebug("set next check delay: %d", nextAICheckDelay);
     }
 }
 
@@ -50,7 +50,7 @@ void PlayerbotAIBase::IncreaseNextCheckDelay(uint32 delay)
 
     if (nextAICheckDelay > sPlayerbotAIConfig.globalCoolDown)
     {
-        sLog.outDebug( "increase next check delay: %d", nextAICheckDelay);
+        sLog.outDebug("increase next check delay: %d", nextAICheckDelay);
     }
 }
 

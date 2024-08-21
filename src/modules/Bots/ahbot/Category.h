@@ -330,23 +330,23 @@ namespace ahbot
 
     class QualityCategoryWrapper : public Category
     {
-    public:
-        QualityCategoryWrapper(Category* category, uint32 quality);
+        public:
+            QualityCategoryWrapper(Category* category, uint32 quality);
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto);
-        virtual uint32 GetMaxAllowedAuctionCount();
-        virtual string GetName() { return category->GetName(); }
-        virtual string GetDisplayName() { return combinedName; }
-        virtual string GetLabel() { return category->GetLabel(); }
-        virtual uint32 GetMaxAllowedItemAuctionCount(ItemPrototype const* proto);
-        virtual uint32 GetStackCount(ItemPrototype const* proto) { return category->GetStackCount(proto); }
-        virtual PricingStrategy* GetPricingStrategy() { return category->GetPricingStrategy(); }
-        virtual uint32 GetSkillId() { return category->GetSkillId(); }
+        public:
+            virtual bool Contains(ItemPrototype const* proto);
+            virtual uint32 GetMaxAllowedAuctionCount();
+            virtual string GetName() { return category->GetName(); }
+            virtual string GetDisplayName() { return combinedName; }
+            virtual string GetLabel() { return category->GetLabel(); }
+            virtual uint32 GetMaxAllowedItemAuctionCount(ItemPrototype const* proto);
+            virtual uint32 GetStackCount(ItemPrototype const* proto) { return category->GetStackCount(proto); }
+            virtual PricingStrategy* GetPricingStrategy() { return category->GetPricingStrategy(); }
+            virtual uint32 GetSkillId() { return category->GetSkillId(); }
 
-    private:
-        uint32 quality;
-        Category* category;
-        string combinedName;
+        private:
+            uint32 quality;
+            Category* category;
+            string combinedName;
     };
 };

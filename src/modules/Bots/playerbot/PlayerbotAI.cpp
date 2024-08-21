@@ -174,8 +174,8 @@ void PlayerbotAI::HandleTeleportAck()
     {
         WorldPacket p = WorldPacket(MSG_MOVE_TELEPORT_ACK, 8 + 4 + 4);
         p << bot->GetObjectGuid();
-        p << (uint32) 0; // supposed to be flags? not used currently
-        p << (uint32) time(0); // time - not currently used
+        p << (uint32)0; // supposed to be flags? not used currently
+        p << (uint32)time(0); // time - not currently used
         bot->GetSession()->HandleMoveTeleportAckOpcode(p);
     }
     else if (bot->IsBeingTeleportedFar())
@@ -420,13 +420,13 @@ void PlayerbotAI::ChangeEngine(BotState type)
         switch (type)
         {
         case BOT_STATE_COMBAT:
-            sLog.outDebug( "=== %s COMBAT ===", bot->GetName());
+            sLog.outDebug("=== %s COMBAT ===", bot->GetName());
             break;
         case BOT_STATE_NON_COMBAT:
-            sLog.outDebug( "=== %s NON-COMBAT ===", bot->GetName());
+            sLog.outDebug("=== %s NON-COMBAT ===", bot->GetName());
             break;
         case BOT_STATE_DEAD:
-            sLog.outDebug( "=== %s DEAD ===", bot->GetName());
+            sLog.outDebug("=== %s DEAD ===", bot->GetName());
             break;
         }
     }
@@ -882,7 +882,6 @@ bool PlayerbotAI::HasAura(uint32 spellId, const Unit* unit)
     return false;
 }
 
-
 bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
 {
     if (!player)
@@ -1090,7 +1089,6 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         targets.setUnitTarget(target);
     }
 
-
     if (pSpellInfo->Effect[0] == SPELL_EFFECT_OPEN_LOCK ||
         pSpellInfo->Effect[0] == SPELL_EFFECT_SKINNING)
     {
@@ -1241,7 +1239,7 @@ bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, string spell)
         }
 
         if ((spellInfo->Effect[i] == SPELL_EFFECT_INTERRUPT_CAST) &&
-            !target->IsImmuneToSpellEffect(spellInfo, (SpellEffectIndex)i, true))
+                !target->IsImmuneToSpellEffect(spellInfo, (SpellEffectIndex)i, true))
             return true;
     }
 
@@ -1285,7 +1283,6 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 }
 
 
-
 #ifndef WIN32
 inline int strcmpi(const char* s1, const char* s2)
 {
@@ -1315,7 +1312,7 @@ bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
 bool IsAlliance(uint8 race)
 {
     return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF || race == RACE_DRAENEI ||
-        race == RACE_GNOME;
+            race == RACE_GNOME;
 }
 
 bool PlayerbotAI::IsOpposing(Player* player)

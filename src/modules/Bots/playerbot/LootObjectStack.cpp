@@ -45,9 +45,9 @@ void LootTargetList::shrink(time_t fromTime)
             erase(i++);
         }
         else
-  {
-      ++i;
-  }
+        {
+            ++i;
+        }
     }
 }
 
