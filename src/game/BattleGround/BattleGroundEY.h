@@ -279,7 +279,7 @@ class BattleGroundEY : public BattleGround
         void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
         void EventPlayerDroppedFlag(Player* source) override;
 
-        virtual Team GetPrematureWinner() override;
+        Team GetPrematureWinner() override;
 
     private:
         // process capture events
