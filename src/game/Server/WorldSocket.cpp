@@ -288,7 +288,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
     {
         Guard.release();
         if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+        {
             return -1;
+        }
         return 0;
     }
 
@@ -309,7 +311,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
         {
             Guard.release();
             if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            {
                 return -1;
+            }
             return 0;
         }
         return -1;
@@ -323,7 +327,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
 
         Guard.release();
         if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+        {
             return -1;
+        }
         return 0;
     }
     else // now n == send_len
@@ -334,14 +340,18 @@ int WorldSocket::handle_output(ACE_HANDLE)
         {
             Guard.release();
             if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            {
                 return -1;
+            }
             return 0;
         }
         else
         {
             Guard.release();
             if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+            {
                 return -1;
+            }
             return 0;
         }
     }

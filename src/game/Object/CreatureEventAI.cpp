@@ -190,7 +190,7 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
     DEBUG_FILTER_LOG(LOG_FILTER_EVENT_AI_DEV, "CreatureEventAI: Event type %u (script %u) triggered for %s (invoked by %s)",    \
                      pHolder.Event.event_type, pHolder.Event.event_id, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>")
 
-inline bool IsTimerBasedEvent(EventAI_Type type)
+inline static bool IsTimerBasedEvent(EventAI_Type type)
 {
     switch (type)
     {
@@ -1289,7 +1289,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         }
         case ACTION_T_SUMMON_UNIQUE:                    //49
         {
-            Creature* pCreature = NULL;
+            Creature* pCreature = nullptr;
 
             MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*m_creature, action.summon_unique.creatureId, true, false, 100, true);
             MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(pCreature, u_check);
@@ -1362,6 +1362,8 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             m_creature->HandleEmote(action.emoteTarget.emoteId);
             break;
         }
+        default:
+            break;
     }
 }
 
@@ -1660,13 +1662,19 @@ void CreatureEventAI::MoveInLineOfSight(Unit* who)
 void CreatureEventAI::SpellHit(Unit* pUnit, const SpellEntry* pSpell)
 {
     for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)
+    {
         if (i->Event.event_type == EVENT_T_SPELLHIT)
+        {
             // If spell id matches (or no spell id) & if spell school matches (or no spell school)
             if (!i->Event.spell_hit.spellId || pSpell->Id == i->Event.spell_hit.spellId)
+            {
                 if (pSpell->SchoolMask & i->Event.spell_hit.schoolMask)
                 {
                     ProcessEvent(*i, pUnit);
                 }
+            }
+        }
+    }
 }
 
 void CreatureEventAI::UpdateAI(const uint32 diff)
@@ -1889,7 +1897,7 @@ void CreatureEventAI::ReceiveEmote(Player* pPlayer, uint32 text_emote)
     }
 }
 
-#define HEALTH_STEPS 3
+constexpr auto HEALTH_STEPS = 3;
 
 void CreatureEventAI::DamageTaken(Unit* dealer, uint32& damage)
 {

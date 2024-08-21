@@ -1854,6 +1854,7 @@ void AuctionBotSeller::SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, 
 
     uint32 buypMin = (uint32)temp_buyp - (uint32)randrange;
     uint32 buypMax = ((uint32)temp_buyp + (uint32)randrange) < temp_buyp ? std::numeric_limits<uint32>::max() : temp_buyp + randrange;
+
     buyp = (urand(buypMin, buypMax) / 100) + 1;
 
     double urandrange = buyp * 40;
