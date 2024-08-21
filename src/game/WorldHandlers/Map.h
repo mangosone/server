@@ -299,11 +299,6 @@ class Map : public GridRefManager<NGridType>
 
         // Teleport all players in that map to choosed location
         void TeleportAllPlayersTo(TeleportLocation loc);
-        // Random on map generation
-        bool GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, float radius);
-        bool GetReachableRandomPointOnGround(float& x, float& y, float& z, float radius);
-        bool GetRandomPointInTheAir(float& x, float& y, float& z, float radius);
-        bool GetRandomPointUnderWater(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status);
 
         // WeatherSystem
         WeatherSystem* GetWeatherSystem() const { return m_weatherSystem; }
@@ -315,6 +310,11 @@ class Map : public GridRefManager<NGridType>
          */
         void SetWeather(uint32 zoneId, WeatherType type, float grade, bool permanently);
 
+        // Random on map generation
+        bool GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, float radius);
+        bool GetReachableRandomPointOnGround(float& x, float& y, float& z, float radius);
+        bool GetRandomPointInTheAir(float& x, float& y, float& z, float radius);
+        bool GetRandomPointUnderWater(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status);
 
     private:
         void LoadMapAndVMap(int gx, int gy);
@@ -331,7 +331,7 @@ class Map : public GridRefManager<NGridType>
         bool loaded(const GridPair&) const;
         void EnsureGridCreated(const GridPair&);
         bool EnsureGridLoaded(Cell const&);
-        void EnsureGridLoadedAtEnter(Cell const&, Player* player = NULL);
+        void EnsureGridLoadedAtEnter(Cell const&, Player* player = nullptr);
 
         void buildNGridLinkage(NGridType* pNGridType) { pNGridType->link(this); }
 
@@ -441,7 +441,7 @@ class DungeonMap : public Map
         // can't be nullptr for loaded map
         DungeonPersistentState* GetPersistanceState() const;
 
-        virtual void InitVisibilityDistance() override;
+        void InitVisibilityDistance() override;
     private:
         bool m_resetAfterUnload;
         bool m_unloadWhenEmpty;
@@ -462,7 +462,7 @@ class BattleGroundMap : public Map
         void SetUnload();
         void UnloadAll(bool pForce) override;
 
-        virtual void InitVisibilityDistance() override;
+        void InitVisibilityDistance() override;
         BattleGround* GetBG() { return m_bg; }
         void SetBG(BattleGround* bg) { m_bg = bg; }
 

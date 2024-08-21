@@ -237,7 +237,7 @@ class BattleGroundAB : public BattleGround
          * @brief
          *
          */
-        virtual void StartingEventOpenDoors() override;
+        void StartingEventOpenDoors() override;
         /**
          * @brief
          *
@@ -256,7 +256,7 @@ class BattleGroundAB : public BattleGround
          * @brief
          *
          */
-        virtual void Reset() override;
+        void Reset() override;
         /**
          * @brief
          *
@@ -269,7 +269,7 @@ class BattleGroundAB : public BattleGround
          * @param player
          * @return const WorldSafeLocsEntry
          */
-        virtual WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
+        WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
 
         /* Scorekeeping */
         /**
@@ -279,7 +279,7 @@ class BattleGroundAB : public BattleGround
          * @param type
          * @param value
          */
-        virtual void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
+        void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
 
         /**
          * @brief
@@ -287,7 +287,7 @@ class BattleGroundAB : public BattleGround
          * @param data
          * @param count
          */
-        virtual void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
+        void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
         /* Nodes occupying */
         /**
@@ -296,14 +296,14 @@ class BattleGroundAB : public BattleGround
          * @param source
          * @param target_obj
          */
-        virtual void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
+        void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
 
         /* Premature finish */
         /**
          * @brief
          *
          */
-        virtual Team GetPrematureWinner() override;
+        Team GetPrematureWinner() override;
 
     private:
         /* Gameobject spawning/despawning */
