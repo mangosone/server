@@ -556,10 +556,12 @@ void Spell::FillTargetMap()
                         case TARGET_RANDOM_NEARBY_DEST:
                             // triggered spells get dest point from default target set, ignore it
                             if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION) || m_IsTriggeredSpell)
+                            {
                                 if (WorldObject* castObject = GetCastingObject())
                                 {
                                     m_targets.setDestination(castObject->GetPositionX(), castObject->GetPositionY(), castObject->GetPositionZ());
                                 }
+                            }
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
                             // target pre-selection required
@@ -916,7 +918,7 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
     if (speed > 0.0f && affectiveObject && (pVictim != affectiveObject || (m_targets.m_targetMask & (TARGET_FLAG_SOURCE_LOCATION | TARGET_FLAG_DEST_LOCATION))))
     {
         // calculate spell incoming interval
-        float dist = 0.0f;                                  // distance to impact
+        float dist;                                         // distance to impact
         if (pVictim == affectiveObject)                     // Calculate dist to destination target also for self-cast spells
         {
             if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
@@ -3729,8 +3731,8 @@ void Spell::update(uint32 difftime)
 
     // check if the player or unit caster has moved before the spell finished (exclude casting on vehicles)
     if (((m_caster->GetTypeId() == TYPEID_PLAYER || m_caster->GetTypeId() == TYPEID_UNIT) && m_timer != 0) &&
-            (m_castPositionX != m_caster->GetPositionX() || m_castPositionY != m_caster->GetPositionY() || m_castPositionZ != m_caster->GetPositionZ()) &&
-            (m_spellInfo->Effect[EFFECT_INDEX_0] != SPELL_EFFECT_STUCK || !m_caster->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLINGFAR)))
+        (m_castPositionX != m_caster->GetPositionX() || m_castPositionY != m_caster->GetPositionY() || m_castPositionZ != m_caster->GetPositionZ()) &&
+        (m_spellInfo->Effect[EFFECT_INDEX_0] != SPELL_EFFECT_STUCK || !m_caster->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLINGFAR)))
     {
         // always cancel for channeled spells
         if (m_spellState == SPELL_STATE_CASTING && !m_spellInfo->HasAttribute(SPELL_ATTR_EX5_CAN_CHANNEL_WHEN_MOVING))
@@ -3976,6 +3978,7 @@ void Spell::finish(bool ok)
     {
         m_caster->AttackStop();
     }
+
 #ifdef ENABLE_PLAYERBOTS
     if(!m_caster->GetMapId())
     {
@@ -4094,7 +4097,7 @@ void Spell::SendSpellStart()
     }
 
     data << m_caster->GetPackGUID();
-    data << uint32(m_spellInfo->Id);;                       // spellId
+    data << uint32(m_spellInfo->Id);                        // spellId
     data << uint8(m_cast_count);                            // pending spell cast?
     data << uint16(castFlags);                              // cast flags
     data << uint32(m_timer);                                // delay?
@@ -5029,29 +5032,29 @@ SpellCastResult Spell::CheckCast(bool strict)
         {
             // warrior not have real combo-points at client side but use this way for mark allow Overpower use
             return m_caster->getClass() == CLASS_WARRIOR ? SPELL_FAILED_CASTER_AURASTATE : SPELL_FAILED_NO_COMBO_POINTS;
+        }
 
-            // Loatheb Corrupted Mind spell failed
-            switch(m_spellInfo->SpellFamilyName)
+        // Loatheb Corrupted Mind spell failed
+        switch(m_spellInfo->SpellFamilyName)
+        {
+            case SPELLFAMILY_DRUID:
+            case SPELLFAMILY_PRIEST:
+            case SPELLFAMILY_SHAMAN:
+            case SPELLFAMILY_PALADIN:
             {
-                case SPELLFAMILY_DRUID:
-                case SPELLFAMILY_PRIEST:
-                case SPELLFAMILY_SHAMAN:
-                case SPELLFAMILY_PALADIN:
+                if (IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_HEAL) || IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL) ||
+                        IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_DISPEL))
                 {
-                    if (IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_HEAL) || IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL) ||
-                            IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_DISPEL))
+                    Unit::AuraList const& auraClassScripts = m_caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+                    for (Unit::AuraList::const_iterator itr = auraClassScripts.begin(); itr != auraClassScripts.end();)
                     {
-                        Unit::AuraList const& auraClassScripts = m_caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                        for (Unit::AuraList::const_iterator itr = auraClassScripts.begin(); itr != auraClassScripts.end();)
+                        if ((*itr)->GetModifier()->m_miscvalue == 4327)
                         {
-                            if ((*itr)->GetModifier()->m_miscvalue == 4327)
-                            {
-                                return SPELL_FAILED_FIZZLE;
-                            }
-                            else
-                            {
-                                ++itr;
-                            }
+                            return SPELL_FAILED_FIZZLE;
+                        }
+                        else
+                        {
+                            ++itr;
                         }
                     }
                 }
@@ -5938,7 +5941,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 }
 
                 // get the lock entry
-                uint32 lockId = 0;
+                uint32 lockId;
                 if (GameObject* go = m_targets.getGOTarget())
                 {
                     // Prevent opening two times a chest in same time.
