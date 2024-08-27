@@ -19,7 +19,9 @@ uint32 PlayerbotFactory::tradeSkills[] =
     SKILL_ENCHANTING,
     SKILL_SKINNING,
     SKILL_TAILORING,
+#if !defined(CLASSIC)
     SKILL_JEWELCRAFTING,
+#endif
     SKILL_LEATHERWORKING,
     SKILL_ENGINEERING,
     SKILL_HERBALISM,
@@ -1128,7 +1130,9 @@ void PlayerbotFactory::InitTradeSkills()
             break;
         case 2:
             SetRandomSkill(SKILL_MINING);
+#if !defined(CLASSIC)
             SetRandomSkill(SKILL_JEWELCRAFTING);
+#endif
             break;
         case 3:
             SetRandomSkill(firstSkills[urand(0, firstSkills.size() - 1)]);
@@ -1750,11 +1754,13 @@ void PlayerbotFactory::InitInventorySkill()
     {
         StoreItem(2901, 1); // Mining Pick
     }
+#if !defined(CLASSIC)
     if (bot->HasSkill(SKILL_JEWELCRAFTING))
     {
         StoreItem(20815, 1); // Jeweler's Kit
         StoreItem(20824, 1); // Simple Grinder
     }
+#endif
     if (bot->HasSkill(SKILL_BLACKSMITHING) || bot->HasSkill(SKILL_ENGINEERING))
     {
         StoreItem(5956, 1); // Blacksmith Hammer

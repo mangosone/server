@@ -160,8 +160,10 @@ ChatHelper::ChatHelper(PlayerbotAI* ai) : PlayerbotAIAware(ai)
     races[RACE_ORC] = "Orc";
     races[RACE_TAUREN] = "Tauren";
     races[RACE_TROLL] = "Troll";
+#if !defined(CLASSIC)
     races[RACE_DRAENEI] = "Draenei";
     races[RACE_BLOODELF] = "Blood Elf";
+#endif
     races[RACE_UNDEAD] = "Undead";
 }
 
