@@ -25,6 +25,28 @@ bool LootRollAction::Execute(Event event)
     }
 
     RollVote vote = ROLL_PASS;
+#if defined(CLASSIC)
+    ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(guid.GetEntry());
+    if (proto)
+    {
+        switch (proto->Class)
+        {
+        case ITEM_CLASS_WEAPON:
+        case ITEM_CLASS_ARMOR:
+            if (QueryItemUsage(proto))
+            {
+                vote = ROLL_NEED;
+            }
+            break;
+        default:
+            if (IsLootAllowed(guid.GetEntry()))
+            {
+                vote = ROLL_NEED;
+            }
+            break;
+        }
+    }
+#else
     for (vector<Roll*>::iterator i = group->GetRolls().begin(); i != group->GetRolls().end(); ++i)
     {
         if ((*i)->isValid() && (*i)->lootedTargetGUID == guid && (*i)->itemSlot == slot)
@@ -43,7 +65,7 @@ bool LootRollAction::Execute(Event event)
             }
         }
     }
-
+#endif
     switch (group->GetLootMethod())
     {
     case MASTER_LOOT:

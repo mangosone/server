@@ -138,6 +138,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
 
     if (itemTarget)
     {
+#if !defined(CLASSIC)
         if (item->GetProto()->Class == ITEM_CLASS_GEM)
         {
             bool fit = SocketItem(itemTarget, item) || SocketItem(itemTarget, item, true);
@@ -148,6 +149,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
             return fit;
         }
         else
+#endif
         {
             uint32 targetFlag = TARGET_FLAG_ITEM;
             *packet << targetFlag << itemTarget->GetPackGUID();
@@ -279,6 +281,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     bot->GetSession()->QueuePacket(packet);
     return true;
 }
+#if !defined(CLASSIC)
 bool UseItemAction::SocketItem(Item* item, Item* gem, bool replace)
 {
     WorldPacket* const packet = new WorldPacket(CMSG_SOCKET_GEMS);
@@ -335,8 +338,7 @@ bool UseItemAction::SocketItem(Item* item, Item* gem, bool replace)
     }
     return fits;
 }
-
-
+#endif
 
 bool UseItemAction::isPossible()
 {

@@ -1311,8 +1311,11 @@ bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
 
 bool IsAlliance(uint8 race)
 {
-    return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF || race == RACE_DRAENEI ||
-            race == RACE_GNOME;
+    return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF
+#if !defined(CLASSIC)
+        || race == RACE_DRAENEI
+#endif
+        || race == RACE_GNOME;
 }
 
 bool PlayerbotAI::IsOpposing(Player* player)

@@ -403,7 +403,7 @@ int WorldSocket::handle_input_header(void)
 
     header.size -= 4;
 
-    ACE_NEW_RETURN(m_RecvWPct, WorldPacket(Opcodes(header.cmd), header.size), -1);
+    ACE_NEW_RETURN(m_RecvWPct, WorldPacket(OpcodesList(header.cmd), header.size), -1);
 
     if (header.size > 0)
     {
