@@ -253,7 +253,10 @@ bool Weather::SendWeatherForPlayersInZone(Map const* _map)
     ///- Log the event
     LogWeatherState(state);
 #ifdef ENABLE_ELUNA
-    sEluna->OnChange(this, m_zone, GetWeatherState(), m_grade);
+    if (Eluna* e = sWorld.GetEluna())
+    {
+        e->OnChange(this, m_zone, GetWeatherState(), m_grade);
+    }
 #endif /* ENABLE_ELUNA */
 
     return true;

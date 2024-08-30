@@ -527,7 +527,10 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnCreate(pNewChar);
+    if (Eluna* e = sWorld.GetEluna())
+    {
+        e->OnCreate(pNewChar);
+    }
 #endif /* ENABLE_ELUNA */
 
     delete pNewChar;                                        // created only to call SaveToDB()
@@ -588,7 +591,10 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnDelete(lowguid);
+    if (Eluna* e = sWorld.GetEluna())
+    {
+        e->OnDelete(lowguid);
+    }
 #endif /* ENABLE_ELUNA */
 
     if (sLog.IsOutCharDump())                               // optimize GetPlayerDump call
@@ -922,9 +928,12 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    if (pCurrChar->HasAtLoginFlag(AT_LOGIN_FIRST))
+    if (Eluna* e = pCurrChar->GetEluna())
     {
-        sEluna->OnFirstLogin(pCurrChar);
+        if (pCurrChar->HasAtLoginFlag(AT_LOGIN_FIRST))
+        {
+            e->OnFirstLogin(pCurrChar);
+        }
     }
 #endif /* ENABLE_ELUNA */
 
@@ -977,7 +986,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnLogin(pCurrChar);
+    if (Eluna* e = sWorld.GetEluna())
+    {
+        e->OnLogin(pCurrChar);
+    }
 #endif /* ENABLE_ELUNA */
 
     /* Used for movement */

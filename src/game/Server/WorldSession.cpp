@@ -631,7 +631,10 @@ void WorldSession::LogoutPlayer(bool Save)
 
         ///- Used by Eluna
 #ifdef ENABLE_ELUNA
-        sEluna->OnLogout(_player);
+        if (Eluna* e = sWorld.GetEluna())
+        {
+            e->OnLogout(_player);
+        }
 #endif /* ENABLE_ELUNA */
 
         ///- Remove the player from the world
@@ -891,9 +894,12 @@ void WorldSession::SendTransferAborted(uint32 mapid, uint8 reason, uint8 arg)
 void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* packet)
 {
 #ifdef ENABLE_ELUNA
-    if (!sEluna->OnPacketReceive(this, *packet))
+    if (Eluna* e = sWorld.GetEluna())
     {
-        return;
+        if (!e->OnPacketReceive(this, *packet))
+        {
+            return;
+        }
     }
 #endif /* ENABLE_ELUNA */
 

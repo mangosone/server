@@ -1504,7 +1504,10 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             // m_nextSave reseted in SaveToDB call
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            sEluna->OnSave(this);
+            if (Eluna* e = GetEluna())
+            {
+                e->OnSave(this);
+            }
 #endif /* ENABLE_ELUNA */
             SaveToDB();
             DETAIL_LOG("Player '%s' (GUID: %u) saved", GetName(), GetGUIDLow());
@@ -2719,7 +2722,10 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnGiveXP(this, xp, victim);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnGiveXP(this, xp, victim);
+    }
 #endif /* ENABLE_ELUNA */
 
     // XP to money conversion processed in Player::RewardQuest
@@ -2840,7 +2846,10 @@ void Player::GiveLevel(uint32 level)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnLevelChanged(this, oldLevel);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnLevelChanged(this, oldLevel);
+    }
 #endif /* ENABLE_ELUNA */
 
     if (MailLevelReward const* mailReward = sObjectMgr.GetMailLevelReward(level, getRaceMask()))
@@ -2853,7 +2862,10 @@ void Player::SetFreeTalentPoints(uint32 points)
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnFreeTalentPointsChanged(this, points);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnFreeTalentPointsChanged(this, points);
+    }
 #endif /* ENABLE_ELUNA */
 
     SetUInt32Value(PLAYER_CHARACTER_POINTS1, points);
@@ -4106,7 +4118,10 @@ bool Player::resetTalents(bool no_cost)
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnTalentsReset(this, no_cost);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnTalentsReset(this, no_cost);
+    }
 #endif /* ENABLE_ELUNA */
 
     // not need after this call
@@ -4983,7 +4998,10 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
     UpdateObjectVisibility();
 
 #ifdef ENABLE_ELUNA
-    sEluna->OnResurrect(this);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnResurrect(this);
+    }
 #endif /* ENABLE_ELUNA */
 
     if (!applySickness)
@@ -7685,7 +7703,10 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnUpdateZone(this, newZone, newArea);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnUpdateZone(this, newZone, newArea);
+    }
 #endif /* ENABLE_ELUNA */
 
     m_zoneUpdateId    = newZone;
@@ -7844,7 +7865,10 @@ void Player::DuelComplete(DuelCompleteType type)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnDuelEnd(duel->opponent, this, type);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnDuelEnd(duel->opponent, this, type);
+    }
 #endif /* ENABLE_ELUNA */
 
     // Remove Duel Flag object
@@ -11972,10 +11996,13 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto) const
         }
 
 #ifdef ENABLE_ELUNA
-        InventoryResult eres = sEluna->OnCanUseItem(this, pProto->ItemId);
-        if (eres != EQUIP_ERR_OK)
+        if (Eluna* e = GetEluna())
         {
-            return eres;
+            InventoryResult eres = e->OnCanUseItem(this, pProto->ItemId);
+            if (eres != EQUIP_ERR_OK)
+            {
+                return eres;
+            }
         }
 #endif
 
@@ -12340,14 +12367,22 @@ Item* Player::EquipItem(uint16 pos, Item* pItem, bool update)
 
         // Used by Eluna
 #ifdef ENABLE_ELUNA
-        sEluna->OnEquip(this, pItem2, bag, slot);
+        if (Eluna* e = GetEluna())
+        {
+            e->OnEquip(this, pItem2, bag, slot); // This is depricated and will be removed in the future
+            e->OnItemEquip(this, pItem2, slot);
+        }
 #endif /* ENABLE_ELUNA */
 
         return pItem2;
     }
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnEquip(this, pItem, bag, slot);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnEquip(this, pItem, bag, slot); // This is depricated and will be removed in the future
+        e->OnItemEquip(this, pItem, slot);
+    }
 #endif /* ENABLE_ELUNA */
 
     return pItem;
@@ -12605,7 +12640,10 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
 
         ItemRemovedQuestCheck(pItem->GetEntry(), pItem->GetCount());
 #ifdef ENABLE_ELUNA
-        sEluna->OnRemove(this, pItem);
+        if (Eluna* e = GetEluna())
+        {
+            e->OnRemove(this, pItem);
+        }
 #endif /* ENABLE_ELUNA */
 
         if (bag == INVENTORY_SLOT_BAG_0)
@@ -18687,7 +18725,10 @@ InstancePlayerBind* Player::BindToInstance(DungeonPersistentState* state, bool p
                       GetName(), GetGUIDLow(), state->GetMapId(), state->GetInstanceId(), state->GetDifficulty());
         // Used by Eluna
 #ifdef ENABLE_ELUNA
-        sEluna->OnBindToInstance(this, (Difficulty)0, state->GetMapId(), permanent);
+        if (Eluna* e = GetEluna())
+        {
+            e->OnBindToInstance(this, (Difficulty)0, state->GetMapId(), permanent);
+        }
 #endif /* ENABLE_ELUNA */
 
         return &bind;
@@ -18942,9 +18983,12 @@ void Player::SaveToDB()
 
 #ifdef ENABLE_ELUNA
     // Hack to check that this is not on create save
-    if (!HasAtLoginFlag(AT_LOGIN_FIRST))
+    if (Eluna* e = GetEluna())
     {
-        sEluna->OnSave(this);
+        if (!HasAtLoginFlag(AT_LOGIN_FIRST))
+        {
+            e->OnSave(this);
+        }
     }
 #endif /* ENABLE_ELUNA */
 
@@ -20004,7 +20048,10 @@ void Player::UpdateDuelFlag(time_t currTime)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnDuelStart(this, duel->opponent);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnDuelStart(this, duel->opponent);
+    }
 #endif /* ENABLE_ELUNA */
 
     SetUInt32Value(PLAYER_DUEL_TEAM, 1);
@@ -24135,7 +24182,10 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     learnSpell(spellid, false);
     DETAIL_LOG("TalentID: %u Rank: %u Spell: %u\n", talentId, talentRank, spellid);
 #ifdef ENABLE_ELUNA
-    sEluna->OnLearnTalents(this, talentId, talentRank, spellid);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnLearnTalents(this, talentId, talentRank, spellid);
+    }
 #endif /*ENABLE_ELUNA*/
 
 }
@@ -24246,7 +24296,10 @@ void Player::ModifyMoney(int32 d)
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnMoneyChanged(this, d);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnMoneyChanged(this, d);
+    }
 #endif /* ENABLE_ELUNA */
 
     if (d < 0)
