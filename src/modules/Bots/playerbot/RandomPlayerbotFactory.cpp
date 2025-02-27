@@ -11,9 +11,13 @@
 #include "RandomPlayerbotFactory.h"
 #include "SystemConfig.h"
 
-
 map<uint8, vector<uint8> > RandomPlayerbotFactory::availableRaces;
 
+/**
+ * Constructor for RandomPlayerbotFactory.
+ * Initializes the available races for each class.
+ * @param accountId The account ID for the random bot.
+ */
 RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(accountId)
 {
     availableRaces[CLASS_WARRIOR].push_back(RACE_HUMAN);
@@ -99,6 +103,11 @@ RandomPlayerbotFactory::RandomPlayerbotFactory(uint32 accountId) : accountId(acc
     availableRaces[CLASS_DRUID].push_back(RACE_TAUREN);
 }
 
+/**
+ * Creates a random bot for the specified class.
+ * @param cls The class of the bot to create.
+ * @return True if the bot was created successfully, false otherwise.
+ */
 bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
 {
     sLog.outDetail("Creating new random bot for class %d", cls);
@@ -152,6 +161,11 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     return true;
 }
 
+/**
+ * Creates a random name for the bot based on the specified gender.
+ * @param gender The gender of the bot.
+ * @return The generated name for the bot.
+ */
 string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
 {
     QueryResult *result = CharacterDatabase.Query("SELECT MAX(`name_id`) FROM `ai_playerbot_names`");
@@ -177,7 +191,9 @@ string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
     return fields[0].GetString();
 }
 
-
+/**
+ * Creates random bots for the configured number of accounts.
+ */
 void RandomPlayerbotFactory::CreateRandomBots()
 {
     if (sPlayerbotAIConfig.deleteRandomBotAccounts)
@@ -261,7 +277,9 @@ void RandomPlayerbotFactory::CreateRandomBots()
     sLog.outString("%d random bot accounts with %d characters available", sPlayerbotAIConfig.randomBotAccounts.size(), totalRandomBotChars);
 }
 
-
+/**
+ * Creates random guilds for the random bots.
+ */
 void RandomPlayerbotFactory::CreateRandomGuilds()
 {
     vector<uint32> randomBots;
@@ -359,6 +377,10 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
     sLog.outString("%d random bot guilds available", guildNumber);
 }
 
+/**
+ * Creates a random name for a guild.
+ * @return The generated name for the guild.
+ */
 string RandomPlayerbotFactory::CreateRandomGuildName()
 {
     QueryResult* result = CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_guild_names");
@@ -386,4 +408,3 @@ string RandomPlayerbotFactory::CreateRandomGuildName()
     delete result;
     return fields[0].GetString();
 }
-

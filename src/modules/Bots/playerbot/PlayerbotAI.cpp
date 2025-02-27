@@ -26,11 +26,17 @@
 using namespace ai;
 using namespace std;
 
+// Function declarations
 vector<string>& split(const string &s, char delim, vector<string> &elems);
 vector<string> split(const string &s, char delim);
 char * strstri (string str1, string str2);
 uint64 extractGuid(WorldPacket& packet);
 
+/**
+ * Extracts the quest ID from a string.
+ * @param str The input string.
+ * @return The extracted quest ID.
+ */
 uint32 PlayerbotChatHandler::extractQuestId(string str)
 {
     char* source = (char*)str.c_str();
@@ -38,11 +44,20 @@ uint32 PlayerbotChatHandler::extractQuestId(string str)
     return cId ? atol(cId) : 0;
 }
 
+/**
+ * Adds a packet handler for a specific opcode.
+ * @param opcode The opcode.
+ * @param handler The handler name.
+ */
 void PacketHandlingHelper::AddHandler(uint16 opcode, string handler)
 {
     handlers[opcode] = handler;
 }
 
+/**
+ * Handles packets using the provided ExternalEventHelper.
+ * @param helper The ExternalEventHelper instance.
+ */
 void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
 {
     while (!queue.empty())
@@ -52,6 +67,10 @@ void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
     }
 }
 
+/**
+ * Adds a packet to the queue for handling.
+ * @param packet The packet to add.
+ */
 void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
 {
     if (handlers.find(packet.GetOpcode()) != handlers.end())
@@ -60,9 +79,11 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
     }
 }
 
-
+/**
+ * Default constructor for PlayerbotAI.
+ */
 PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL)
+    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BOT_STATE_NON_COMBAT)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
@@ -70,6 +91,10 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
     }
 }
 
+/**
+ * Constructor for PlayerbotAI with a bot parameter.
+ * @param bot The player bot.
+ */
 PlayerbotAI::PlayerbotAI(Player* bot) :
     PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL)
 {
@@ -121,6 +146,9 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     masterOutgoingPacketHandlers.AddHandler(MSG_RAID_READY_CHECK_FINISHED, "ready check finished");
 }
 
+/**
+ * Destructor for PlayerbotAI.
+ */
 PlayerbotAI::~PlayerbotAI()
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
@@ -137,6 +165,10 @@ PlayerbotAI::~PlayerbotAI()
     }
 }
 
+/**
+ * Internal update method for PlayerbotAI.
+ * @param elapsed The elapsed time since the last update.
+ */
 void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
 {
     if (bot->IsBeingTeleported())
@@ -166,6 +198,9 @@ void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
     DoNextAction();
 }
 
+/**
+ * Handles teleport acknowledgment for the bot.
+ */
 void PlayerbotAI::HandleTeleportAck()
 {
     bot->GetMotionMaster()->Clear(true);
@@ -185,6 +220,9 @@ void PlayerbotAI::HandleTeleportAck()
     }
 }
 
+/**
+ * Resets the bot's state and strategies.
+ */
 void PlayerbotAI::Reset()
 {
     if (bot->IsTaxiFlying())
@@ -220,6 +258,12 @@ void PlayerbotAI::Reset()
 
 map<string,ChatMsg> chatMap;
 
+/**
+ * Handles a command from the master.
+ * @param type The type of the command.
+ * @param text The command text.
+ * @param fromPlayer The player who sent the command.
+ */
 void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
     if (!GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, type != CHAT_MSG_WHISPER, &fromPlayer))
@@ -306,6 +350,10 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
     }
 }
 
+/**
+ * Handles outgoing packets from the bot.
+ * @param packet The packet to handle.
+ */
 void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 {
     switch (packet.GetOpcode())
@@ -351,6 +399,10 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
     }
 }
 
+/**
+ * Handles spell interruption for the bot.
+ * @param spellid The ID of the interrupted spell.
+ */
 void PlayerbotAI::SpellInterrupted(uint32 spellid)
 {
     LastSpellCast& lastSpell = aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get();
@@ -382,6 +434,11 @@ void PlayerbotAI::SpellInterrupted(uint32 spellid)
     lastSpell.id = 0;
 }
 
+/**
+ * Calculates the global cooldown for a spell.
+ * @param spellid The ID of the spell.
+ * @return The global cooldown in milliseconds.
+ */
 int32 PlayerbotAI::CalculateGlobalCooldown(uint32 spellid)
 {
     if (!spellid)
@@ -397,16 +454,28 @@ int32 PlayerbotAI::CalculateGlobalCooldown(uint32 spellid)
     return sPlayerbotAIConfig.reactDelay;
 }
 
+/**
+ * Handles incoming packets from the master.
+ * @param packet The packet to handle.
+ */
 void PlayerbotAI::HandleMasterIncomingPacket(const WorldPacket& packet)
 {
     masterIncomingPacketHandlers.AddPacket(packet);
 }
 
+/**
+ * Handles outgoing packets to the master.
+ * @param packet The packet to handle.
+ */
 void PlayerbotAI::HandleMasterOutgoingPacket(const WorldPacket& packet)
 {
     masterOutgoingPacketHandlers.AddPacket(packet);
 }
 
+/**
+ * Changes the current engine to the specified type.
+ * @param type The type of the engine.
+ */
 void PlayerbotAI::ChangeEngine(BotState type)
 {
     Engine* engine = engines[type];
@@ -432,6 +501,9 @@ void PlayerbotAI::ChangeEngine(BotState type)
     }
 }
 
+/**
+ * Executes the next action for the bot.
+ */
 void PlayerbotAI::DoNextAction()
 {
     if (bot->IsBeingTeleported() || (GetMaster() && GetMaster()->IsBeingTeleported()))
@@ -469,13 +541,21 @@ void PlayerbotAI::DoNextAction()
     }
 }
 
+/**
+ * Reinitializes the current engine.
+ */
 void PlayerbotAI::ReInitCurrentEngine()
 {
     InterruptSpell();
     currentEngine->Init();
 }
 
-void PlayerbotAI::ChangeStrategy(string names, BotState type)
+/**
+ * Changes the strategy for the specified engine type.
+ * @param names The names of the strategies.
+ * @param type The type of the engine.
+ */
+void PlayerbotAI::ChangeStrategy(string names, BotState type) const
 {
     Engine* e = engines[type];
     if (!e)
@@ -486,7 +566,11 @@ void PlayerbotAI::ChangeStrategy(string names, BotState type)
     e->ChangeStrategy(names);
 }
 
-void PlayerbotAI::ClearStrategies(BotState type)
+/**
+ * Clears all strategies for the specified engine type.
+ * @param type The type of the engine.
+ */
+void PlayerbotAI::ClearStrategies(BotState type) const
 {
     Engine* e = engines[type];
     if (!e)
@@ -497,7 +581,12 @@ void PlayerbotAI::ClearStrategies(BotState type)
     e->removeAllStrategies();
 }
 
-list<string> PlayerbotAI::GetStrategies(BotState type)
+/**
+ * Retrieves the list of strategies for the specified engine type.
+ * @param type The type of the engine.
+ * @return The list of strategies.
+ */
+list<string> PlayerbotAI::GetStrategies(BotState type) const
 {
     Engine* e = engines[type];
     if (!e)
@@ -508,6 +597,10 @@ list<string> PlayerbotAI::GetStrategies(BotState type)
     return e->GetStrategies();
 }
 
+/**
+ * Executes a specific action for the bot.
+ * @param name The name of the action.
+ */
 void PlayerbotAI::DoSpecificAction(string name)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
@@ -544,6 +637,11 @@ void PlayerbotAI::DoSpecificAction(string name)
     TellMaster(out);
 }
 
+/**
+ * Plays a sound for the bot.
+ * @param emote The emote ID.
+ * @return True if the sound was played, false otherwise.
+ */
 bool PlayerbotAI::PlaySound(uint32 emote)
 {
     //if (EmotesTextSoundEntry const* soundEntry = FindTextSoundEmoteFor(emote, bot->getRace(), bot->getGender()))
@@ -555,6 +653,11 @@ bool PlayerbotAI::PlaySound(uint32 emote)
     return false;
 }
 
+/**
+ * Checks if the bot contains a specific strategy.
+ * @param type The type of the strategy.
+ * @return True if the strategy is contained, false otherwise.
+ */
 bool PlayerbotAI::ContainsStrategy(StrategyType type)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
@@ -567,11 +670,20 @@ bool PlayerbotAI::ContainsStrategy(StrategyType type)
     return false;
 }
 
+/**
+ * Checks if the bot has a specific strategy.
+ * @param name The name of the strategy.
+ * @param type The type of the engine.
+ * @return True if the strategy is present, false otherwise.
+ */
 bool PlayerbotAI::HasStrategy(string name, BotState type)
 {
     return engines[type]->HasStrategy(name);
 }
 
+/**
+ * Resets the strategies for the bot.
+ */
 void PlayerbotAI::ResetStrategies()
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
@@ -585,6 +697,11 @@ void PlayerbotAI::ResetStrategies()
     sPlayerbotDbStore.Load(this);
 }
 
+/**
+ * Checks if the player is a ranged class.
+ * @param player The player to check.
+ * @return True if the player is a ranged class, false otherwise.
+ */
 bool PlayerbotAI::IsRanged(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
@@ -605,6 +722,11 @@ bool PlayerbotAI::IsRanged(Player* player)
     return true;
 }
 
+/**
+ * Checks if the player is a tank class.
+ * @param player The player to check.
+ * @return True if the player is a tank class, false otherwise.
+ */
 bool PlayerbotAI::IsTank(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
@@ -624,6 +746,11 @@ bool PlayerbotAI::IsTank(Player* player)
     return false;
 }
 
+/**
+ * Checks if the player is a healer class.
+ * @param player The player to check.
+ * @return True if the player is a healer class, false otherwise.
+ */
 bool PlayerbotAI::IsHeal(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
@@ -642,11 +769,12 @@ bool PlayerbotAI::IsHeal(Player* player)
     return false;
 }
 
-
-
 namespace MaNGOS
 {
 
+    /**
+     * Checks if a unit is within range based on its GUID.
+     */
     class UnitByGuidInRangeCheck
     {
     public:
@@ -662,6 +790,9 @@ namespace MaNGOS
         ObjectGuid i_guid;
     };
 
+    /**
+     * Checks if a game object is within range based on its GUID.
+     */
     class GameObjectByGuidInRangeCheck
     {
     public:
@@ -684,7 +815,11 @@ namespace MaNGOS
 
 };
 
-
+/**
+ * Retrieves a unit based on its GUID.
+ * @param guid The GUID of the unit.
+ * @return The unit, or NULL if not found.
+ */
 Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
 {
     if (!guid)
@@ -701,7 +836,11 @@ Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
     return sObjectAccessor.GetUnit(*bot, guid);
 }
 
-
+/**
+ * Retrieves a creature based on its GUID.
+ * @param guid The GUID of the creature.
+ * @return The creature, or NULL if not found.
+ */
 Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
 {
     if (!guid)
@@ -718,6 +857,11 @@ Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
     return map->GetCreature(guid);
 }
 
+/**
+ * Retrieves a game object based on its GUID.
+ * @param guid The GUID of the game object.
+ * @return The game object, or NULL if not found.
+ */
 GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
 {
     if (!guid)
@@ -734,6 +878,12 @@ GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
     return map->GetGameObject(guid);
 }
 
+/**
+ * Sends a message to the master without facing the master.
+ * @param text The message text.
+ * @param securityLevel The required security level.
+ * @return True if the message was sent, false otherwise.
+ */
 bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securityLevel)
 {
     Player* master = GetMaster();
@@ -750,7 +900,9 @@ bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securit
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
             master->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
             (bot->GetMapId() != master->GetMapId() || bot->GetDistance(master) > sPlayerbotAIConfig.whisperDistance))
+    {
         return false;
+    }
 
     time_t lastSaid = whispers[text];
     if (!lastSaid || (time(0) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
@@ -774,6 +926,12 @@ bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securit
     return true;
 }
 
+/**
+ * Sends a message to the master.
+ * @param text The message text.
+ * @param securityLevel The required security level.
+ * @return True if the message was sent, false otherwise.
+ */
 bool PlayerbotAI::TellMaster(string text, PlayerbotSecurityLevel securityLevel)
 {
     if (!TellMasterNoFacing(text, securityLevel))
@@ -794,7 +952,14 @@ bool PlayerbotAI::TellMaster(string text, PlayerbotSecurityLevel securityLevel)
     return true;
 }
 
-bool IsRealAura(Player* bot, Aura const* aura, Unit* unit)
+/**
+ * Checks if an aura is real.
+ * @param bot The bot.
+ * @param aura The aura to check.
+ * @param unit The unit with the aura.
+ * @return True if the aura is real, false otherwise.
+ */
+static bool IsRealAura(Player* bot, Aura const* aura, Unit* unit)
 {
     if (!aura)
     {
@@ -820,6 +985,12 @@ bool IsRealAura(Player* bot, Aura const* aura, Unit* unit)
     return false;
 }
 
+/**
+ * Checks if a unit has a specific aura.
+ * @param name The name of the aura.
+ * @param unit The unit to check.
+ * @return True if the unit has the aura, false otherwise.
+ */
 bool PlayerbotAI::HasAura(string name, Unit* unit)
 {
     if (!unit)
@@ -862,6 +1033,12 @@ bool PlayerbotAI::HasAura(string name, Unit* unit)
     return false;
 }
 
+/**
+ * Checks if a unit has a specific aura.
+ * @param spellId The ID of the aura.
+ * @param unit The unit to check.
+ * @return True if the unit has the aura, false otherwise.
+ */
 bool PlayerbotAI::HasAura(uint32 spellId, const Unit* unit)
 {
     if (!spellId || !unit)
@@ -882,6 +1059,12 @@ bool PlayerbotAI::HasAura(uint32 spellId, const Unit* unit)
     return false;
 }
 
+/**
+ * Checks if a unit has any of the specified auras.
+ * @param player The unit to check.
+ * @param ... The list of aura names.
+ * @return True if the unit has any of the auras, false otherwise.
+ */
 bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
 {
     if (!player)
@@ -908,11 +1091,24 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
     return false;
 }
 
+/**
+ * Checks if the bot can cast a spell on a target.
+ * @param name The name of the spell.
+ * @param target The target unit.
+ * @return True if the spell can be cast, false otherwise.
+ */
 bool PlayerbotAI::CanCastSpell(string name, Unit* target)
 {
     return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target);
 }
 
+/**
+ * Checks if the bot can cast a spell on a target.
+ * @param spellid The ID of the spell.
+ * @param target The target unit.
+ * @param checkHasSpell Whether to check if the bot has the spell.
+ * @return True if the spell can be cast, false otherwise.
+ */
 bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell)
 {
     if (!spellid)
@@ -984,21 +1180,26 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell)
 
     switch (result)
     {
-    case SPELL_FAILED_NOT_INFRONT:
-    case SPELL_FAILED_NOT_STANDING:
-    case SPELL_FAILED_UNIT_NOT_INFRONT:
-    case SPELL_FAILED_MOVING:
-    case SPELL_FAILED_TRY_AGAIN:
-    case SPELL_FAILED_BAD_IMPLICIT_TARGETS:
-    case SPELL_FAILED_BAD_TARGETS:
-    case SPELL_CAST_OK:
-        return true;
-    default:
-        return false;
+        case SPELL_FAILED_NOT_INFRONT:
+        case SPELL_FAILED_NOT_STANDING:
+        case SPELL_FAILED_UNIT_NOT_INFRONT:
+        case SPELL_FAILED_MOVING:
+        case SPELL_FAILED_TRY_AGAIN:
+        case SPELL_FAILED_BAD_IMPLICIT_TARGETS:
+        case SPELL_FAILED_BAD_TARGETS:
+        case SPELL_CAST_OK:
+            return true;
+        default:
+            return false;
     }
 }
 
-
+/**
+ * Casts a spell on a target.
+ * @param name The name of the spell.
+ * @param target The target unit.
+ * @return True if the spell was cast, false otherwise.
+ */
 bool PlayerbotAI::CastSpell(string name, Unit* target)
 {
     bool result = CastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target);
@@ -1010,6 +1211,12 @@ bool PlayerbotAI::CastSpell(string name, Unit* target)
     return result;
 }
 
+/**
+ * Casts a spell on a target.
+ * @param spellId The ID of the spell.
+ * @param target The target unit.
+ * @return True if the spell was cast, false otherwise.
+ */
 bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
 {
     if (!spellId)
@@ -1120,7 +1327,6 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         }
     }
 
-
     if (!bot->IsInFront(faceTo, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT) && !bot->IsTaxiFlying())
     {
         bot->SetFacingTo(bot->GetAngle(faceTo));
@@ -1142,6 +1348,10 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     return true;
 }
 
+/**
+ * Waits for the spell cast to complete.
+ * @param spell The spell being cast.
+ */
 void PlayerbotAI::WaitForSpellCast(Spell *spell)
 {
     const SpellEntry* const pSpellInfo = spell->m_spellInfo;
@@ -1167,6 +1377,9 @@ void PlayerbotAI::WaitForSpellCast(Spell *spell)
     SetNextCheckDelay(castTime + sPlayerbotAIConfig.reactDelay);
 }
 
+/**
+ * Interrupts the current spell being cast by the bot.
+ */
 void PlayerbotAI::InterruptSpell()
 {
     for (int type = CURRENT_MELEE_SPELL; type < CURRENT_CHANNELED_SPELL; type++)
@@ -1184,14 +1397,14 @@ void PlayerbotAI::InterruptSpell()
 
         bot->InterruptSpell((CurrentSpellTypes)type);
 
-        WorldPacket data(SMSG_SPELL_FAILURE, 8 + 1 + 4 + 1);
+        WorldPacket data(SMSG_SPELL_FAILURE, size_t(8 + 1 + 4 + 1));
         data.appendPackGUID(bot->GetObjectGuid().GetRawValue());
         data << uint8(1);
         data << uint32(spell->m_spellInfo->Id);
         data << uint8(0);
         bot->SendMessageToSet(&data, true);
 
-        data.Initialize(SMSG_SPELL_FAILED_OTHER, 8 + 1 + 4 + 1);
+        data.Initialize(SMSG_SPELL_FAILED_OTHER, size_t(8 + 1 + 4 + 1));
         data.appendPackGUID(bot->GetObjectGuid().GetRawValue());
         data << uint8(1);
         data << uint32(spell->m_spellInfo->Id);
@@ -1202,7 +1415,10 @@ void PlayerbotAI::InterruptSpell()
     }
 }
 
-
+/**
+ * Removes an aura from the bot.
+ * @param name The name of the aura.
+ */
 void PlayerbotAI::RemoveAura(string name)
 {
     uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", name)->Get();
@@ -1212,6 +1428,12 @@ void PlayerbotAI::RemoveAura(string name)
     }
 }
 
+/**
+ * Checks if a spell being cast by a target can be interrupted.
+ * @param target The target unit.
+ * @param spell The name of the spell.
+ * @return True if the spell can be interrupted, false otherwise.
+ */
 bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, string spell)
 {
     uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", spell)->Get();
@@ -1240,16 +1462,26 @@ bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, string spell)
 
         if ((spellInfo->Effect[i] == SPELL_EFFECT_INTERRUPT_CAST) &&
                 !target->IsImmuneToSpellEffect(spellInfo, (SpellEffectIndex)i, true))
+        {
             return true;
+        }
     }
 
     return false;
 }
 
+/**
+ * Checks if a unit has an aura that can be dispelled.
+ * @param target The target unit.
+ * @param dispelType The type of dispel.
+ * @return True if the unit has an aura that can be dispelled, false otherwise.
+ */
 bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 {
+    // Iterate through all aura types
     for (uint32 type = SPELL_AURA_NONE; type < TOTAL_AURAS; ++type)
     {
+        // Get the list of auras of the current type
         Unit::AuraList const& auras = target->GetAurasByType((AuraType)type);
         for (Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
         {
@@ -1257,6 +1489,7 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
             const SpellEntry* entry = aura->GetSpellProto();
             uint32 spellId = entry->Id;
 
+            // Check if the spell is positive or negative
             bool isPositiveSpell = IsPositiveSpell(spellId);
             if (isPositiveSpell && bot->IsFriendlyTo(target))
             {
@@ -1268,11 +1501,13 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
                 continue;
             }
 
+            // Check if the aura duration is less than the configured dispel duration
             if (sPlayerbotAIConfig.dispelAuraDuration && aura->GetAuraDuration() && aura->GetAuraDuration() < (int32)sPlayerbotAIConfig.dispelAuraDuration)
             {
                 return false;
             }
 
+            // Check if the spell can be dispelled
             if (canDispel(entry, dispelType))
             {
                 return true;
@@ -1282,8 +1517,13 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
     return false;
 }
 
-
 #ifndef WIN32
+/**
+ * Case-insensitive string comparison.
+ * @param s1 The first string.
+ * @param s2 The second string.
+ * @return The difference between the first non-matching characters.
+ */
 inline int strcmpi(const char* s1, const char* s2)
 {
     for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
@@ -1293,6 +1533,12 @@ inline int strcmpi(const char* s1, const char* s2)
 }
 #endif
 
+/**
+ * Checks if a spell can be dispelled.
+ * @param entry The spell entry.
+ * @param dispelType The type of dispel.
+ * @return True if the spell can be dispelled, false otherwise.
+ */
 bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
 {
     if (entry->Dispel != dispelType)
@@ -1300,6 +1546,7 @@ bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
         return false;
     }
 
+    // Check if the spell name matches any of the known non-dispellable spells
     return !entry->SpellName[0] ||
         (strcmpi((const char*)entry->SpellName[0], "demon skin") &&
         strcmpi((const char*)entry->SpellName[0], "mage armor") &&
@@ -1309,6 +1556,11 @@ bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
         strcmpi((const char*)entry->SpellName[0], "ice armor"));
 }
 
+/**
+ * Checks if a race is part of the Alliance faction.
+ * @param race The race to check.
+ * @return True if the race is part of the Alliance, false otherwise.
+ */
 bool IsAlliance(uint8 race)
 {
     return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF
@@ -1318,16 +1570,30 @@ bool IsAlliance(uint8 race)
         || race == RACE_GNOME;
 }
 
+/**
+ * Checks if a player is from an opposing faction.
+ * @param player The player to check.
+ * @return True if the player is from an opposing faction, false otherwise.
+ */
 bool PlayerbotAI::IsOpposing(Player* player)
 {
     return IsOpposing(player->getRace(), bot->getRace());
 }
 
+/**
+ * Checks if two races are from opposing factions.
+ * @param race1 The first race.
+ * @param race2 The second race.
+ * @return True if the races are from opposing factions, false otherwise.
+ */
 bool PlayerbotAI::IsOpposing(uint8 race1, uint8 race2)
 {
     return (IsAlliance(race1) && !IsAlliance(race2)) || (!IsAlliance(race1) && IsAlliance(race2));
 }
 
+/**
+ * Removes all shapeshift forms from the bot.
+ */
 void PlayerbotAI::RemoveShapeshift()
 {
     RemoveAura("bear form");
@@ -1342,11 +1608,19 @@ void PlayerbotAI::RemoveShapeshift()
     RemoveAura("tree of life");
 }
 
+/**
+ * Calculates the gear score of a player.
+ * @param player The player to calculate the gear score for.
+ * @param withBags Whether to include items in bags.
+ * @param withBank Whether to include items in the bank.
+ * @return The gear score.
+ */
 uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBank)
 {
     std::vector<uint32> gearScore(EQUIPMENT_SLOT_END);
     uint32 twoHandScore = 0;
 
+    // Calculate gear score for equipped items
     for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
     {
         if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -1355,9 +1629,10 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
         }
     }
 
+    // Calculate gear score for items in bags
     if (withBags)
     {
-        // check inventory
+        // Check inventory
         for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
         {
             if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -1366,7 +1641,7 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
             }
         }
 
-        // check bags
+        // Check bags
         for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
         {
             if (Bag* pBag = (Bag*)player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -1382,6 +1657,7 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
         }
     }
 
+    // Calculate gear score for items in the bank
     if (withBank)
     {
         for (uint8 i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
@@ -1411,22 +1687,24 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
         }
     }
 
-    uint8 count = EQUIPMENT_SLOT_END - 2;   // ignore body and tabard slots
+    uint8 count = EQUIPMENT_SLOT_END - 2;   // Ignore body and tabard slots
     uint32 sum = 0;
 
-    // check if 2h hand is higher level than main hand + off hand
+    // Check if 2H weapon is higher level than main hand + off hand
     if (gearScore[EQUIPMENT_SLOT_MAINHAND] + gearScore[EQUIPMENT_SLOT_OFFHAND] < twoHandScore * 2)
     {
-        gearScore[EQUIPMENT_SLOT_OFFHAND] = 0;  // off hand is ignored in calculations if 2h weapon has higher score
+        gearScore[EQUIPMENT_SLOT_OFFHAND] = 0;  // Off hand is ignored in calculations if 2H weapon has higher score
         --count;
         gearScore[EQUIPMENT_SLOT_MAINHAND] = twoHandScore;
     }
 
+    // Sum up the gear scores
     for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
     {
        sum += gearScore[i];
     }
 
+    // Calculate the average gear score
     if (count)
     {
         uint32 res = uint32(sum / count);
@@ -1438,6 +1716,13 @@ uint32 PlayerbotAI::GetEquipGearScore(Player* player, bool withBags, bool withBa
     }
 }
 
+/**
+ * Fills the gear score data for a given item.
+ * @param player The player.
+ * @param item The item.
+ * @param gearScore The gear score data.
+ * @param twoHandScore The two-hand weapon score.
+ */
 void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uint32>* gearScore, uint32& twoHandScore)
 {
     if (!item)
@@ -1453,6 +1738,7 @@ void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uin
     uint8 type   = item->GetProto()->InventoryType;
     uint32 level = item->GetProto()->ItemLevel;
 
+    // Update the gear score based on the item type
     switch (type)
     {
         case INVTYPE_2HWEAPON:
@@ -1503,7 +1789,7 @@ void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uin
         case INVTYPE_HANDS:
             (*gearScore)[EQUIPMENT_SLOT_HEAD] = std::max((*gearScore)[EQUIPMENT_SLOT_HEAD], level);
             break;
-        // equipped gear score check uses both rings and trinkets for calculation, assume that for bags/banks it is the same
+        // Equipped gear score check uses both rings and trinkets for calculation, assume that for bags/banks it is the same
         // with keeping second highest score at second slot
         case INVTYPE_FINGER:
         {
@@ -1539,6 +1825,12 @@ void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uin
     }
 }
 
+
+/**
+ * Handles remote commands for the bot.
+ * @param command The command to handle.
+ * @return The result of the command.
+ */
 string PlayerbotAI::HandleRemoteCommand(string command)
 {
     if (command == "state")
@@ -1568,10 +1860,9 @@ string PlayerbotAI::HandleRemoteCommand(string command)
     else if (command == "tpos")
     {
         Unit* target = *GetAiObjectContext()->GetValue<Unit*>("current target");
-        if (!target) {
+        if (!target)
         {
             return "";
-        }
         }
 
         ostringstream out; out << target->GetPositionX() << " " << target->GetPositionY() << " " << target->GetPositionZ() << " " << target->GetMapId() << " " << target->GetOrientation();
@@ -1586,10 +1877,9 @@ string PlayerbotAI::HandleRemoteCommand(string command)
     else if (command == "target")
     {
         Unit* target = *GetAiObjectContext()->GetValue<Unit*>("current target");
-        if (!target) {
+        if (!target)
         {
             return "";
-        }
         }
 
         return target->GetName();
@@ -1600,10 +1890,9 @@ string PlayerbotAI::HandleRemoteCommand(string command)
         ostringstream out; out << pct << "%";
 
         Unit* target = *GetAiObjectContext()->GetValue<Unit*>("current target");
-        if (!target) {
+        if (!target)
         {
             return out.str();
-        }
         }
 
         pct = (int)((static_cast<float> (target->GetHealth()) / target->GetMaxHealth()) * 100);
@@ -1626,28 +1915,52 @@ string PlayerbotAI::HandleRemoteCommand(string command)
     return out.str();
 }
 
+/**
+ * Checks if the bot has a specific skill.
+ * @param skill The skill to check.
+ * @return True if the bot has the skill, false otherwise.
+ */
 bool PlayerbotAI::HasSkill(SkillType skill)
 {
     return bot->HasSkill(skill) && bot->GetBaseSkillValue(skill) > 1;
 }
 
+/**
+ * Handles the player bot command.
+ * @param args The command arguments.
+ * @return True if the command was handled, false otherwise.
+ */
 bool ChatHandler::HandlePlayerbotCommand(char* args)
 {
     return PlayerbotMgr::HandlePlayerbotMgrCommand(this, args);
 }
 
+/**
+ * Handles the random player bot command.
+ * @param args The command arguments.
+ * @return True if the command was handled, false otherwise.
+ */
 bool ChatHandler::HandleRandomPlayerbotCommand(char* args)
 {
     return RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(this, args);
 }
 
+/**
+ * Handles the auction house bot command.
+ * @param args The command arguments.
+ * @return True if the command was handled, false otherwise.
+ */
 bool ChatHandler::HandleAhBotCommand(char* args)
 {
     return ahbot::AhBot::HandleAhBotCommand(this, args);
 }
 
+/**
+ * Handles the guild task command.
+ * @param args The command arguments.
+ * @return True if the command was handled, false otherwise.
+ */
 bool ChatHandler::HandleGuildTaskCommand(char* args)
 {
     return GuildTaskMgr::HandleConsoleCommand(this, args);
 }
-

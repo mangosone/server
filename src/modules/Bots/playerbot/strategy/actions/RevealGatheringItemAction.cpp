@@ -11,6 +11,9 @@ using namespace MaNGOS;
 
 uint64 extractGuid(WorldPacket& packet);
 
+/**
+ * @brief Checks for any game object within a specified range of a given object
+ */
 class AnyGameObjectInObjectRangeCheck
 {
 public:
@@ -27,10 +30,16 @@ public:
     }
 
 private:
-    WorldObject const* i_obj;
-    float i_range;
+    WorldObject const* i_obj; /**< The object to check around */
+    float i_range; /**< The range to check within */
 };
 
+/**
+ * @brief Executes the action to reveal gathering items
+ *
+ * @param event The event that triggered the action
+ * @return true if the action was executed successfully, false otherwise
+ */
 bool RevealGatheringItemAction::Execute(Event event)
 {
     if (!bot->GetGroup())
@@ -105,4 +114,6 @@ bool RevealGatheringItemAction::Execute(Event event)
     data << go->GetPositionY();
     bot->GetGroup()->BroadcastPacket(&data, true, -1, bot->GetObjectGuid());
     bot->Say(msg.str(), LANG_UNIVERSAL);
+
+    return true; // Ensure that the method returns a value in all control paths
 }

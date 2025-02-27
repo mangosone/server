@@ -7,12 +7,14 @@
 using namespace ai;
 using namespace std;
 
+// Constructor for the Engine class
 Engine::Engine(PlayerbotAI* ai, AiObjectContext *factory) : PlayerbotAIAware(ai), aiObjectContext(factory)
 {
     lastRelevance = 0.0f;
     testMode = false;
 }
 
+// Executes actions before the main action
 bool ActionExecutionListeners::Before(Action* action, Event event)
 {
     bool result = true;
@@ -23,6 +25,7 @@ bool ActionExecutionListeners::Before(Action* action, Event event)
     return result;
 }
 
+// Executes actions after the main action
 void ActionExecutionListeners::After(Action* action, bool executed, Event event)
 {
     for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
@@ -31,6 +34,7 @@ void ActionExecutionListeners::After(Action* action, bool executed, Event event)
     }
 }
 
+// Overrides the result of the action execution
 bool ActionExecutionListeners::OverrideResult(Action* action, bool executed, Event event)
 {
     bool result = executed;
@@ -41,6 +45,7 @@ bool ActionExecutionListeners::OverrideResult(Action* action, bool executed, Eve
     return result;
 }
 
+// Checks if the action execution is allowed
 bool ActionExecutionListeners::AllowExecution(Action* action, Event event)
 {
     bool result = true;
@@ -51,6 +56,7 @@ bool ActionExecutionListeners::AllowExecution(Action* action, Event event)
     return result;
 }
 
+// Destructor for ActionExecutionListeners
 ActionExecutionListeners::~ActionExecutionListeners()
 {
     for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
@@ -60,14 +66,14 @@ ActionExecutionListeners::~ActionExecutionListeners()
     listeners.clear();
 }
 
-
+// Destructor for the Engine class
 Engine::~Engine(void)
 {
     Reset();
-
     strategies.clear();
 }
 
+// Resets the engine by clearing the action queue, triggers, and multipliers
 void Engine::Reset()
 {
     ActionNode* action = NULL;
@@ -96,6 +102,7 @@ void Engine::Reset()
     multipliers.clear();
 }
 
+// Initializes the engine by resetting it and initializing strategies
 void Engine::Init()
 {
     Reset();
@@ -117,7 +124,7 @@ void Engine::Init()
     }
 }
 
-
+// Executes the next action in the queue
 bool Engine::DoNextAction(Unit* unit, int depth)
 {
     LogAction("--- AI Tick ---");
@@ -232,6 +239,7 @@ bool Engine::DoNextAction(Unit* unit, int depth)
     return actionExecuted;
 }
 
+// Creates an action node based on the action name
 ActionNode* Engine::CreateActionNode(string name)
 {
     for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
@@ -249,6 +257,7 @@ ActionNode* Engine::CreateActionNode(string name)
         /*C*/ NULL);
 }
 
+// Multiplies the relevance of actions and pushes them to the queue
 bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, Event event, const char* pushType)
 {
     bool pushed = false;
@@ -291,6 +300,7 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
     return pushed;
 }
 
+// Executes an action based on its name
 ActionResult Engine::ExecuteAction(string name)
 {
     bool result = false;
@@ -328,6 +338,7 @@ ActionResult Engine::ExecuteAction(string name)
     return result ? ACTION_RESULT_OK : ACTION_RESULT_FAILED;
 }
 
+// Adds a strategy to the engine
 void Engine::addStrategy(string name)
 {
     removeStrategy(name);
@@ -347,6 +358,7 @@ void Engine::addStrategy(string name)
     Init();
 }
 
+// Adds multiple strategies to the engine
 void Engine::addStrategies(string first, ...)
 {
     addStrategy(first);
@@ -368,6 +380,7 @@ void Engine::addStrategies(string first, ...)
     va_end(vl);
 }
 
+// Removes a strategy from the engine
 bool Engine::removeStrategy(string name)
 {
     map<string, Strategy*>::iterator i = strategies.find(name);
@@ -382,12 +395,14 @@ bool Engine::removeStrategy(string name)
     return true;
 }
 
+// Removes all strategies from the engine
 void Engine::removeAllStrategies()
 {
     strategies.clear();
     Init();
 }
 
+// Toggles a strategy in the engine
 void Engine::toggleStrategy(string name)
 {
     if (!removeStrategy(name))
@@ -396,11 +411,13 @@ void Engine::toggleStrategy(string name)
     }
 }
 
+// Checks if the engine has a specific strategy
 bool Engine::HasStrategy(string name)
 {
     return strategies.find(name) != strategies.end();
 }
 
+// Processes triggers and fires events
 void Engine::ProcessTriggers()
 {
     map<Trigger*, Event> fires;
@@ -456,6 +473,7 @@ void Engine::ProcessTriggers()
     }
 }
 
+// Pushes default actions to the queue
 void Engine::PushDefaultActions()
 {
     for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
@@ -466,6 +484,7 @@ void Engine::PushDefaultActions()
     }
 }
 
+// Lists all strategies in the engine
 string Engine::ListStrategies()
 {
     string s = "Strategies: ";
@@ -483,6 +502,7 @@ string Engine::ListStrategies()
     return s.substr(0, s.length() - 2);
 }
 
+// Gets a list of all strategies in the engine
 list<string> Engine::GetStrategies()
 {
     list<string> result;
@@ -493,6 +513,7 @@ list<string> Engine::GetStrategies()
     return result;
 }
 
+// Pushes an action node to the queue again
 void Engine::PushAgain(ActionNode* actionNode, float relevance, Event event)
 {
     NextAction** nextAction = new NextAction*[2];
@@ -502,6 +523,7 @@ void Engine::PushAgain(ActionNode* actionNode, float relevance, Event event)
     delete actionNode;
 }
 
+// Checks if the engine contains a specific strategy type
 bool Engine::ContainsStrategy(StrategyType type)
 {
     for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
@@ -515,6 +537,7 @@ bool Engine::ContainsStrategy(StrategyType type)
     return false;
 }
 
+// Initializes an action based on the action node
 Action* Engine::InitializeAction(ActionNode* actionNode)
 {
     Action* action = actionNode->getAction();
@@ -526,6 +549,7 @@ Action* Engine::InitializeAction(ActionNode* actionNode)
     return action;
 }
 
+// Listens and executes an action
 bool Engine::ListenAndExecute(Action* action, Event event)
 {
     bool actionExecuted = false;
@@ -540,6 +564,7 @@ bool Engine::ListenAndExecute(Action* action, Event event)
     return actionExecuted;
 }
 
+// Logs an action
 void Engine::LogAction(const char* format, ...)
 {
     char buf[1024];
@@ -576,6 +601,7 @@ void Engine::LogAction(const char* format, ...)
     }
 }
 
+// Changes the strategy based on the provided names
 void Engine::ChangeStrategy(string names)
 {
     vector<string> splitted = split(names, ',');
@@ -600,6 +626,7 @@ void Engine::ChangeStrategy(string names)
     }
 }
 
+// Logs the values of the AI context
 void Engine::LogValues()
 {
     if (testMode)

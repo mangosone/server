@@ -9,10 +9,96 @@ using namespace std;
 
 INSTANTIATE_SINGLETON_1(PlayerbotAIConfig);
 
+/**
+ * @brief Constructor for PlayerbotAIConfig.
+ * Initializes all configuration parameters with default values.
+ */
 PlayerbotAIConfig::PlayerbotAIConfig()
+    : enabled(false),
+      allowGuildBots(false),
+      globalCoolDown(0),
+      reactDelay(0),
+      maxWaitForMove(0),
+      expireActionTime(0),
+      dispelAuraDuration(0),
+      passiveDelay(0),
+      repeatDelay(0),
+      sightDistance(0.0f),
+      spellDistance(0.0f),
+      reactDistance(0.0f),
+      grindDistance(0.0f),
+      lootDistance(0.0f),
+      shootDistance(0.0f),
+      fleeDistance(0.0f),
+      tooCloseDistance(0.0f),
+      meleeDistance(0.0f),
+      followDistance(0.0f),
+      whisperDistance(0.0f),
+      contactDistance(0.0f),
+      aoeRadius(0.0f),
+      criticalHealth(0),
+      lowHealth(0),
+      mediumHealth(0),
+      almostFullHealth(0),
+      lowMana(0),
+      mediumMana(0),
+      openGoSpell(0),
+      randomBotAutologin(false),
+      botAutologin(false), // Initialize botAutologin here
+      randomBotTeleportDistance(0),
+      randomGearLoweringChance(0.0f),
+      randomBotMaxLevelChance(0.0f),
+      minRandomBots(0),
+      maxRandomBots(0),
+      randomBotUpdateInterval(0),
+      randomBotCountChangeMinInterval(0),
+      randomBotCountChangeMaxInterval(0),
+      minRandomBotInWorldTime(0),
+      maxRandomBotInWorldTime(0),
+      minRandomBotRandomizeTime(0),
+      maxRandomBotRandomizeTime(0),
+      minRandomBotReviveTime(0),
+      maxRandomBotReviveTime(0),
+      minRandomBotPvpTime(0),
+      maxRandomBotPvpTime(0),
+      minRandomBotsPerInterval(0),
+      maxRandomBotsPerInterval(0),
+      minRandomBotsPriceChangeInterval(0),
+      maxRandomBotsPriceChangeInterval(0),
+      randomBotJoinLfg(false),
+      randomBotLoginAtStartup(false),
+      randomBotTeleLevel(0),
+      logInGroupOnly(false),
+      logValuesPerTick(false),
+      fleeingEnabled(false),
+      randomBotMinLevel(0),
+      randomBotMaxLevel(0),
+      randomChangeMultiplier(0.0f),
+      commandServerPort(0),
+      randomBotAccountCount(0),
+      deleteRandomBotAccounts(false),
+      randomBotGuildCount(0),
+      deleteRandomBotGuilds(false),
+      randomBotShowHelmet(false),
+      randomBotShowCloak(false),
+      enableGreet(false),
+      guildTaskEnabled(false),
+      minGuildTaskChangeTime(0),
+      maxGuildTaskChangeTime(0),
+      minGuildTaskAdvertisementTime(0),
+      maxGuildTaskAdvertisementTime(0),
+      minGuildTaskRewardTime(0),
+      maxGuildTaskRewardTime(0),
+      guildTaskAdvertCleanupTime(0),
+      iterationsPerTick(0)
 {
 }
 
+/**
+ * @brief Template function to load a list of values from a comma-separated string.
+ * @param value The comma-separated string.
+ * @param list The list to load the values into.
+ */
 template <class T>
 void LoadList(string value, T &list)
 {
@@ -29,6 +115,10 @@ void LoadList(string value, T &list)
     }
 }
 
+/**
+ * @brief Initializes the Playerbot AI configuration by reading from the configuration file.
+ * @return True if initialization is successful, false otherwise.
+ */
 bool PlayerbotAIConfig::Initialize()
 {
     sLog.outString("Initializing AI Playerbot by ike3, based on the original Playerbot by blueboy");
@@ -46,6 +136,7 @@ bool PlayerbotAIConfig::Initialize()
         return false;
     }
 
+    // Load various configuration parameters from the configuration file
     globalCoolDown = (uint32) config.GetIntDefault("AiPlayerbot.GlobalCooldown", 500);
     maxWaitForMove = config.GetIntDefault("AiPlayerbot.MaxWaitForMove", 3000);
     expireActionTime = config.GetIntDefault("AiPlayerbot.ExpireActionTime", 5000);
@@ -82,6 +173,7 @@ bool PlayerbotAIConfig::Initialize()
 
     allowGuildBots = config.GetBoolDefault("AiPlayerbot.AllowGuildBots", true);
 
+    // Load lists of values from the configuration file
     randomBotMapsAsString = config.GetStringDefault("AiPlayerbot.RandomBotMaps", "0,1,530,571");
     LoadList<vector<uint32> >(randomBotMapsAsString, randomBotMaps);
     LoadList<list<uint32> >(config.GetStringDefault("AiPlayerbot.RandomBotQuestItems", "6948,5175,5176,5177,5178"), randomBotQuestItems);
@@ -126,6 +218,7 @@ bool PlayerbotAIConfig::Initialize()
 
     commandServerPort = config.GetIntDefault("AiPlayerbot.CommandServerPort", 0);
 
+    // Load class spec probabilities from the configuration file
     for (uint32 cls = 0; cls < MAX_CLASSES; ++cls)
     {
         for (uint32 spec = 0; spec < 3; ++spec)
@@ -150,28 +243,43 @@ bool PlayerbotAIConfig::Initialize()
     maxGuildTaskRewardTime = config.GetIntDefault("AiPlayerbot.MaxGuildTaskRewardTime", 120);
     guildTaskAdvertCleanupTime = config.GetIntDefault("AiPlayerbot.GuildTaskAdvertCleanupTime", 3600);
     enableGreet = config.GetBoolDefault("AiPlayerbot.EnableGreet", false);
-    //cosmetic
+    // Cosmetic settings
     randomBotShowCloak = config.GetBoolDefault("AiPlayerbot.RandomBotShowCloak", false);
     randomBotShowHelmet = config.GetBoolDefault("AiPlayerbot.RandomBotShowHelmet", false);
 
+    // Create random bots
     RandomPlayerbotFactory::CreateRandomBots();
     sLog.outString("AI Playerbot configuration loaded");
 
     return true;
 }
 
-
+/**
+ * @brief Checks if a given account ID is in the random bot account list.
+ * @param id The account ID to check.
+ * @return True if the account ID is in the list, false otherwise.
+ */
 bool PlayerbotAIConfig::IsInRandomAccountList(uint32 id)
 {
     return find(randomBotAccounts.begin(), randomBotAccounts.end(), id) != randomBotAccounts.end();
 }
 
+/**
+ * @brief Checks if a given item ID is in the random bot quest item list.
+ * @param id The item ID to check.
+ * @return True if the item ID is in the list, false otherwise.
+ */
 bool PlayerbotAIConfig::IsInRandomQuestItemList(uint32 id)
 {
     return find(randomBotQuestItems.begin(), randomBotQuestItems.end(), id) != randomBotQuestItems.end();
 }
 
-string PlayerbotAIConfig::GetValue(string name)
+/**
+ * @brief Gets the value of a configuration parameter by name.
+ * @param name The name of the configuration parameter.
+ * @return The value of the configuration parameter as a string.
+ */
+string PlayerbotAIConfig::GetValue(string name) const
 {
     ostringstream out;
 
@@ -238,6 +346,11 @@ string PlayerbotAIConfig::GetValue(string name)
     return out.str();
 }
 
+/**
+ * @brief Sets the value of a configuration parameter by name.
+ * @param name The name of the configuration parameter.
+ * @param value The value to set the configuration parameter to.
+ */
 void PlayerbotAIConfig::SetValue(string name, string value)
 {
     istringstream out(value, istringstream::in);

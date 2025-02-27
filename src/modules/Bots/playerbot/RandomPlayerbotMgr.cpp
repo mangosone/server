@@ -22,6 +22,11 @@ using namespace MaNGOS;
 
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
+/**
+ * RandomPlayerbotMgr is responsible for managing random player bots in the game.
+ * It handles the creation, updating, and processing of these bots, ensuring they
+ * behave in a way that simulates real player activity.
+ */
 RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0)
 {
     sPlayerbotCommandServer.Start();
@@ -290,7 +295,6 @@ void RandomPlayerbotMgr::Revive(Player* player)
     RandomTeleportForLevel(player);
 }
 
-
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
 {
     if (bot->IsBeingTeleported())
@@ -509,13 +513,16 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
     sLog.outDetail("Refreshing bot %s", bot->GetName());
     if (bot->IsDead())
     {
+        // Resurrect the bot if it is dead
         bot->ResurrectPlayer(1.0f);
         bot->SpawnCorpseBones();
         bot->GetPlayerbotAI()->ResetStrategies();
     }
 
+    // Reset the bot's AI
     bot->GetPlayerbotAI()->Reset();
 
+    // Clear all hostile references and combat states
     HostileReference *ref = bot->GetHostileRefManager().getFirst();
     while (ref)
     {
@@ -532,6 +539,7 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
     bot->RemoveAllAttackers();
     bot->ClearInCombat();
 
+    // Repair all items, set health and power to maximum, and enable PvP
     bot->DurabilityRepairAll(false, 1.0f, false);
     bot->SetHealthPercent(100);
     bot->SetPvP(true);
@@ -547,7 +555,6 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
     }
 }
 
-
 bool RandomPlayerbotMgr::IsRandomBot(Player* bot)
 {
     return IsRandomBot(bot->GetObjectGuid());
@@ -562,6 +569,7 @@ list<uint32> RandomPlayerbotMgr::GetBots()
 {
     list<uint32> bots;
 
+    // Query the database to get the list of random bots
     QueryResult* results = CharacterDatabase.Query(
             "SELECT `bot` FROM `ai_playerbot_random_bots` WHERE `owner` = 0 AND `event` = 'add'");
 
@@ -583,6 +591,7 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
 {
     uint32 value = 0;
 
+    // Query the database to get the event value for the specified bot
     QueryResult* results = CharacterDatabase.PQuery(
             "SELECT `value`, `time`, `validIn` FROM `ai_playerbot_random_bots` WHERE `owner` = 0 AND `bot` = '%u' AND `event` = '%s'",
             bot, event.c_str());
@@ -605,10 +614,12 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
 
 uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value, uint32 validIn)
 {
+    // Delete the existing event value for the specified bot
     CharacterDatabase.PExecute("DELETE FROM `ai_playerbot_random_bots` WHERE `owner` = 0 and `bot` = '%u' and `event` = '%s'",
             bot, event.c_str());
     if (value)
     {
+        // Insert the new event value for the specified bot
         CharacterDatabase.PExecute(
                 "INSERT INTO `ai_playerbot_random_bots` (`owner`, `bot`, `time`, `validIn`, `event`, `value`) VALUES ('%u', '%u', '%u', '%u', '%s', '%u')",
                 0, bot, (uint32)time(0), validIn, event.c_str(), value);
@@ -635,17 +646,20 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
 
     if (cmd == "reset")
     {
+        // Reset all random bots
         CharacterDatabase.PExecute("DELETE FROM `ai_playerbot_random_bots`");
         sLog.outString("Random bots were reset for all players. Please restart the Server.");
         return true;
     }
     else if (cmd == "stats")
     {
+        // Print statistics of random bots
         sRandomPlayerbotMgr.PrintStats();
         return true;
     }
     else if (cmd == "update")
     {
+        // Update the AI of random bots
         sRandomPlayerbotMgr.UpdateAIInternal(0);
         return true;
     }
@@ -716,6 +730,7 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
     }
     else
     {
+        // Handle other playerbot commands
         list<string> messages = sRandomPlayerbotMgr.HandlePlayerbotCommand(args, NULL);
         for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
         {
@@ -729,6 +744,7 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, cha
 
 void RandomPlayerbotMgr::HandleCommand(uint32 type, const string& text, Player& fromPlayer)
 {
+    // Handle commands for all player bots
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
@@ -738,6 +754,7 @@ void RandomPlayerbotMgr::HandleCommand(uint32 type, const string& text, Player& 
 
 void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 {
+    // Handle player logout for all player bots
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
@@ -758,6 +775,7 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 
 void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
 {
+    // Handle player login for all player bots
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
@@ -795,6 +813,7 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
 
 Player* RandomPlayerbotMgr::GetRandomPlayer()
 {
+    // Get a random player from the list of players
     if (players.empty())
     {
         return NULL;

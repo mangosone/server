@@ -4,14 +4,17 @@
 
 using namespace ai;
 
+// Static member variables to store speech strings and their probabilities
 map<string, vector<string> > SayAction::stringTable;
 map<string, uint32 > SayAction::probabilityTable;
 
+// Constructor for SayAction, initializes the action with the name "say"
 SayAction::SayAction(PlayerbotAI* ai) : Action(ai, "say"), Qualified()
 {
 }
 
-void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+// Helper function to replace all occurrences of a substring with another substring
+static void replaceAll(std::string& str, const std::string& from, const std::string& to) {
     if(from.empty())
     {
         return;
@@ -23,8 +26,10 @@ void replaceAll(std::string& str, const std::string& from, const std::string& to
     }
 }
 
+// Executes the SayAction, making the bot say something based on predefined strings and probabilities
 bool SayAction::Execute(Event event)
 {
+    // Load speech strings from the database if not already loaded
     if (stringTable.empty())
     {
         QueryResult* results = CharacterDatabase.PQuery("SELECT name, text, type FROM ai_playerbot_speech");
@@ -45,6 +50,8 @@ bool SayAction::Execute(Event event)
             delete results;
         }
     }
+
+    // Load speech probabilities from the database if not already loaded
     if (probabilityTable.empty())
     {
         QueryResult* results = CharacterDatabase.PQuery("SELECT name, probability FROM ai_playerbot_speech_probability");
@@ -62,21 +69,26 @@ bool SayAction::Execute(Event event)
         }
     }
 
+    // Get the list of possible strings for the current qualifier
     vector<string> &strings = stringTable[qualifier];
     if (strings.empty()) return false;
 
+    // Update the last said time for the current qualifier
     time_t lastSaid = AI_VALUE2(time_t, "last said", qualifier);
     ai->GetAiObjectContext()->GetValue<time_t>("last said", qualifier)->Set(time(0) + urand(1, 60));
 
+    // Get the probability for the current qualifier
     uint32 probability = probabilityTable[qualifier];
     if (!probability) probability = 100;
     {
         if (urand(0, 100) >= probability) return false;
     }
 
+    // Select a random string from the list
     uint32 idx = urand(0, strings.size() - 1);
     string text = strings[idx];
 
+    // Replace placeholders in the string with actual values
     Unit* target = AI_VALUE(Unit*, "tank target");
     if (!target) target = AI_VALUE(Unit*, "current target");
     {
@@ -102,6 +114,7 @@ bool SayAction::Execute(Event event)
         }
     }
 
+    // Make the bot say or yell the text
     if (text.find("/y ") == 0)
     {
         bot->Yell(text.substr(3), LANG_UNIVERSAL);
@@ -110,9 +123,11 @@ bool SayAction::Execute(Event event)
     {
         bot->Say(text, LANG_UNIVERSAL);
     }
+
+    return true;
 }
 
-
+// Checks if the SayAction is useful, based on the time since the last message
 bool SayAction::isUseful()
 {
     time_t lastSaid = AI_VALUE2(time_t, "last said", qualifier);

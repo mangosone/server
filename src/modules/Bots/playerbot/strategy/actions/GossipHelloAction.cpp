@@ -2,9 +2,15 @@
 #include "../../playerbot.h"
 #include "GossipHelloAction.h"
 
-
 using namespace ai;
 
+/**
+ * @brief Execute the Gossip Hello action.
+ *
+ * @param event The event triggering the action.
+ * @return true If the action was executed successfully.
+ * @return false Otherwise.
+ */
 bool GossipHelloAction::Execute(Event event)
 {
     ObjectGuid guid;
@@ -14,9 +20,9 @@ bool GossipHelloAction::Execute(Event event)
     {
         Player* master = GetMaster();
         if (master)
-  {
-      guid = master->GetSelectionGuid();
-  }
+        {
+            guid = master->GetSelectionGuid();
+        }
     }
     else
     {
@@ -25,9 +31,9 @@ bool GossipHelloAction::Execute(Event event)
     }
 
     if (!guid)
- {
-     return false;
- }
+    {
+        return false;
+    }
 
     Creature *pCreature = bot->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
     if (!pCreature)
@@ -38,9 +44,9 @@ bool GossipHelloAction::Execute(Event event)
 
     GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->GossipMenuId);
     if (pMenuItemBounds.first == pMenuItemBounds.second)
- {
-     return false;
- }
+    {
+        return false;
+    }
 
     string text = event.getParam();
     int menuToSelect = -1;
@@ -65,15 +71,20 @@ bool GossipHelloAction::Execute(Event event)
     {
         menuToSelect = atoi(text.c_str());
         if (menuToSelect > 0) menuToSelect--;
-     {
-         ProcessGossip(menuToSelect);
-     }
+        {
+            ProcessGossip(menuToSelect);
+        }
     }
 
     bot->TalkedToCreature(pCreature->GetEntry(), pCreature->GetObjectGuid());
     return true;
 }
 
+/**
+ * @brief Tell the gossip text to the master.
+ *
+ * @param textId The ID of the gossip text.
+ */
 void GossipHelloAction::TellGossipText(uint32 textId)
 {
     if (!textId)
@@ -100,6 +111,9 @@ void GossipHelloAction::TellGossipText(uint32 textId)
     }
 }
 
+/**
+ * @brief Tell the gossip menus to the master.
+ */
 void GossipHelloAction::TellGossipMenus()
 {
     if (!bot->PlayerTalkClass)
@@ -123,12 +137,23 @@ void GossipHelloAction::TellGossipMenus()
     }
 }
 
+/**
+ * @brief Process the selected gossip menu option.
+ *
+ * @param menuToSelect The index of the menu option to select.
+ * @return true If the gossip option was processed successfully.
+ * @return false Otherwise.
+ */
 bool GossipHelloAction::ProcessGossip(int menuToSelect)
 {
     GossipMenu& menu = bot->PlayerTalkClass->GetGossipMenu();
     if (menuToSelect != -1 && menuToSelect >= menu.MenuItemCount())
     {
         ai->TellMaster("Unknown gossip option");
+        return false;
+    }
+    if (menuToSelect == -1)
+    {
         return false;
     }
     GossipMenuItem const& item = menu.GetItem(menuToSelect);
@@ -138,4 +163,6 @@ bool GossipHelloAction::ProcessGossip(int menuToSelect)
     bot->GetSession()->HandleGossipSelectOptionOpcode(p);
 
     TellGossipMenus();
+    return true;
 }
+
