@@ -891,4 +891,6 @@ int return_iCoreNumber();
 * @brief Display the startup banner
 */
 void print_banner();
+
+char* strstri(const std::string& str1, const std::string& str2);
 #endif

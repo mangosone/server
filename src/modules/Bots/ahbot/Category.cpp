@@ -6,6 +6,12 @@
 
 using namespace ahbot;
 
+/**
+ * @brief Get the stack count for an item based on its quality.
+ *
+ * @param proto The item prototype.
+ * @return uint32 The stack count.
+ */
 uint32 Category::GetStackCount(ItemPrototype const* proto)
 {
     if (proto->Quality > ITEM_QUALITY_UNCOMMON)
@@ -16,16 +22,32 @@ uint32 Category::GetStackCount(ItemPrototype const* proto)
     return urand(1, proto->GetMaxStackSize());
 }
 
+/**
+ * @brief Get the maximum allowed auction count for a specific item.
+ *
+ * @param proto The item prototype.
+ * @return uint32 The maximum allowed auction count.
+ */
 uint32 Category::GetMaxAllowedItemAuctionCount(ItemPrototype const* proto)
 {
     return 0;
 }
 
+/**
+ * @brief Get the maximum allowed auction count for the category.
+ *
+ * @return uint32 The maximum allowed auction count.
+ */
 uint32 Category::GetMaxAllowedAuctionCount()
 {
     return sAhBotConfig.GetMaxAllowedAuctionCount(GetName());
 }
 
+/**
+ * @brief Get the pricing strategy for the category.
+ *
+ * @return PricingStrategy* The pricing strategy.
+ */
 PricingStrategy* Category::GetPricingStrategy()
 {
     if (pricingStrategy)
@@ -38,6 +60,12 @@ PricingStrategy* Category::GetPricingStrategy()
     return pricingStrategy = PricingStrategyFactory::Create(name, this);
 }
 
+/**
+ * @brief Construct a new QualityCategoryWrapper object.
+ *
+ * @param category The base category.
+ * @param quality The item quality.
+ */
 QualityCategoryWrapper::QualityCategoryWrapper(Category* category, uint32 quality) : Category(), quality(quality), category(category)
 {
     ostringstream out; out << category->GetName() << ".";
@@ -63,22 +91,47 @@ QualityCategoryWrapper::QualityCategoryWrapper(Category* category, uint32 qualit
     combinedName = out.str();
 }
 
+/**
+ * @brief Check if the category contains the specified item.
+ *
+ * @param proto The item prototype.
+ * @return true If the category contains the item.
+ * @return false Otherwise.
+ */
 bool QualityCategoryWrapper::Contains(ItemPrototype const* proto)
 {
     return proto->Quality == quality && category->Contains(proto);
 }
 
+/**
+ * @brief Get the maximum allowed auction count for the quality category.
+ *
+ * @return uint32 The maximum allowed auction count.
+ */
 uint32 QualityCategoryWrapper::GetMaxAllowedAuctionCount()
 {
     uint32 count = sAhBotConfig.GetMaxAllowedAuctionCount(combinedName);
     return count > 0 ? count : category->GetMaxAllowedAuctionCount();
 }
 
+/**
+ * @brief Get the maximum allowed auction count for a specific item in the quality category.
+ *
+ * @param proto The item prototype.
+ * @return uint32 The maximum allowed auction count.
+ */
 uint32 QualityCategoryWrapper::GetMaxAllowedItemAuctionCount(ItemPrototype const* proto)
 {
     return category->GetMaxAllowedItemAuctionCount(proto);
 }
 
+/**
+ * @brief Check if the trade skill category contains the specified item.
+ *
+ * @param proto The item prototype.
+ * @return true If the trade skill category contains the item.
+ * @return false Otherwise.
+ */
 bool TradeSkill::Contains(ItemPrototype const* proto)
 {
     if (!Trade::Contains(proto))
@@ -174,6 +227,14 @@ bool TradeSkill::Contains(ItemPrototype const* proto)
     return false;
 }
 
+/**
+ * @brief Check if the item is crafted by the specified spell.
+ *
+ * @param proto The item prototype.
+ * @param spellId The spell ID.
+ * @return true If the item is crafted by the spell.
+ * @return false Otherwise.
+ */
 bool TradeSkill::IsCraftedBySpell(ItemPrototype const* proto, uint32 spellId)
 {
     SpellEntry const *entry = sSpellStore.LookupEntry(spellId);
@@ -199,6 +260,14 @@ bool TradeSkill::IsCraftedBySpell(ItemPrototype const* proto, uint32 spellId)
     return false;
 }
 
+/**
+ * @brief Check if the item is crafted by the specified spell or any of its triggered spells.
+ *
+ * @param proto The item prototype.
+ * @param spellId The spell ID.
+ * @return true If the item is crafted by the spell or its triggered spells.
+ * @return false Otherwise.
+ */
 bool TradeSkill::IsCraftedBy(ItemPrototype const* proto, uint32 spellId)
 {
     if (IsCraftedBySpell(proto, spellId))
@@ -235,6 +304,11 @@ bool TradeSkill::IsCraftedBy(ItemPrototype const* proto, uint32 spellId)
     return false;
 }
 
+/**
+ * @brief Get the name of the trade skill.
+ *
+ * @return string The name of the trade skill.
+ */
 string TradeSkill::GetName()
 {
     switch (skill)
@@ -263,9 +337,16 @@ string TradeSkill::GetName()
         return "herbalism";
     case SKILL_FIRST_AID:
         return "firstaid";
+    default:
+        return "unknown"; // Add a default return value
     }
 }
 
+/**
+ * @brief Get the label for the trade skill.
+ *
+ * @return string The label for the trade skill.
+ */
 string TradeSkill::GetLabel()
 {
     switch (skill)
@@ -292,5 +373,7 @@ string TradeSkill::GetLabel()
         return "ore and stone";
     case SKILL_FIRST_AID:
         return "first aid reagents";
+    default:
+        return "unknown";
     }
 }

@@ -281,7 +281,9 @@ class ChatHandler
         bool HandleGameObjectLootstateCommand(char* args);
         bool HandleGameObjectMoveCommand(char* args);
         bool HandleGameObjectNearCommand(char* args);
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
         bool HandleGameObjectPhaseCommand(char* args);
+#endif
         bool HandleGameObjectStateCommand(char* args);
         bool HandleGameObjectTargetCommand(char* args);
         bool HandleGameObjectTurnCommand(char* args);
@@ -513,7 +515,9 @@ class ChatHandler
         bool HandleReloadSpellPetAurasCommand(char* args);
         bool HandleReloadDisablesCommand(char* args);
 
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
         bool HandleResetAchievementsCommand(char* args);
+#endif
         bool HandleResetAllCommand(char* args);
         bool HandleResetHonorCommand(char* args);
         bool HandleResetLevelCommand(char* args);
