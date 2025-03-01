@@ -11,6 +11,16 @@
 #include "RandomPlayerbotFactory.h"
 #include "SystemConfig.h"
 
+/**
+ * A static map that stores the available races for each class.
+ *
+ * The key is a uint8 representing the class ID (e.g., CLASS_WARRIOR, CLASS_PALADIN).
+ * The value is a vector of uint8 representing the race IDs (e.g., RACE_HUMAN, RACE_ORC)
+ * that are available for that class.
+ *
+ * This map is initialized in the constructor of RandomPlayerbotFactory and is used to
+ * determine the possible races when creating a random bot for a specific class.
+ */
 map<uint8, vector<uint8> > RandomPlayerbotFactory::availableRaces;
 
 /**
@@ -162,12 +172,17 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
 }
 
 /**
- * Creates a random name for the bot based on the specified gender.
- * @param gender The gender of the bot.
- * @return The generated name for the bot.
+ * Generates a random name for a bot.
+ *
+ * This function queries the database to find a random name from the `ai_playerbot_names` table
+ * that is not already used by a character in the `characters` table. It ensures that the generated
+ * name is unique and available for use.
+ *
+ * @return A randomly generated bot name, or an empty string if no names are available.
  */
 string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
 {
+    // Query the database to get the maximum name_id from the ai_playerbot_names table
     QueryResult *result = CharacterDatabase.Query("SELECT MAX(`name_id`) FROM `ai_playerbot_names`");
     if (!result)
     {
@@ -175,11 +190,15 @@ string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
         return "";
     }
 
+    // Fetch the result and get the maximum name_id
     Field *fields = result->Fetch();
     uint32 maxId = fields[0].GetUInt32();
     delete result;
 
-    QueryResult* result2 = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name WHERE e.guid IS NULL and n.gender = '%u' order by rand() limit 1", gender);
+    // Query the database to get a random name that is not already used by a character
+    QueryResult* result2 = CharacterDatabase.PQuery("SELECT `n`.`name` FROM `ai_playerbot_names` n "
+            "LEFT OUTER JOIN `characters` e ON `e`.`name` = `n`.`name` "
+            "WHERE `e`.`guid` IS NULL and `n`.`gender` = '%u' order by rand() limit 1", gender);
     if (!result2)
     {
         sLog.outError("No more names left for random bots for gender: '%u'", gender);
@@ -189,6 +208,8 @@ string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
     fields = result2->Fetch();
     string name = fields[0].GetString();
     delete result2;
+
+    // Return the generated name
     return name;
 }
 
@@ -200,7 +221,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     if (sPlayerbotAIConfig.deleteRandomBotAccounts)
     {
         sLog.outString("Deleting random bot accounts...");
-        QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account where username like '%s%%'", sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
+        QueryResult* results = LoginDatabase.PQuery("SELECT `id` FROM `account` where `username` like '%s%'", sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
         if (results)
         {
             do
@@ -219,7 +240,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     {
         ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
         string accountName = out.str();
-        QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+        QueryResult* results = LoginDatabase.PQuery("SELECT `id` FROM `account` where `username` = '%s'", accountName.c_str());
         if (results)
         {
             delete results;
@@ -244,7 +265,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
         ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
         string accountName = out.str();
 
-        QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+        QueryResult* results = LoginDatabase.PQuery("SELECT `id` FROM `account` where `username` = '%s'", accountName.c_str());
         if (!results)
         {
             continue;
@@ -284,7 +305,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
 void RandomPlayerbotFactory::CreateRandomGuilds()
 {
     vector<uint32> randomBots;
-    QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account where username like '%s%%'", sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
+    QueryResult* results = LoginDatabase.PQuery("SELECT `id` FROM `account` where `username` like '%s%%'", sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
     if (results)
     {
         do
@@ -292,7 +313,7 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
             Field* fields = results->Fetch();
             uint32 accountId = fields[0].GetUInt32();
 
-            QueryResult* results2 = CharacterDatabase.PQuery("SELECT guid FROM characters where account  = '%u'", accountId);
+            QueryResult* results2 = CharacterDatabase.PQuery("SELECT `guid` FROM `characters` where `account` = '%u'", accountId);
             if (results2)
             {
                 do
@@ -384,9 +405,10 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
  */
 string RandomPlayerbotFactory::CreateRandomGuildName()
 {
-    QueryResult* result = CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_guild_names");
+    QueryResult* result = CharacterDatabase.Query("SELECT MAX(`name_id`) FROM `ai_playerbot_guild_names`");
     if (!result)
     {
+        // Log an error and return an empty string if no names are left
         sLog.outError("No more names left for random guilds");
         return "";
     }
@@ -396,7 +418,7 @@ string RandomPlayerbotFactory::CreateRandomGuildName()
     delete result;
 
     uint32 id = urand(0, maxId);
-    result = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_guild_names n "
+    result = CharacterDatabase.PQuery("SELECT `n`.`name` FROM `ai_playerbot_guild_names` n "
             "LEFT OUTER JOIN guild e ON e.name = n.name "
             "WHERE e.guildid IS NULL AND n.name_id >= '%u' LIMIT 1", id);
     if (!result)
@@ -408,5 +430,7 @@ string RandomPlayerbotFactory::CreateRandomGuildName()
     fields = result->Fetch();
     string name = fields[0].GetString();
     delete result;
+
+    // Return the generated name
     return name;
 }
