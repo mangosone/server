@@ -96,12 +96,12 @@ namespace ai
         std::string ListStrategies();
         list<string> GetStrategies();
         bool ContainsStrategy(StrategyType type);
-        void ChangeStrategy(string names);
+        void ChangeStrategy(string &names);
         string GetLastAction() { return lastAction; }
 
     public:
         virtual bool DoNextAction(Unit*, int depth = 0);
-        ActionResult ExecuteAction(string name);
+        ActionResult ExecuteAction(string &name);
 
     public:
         /**

@@ -172,7 +172,7 @@ string OutfitAction::parseName(string outfit)
     }
 }
 
-ItemIds OutfitAction::parseItems(string text)
+ItemIds OutfitAction::parseItems(string &text)
 {
     ItemIds itemIds;
 

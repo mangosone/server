@@ -121,7 +121,7 @@ public:
      * @param name The name of the configuration parameter.
      * @param value The value to set the configuration parameter to.
      */
-    void SetValue(std::string name, std::string value);
+    void SetValue(std::string &name, std::string value);
 
 private:
     Config config; ///< Configuration object for reading from the configuration file.

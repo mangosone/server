@@ -125,7 +125,7 @@ public:
 
 public:
     virtual void UpdateAIInternal(uint32 elapsed);
-    string HandleRemoteCommand(string command);
+    string HandleRemoteCommand(string &command);
     void HandleCommand(uint32 type, const string& text, Player& fromPlayer);
     void HandleBotOutgoingPacket(const WorldPacket& packet);
     void HandleMasterIncomingPacket(const WorldPacket& packet);

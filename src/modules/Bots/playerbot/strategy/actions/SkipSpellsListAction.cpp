@@ -110,7 +110,7 @@ bool SkipSpellsListAction::Execute(Event event)
 }
 
 
-SpellIds SkipSpellsListAction::parseIds(string text)
+SpellIds SkipSpellsListAction::parseIds(string &text)
 {
     SpellIds spellIds;
 

@@ -11,7 +11,7 @@ namespace ai
         virtual bool Execute(Event event);
 
     private:
-        SpellIds parseIds(string text);
+        SpellIds parseIds(string &text);
     };
 
 }
