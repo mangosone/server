@@ -1831,7 +1831,7 @@ void PlayerbotAI::_fillGearScoreData(Player *player, Item* item, std::vector<uin
  * @param command The command to handle.
  * @return The result of the command.
  */
-string PlayerbotAI::HandleRemoteCommand(string &command)
+string PlayerbotAI::HandleRemoteCommand(string command)
 {
     if (command == "state")
     {
