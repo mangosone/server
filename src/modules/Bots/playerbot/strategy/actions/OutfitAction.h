@@ -14,7 +14,7 @@ namespace ai
 
     private:
         string parseName(string outfit);
-        ItemIds parseItems(string outfit);
+        ItemIds parseItems(string &outfit);
 
         void List();
         ItemIds Find(string name);
