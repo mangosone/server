@@ -47,11 +47,11 @@ bool LootRollAction::Execute(Event event)
         }
     }
 #else
-    for (vector<Roll*>::iterator i = group->GetRolls().begin(); i != group->GetRolls().end(); ++i)
+    for (auto& roll : group->GetRolls())
     {
-        if ((*i)->isValid() && (*i)->lootedTargetGUID == guid && (*i)->itemSlot == slot)
+        if (roll->isValid() && roll->lootedTargetGUID == guid && roll->itemSlot == slot)
         {
-            uint32 itemId = (*i)->itemid;
+            uint32 itemId = roll->itemid;
             ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemId);
             if (!proto)
             {
