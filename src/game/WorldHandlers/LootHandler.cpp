@@ -127,7 +127,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
     Group * group = player->GetGroup();
 
     /* Checking group conditions to be sure the player has the permissions to loot. */
-    if(group)
+    if (group)
     {
         Creature * pCreature = player->GetMap()->GetCreature(lguid);
         switch(group->GetLootMethod())
@@ -135,7 +135,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
             case GROUP_LOOT:
             case NEED_BEFORE_GREED:
             {
-                if(item->winner && item->winner != player->GetObjectGuid() && !item->is_underthreshold && group->IsRollDoneForItem(pCreature, item))
+                if (item->winner && item->winner != player->GetObjectGuid() && !item->is_underthreshold && group->IsRollDoneForItem(pCreature, item))
                 {
                     player->SendEquipError(EQUIP_ERR_LOOT_CANT_LOOT_THAT_NOW, NULL, NULL, item->itemid);
                     return;
@@ -144,7 +144,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
             }
             case MASTER_LOOT:
             {
-                if((item->winner && item->winner != player->GetObjectGuid()) || (!item->winner && !item->is_underthreshold && !item->freeforall))
+                if ((item->winner && item->winner != player->GetObjectGuid()) || (!item->winner && !item->is_underthreshold && !item->freeforall))
                 {
                     player->SendEquipError(EQUIP_ERR_LOOT_CANT_LOOT_THAT_NOW, NULL, NULL, item->itemid);
                     return;
@@ -600,7 +600,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
             loot = &pCreature->loot;
 
             /* Update for other players. */
-            if(!loot->isLooted())
+            if (!loot->isLooted())
             {
                 Group const* group = pCreature->GetGroupLootRecipient();
                 if (group && !pCreature->hasBeenLootedOnce)

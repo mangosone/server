@@ -334,7 +334,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
         m_clientTimeDelay = mstime - movementInfo.GetTime();
     }
 
-    /* if(movementInfo.GetTime() - (mstime + m_clientTimeDelay) < 0)
+    /* if (movementInfo.GetTime() - (mstime + m_clientTimeDelay) < 0)
     {
         move_time = mstime + 500;
         move_time -= (movementInfo.GetTime() - (mstime + m_clientTimeDelay));
@@ -343,7 +343,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     else
     {
     int calc_var = (movementInfo.GetTime() - (mstime + m_clientTimeDelay));
-    if(calc_var < 0)
+    if (calc_var < 0)
     {
         calc_var *= -1;
     }

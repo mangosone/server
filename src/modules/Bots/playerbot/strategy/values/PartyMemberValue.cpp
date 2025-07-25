@@ -42,7 +42,7 @@ Unit* PartyMemberValue::FindPartyMember(FindPlayerPredicate &predicate)
     {
         for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
         {
-            if( ref->getSource() == bot)
+            if ( ref->getSource() == bot)
             {
                 continue;
             }

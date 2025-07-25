@@ -224,7 +224,7 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
             */
             case LOCK_KEY_SKILL:
                 {
-                    if(uint32(pSpellInfo->EffectMiscValue[effIndex]) != lockInfo->Index[j])
+                    if (uint32(pSpellInfo->EffectMiscValue[effIndex]) != lockInfo->Index[j])
                     {
                         continue;
                     }
@@ -323,7 +323,7 @@ bool StoreLootAction::Execute(Event event)
             {
                 for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
                 {
-                    if( ref->getSource() != bot)
+                    if ( ref->getSource() != bot)
                     {
                         sGuildTaskMgr.CheckItemTask(itemid, itemcount, ref->getSource(), bot);
                     }

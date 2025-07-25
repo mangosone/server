@@ -73,7 +73,7 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemPrototype const * item)
     pItem->RemoveFromUpdateQueueOf(bot);
     delete pItem;
 
-    if( result != EQUIP_ERR_OK )
+    if ( result != EQUIP_ERR_OK )
     {
         return ITEM_USAGE_NONE;
     }

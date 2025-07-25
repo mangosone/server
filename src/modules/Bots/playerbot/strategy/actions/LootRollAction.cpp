@@ -19,7 +19,7 @@ bool LootRollAction::Execute(Event event)
     p >> rollType; //need,greed or pass on roll
 
     Group* group = bot->GetGroup();
-    if(!group)
+    if (!group)
     {
         return false;
     }

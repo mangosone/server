@@ -329,7 +329,7 @@ bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
         {
             data << unit->GetObjectGuid();
         }
-        else if(type == "mypguid")
+        else if (type == "mypguid")
         {
             data << m_session->GetPlayer()->GetPackGUID();
         }

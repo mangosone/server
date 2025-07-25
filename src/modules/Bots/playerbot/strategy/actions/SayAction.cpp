@@ -15,7 +15,7 @@ SayAction::SayAction(PlayerbotAI* ai) : Action(ai, "say"), Qualified()
 
 // Helper function to replace all occurrences of a substring with another substring
 static void replaceAll(std::string& str, const std::string& from, const std::string& to) {
-    if(from.empty())
+    if (from.empty())
     {
         return;
     }

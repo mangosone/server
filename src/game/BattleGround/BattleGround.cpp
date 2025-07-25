@@ -932,7 +932,7 @@ void BattleGround::EndBattleGround(Team winner)
         }
 
         // this line is obsolete - team is set ALWAYS
-        // if(!team) team = plr->GetTeam();
+        // if (!team) team = plr->GetTeam();
 
         // per player calculation
         if (isArena() && isRated() && winner_arena_team && loser_arena_team)

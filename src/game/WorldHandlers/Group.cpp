@@ -1050,7 +1050,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 
 bool Group::IsRollDoneForItem(Creature * pCreature, const LootItem * pItem)
 {
-    if(RollId.empty())
+    if (RollId.empty())
     {
         return true;
     }
@@ -1059,7 +1059,7 @@ bool Group::IsRollDoneForItem(Creature * pCreature, const LootItem * pItem)
     for(Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
     {
         Roll *roll = *i;
-        if(roll->lootedTargetGUID == pCreature->GetObjectGuid() && roll->itemid == pItem->itemid && roll->totalPlayersRolling > 1)
+        if (roll->lootedTargetGUID == pCreature->GetObjectGuid() && roll->itemid == pItem->itemid && roll->totalPlayersRolling > 1)
         {
             return false;
         }
@@ -1749,7 +1749,7 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
                 {
                     bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
-                    // if(refresh)                          // update loot for new looter
+                    // if (refresh)                          // update loot for new looter
                     //    pl->GetSession()->DoLootRelease(pl->GetLootGUID());
                     SetLooterGuid(pl->GetObjectGuid());
                     SendUpdate();
@@ -1772,7 +1772,7 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
             {
                 bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
-                // if(refresh)                              // update loot for new looter
+                // if (refresh)                              // update loot for new looter
                 //    pl->GetSession()->DoLootRelease(pl->GetLootGUID());
                 SetLooterGuid(pl->GetObjectGuid());
                 SendUpdate();

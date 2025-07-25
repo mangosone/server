@@ -3983,7 +3983,7 @@ void Spell::finish(bool ok)
     }
 
 #ifdef ENABLE_PLAYERBOTS
-    if(!m_caster->GetMapId())
+    if (!m_caster->GetMapId())
     {
         return;
     }

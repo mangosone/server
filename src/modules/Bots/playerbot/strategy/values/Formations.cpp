@@ -345,12 +345,12 @@ float Formation::GetFollowAngle()
     {
         for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
         {
-            if( ref->getSource() == master)
+            if ( ref->getSource() == master)
             {
                 continue;
             }
 
-            if( ref->getSource() == bot)
+            if ( ref->getSource() == bot)
             {
                 index = total;
             }
