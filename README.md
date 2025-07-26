@@ -16,6 +16,8 @@ alt="GitHub last commit" border=0 valign="top"/>][61]
 
 ---
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/00abc0bec68d45ffb3432238d2b853be)](https://app.codacy.com/gh/mangosone/server?utm_source=github.com&utm_medium=referral&utm_content=mangosone/server&utm_campaign=Badge_Grade)
+
 [<img src="https://www.getmangos.eu/!assets_mangos/Mangos1.png" width="48" valign="middle"/>][8]
  **MangosOne - The Burning Crusade WoW server**
 ===
