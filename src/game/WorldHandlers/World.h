@@ -30,16 +30,18 @@
 #define MANGOS_H_WORLD
 
 #include "Common.h"
+#include "Utilities/Util.h"
 #include "Timer.h"
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
-
 #include <set>
 #include <list>
 
 #ifdef ENABLE_ELUNA
+#include "Player.h"
 class Eluna;
 #endif /* ENABLE_ELUNA */
+
 class Object;
 class ObjectGuid;
 class WorldPacket;
@@ -548,6 +550,20 @@ class World
         /// Next daily quests reset time
         time_t GetNextDailyQuestsResetTime() const { return m_NextDailyQuestReset; }
 
+        uint32 GetDateByLocalTime(const std::tm now) const { return uint32(now.tm_year*365 + (now.tm_year-1)/4 + now.tm_yday); }
+        uint32 GetDateToday() const {   return GetDateByLocalTime(safe_localtime(m_gameTime)); }
+        uint32 GetDateThisWeekBegin() const {   return GetDateToday() - safe_localtime(m_gameTime).tm_wday; }
+
+#if defined(CLASSIC)
+        uint32 GetDateLastMaintenanceDay() const
+        {
+            uint32 today = GetDateToday();
+            uint32 mDay  = getConfig(CONFIG_UINT32_MAINTENANCE_DAY);
+            std::tm date     = safe_localtime(m_gameTime);
+            // formula to find last mDay of gregorian calendary
+            return today - ((date.tm_wday - mDay  + 7) % 7);
+        }
+#endif
         /// Get the maximum skill level a player can reach
         uint16 GetConfigMaxSkillValue() const
         {
