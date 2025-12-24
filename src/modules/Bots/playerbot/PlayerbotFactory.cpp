@@ -255,8 +255,8 @@ void PlayerbotFactory::InitPet()
             }
 
             uint32 guid = map->GenerateLocalLowGuid(HIGHGUID_PET);
-            CreatureCreatePos pos(map, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
             uint32 pet_number = sObjectMgr.GeneratePetNumber();
+            CreatureCreatePos pos(map, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
             pet = new Pet(HUNTER_PET);
             if (!pet->Create(guid, pos, co, pet_number))
             {
@@ -264,17 +264,30 @@ void PlayerbotFactory::InitPet()
                 pet = NULL;
                 continue;
             }
-
+            pet->GetCharmInfo()->SetPetNumber(pet_number, true);
             pet->SetOwnerGuid(bot->GetObjectGuid());
             pet->SetCreatorGuid(bot->GetObjectGuid());
             pet->setFaction(bot->getFaction());
             pet->SetLevel(bot->getLevel());
+            pet->setPetType(HUNTER_PET);
+            pet->SetCanModifyStats(true);
             pet->InitStatsForLevel(bot->getLevel(), bot);
+            pet->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(time(NULL)));
+            pet->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
             pet->SetLoyaltyLevel(BEST_FRIEND);
+            pet->SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
+            pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME); // Allow renaming
+            pet->SetPowerType(POWER_FOCUS);
+            pet->SetMaxPower(POWER_HAPPINESS, pet->GetCreatePowers(POWER_HAPPINESS));
             pet->SetPower(POWER_HAPPINESS, HAPPINESS_LEVEL_SIZE * 2);
             pet->GetCharmInfo()->SetPetNumber(sObjectMgr.GeneratePetNumber(), true);
+            map->Add((Creature*)pet);
             pet->AIM_Initialize();
             pet->InitPetCreateSpells();
+            pet->LearnPetPassives();
+            pet->CastPetAuras(true);
+            pet->SetHealth(pet->GetMaxHealth());
+            pet->SetPower(POWER_FOCUS, pet->GetMaxPower(POWER_FOCUS));
             bot->SetPet(pet);
             bot->SetPetGuid(pet->GetObjectGuid());
 
