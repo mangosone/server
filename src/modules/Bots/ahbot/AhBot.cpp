@@ -185,6 +185,7 @@ void AhBot::ForceUpdate()
     }
 
     CleanupHistory();
+    PurgeMailedItems();
 
     sLog.outString("AhBot auction check finished. %d auctions answered, %d new auctions added. Next check in %d seconds",
             answered, added, sAhBotConfig.updateInterval);
@@ -1299,6 +1300,27 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
     draft.SendMailTo(MailReceiver(receiverGuid), MailSender(MAIL_NORMAL, bidder));
 
     SetTime("entry", entry->Id, entry->auctionHouseEntry->houseId, AHBOT_SENDMAIL, entry->expireTime);
+}
+
+void AhBot::PurgeMailedItems()
+{
+    uint32 guid = sAhBotConfig.guid;
+    if (!guid)
+        return;
+
+    CharacterDatabase.PExecute(
+        "DELETE ii FROM item_instance ii "
+        "INNER JOIN mail_items mi ON ii.guid = mi.item_guid "
+        "INNER JOIN mail m ON mi.mail_id = m.id "
+        "WHERE m.receiver = '%u'", guid);
+
+    CharacterDatabase.PExecute(
+        "DELETE mi FROM mail_items mi "
+        "INNER JOIN mail m ON mi.mail_id = m.id "
+        "WHERE m.receiver = '%u'", guid);
+
+    CharacterDatabase.PExecute(
+        "DELETE FROM mail WHERE receiver = '%u'", guid);
 }
 
 INSTANTIATE_SINGLETON_1( ahbot::AhBot );

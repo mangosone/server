@@ -76,6 +76,7 @@ namespace ahbot
         void SetTime(string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value);
         uint32 GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& category);
         void CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry);
+        void PurgeMailedItems();
 
     public:
         static uint32 auctionIds[MAX_AUCTIONS];
