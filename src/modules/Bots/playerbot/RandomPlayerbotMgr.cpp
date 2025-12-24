@@ -16,6 +16,9 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "FleeManager.h"
+#include "GridDefines.h"
+#include "Map.h"
+#include "MapManager.h"
 
 using namespace ai;
 using namespace MaNGOS;
@@ -274,6 +277,15 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
         return true;
     }
 
+    if (!IsZoneSafeForBot(player, player->GetMapId(), player->GetPositionX(),
+                          player->GetPositionY(), player->GetPositionZ()))
+    {
+        sLog.outDetail("Bot %d is in unsafe zone, forcing teleport", bot);
+        RandomTeleportForLevel(player);
+        SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        return true;
+    }
+
     uint32 teleport = GetEventValue(bot, "teleport");
     if (!teleport)
     {
@@ -340,12 +352,13 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
 void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
 {
     vector<WorldLocation> locs;
-    QueryResult * results = WorldDatabase.PQuery("select map, position_x, position_y, position_z "
-         "from (select map, position_x, position_y, position_z, avg(t.maxlevel), avg(t.minlevel), "
-         "(avg(t.maxlevel) + avg(t.minlevel)) / 2 - %u delta "
-         "from creature c inner join creature_template t on c.id = t.entry group by t.entry) q "
-         "where delta >= 0 and delta <= 1 and map in (%s)",
-        bot->getLevel(), sPlayerbotAIConfig.randomBotMapsAsString.c_str());
+    QueryResult* results = WorldDatabase.PQuery("SELECT `map`, `position_x`, `position_y`, `position_z` FROM ("
+        "SELECT MIN(`c`.`map`) `map`, MIN(`c`.`position_x`) `position_x`, MIN(`c`.`position_y`) `position_y`, "
+    "MIN(`c`.`position_z`) `position_z`, AVG(`t`.`maxlevel`), AVG(`t`.`minlevel`), "
+        "%u - (AVG(`t`.`maxlevel`) + AVG(`t`.`minlevel`)) / 2 `delta` FROM `creature` `c` "
+    "INNER JOIN `creature_template` `t` ON `c`.`id` = `t`.`entry` GROUP BY `t`.`entry`) `q` "
+        "WHERE `delta` >= 0 AND `delta` <= %u AND `map` IN (%s)",
+        bot->getLevel(), sPlayerbotAIConfig.randomBotTeleLevel, sPlayerbotAIConfig.randomBotMapsAsString.c_str());
     if (results)
     {
         do
@@ -355,8 +368,11 @@ void RandomPlayerbotMgr::RandomTeleportForLevel(Player* bot)
             float x = fields[1].GetFloat();
             float y = fields[2].GetFloat();
             float z = fields[3].GetFloat();
-            WorldLocation loc(mapId, x, y, z, 0);
-            locs.push_back(loc);
+            if (IsZoneSafeForBot(bot, mapId, x, y, z))
+            {
+                WorldLocation loc(mapId, x, y, z, 0);
+                locs.push_back(loc);
+            }
         } while (results->NextRow());
         delete results;
     }
@@ -440,10 +456,15 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         for (GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
         {
             GameTele const* tele = &itr->second;
-            if (tele->mapId == mapId)
+            if (( tele->mapId == mapId) &&
+               (IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z)))
             {
                 locs.push_back(tele);
             }
+        }
+        if (locs.empty()) // no safe locations found, so try another map
+        {
+            continue;
         }
 
         index = urand(0, locs.size() - 1);
@@ -461,7 +482,8 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         level = min(level, maxLevel);
         if (!level) level = 1;
 
-        if (urand(0, 100) < 100 * sPlayerbotAIConfig.randomBotMaxLevelChance)
+        // only create a high level mob if they are in a high level zone
+        if ((urand(0, 100) < 100 * sPlayerbotAIConfig.randomBotMaxLevelChance) && level >= 40)
         {
             level = maxLevel;
         }
@@ -587,6 +609,62 @@ list<uint32> RandomPlayerbotMgr::GetBots()
     return bots;
 }
 
+bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z)
+{
+    Map* map = sMapMgr.FindMap(mapId);
+    if (!map)
+        return false;
+    TerrainInfo const* terrain = map->GetTerrain();
+    if (!terrain)
+        return false;
+
+    CellPair cell_pair = MaNGOS::ComputeCellPair(x, y);
+    uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
+    std::pair<uint32, uint32> mapCell = std::make_pair(mapId, cell_id);
+
+    uint32 areaId = 0;
+    std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = m_cellToAreaCache.find(mapCell);
+    if (cacheItr != m_cellToAreaCache.end())
+    {
+        areaId = cacheItr->second;
+    }
+    else
+    {
+        areaId = terrain->GetAreaId(x, y, z);
+        m_cellToAreaCache[mapCell] = areaId;
+    }
+
+    AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
+    if (!area)
+        return true;
+
+    if (area->team != AREATEAM_NONE)
+    {
+        bool botIsAlliance = IsAlliance(bot->getRace());
+        if (botIsAlliance && area->team != AREATEAM_ALLY)
+            return false;
+        if (!botIsAlliance && area->team != AREATEAM_HORDE)
+            return false;
+    }
+
+    if (m_areaCreatureStatsMap.empty()) // calculate stats if not done yet
+    {
+        const_cast<RandomPlayerbotMgr*>(this)->CalculateAreaCreatureStats();
+    }
+
+    std::map<uint32, AreaCreatureStats>::const_iterator statsItr = m_areaCreatureStatsMap.find(area->ID);
+    AreaCreatureStats const* stats = (statsItr != m_areaCreatureStatsMap.end()) ? &statsItr->second : nullptr;
+    if (stats && stats->creatureCount > 0)
+    {
+        uint8 botLevel = bot->getLevel();
+        uint8 tolerance = sPlayerbotAIConfig.randomBotTeleLevel;
+        if (botLevel < stats->minLevel - tolerance || botLevel > stats->maxLevel + tolerance)
+            return false;
+        return true;
+    }
+    return false;
+}
+
 uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
 {
     uint32 value = 0;
@@ -626,6 +704,87 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
     }
 
     return value;
+}
+
+void RandomPlayerbotMgr::CalculateAreaCreatureStats()
+{
+    sLog.outString(">> [Playerbots] Calculating area creature statistics...");
+
+    std::map<std::pair<uint32, uint32>, uint32> cellToAreaCache; // (mapId, cellId) -> areaId
+    std::map<uint32, std::vector<uint8>> areaLevels;
+
+    uint32 getAreaIdCalls = 0;
+    uint32 totalCreatures = 0;
+
+    //CreatureDataMap const* creatureDataMap = sObjectMgr.GetCreatureDataMap();
+    //for (CreatureDataMap::const_iterator itr = creatureDataMap->begin(); itr != creatureDataMap->end(); ++itr)
+    //{
+    //    CreatureData const& data = itr->second;
+    //    CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(data.id);
+
+    //    if (!cInfo || cInfo->NpcFlags != 0 || cInfo->UnitFlags & UNIT_FLAG_NON_ATTACKABLE)
+    //    {
+    //        continue;
+    //    }
+
+    //    totalCreatures++;
+
+    //    CellPair cell_pair = MaNGOS::ComputeCellPair(data.posX, data.posY);
+    //    uint32 cell_id = (cell_pair.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
+    //    std::pair<uint32, uint32> mapCell = std::make_pair(data.mapid, cell_id);
+
+    //    uint32 areaId = 0;
+
+    //    std::map<std::pair<uint32, uint32>, uint32>::iterator cacheItr = cellToAreaCache.find(mapCell);
+    //    if (cacheItr != cellToAreaCache.end())
+    //    {
+    //        areaId = cacheItr->second;
+    //    }
+    //    else
+    //    {
+    //        Map* map = const_cast<Map*>(sMapMgr.FindMap(data.mapid));
+    //        if (!map || !map->GetTerrain())
+    //        {
+    //            continue;
+    //        }
+
+    //        areaId = map->GetTerrain()->GetAreaId(data.posX, data.posY, data.posZ);
+    //        cellToAreaCache[mapCell] = areaId; // Cache for future lookups
+    //        getAreaIdCalls++;
+    //    }
+
+    //    if (areaId == 0)
+    //    {
+    //        continue;
+    //    }
+
+    //    uint8 avgLevel = (cInfo->MinLevel + cInfo->MaxLevel) / 2;
+    //    areaLevels[areaId].push_back(avgLevel);
+    //}
+
+    uint32 statsCount = 0;
+    for (std::map<uint32, std::vector<uint8>>::iterator itr = areaLevels.begin(); itr != areaLevels.end(); ++itr)
+    {
+        std::vector<uint8>& levels = itr->second;
+        if (levels.size() < 10) // need at least 10 creatures to have meaningful statistics
+        {
+            continue;
+        }
+
+        std::sort(levels.begin(), levels.end());
+
+        // to avoid outliers, use 25th and 75th percentiles
+        size_t p25 = levels.size() / 4;
+        size_t p75 = (levels.size() * 3) / 4;
+
+        AreaCreatureStats& stats = m_areaCreatureStatsMap[itr->first];
+        stats.minLevel = levels[p25];
+        stats.maxLevel = levels[p75];
+        stats.creatureCount = levels.size();
+        ++statsCount;
+    }
+
+    sLog.outString(">> [Playerbots] Calculated spawn stats for %u areas", statsCount);
 }
 
 bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, char const* args)

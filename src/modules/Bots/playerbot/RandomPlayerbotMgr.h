@@ -12,11 +12,19 @@ class Object;
 class Item;
 
 using namespace std;
-
 /**
- * @brief Manager class for handling random player bots.
- * This class provides methods to manage random player bots, including their creation, randomization, and various actions.
- */
+* \struct AreaCreatureStats
+* \brief Entry representing creature levels within an area for playerbot spawning decisions
+*/
+struct AreaCreatureStats
+{
+    uint8   minLevel;
+    uint8   maxLevel;
+    uint16  creatureCount;
+
+    AreaCreatureStats() : minLevel(0), maxLevel(0), creatureCount(0) {}
+};
+
 class RandomPlayerbotMgr : public PlayerbotHolder
 {
 public:
@@ -277,11 +285,14 @@ private:
      * @return The level of the zone.
      */
     uint32 GetZoneLevel(uint16 mapId, float teleX, float teleY, float teleZ);
+    bool IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z);
+    void CalculateAreaCreatureStats();
 
 private:
     vector<Player*> players; ///< List of players.
     int processTicks; ///< Number of process ticks.
-    map<uint8, vector<WorldLocation> > locsPerLevelCache; ///< Cache of locations per level.
+    std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
+    std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
 };
 
 #define sRandomPlayerbotMgr RandomPlayerbotMgr::instance()
