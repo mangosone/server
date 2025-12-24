@@ -17,14 +17,14 @@ void Queue::Push(ActionBasket *action)
             if (action->getAction()->getName() == basket->getAction()->getName())
             {
                 if (basket->getRelevance() < action->getRelevance())
-    {
-        basket->setRelevance(action->getRelevance());
-    }
+                {
+                    basket->setRelevance(action->getRelevance());
+                }
                 ActionNode *actionNode = action->getAction();
                 if (actionNode)
-    {
-        delete actionNode;
-    }
+                {
+                    delete actionNode;
+                }
                 delete action;
                 return;
             }

@@ -1333,6 +1333,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         spell->cancel();
         delete spell;
         SetNextCheckDelay(sPlayerbotAIConfig.globalCoolDown);
+        delete spell;
         return false;
     }
 

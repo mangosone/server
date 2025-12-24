@@ -99,7 +99,7 @@ void NextAction::destroy(NextAction** actions)
         delete actions[i];
     }
 
-    delete actions;
+    delete [] actions;
 }
 
 Value<Unit*>* Action::GetTargetValue()
