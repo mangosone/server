@@ -2102,7 +2102,9 @@ void Map::SendObjectUpdates()
 #ifdef ENABLE_PLAYERBOTS
             // Don't waste CPU building packets for bots - they have no network client
             if (iter->first->GetPlayerbotAI())
+            {
                 continue;
+            }
 #endif
         iter->second.BuildPacket(&packet);
         iter->first->GetSession()->SendPacket(&packet);
