@@ -218,6 +218,13 @@ void PlayerbotAI::HandleTeleportAck()
         bot->GetSession()->HandleMoveWorldportAckOpcode();
         SetNextCheckDelay(sPlayerbotAIConfig.globalCoolDown);
     }
+
+    LastMovement& movement = aiObjectContext->GetValue<LastMovement&>("last movement")->Get();
+    if (movement.lastFollowState)
+    {
+        ChangeStrategy("+follow master,-stay", BOT_STATE_NON_COMBAT);
+        movement.lastFollowState = false;
+    }
 }
 
 /**

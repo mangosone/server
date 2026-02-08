@@ -36,6 +36,9 @@ bool ReachAreaTriggerAction::Execute(Event event)
         return true;
     }
 
+    bool wasFollowing = ai->HasStrategy("follow master", BOT_STATE_NON_COMBAT);
+    ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
+
     MotionMaster &mm = *bot->GetMotionMaster();
     mm.Clear();
     mm.MovePoint(atEntry->mapid, atEntry->x, atEntry->y, atEntry->z);
@@ -43,8 +46,8 @@ bool ReachAreaTriggerAction::Execute(Event event)
     float delay = 1000.0f * distance / bot->GetSpeed(MOVE_RUN) + sPlayerbotAIConfig.reactDelay;
     ai->TellMaster("Wait for me");
     ai->SetNextCheckDelay(delay);
-    context->GetValue<LastMovement&>("last area trigger")->Get().lastAreaTrigger = triggerId;
-
+    context->GetValue<LastMovement&>("last movement")->Get().lastAreaTrigger = triggerId;
+    context->GetValue<LastMovement&>("last movement")->Get().lastFollowState = wasFollowing;
     return true;
 }
 
@@ -69,11 +72,15 @@ bool AreaTriggerAction::Execute(Event event)
         return true;
     }
 
+    ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
+
+    MotionMaster &mm = *bot->GetMotionMaster();
+    mm.Clear();
+
     WorldPacket p(CMSG_AREATRIGGER);
     p << triggerId;
     p.rpos(0);
     bot->GetSession()->HandleAreaTriggerOpcode(p);
-
     ai->TellMaster("Hello");
     return true;
 }
