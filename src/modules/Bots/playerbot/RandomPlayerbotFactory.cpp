@@ -198,7 +198,7 @@ string RandomPlayerbotFactory::CreateRandomBotName(uint8 gender)
     // Query the database to get a random name that is not already used by a character
     QueryResult* result2 = CharacterDatabase.PQuery("SELECT `n`.`name` FROM `ai_playerbot_names` n "
             "LEFT OUTER JOIN `characters` e ON `e`.`name` = `n`.`name` "
-            "WHERE `e`.`guid` IS NULL AND `n`.`name_id` >= '%u' ORDER BY `n`.`name_id` LIMIT 1", id);
+            "WHERE `e`.`guid` IS NULL AND `n`.`name_id` >= '%u' ORDER BY `n`.`name_id` LIMIT 1", gender);
     if (!result)
     {
         sLog.outError("No more names left for random bots for gender: '%u'", gender);
