@@ -711,6 +711,9 @@ void PlayerbotAI::ResetStrategies()
  */
 bool PlayerbotAI::IsRanged(Player* player)
 {
+    if (!player)
+        return false;
+
     PlayerbotAI* botAi = player->GetPlayerbotAI();
     if (botAi)
     {
@@ -725,8 +728,9 @@ bool PlayerbotAI::IsRanged(Player* player)
         return false;
     case CLASS_DRUID:
         return !HasAnyAuraOf(player, "cat form", "bear form", "dire bear form", NULL);
+    default:
+        return true;
     }
-    return true;
 }
 
 /**
@@ -736,6 +740,9 @@ bool PlayerbotAI::IsRanged(Player* player)
  */
 bool PlayerbotAI::IsTank(Player* player)
 {
+    if (!player)
+        return false;
+
     PlayerbotAI* botAi = player->GetPlayerbotAI();
     if (botAi)
     {
@@ -749,8 +756,9 @@ bool PlayerbotAI::IsTank(Player* player)
         return true;
     case CLASS_DRUID:
         return HasAnyAuraOf(player, "bear form", "dire bear form", NULL);
+    default:
+        return false;
     }
-    return false;
 }
 
 /**
@@ -760,6 +768,9 @@ bool PlayerbotAI::IsTank(Player* player)
  */
 bool PlayerbotAI::IsHeal(Player* player)
 {
+    if (!player)
+        return false;
+
     PlayerbotAI* botAi = player->GetPlayerbotAI();
     if (botAi)
     {
@@ -772,8 +783,9 @@ bool PlayerbotAI::IsHeal(Player* player)
         return true;
     case CLASS_DRUID:
         return HasAnyAuraOf(player, "tree of life form", NULL);
+    default:
+        return false;
     }
-    return false;
 }
 
 namespace MaNGOS

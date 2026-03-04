@@ -18,9 +18,9 @@ Engine::Engine(PlayerbotAI* ai, AiObjectContext *factory) : PlayerbotAIAware(ai)
 bool ActionExecutionListeners::Before(Action* action, Event event)
 {
     bool result = true;
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        result &= (*i)->Before(action, event);
+        result &= listener->Before(action, event);
     }
     return result;
 }
@@ -28,9 +28,9 @@ bool ActionExecutionListeners::Before(Action* action, Event event)
 // Executes actions after the main action
 void ActionExecutionListeners::After(Action* action, bool executed, Event event)
 {
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        (*i)->After(action, executed, event);
+        listener->After(action, executed, event);
     }
 }
 
@@ -38,9 +38,9 @@ void ActionExecutionListeners::After(Action* action, bool executed, Event event)
 bool ActionExecutionListeners::OverrideResult(Action* action, bool executed, Event event)
 {
     bool result = executed;
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        result = (*i)->OverrideResult(action, result, event);
+        result = listener->OverrideResult(action, result, event);
     }
     return result;
 }
@@ -49,9 +49,9 @@ bool ActionExecutionListeners::OverrideResult(Action* action, bool executed, Eve
 bool ActionExecutionListeners::AllowExecution(Action* action, Event event)
 {
     bool result = true;
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        result &= (*i)->AllowExecution(action, event);
+        result &= listener->AllowExecution(action, event);
     }
     return result;
 }
@@ -59,9 +59,9 @@ bool ActionExecutionListeners::AllowExecution(Action* action, Event event)
 // Destructor for ActionExecutionListeners
 ActionExecutionListeners::~ActionExecutionListeners()
 {
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        delete *i;
+        delete listener;
     }
     listeners.clear();
 }
@@ -77,26 +77,19 @@ Engine::~Engine(void)
 void Engine::Reset()
 {
     ActionNode* action = NULL;
-    do
+    while ((action = queue.Pop()) != NULL)
     {
-        action = queue.Pop();
-        if (!action)
-        {
-            break;
-        }
         delete action;
-    } while (true);
+    }
 
-    for (list<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
+    for (auto trigger : triggers)
     {
-        TriggerNode* trigger = *i;
         delete trigger;
     }
     triggers.clear();
 
-    for (list<Multiplier*>::iterator i = multipliers.begin(); i != multipliers.end(); i++)
+    for (auto multiplier : multipliers)
     {
-        Multiplier* multiplier = *i;
         delete multiplier;
     }
     multipliers.clear();
@@ -107,12 +100,12 @@ void Engine::Init()
 {
     Reset();
 
-    for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
+    Event emptyEvent;
+    for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); ++i)
     {
         Strategy* strategy = i->second;
         strategy->InitMultipliers(multipliers);
         strategy->InitTriggers(triggers);
-        Event emptyEvent;
         MultiplyAndPush(strategy->getDefaultActions(), 0.0f, false, emptyEvent, "default");
     }
 
@@ -144,76 +137,78 @@ bool Engine::DoNextAction(Unit* unit, int depth)
     int iterationsPerTick = queue.Size() * sPlayerbotAIConfig.iterationsPerTick;
     do {
         basket = queue.Peek();
-        if (basket)
-        {
-            float relevance = basket->getRelevance(); // just for reference
-            bool skipPrerequisites = basket->isSkipPrerequisites();
-            Event event = basket->getEvent();
-            // NOTE: queue.Pop() deletes basket
-            ActionNode* actionNode = queue.Pop();
-            Action* action = InitializeAction(actionNode);
+        if (!basket)
+            break;
 
-            if (!action)
+        float relevance = basket->getRelevance();
+        const bool skipPrerequisites = basket->isSkipPrerequisites();
+        const Event& event = basket->getEvent();
+
+        // NOTE: queue.Pop() deletes basket
+        ActionNode* actionNode = queue.Pop();
+        const string& actionName = actionNode->getName();
+        Action* action = InitializeAction(actionNode);
+
+        if (!action)
+        {
+            LogAction("A:%s - UNKNOWN", actionName.c_str());
+            MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event, "alt");
+        }
+        else if (action->isUseful())
+        {
+            // Apply multipliers to relevance - cache const reference
+            for (auto multiplier : multipliers)
             {
-                LogAction("A:%s - UNKNOWN", actionNode->getName().c_str());
-                MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event, "alt");
-            }
-            else if (action->isUseful())
-            {
-                for (list<Multiplier*>::iterator i = multipliers.begin(); i!= multipliers.end(); i++)
+                relevance *= multiplier->GetValue(action);
+                if (!relevance)
                 {
-                    Multiplier* multiplier = *i;
-                    relevance *= multiplier->GetValue(action);
-                    if (!relevance)
+                    LogAction("Multiplier %s made action %s useless", multiplier->getName().c_str(), actionName.c_str());
+                    break;
+                }
+            }
+
+            if (action->isPossible() && relevance)
+            {
+                if (!skipPrerequisites)
+                {
+                    LogAction("A:%s - PREREQ", actionName.c_str());
+                    if (MultiplyAndPush(actionNode->getPrerequisites(), relevance + 0.02, false, event, "prereq"))
                     {
-                        LogAction("Multiplier %s made action %s useless", multiplier->getName().c_str(), action->getName().c_str());
-                        break;
+                        PushAgain(actionNode, relevance + 0.01, event);
+                        continue;
                     }
                 }
 
-                if (action->isPossible() && relevance)
+                actionExecuted = ListenAndExecute(action, event);
+
+                if (actionExecuted)
                 {
-                    if (!skipPrerequisites)
-                    {
-                        LogAction("A:%s - PREREQ", action->getName().c_str());
-                        if (MultiplyAndPush(actionNode->getPrerequisites(), relevance + 0.02, false, event, "prereq"))
-                        {
-                            PushAgain(actionNode, relevance + 0.01, event);
-                            continue;
-                        }
-                    }
-
-                    actionExecuted = ListenAndExecute(action, event);
-
-                    if (actionExecuted)
-                    {
-                        LogAction("A:%s - OK", action->getName().c_str());
-                        MultiplyAndPush(actionNode->getContinuers(), 0, false, event, "cont");
-                        lastRelevance = relevance;
-                        delete actionNode;
-                        break;
-                    }
-                    else
-                    {
-                        LogAction("A:%s - FAILED", action->getName().c_str());
-                        MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event, "alt");
-                    }
+                    LogAction("A:%s - OK", actionName.c_str());
+                    MultiplyAndPush(actionNode->getContinuers(), 0, false, event, "cont");
+                    lastRelevance = relevance;
+                    delete actionNode;
+                    break;
                 }
                 else
                 {
-                    LogAction("A:%s - IMPOSSIBLE", action->getName().c_str());
+                    LogAction("A:%s - FAILED", actionName.c_str());
                     MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event, "alt");
                 }
             }
             else
             {
-                lastRelevance = relevance;
-                LogAction("A:%s - USELESS", action->getName().c_str());
+                LogAction("A:%s - IMPOSSIBLE", actionName.c_str());
+                MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event, "alt");
             }
-            delete actionNode;
         }
+        else
+        {
+            lastRelevance = relevance;
+            LogAction("A:%s - USELESS", actionName.c_str());
+        }
+        delete actionNode;
     }
-    while (basket && ++iterations <= iterationsPerTick);
+    while (++iterations <= iterationsPerTick);
 
     if (!basket)
     {
@@ -225,10 +220,9 @@ bool Engine::DoNextAction(Unit* unit, int depth)
         }
     }
 
-    if (time(0) - currentTime > 1) {
+    if (time(0) - currentTime > 1)
     {
         LogAction("too long execution");
-    }
     }
 
     if (!actionExecuted)
@@ -241,9 +235,9 @@ bool Engine::DoNextAction(Unit* unit, int depth)
 }
 
 // Creates an action node based on the action name
-ActionNode* Engine::CreateActionNode(string name)
+ActionNode* Engine::CreateActionNode(const string& name)
 {
-    for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
+    for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); ++i)
     {
         Strategy* strategy = i->second;
         ActionNode* node = strategy->GetAction(name);
@@ -252,52 +246,41 @@ ActionNode* Engine::CreateActionNode(string name)
             return node;
         }
     }
-    return new ActionNode (name,
-        /*P*/ NULL,
-        /*A*/ NULL,
-        /*C*/ NULL);
+    return new ActionNode(name, NULL, NULL, NULL);
 }
 
 // Multiplies the relevance of actions and pushes them to the queue
-bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, Event event, const char* pushType)
+bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, const Event& event, const char* pushType)
 {
     bool pushed = false;
-    if (actions)
+    if (!actions)
+        return pushed;
+
+    for (int j = 0; actions[j]; ++j)
     {
-        for (int j=0; actions[j]; j++)
+        NextAction* nextAction = actions[j];
+        if (!nextAction)
+            break;
+
+        ActionNode* action = CreateActionNode(nextAction->getName());
+        InitializeAction(action);
+
+        float k = (forceRelevance > 0.0f) ? forceRelevance : nextAction->getRelevance();
+
+        if (k > 0)
         {
-            NextAction* nextAction = actions[j];
-            if (nextAction)
-            {
-                ActionNode* action = CreateActionNode(nextAction->getName());
-                InitializeAction(action);
-
-                float k = nextAction->getRelevance();
-                if (forceRelevance > 0.0f)
-                {
-                    k = forceRelevance;
-                }
-
-                if (k > 0)
-                {
-                    LogAction("PUSH:%s - %f (%s)", action->getName().c_str(), k, pushType);
-                    queue.Push(new ActionBasket(action, k, skipPrerequisites, event));
-                    pushed = true;
-                }
-                else
-                {
-                    delete action;
-                }
-
-                delete nextAction;
-            }
-            else
-            {
-                break;
-            }
+            LogAction("PUSH:%s - %f (%s)", action->getName().c_str(), k, pushType);
+            queue.Push(new ActionBasket(action, k, skipPrerequisites, event));
+            pushed = true;
         }
-        delete [] actions;
+        else
+        {
+            delete action;
+        }
+
+        delete nextAction;
     }
+    delete[] actions;
     return pushed;
 }
 
