@@ -31,7 +31,7 @@
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+  **********************************************************************/
 
 // show info of player
 bool ChatHandler::HandlePInfoCommand(char* args)
@@ -565,6 +565,4 @@ bool ChatHandler::HandleUnfreezePlayerCommand(char* args)
 
     return true;
 }
-
-
 

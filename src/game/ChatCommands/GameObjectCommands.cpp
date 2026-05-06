@@ -30,7 +30,7 @@
 
  /**********************************************************************
      CommandTable : gobjectCommandTable
- /***********************************************************************/
+  ***********************************************************************/
 
  // delete object by selection or guid
 bool ChatHandler::HandleGameObjectDeleteCommand(char* args)

@@ -38,7 +38,7 @@
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+  ***********************************************************************/
 bool ChatHandler::HandleReloadSpellLinkedCommand(char* /*arg*/)
 {
     sLog.outString("Re-Loading spell linked table...");
@@ -51,7 +51,7 @@ bool ChatHandler::HandleReloadSpellLinkedCommand(char* /*arg*/)
 
 /**********************************************************************
     CommandTable : reloadCommandTable
-/***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleReloadAllSpellCommand(char* /*args*/)
 {

@@ -29,7 +29,7 @@
 
  /**********************************************************************
      CommandTable : instanceCommandTable
- /***********************************************************************/
+  ***********************************************************************/
 
 bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
 {
@@ -53,7 +53,9 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
                                 state->GetDifficulty() == DUNGEON_DIFFICULTY_NORMAL ? "normal" : "heroic", state->CanReset() ? "yes" : "no", timeleft.c_str());
             }
             else
+            {
                 PSendSysMessage("bound for a nonexistent map %u", itr->first);
+            }
             ++counter;
         }
     }
@@ -76,8 +78,10 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
                                     state->GetDifficulty() == DUNGEON_DIFFICULTY_NORMAL ? "normal" : "heroic", state->CanReset() ? "yes" : "no", timeleft.c_str());
                 }
                 else
+                {
                     PSendSysMessage("bound for a nonexistent map %u", itr->first);
-                ++counter;
+                }
+                counter++;
             }
         }
     }
@@ -182,4 +186,3 @@ bool ChatHandler::HandleInstanceSaveDataCommand(char* /*args*/)
     iData->SaveToDB();
     return true;
 }
-
