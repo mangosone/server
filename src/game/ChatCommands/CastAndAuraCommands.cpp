@@ -532,4 +532,3 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
         return true;
     }
 }
-
