@@ -22,6 +22,17 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file DebugCommands.cpp
+ * @brief Implementation of debug and diagnostic chat commands.
+ *
+ * This file contains chat command handlers for debugging including:
+ * - Player state inspection
+ * - Unit information display
+ * - Combat logging and analysis
+ * - AI and path debugging
+ */
+
 #include "Common.h"
 #include "DBCStores.h"
 #include "WorldPacket.h"
@@ -38,10 +49,12 @@
 #include "ObjectGuid.h"
 #include "SpellMgr.h"
 
-/**********************************************************************
-     CommandTable : debugCommandTable
- ***********************************************************************/
-
+/**
+ * @brief Handler for HandleDebugSendSpellFailCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendSpellFailCommand(char* args)
 {
     if (!*args)
@@ -84,6 +97,12 @@ bool ChatHandler::HandleDebugSendSpellFailCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendPoiCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendPoiCommand(char* args)
 {
     Player* pPlayer = m_session->GetPlayer();
@@ -111,6 +130,12 @@ bool ChatHandler::HandleDebugSendPoiCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendEquipErrorCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendEquipErrorCommand(char* args)
 {
     if (!*args)
@@ -123,6 +148,12 @@ bool ChatHandler::HandleDebugSendEquipErrorCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendSellErrorCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendSellErrorCommand(char* args)
 {
     if (!*args)
@@ -135,6 +166,12 @@ bool ChatHandler::HandleDebugSendSellErrorCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendBuyErrorCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendBuyErrorCommand(char* args)
 {
     if (!*args)
@@ -147,6 +184,12 @@ bool ChatHandler::HandleDebugSendBuyErrorCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugRecvOpcodeCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugRecvOpcodeCommand(char* /*args*/)
 {
     Unit* unit = getSelectedUnit();
@@ -254,6 +297,12 @@ bool ChatHandler::HandleDebugRecvOpcodeCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendOpcodeCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
 {
     Unit* unit = getSelectedUnit();
@@ -363,6 +412,12 @@ bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugUpdateWorldStateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugUpdateWorldStateCommand(char* args)
 {
     uint32 world;
@@ -381,6 +436,12 @@ bool ChatHandler::HandleDebugUpdateWorldStateCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugPlayCinematicCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugPlayCinematicCommand(char* args)
 {
     // USAGE: .debug play cinematic #cinematicid
@@ -402,7 +463,41 @@ bool ChatHandler::HandleDebugPlayCinematicCommand(char* args)
     return true;
 }
 
-// Play sound
+///**
+// * @brief Handler for HandleDebugPlayMovieCommand command.
+// *
+// * @param args Command arguments.
+// * @returns True if the command executed successfully, false otherwise.
+// */
+//bool ChatHandler::HandleDebugPlayMovieCommand(char* args)
+//{
+//#if defined(TBC) || defined(WOTLK) || defined(CATA) || defined(MISTS)
+//    // USAGE: .debug play movie #movieid
+//    // #movieid - ID decimal number from Movie.dbc (1st column)
+//    uint32 dwId;
+//    if (!ExtractUInt32(&args, dwId))
+//    {
+//        return false;
+//    }
+//
+//    if (!sMovieStore.LookupEntry(dwId))
+//    {
+//        PSendSysMessage(LANG_MOVIE_NOT_EXIST, dwId);
+//        SetSentErrorMessage(true);
+//        return false;
+//    }
+//
+//    m_session->GetPlayer()->SendMovieStart(dwId);
+//#endif
+//    return true;
+//}
+
+/**
+ * @brief Handler for HandleDebugPlaySoundCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugPlaySoundCommand(char* args)
 {
     // USAGE: .debug playsound #soundid
@@ -441,7 +536,12 @@ bool ChatHandler::HandleDebugPlaySoundCommand(char* args)
     return true;
 }
 
-// Send notification in channel
+/**
+ * @brief Handler for HandleDebugSendChannelNotifyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendChannelNotifyCommand(char* args)
 {
     const char* name = "test";
@@ -461,7 +561,12 @@ bool ChatHandler::HandleDebugSendChannelNotifyCommand(char* args)
     return true;
 }
 
-// Send notification in chat
+/**
+ * @brief Handler for HandleDebugSendChatMsgCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendChatMsgCommand(char* args)
 {
     const char* msg = args;
@@ -478,6 +583,12 @@ bool ChatHandler::HandleDebugSendChatMsgCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendQuestPartyMsgCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendQuestPartyMsgCommand(char* args)
 {
     uint32 msg;
@@ -490,6 +601,12 @@ bool ChatHandler::HandleDebugSendQuestPartyMsgCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugGetLootRecipientCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugGetLootRecipientCommand(char* /*args*/)
 {
     Creature* target = getSelectedCreature();
@@ -515,6 +632,12 @@ bool ChatHandler::HandleDebugGetLootRecipientCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSendQuestInvalidMsgCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSendQuestInvalidMsgCommand(char* args)
 {
     uint32 msg = atol(args);
@@ -522,6 +645,12 @@ bool ChatHandler::HandleDebugSendQuestInvalidMsgCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugGetItemStateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
 {
     if (!*args)
@@ -844,6 +973,12 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugBattlegroundCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugBattlegroundCommand(char* /*args*/)
 {
     sBattleGroundMgr.ToggleTesting();
@@ -856,6 +991,12 @@ bool ChatHandler::HandleDebugArenaCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSpellCheckCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSpellCheckCommand(char* /*args*/)
 {
     sLog.outString("Check expected in code spell properties base at table 'spell_check' content...");
@@ -863,7 +1004,12 @@ bool ChatHandler::HandleDebugSpellCheckCommand(char* /*args*/)
     return true;
 }
 
-// show animation
+/**
+ * @brief Handler for HandleDebugAnimCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugAnimCommand(char* args)
 {
     uint32 emote_id;
@@ -876,6 +1022,12 @@ bool ChatHandler::HandleDebugAnimCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSetAuraStateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSetAuraStateCommand(char* args)
 {
     int32 state;
@@ -906,6 +1058,12 @@ bool ChatHandler::HandleDebugSetAuraStateCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSetValueHelper command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSetValueHelper(Object* target, uint32 field, char* typeStr, char* valStr)
 {
     ObjectGuid guid = target->GetObjectGuid();
@@ -971,6 +1129,12 @@ bool ChatHandler::HandleSetValueHelper(Object* target, uint32 field, char* typeS
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSetItemValueCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSetItemValueCommand(char* args)
 {
     uint32 guid;
@@ -1006,6 +1170,12 @@ bool ChatHandler::HandleDebugSetItemValueCommand(char* args)
     return HandleSetValueHelper(item, field, typeStr, valStr);
 }
 
+/**
+ * @brief Handler for HandleDebugSetValueCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSetValueCommand(char* args)
 {
     Unit* target = getSelectedUnit();
@@ -1037,6 +1207,12 @@ bool ChatHandler::HandleDebugSetValueCommand(char* args)
     return HandleSetValueHelper(target, field, typeStr, valStr);
 }
 
+/**
+ * @brief Handler for HandleGetValueHelper command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGetValueHelper(Object* target, uint32 field, char* typeStr)
 {
     ObjectGuid guid = target->GetObjectGuid();
@@ -1113,6 +1289,12 @@ bool ChatHandler::HandleGetValueHelper(Object* target, uint32 field, char* typeS
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugGetItemValueCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugGetItemValueCommand(char* args)
 {
     uint32 guid;
@@ -1142,6 +1324,12 @@ bool ChatHandler::HandleDebugGetItemValueCommand(char* args)
     return HandleGetValueHelper(item, field, typeStr);
 }
 
+/**
+ * @brief Handler for HandleDebugGetValueCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugGetValueCommand(char* args)
 {
     Unit* target = getSelectedUnit();
@@ -1167,6 +1355,12 @@ bool ChatHandler::HandleDebugGetValueCommand(char* args)
     return HandleGetValueHelper(target, field, typeStr);
 }
 
+/**
+ * @brief Handler for HandlerDebugModValueHelper command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandlerDebugModValueHelper(Object* target, uint32 field, char* typeStr, char* valStr)
 {
     ObjectGuid guid = target->GetObjectGuid();
@@ -1263,6 +1457,12 @@ bool ChatHandler::HandlerDebugModValueHelper(Object* target, uint32 field, char*
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugModItemValueCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugModItemValueCommand(char* args)
 {
     uint32 guid;
@@ -1298,6 +1498,12 @@ bool ChatHandler::HandleDebugModItemValueCommand(char* args)
     return HandlerDebugModValueHelper(item, field, typeStr, valStr);
 }
 
+/**
+ * @brief Handler for HandleDebugModValueCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugModValueCommand(char* args)
 {
     Unit* target = getSelectedUnit();
@@ -1329,6 +1535,12 @@ bool ChatHandler::HandleDebugModValueCommand(char* args)
     return HandlerDebugModValueHelper(target, field, typeStr, valStr);
 }
 
+/**
+ * @brief Handler for HandleDebugSpellCoefsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSpellCoefsCommand(char* args)
 {
     uint32 spellid = ExtractSpellIdFromLink(&args);
@@ -1384,6 +1596,12 @@ bool ChatHandler::HandleDebugSpellCoefsCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDebugSpellModsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDebugSpellModsCommand(char* args)
 {
     char* typeStr = ExtractLiteralArg(&args);

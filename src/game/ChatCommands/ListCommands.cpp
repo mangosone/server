@@ -22,14 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ListCommands.cpp
+ * @brief Implementation of listing and information display chat commands.
+ *
+ * This file contains chat command handlers for displaying lists including:
+ * - Aura listing
+ * - Item list display
+ * - NPC and creature listing
+ * - Quest and achievement lists
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "SpellAuras.h"
 
- /**********************************************************************
-      CommandTable : listCommandTable
-  ***********************************************************************/
-
+/**
+ * @brief Handler for HandleListAurasCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListAurasCommand(char* /*args*/)
 {
     Unit* unit = getSelectedUnit();
@@ -115,6 +128,12 @@ bool ChatHandler::HandleListAurasCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListTalentsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListTalentsCommand(char* /*args*/)
 {
     Player* player = getSelectedPlayer();
@@ -158,6 +177,12 @@ bool ChatHandler::HandleListTalentsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListItemCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListItemCommand(char* args)
 {
     uint32 item_id;
@@ -408,6 +433,12 @@ bool ChatHandler::HandleListItemCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListPlayersCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListPlayersCommand(char* args)
 {
     uint32 limit;
@@ -447,6 +478,12 @@ bool ChatHandler::HandleListPlayersCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListObjectCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListObjectCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject_entry:go_id|h[name]|h|r
@@ -526,6 +563,12 @@ bool ChatHandler::HandleListObjectCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListCreatureCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListCreatureCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hcreature_entry:creature_id|h[name]|h|r

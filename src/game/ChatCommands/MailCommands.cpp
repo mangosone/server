@@ -22,15 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MailCommands.cpp
+ * @brief Implementation of mail system management chat commands.
+ *
+ * This file contains chat command handlers for mail operations including:
+ * - Mail sending and receiving
+ * - Mass mail operations
+ * - Mail attachment management
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "Mail.h"
 #include "MassMailMgr.h"
 
- /**********************************************************************
-      CommandTable : mailCommandTable
-  ***********************************************************************/
-// Send mail by command
+/**
+ * @brief Handler for HandleSendMailCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMailCommand(char* args)
 {
     if (!*args)
@@ -73,6 +85,12 @@ bool ChatHandler::HandleSendMailCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendMailHelper command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMailHelper(MailDraft& draft, char* args)
 {
     // format: "subject text" "mail text"
@@ -94,6 +112,12 @@ bool ChatHandler::HandleSendMailHelper(MailDraft& draft, char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendMassMailCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMassMailCommand(char* args)
 {
     // format: raceMask "subject text" "mail text"
@@ -124,6 +148,12 @@ bool ChatHandler::HandleSendMassMailCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendItemsHelper command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
 {
     // format: "subject text" "mail text" item1[:count1] item2[:count2] ... item12[:count12]
@@ -157,6 +187,7 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
                 return false;
             }
         }
+
         if (!item_id)
         {
             PSendSysMessage(LANG_COMMAND_ITEMIDINVALID, item_id);
@@ -210,6 +241,12 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendItemsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendItemsCommand(char* args)
 {
     // format: name "subject text" "mail text" item1[:count1] item2[:count2] ... item12[:count12]
@@ -239,6 +276,12 @@ bool ChatHandler::HandleSendItemsCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendMassItemsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMassItemsCommand(char* args)
 {
     // format: racemask "subject text" "mail text" item1[:count1] item2[:count2] ... item12[:count12]
@@ -271,6 +314,12 @@ bool ChatHandler::HandleSendMassItemsCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendMoneyHelper command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMoneyHelper(MailDraft& draft, char* args)
 {
     /// format: "subject text" "mail text" money
@@ -304,6 +353,12 @@ bool ChatHandler::HandleSendMoneyHelper(MailDraft& draft, char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendMoneyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMoneyCommand(char* args)
 {
     /// format: name "subject text" "mail text" money
@@ -334,6 +389,12 @@ bool ChatHandler::HandleSendMoneyCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSendMassMoneyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMassMoneyCommand(char* args)
 {
     /// format: raceMask "subject text" "mail text" money
@@ -364,4 +425,3 @@ bool ChatHandler::HandleSendMassMoneyCommand(char* args)
     PSendSysMessage(LANG_MAIL_SENT, name);
     return true;
 }
-
