@@ -1725,6 +1725,15 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround* bg)
     }
 }
 
+/**
+ * @brief Builds the group battleground join result packet.
+ *
+ * Writes the battleground join status code returned to grouped players after a
+ * join request is processed.
+ *
+ * @param data Pointer to the packet being filled.
+ * @param status The battleground group join status code.
+ */
 void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, BattleGroundTypeId bgTypeId)
 {
     /*bgTypeId is:
@@ -1740,6 +1749,16 @@ void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, Batt
     *data << uint32(bgTypeId);
 }
 
+/**
+ * @brief Builds a world state update packet.
+ *
+ * Populates a packet with a world state field identifier and its new value so
+ * clients can refresh battleground UI state.
+ *
+ * @param data Pointer to the packet being filled.
+ * @param field The world state field identifier.
+ * @param value The value to assign to the field.
+ */
 void BattleGroundMgr::BuildUpdateWorldStatePacket(WorldPacket* data, uint32 field, uint32 value)
 {
     data->Initialize(SMSG_UPDATE_WORLD_STATE, 4 + 4);
@@ -2259,6 +2278,17 @@ void BattleGroundMgr::DistributeArenaPoints()
     sWorld.SendWorldText(LANG_DIST_ARENA_POINTS_END);
 }
 
+/**
+ * @brief Builds the battleground instance list packet for a player.
+ *
+ * Enumerates the client-visible battleground instances available for the player's
+ * bracket and writes them into the battlefield list response.
+ *
+ * @param data Pointer to the packet being filled.
+ * @param guid The battlemaster GUID associated with the request.
+ * @param plr The player receiving the list.
+ * @param bgTypeId The battleground type being listed.
+ */
 void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket* data, ObjectGuid guid, Player* plr, BattleGroundTypeId bgTypeId)
 {
     if (!plr)
@@ -2382,6 +2412,15 @@ BattleGroundQueueTypeId BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId bgType
     }
 }
 
+/**
+ * @brief Converts a battleground queue type to its template battleground type.
+ *
+ * Maps queue identifiers back to the battleground template type used to create
+ * or reference battleground instances.
+ *
+ * @param bgQueueTypeId The battleground queue type identifier.
+ * @return The corresponding battleground type identifier.
+ */
 BattleGroundTypeId BattleGroundMgr::BGTemplateId(BattleGroundQueueTypeId bgQueueTypeId)
 {
     switch (bgQueueTypeId)
