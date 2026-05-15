@@ -6,6 +6,9 @@
 using namespace ai;
 
 
+/**
+ * Changes the bot chat channel or reports the current chat channel.
+ */
 bool ChangeChatAction::Execute(Event event)
 {
     string text = event.getParam();

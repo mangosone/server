@@ -18,6 +18,9 @@ class ChatHandler;
 using namespace std;
 using namespace ai;
 
+/**
+ * Checks whether the specified race belongs to the Alliance faction.
+ */
 bool IsAlliance(uint8 race);
 
 /**
