@@ -30,11 +30,17 @@
 const static size_t CRYPTED_SEND_LEN = 4;
 const static size_t CRYPTED_RECV_LEN = 6;
 
+/**
+ * Initializes the authentication crypt state in an uninitialized state.
+ */
 AuthCrypt::AuthCrypt()
 {
     _initialized = false;
 }
 
+/**
+ * Decrypts the fixed-size encrypted receive header in place.
+ */
 void AuthCrypt::DecryptRecv(uint8* data, size_t len)
 {
     if (!_initialized)
@@ -56,6 +62,9 @@ void AuthCrypt::DecryptRecv(uint8* data, size_t len)
     }
 }
 
+/**
+ * Encrypts the fixed-size outgoing packet header in place.
+ */
 void AuthCrypt::EncryptSend(uint8* data, size_t len)
 {
     if (!_initialized)
@@ -77,6 +86,9 @@ void AuthCrypt::EncryptSend(uint8* data, size_t len)
     }
 }
 
+/**
+ * Resets the stream counters and marks the crypt state as initialized.
+ */
 void AuthCrypt::Init(BigNumber* K)
 {
     uint8* key = new uint8[SHA_DIGEST_LENGTH];
@@ -93,7 +105,9 @@ void AuthCrypt::Init(BigNumber* K)
     _initialized = true;
 }
 
-
+/**
+ * Destroys the authentication crypt helper.
+ */
 AuthCrypt::~AuthCrypt()
 {
 }
