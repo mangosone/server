@@ -22,6 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ItemHandler.cpp
+ * @brief Item inventory and interaction opcode handlers
+ *
+ * This file handles item-related opcodes including:
+ * - CMSG_SPLIT_ITEM: Split item stack
+ * - CMSG_SWAP_ITEM: Swap items between inventory slots
+ * - CMSG_SWAP_INV_ITEM: Swap inventory items
+ * - CMSG_DESTROYITEM: Destroy item
+ * - CMSG_AUTOEQUIP_ITEM: Auto-equip item
+ * - CMSG_ITEM_NAME_QUERY: Query item name
+ * - CMSG_READ_ITEM: Read item (books, scrolls)
+ * - CMSG_WRAP_ITEM: Wrap item with gift wrap
+ * - CMSG_USE_ITEM: Use item (consume, equip, etc.)
+ * - CMSG_OPEN_ITEM: Open item (containers)
+ * - CMSG_BUY_ITEM: Buy item from vendor
+ * - CMSG_SELL_ITEM: Sell item to vendor
+ * - CMSG_REPAIR_ITEM: Repair item
+ */
+
 #include "Common.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -33,6 +53,11 @@
 #include "UpdateData.h"
 #include "Chat.h"
 
+/**
+ * @brief Splits part of an item stack into another destination slot.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSplitItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_SPLIT_ITEM");
@@ -69,6 +94,11 @@ void WorldSession::HandleSplitItemOpcode(WorldPacket& recv_data)
     _player->SplitItem(src, dst, count);
 }
 
+/**
+ * @brief Swaps two equipped inventory slots.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSwapInvItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_SWAP_INV_ITEM");
@@ -101,6 +131,11 @@ void WorldSession::HandleSwapInvItemOpcode(WorldPacket& recv_data)
     _player->SwapItem(src, dst);
 }
 
+/**
+ * @brief Equips an item into a specific equipment slot.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleAutoEquipItemSlotOpcode(WorldPacket& recv_data)
 {
     ObjectGuid itemGuid;
@@ -124,6 +159,11 @@ void WorldSession::HandleAutoEquipItemSlotOpcode(WorldPacket& recv_data)
     _player->SwapItem(item->GetPos(), dstpos);
 }
 
+/**
+ * @brief Swaps two arbitrary item positions.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSwapItem(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_SWAP_ITEM");
@@ -156,6 +196,11 @@ void WorldSession::HandleSwapItem(WorldPacket& recv_data)
     _player->SwapItem(src, dst);
 }
 
+/**
+ * @brief Auto-equips an item from inventory or bank.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_AUTOEQUIP_ITEM");
@@ -270,6 +315,11 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Destroys all or part of an item stack.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleDestroyItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_DESTROYITEM");
@@ -465,6 +515,11 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles a request to read a readable item.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: Received opcode CMSG_READ_ITEM");
@@ -500,6 +555,11 @@ void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Logs a skipped page text query packet.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandlePageQuerySkippedOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_PAGE_TEXT_QUERY");
@@ -512,6 +572,11 @@ void WorldSession::HandlePageQuerySkippedOpcode(WorldPacket& recv_data)
     DETAIL_LOG("Packet Info: itemid: %u guid: %s", itemid, guid.GetString().c_str());
 }
 
+/**
+ * @brief Sells an item stack to a vendor.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSellItemOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SELL_ITEM");
@@ -637,6 +702,11 @@ void WorldSession::HandleSellItemOpcode(WorldPacket& recv_data)
     return;
 }
 
+/**
+ * @brief Buys back a previously sold item.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_BUYBACK_ITEM");
@@ -690,6 +760,11 @@ void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Buys a vendor item into a specific bag slot.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_BUY_ITEM_IN_SLOT");
@@ -731,6 +806,11 @@ void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket& recv_data)
     GetPlayer()->BuyItemFromVendor(vendorGuid, item, count, bag, bagslot);
 }
 
+/**
+ * @brief Buys an item from a vendor into automatic storage.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBuyItemOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_BUY_ITEM");
@@ -743,6 +823,11 @@ void WorldSession::HandleBuyItemOpcode(WorldPacket& recv_data)
     GetPlayer()->BuyItemFromVendor(vendorGuid, item, count, NULL_BAG, NULL_SLOT);
 }
 
+/**
+ * @brief Requests the inventory list of a vendor.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleListInventoryOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -759,6 +844,11 @@ void WorldSession::HandleListInventoryOpcode(WorldPacket& recv_data)
     SendListInventory(guid);
 }
 
+/**
+ * @brief Sends the available inventory of a vendor to the client.
+ *
+ * @param vendorguid The vendor guid.
+ */
 void WorldSession::SendListInventory(ObjectGuid vendorguid)
 {
     DEBUG_LOG("WORLD: Sent SMSG_LIST_INVENTORY");
@@ -865,6 +955,11 @@ void WorldSession::SendListInventory(ObjectGuid vendorguid)
     SendPacket(&data);
 }
 
+/**
+ * @brief Auto-stores an item into a destination bag.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleAutoStoreBagItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_AUTOSTORE_BAG_ITEM");
@@ -919,6 +1014,12 @@ void WorldSession::HandleAutoStoreBagItemOpcode(WorldPacket& recv_data)
 }
 
 
+/**
+ * @brief Verifies that a guid can be used as a banker interaction target.
+ *
+ * @param guid The banker or player guid.
+ * @return true if banking is allowed; otherwise false.
+ */
 bool WorldSession::CheckBanker(ObjectGuid guid)
 {
     // GM case
@@ -944,6 +1045,11 @@ bool WorldSession::CheckBanker(ObjectGuid guid)
     return true;
 }
 
+/**
+ * @brief Purchases the next available bank bag slot.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
 {
     DEBUG_LOG("WORLD: CMSG_BUY_BANK_SLOT");
@@ -990,6 +1096,11 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
     SendPacket(&data);
 }
 
+/**
+ * @brief Moves an item from inventory into the bank automatically.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandleAutoBankItemOpcode(WorldPacket& recvPacket)
 {
     DEBUG_LOG("WORLD: CMSG_AUTOBANK_ITEM");
@@ -1024,6 +1135,11 @@ void WorldSession::HandleAutoBankItemOpcode(WorldPacket& recvPacket)
     _player->BankItem(dest, pItem, true);
 }
 
+/**
+ * @brief Moves an item between bank and inventory automatically.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandleAutoStoreBankItemOpcode(WorldPacket& recvPacket)
 {
     DEBUG_LOG("WORLD: CMSG_AUTOSTORE_BANK_ITEM");
@@ -1066,6 +1182,11 @@ void WorldSession::HandleAutoStoreBankItemOpcode(WorldPacket& recvPacket)
     }
 }
 
+/**
+ * @brief Sets or clears the player's equipped ammunition.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetAmmoOpcode(WorldPacket& recv_data)
 {
     if (!GetPlayer()->IsAlive())
@@ -1089,6 +1210,14 @@ void WorldSession::HandleSetAmmoOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Sends an enchantment log packet to the client.
+ *
+ * @param targetGuid The enchanted target guid.
+ * @param casterGuid The caster guid.
+ * @param itemId The item entry id.
+ * @param spellId The enchantment spell id.
+ */
 void WorldSession::SendEnchantmentLog(ObjectGuid targetGuid, ObjectGuid casterGuid, uint32 itemId, uint32 spellId)
 {
     WorldPacket data(SMSG_ENCHANTMENTLOG, (8 + 8 + 4 + 4 + 1)); // last check 2.0.10
@@ -1100,6 +1229,14 @@ void WorldSession::SendEnchantmentLog(ObjectGuid targetGuid, ObjectGuid casterGu
     SendPacket(&data);
 }
 
+/**
+ * @brief Sends a temporary enchantment timer update.
+ *
+ * @param playerGuid The owning player guid.
+ * @param itemGuid The enchanted item guid.
+ * @param slot The equipment slot index.
+ * @param duration The remaining duration in milliseconds.
+ */
 void WorldSession::SendItemEnchantTimeUpdate(ObjectGuid playerGuid, ObjectGuid itemGuid, uint32 slot, uint32 duration)
 {
     // last check 2.0.10
@@ -1111,6 +1248,11 @@ void WorldSession::SendItemEnchantTimeUpdate(ObjectGuid playerGuid, ObjectGuid i
     SendPacket(&data);
 }
 
+/**
+ * @brief Sends the localized name of an item to the client.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recv_data)
 {
     uint32 itemid;
@@ -1143,6 +1285,11 @@ void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Wraps an item using wrapping paper.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleWrapItemOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("Received opcode CMSG_WRAP_ITEM");
@@ -1443,6 +1590,11 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
     _player->ToggleMetaGemsActive(slot, true);              // turn on all metagems (except for target item)
 }
 
+/**
+ * @brief Cancels a temporary weapon enchantment.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCancelTempEnchantmentOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_CANCEL_TEMP_ENCHANTMENT");

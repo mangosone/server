@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Spell.cpp
+ * @brief Spell casting and effect implementation
+ *
+ * This file implements the Spell class which handles spell casting:
+ * - Spell validation and casting requirements
+ * - Spell effect execution (damage, healing, summon, etc.)
+ * - Spell targeting and area effects
+ * - Spell cooldowns and resource costs
+ * - Spell interruption and pushback
+ * - Spell aura application
+ * - Spell hit/miss calculations
+ *
+ * Spells are the primary combat mechanic in WoW, encompassing
+ * abilities, talents, and item effects.
+ *
+ * @see Spell for the spell class
+ * @see SpellAura for spell auras
+ * @see SpellMgr for spell management
+ */
+
 #include "Spell.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -56,6 +77,12 @@
 
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
+/**
+ * @brief Checks whether a spell matches the quest tame spell pattern.
+ *
+ * @param spellId The spell identifier to test.
+ * @return True if the spell is a quest tame spell; otherwise, false.
+ */
 bool IsQuestTameSpell(uint32 spellId)
 {
     SpellEntry const* spellproto = sSpellStore.LookupEntry(spellId);
@@ -85,6 +112,11 @@ SpellCastTargets::~SpellCastTargets()
 {
 }
 
+/**
+ * @brief Sets a unit target and copies its current position as the destination.
+ *
+ * @param target The unit target.
+ */
 void SpellCastTargets::setUnitTarget(Unit* target)
 {
     if (!target)
@@ -100,6 +132,13 @@ void SpellCastTargets::setUnitTarget(Unit* target)
     m_targetMask |= TARGET_FLAG_UNIT;
 }
 
+/**
+ * @brief Sets the destination coordinates for the cast.
+ *
+ * @param x The destination X coordinate.
+ * @param y The destination Y coordinate.
+ * @param z The destination Z coordinate.
+ */
 void SpellCastTargets::setDestination(float x, float y, float z)
 {
     m_destX = x;
@@ -108,6 +147,13 @@ void SpellCastTargets::setDestination(float x, float y, float z)
     m_targetMask |= TARGET_FLAG_DEST_LOCATION;
 }
 
+/**
+ * @brief Sets the source coordinates for the cast.
+ *
+ * @param x The source X coordinate.
+ * @param y The source Y coordinate.
+ * @param z The source Z coordinate.
+ */
 void SpellCastTargets::setSource(float x, float y, float z)
 {
     m_srcX = x;
@@ -116,6 +162,11 @@ void SpellCastTargets::setSource(float x, float y, float z)
     m_targetMask |= TARGET_FLAG_SOURCE_LOCATION;
 }
 
+/**
+ * @brief Sets the game object target for the cast.
+ *
+ * @param target The game object target.
+ */
 void SpellCastTargets::setGOTarget(GameObject* target)
 {
     m_GOTarget = target;
@@ -123,6 +174,11 @@ void SpellCastTargets::setGOTarget(GameObject* target)
     //    m_targetMask |= TARGET_FLAG_OBJECT;
 }
 
+/**
+ * @brief Sets the item target for the cast.
+ *
+ * @param item The item target.
+ */
 void SpellCastTargets::setItemTarget(Item* item)
 {
     if (!item)
@@ -136,6 +192,11 @@ void SpellCastTargets::setItemTarget(Item* item)
     m_targetMask |= TARGET_FLAG_ITEM;
 }
 
+/**
+ * @brief Sets the current trade slot as the item target.
+ *
+ * @param caster The player performing the cast.
+ */
 void SpellCastTargets::setTradeItemTarget(Player* caster)
 {
     m_itemTargetGUID = ObjectGuid(uint64(TRADE_SLOT_NONTRADED));
@@ -145,11 +206,21 @@ void SpellCastTargets::setTradeItemTarget(Player* caster)
     Update(caster);
 }
 
+/**
+ * @brief Sets the corpse target for the cast.
+ *
+ * @param corpse The corpse target.
+ */
 void SpellCastTargets::setCorpseTarget(Corpse* corpse)
 {
     m_CorpseTargetGUID = corpse->GetObjectGuid();
 }
 
+/**
+ * @brief Resolves stored target GUIDs into live object pointers.
+ *
+ * @param caster The casting unit used to resolve map-relative targets.
+ */
 void SpellCastTargets::Update(Unit* caster)
 {
     m_GOTarget   = m_GOTargetGUID ? caster->GetMap()->GetGameObject(m_GOTargetGUID) : NULL;
@@ -184,6 +255,12 @@ void SpellCastTargets::Update(Unit* caster)
     }
 }
 
+/**
+ * @brief Deserializes spell cast targets from a packet buffer.
+ *
+ * @param data The packet buffer to read.
+ * @param caster The casting unit.
+ */
 void SpellCastTargets::read(ByteBuffer& data, Unit* caster)
 {
     data >> m_targetMask;
@@ -246,6 +323,11 @@ void SpellCastTargets::read(ByteBuffer& data, Unit* caster)
     Update(caster);
 }
 
+/**
+ * @brief Serializes spell cast targets into a packet buffer.
+ *
+ * @param data The packet buffer to write.
+ */
 void SpellCastTargets::write(ByteBuffer& data) const
 {
     data << uint32(m_targetMask);
@@ -422,6 +504,12 @@ Spell::~Spell()
 }
 
 template<typename T>
+/**
+ * @brief Finds a nearby corpse-like world object matching the search predicate.
+ *
+ * @tparam T The corpse search predicate type.
+ * @return The first matching world object, or null if none are found.
+ */
 WorldObject* Spell::FindCorpseUsing()
 {
     // non-standard target selection
@@ -443,6 +531,9 @@ WorldObject* Spell::FindCorpseUsing()
     return result;
 }
 
+/**
+ * @brief Builds the spell target lists for each active effect.
+ */
 void Spell::FillTargetMap()
 {
     // TODO: ADD the correct target FILLS!!!!!!
@@ -743,6 +834,9 @@ void Spell::FillTargetMap()
     }
 }
 
+/**
+ * @brief Prepares proc-trigger metadata for the current spell cast.
+ */
 void Spell::prepareDataForTriggerSystem()
 {
     //==========================================================================================
@@ -866,6 +960,9 @@ void Spell::prepareDataForTriggerSystem()
     }
 }
 
+/**
+ * @brief Clears all accumulated target lists and delay tracking.
+ */
 void Spell::CleanupTargetList()
 {
     m_UniqueTargetInfo.clear();
@@ -874,6 +971,12 @@ void Spell::CleanupTargetList()
     m_delayMoment = 0;
 }
 
+/**
+ * @brief Adds a unit target entry for a spell effect.
+ *
+ * @param pVictim The unit target.
+ * @param effIndex The effect index being applied.
+ */
 void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
 {
     if (m_spellInfo->Effect[effIndex] == 0)
@@ -975,6 +1078,12 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
     m_UniqueTargetInfo.push_back(target);
 }
 
+/**
+ * @brief Resolves and adds a unit target by guid for a spell effect.
+ *
+ * @param unitGuid The unit guid to resolve.
+ * @param effIndex The effect index being applied.
+ */
 void Spell::AddUnitTarget(ObjectGuid unitGuid, SpellEffectIndex effIndex)
 {
     if (Unit* unit = m_caster->GetObjectGuid() == unitGuid ? m_caster : sObjectAccessor.GetUnit(*m_caster, unitGuid))
@@ -983,6 +1092,12 @@ void Spell::AddUnitTarget(ObjectGuid unitGuid, SpellEffectIndex effIndex)
     }
 }
 
+/**
+ * @brief Adds a game object target entry for a spell effect.
+ *
+ * @param pVictim The game object target.
+ * @param effIndex The effect index being applied.
+ */
 void Spell::AddGOTarget(GameObject* pVictim, SpellEffectIndex effIndex)
 {
     if (m_spellInfo->Effect[effIndex] == 0)
@@ -1037,6 +1152,12 @@ void Spell::AddGOTarget(GameObject* pVictim, SpellEffectIndex effIndex)
     m_UniqueGOTargetInfo.push_back(target);
 }
 
+/**
+ * @brief Resolves and adds a game object target by guid for a spell effect.
+ *
+ * @param goGuid The game object guid to resolve.
+ * @param effIndex The effect index being applied.
+ */
 void Spell::AddGOTarget(ObjectGuid goGuid, SpellEffectIndex effIndex)
 {
     if (GameObject* go = m_caster->GetMap()->GetGameObject(goGuid))
@@ -1045,6 +1166,12 @@ void Spell::AddGOTarget(ObjectGuid goGuid, SpellEffectIndex effIndex)
     }
 }
 
+/**
+ * @brief Adds an item target entry for a spell effect.
+ *
+ * @param pitem The item target.
+ * @param effIndex The effect index being applied.
+ */
 void Spell::AddItemTarget(Item* pitem, SpellEffectIndex effIndex)
 {
     if (m_spellInfo->Effect[effIndex] == 0)
@@ -1070,6 +1197,11 @@ void Spell::AddItemTarget(Item* pitem, SpellEffectIndex effIndex)
     m_UniqueItemInfo.push_back(target);
 }
 
+/**
+ * @brief Applies all pending spell effects to a unit target entry.
+ *
+ * @param target The target info entry.
+ */
 void Spell::DoAllEffectOnTarget(TargetInfo* target)
 {
     if (target->processed)                                  // Check target
@@ -1310,6 +1442,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     }
 }
 
+/**
+ * @brief Processes spell hit logic and aura application for a unit target.
+ *
+ * @param unit The unit that was hit.
+ * @param effectMask The set of effects to process.
+ * @param isReflected True if the spell hit is the result of reflection.
+ */
 void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
 {
     if (!unit || !effectMask)
@@ -1503,6 +1642,11 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
     }
 }
 
+/**
+ * @brief Applies all pending spell effects to a game object target entry.
+ *
+ * @param target The game object target info entry.
+ */
 void Spell::DoAllEffectOnTarget(GOTargetInfo* target)
 {
     if (target->processed)                                  // Check target
@@ -1542,6 +1686,11 @@ void Spell::DoAllEffectOnTarget(GOTargetInfo* target)
     }
 }
 
+/**
+ * @brief Applies all pending spell effects to an item target entry.
+ *
+ * @param target The item target info entry.
+ */
 void Spell::DoAllEffectOnTarget(ItemTargetInfo* target)
 {
     uint32 effectMask = target->effectMask;
@@ -1559,6 +1708,11 @@ void Spell::DoAllEffectOnTarget(ItemTargetInfo* target)
     }
 }
 
+/**
+ * @brief Precomputes delayed launch damage data for a unit target.
+ *
+ * @param target The target info entry.
+ */
 void Spell::HandleDelayedSpellLaunch(TargetInfo* target)
 {
     // Get mask of effects for target
@@ -1622,6 +1776,9 @@ void Spell::HandleDelayedSpellLaunch(TargetInfo* target)
     target->HitInfo = damageInfo.HitInfo;
 }
 
+/**
+ * @brief Initializes per-effect damage multipliers and chain-target modifiers.
+ */
 void Spell::InitializeDamageMultipliers()
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
@@ -1648,6 +1805,11 @@ void Spell::InitializeDamageMultipliers()
     }
 }
 
+/**
+ * @brief Checks whether required alive targets are present in the current target list.
+ *
+ * @return True if all required effects have a valid alive target; otherwise, false.
+ */
 bool Spell::IsAliveUnitPresentInTargetList()
 {
     // Not need check return true
@@ -1762,6 +1924,13 @@ struct TargetDistanceOrderFarAway : public binary_function<const Unit, const Uni
     }
 };
 
+/**
+ * @brief Populates a unit target list for a specific implicit target mode.
+ *
+ * @param effIndex The effect index being processed.
+ * @param targetMode The implicit target mode.
+ * @param targetUnitMap The unit list being populated.
+ */
 void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList& targetUnitMap)
 {
     float radius;
@@ -3143,6 +3312,14 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
     }
 }
 
+/**
+ * @brief Prepares the spell cast, validates conditions, and starts cast processing.
+ *
+ * @param targets The resolved spell cast targets.
+ * @param triggeredByAura The triggering aura, if this spell was aura-triggered.
+ * @param chance Optional roll chance required before proceeding.
+ * @return The resulting cast status.
+ */
 void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
 {
     m_targets = *targets;
@@ -3233,6 +3410,9 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
     // will not show cast bar but will show effects at casting time etc
 }
 
+/**
+ * @brief Cancels the spell and sends the appropriate interruption notifications.
+ */
 void Spell::cancel()
 {
     if (m_spellState == SPELL_STATE_FINISHED)
@@ -3294,6 +3474,11 @@ void Spell::cancel()
     m_caster->RemoveGameObject(m_spellInfo->Id, true);
 }
 
+/**
+ * @brief Executes the spell cast after preparation has completed.
+ *
+ * @param skipCheck True to skip the second cast-condition validation.
+ */
 void Spell::cast(bool skipCheck)
 {
     SetExecutedCurrently(true);
@@ -3527,6 +3712,9 @@ void Spell::cast(bool skipCheck)
     SetExecutedCurrently(false);
 }
 
+/**
+ * @brief Handles the full execution path for an immediate spell.
+ */
 void Spell::handle_immediate()
 {
     // process immediate effects (items, ground, etc.) also initialize some variables
@@ -3561,6 +3749,12 @@ void Spell::handle_immediate()
     }
 }
 
+/**
+ * @brief Processes delayed spell impacts that are due at the current offset.
+ *
+ * @param t_offset The elapsed delay offset in milliseconds.
+ * @return The next pending delay time, or zero when finished.
+ */
 uint64 Spell::handle_delayed(uint64 t_offset)
 {
     uint64 next_time = 0;
@@ -3620,6 +3814,9 @@ uint64 Spell::handle_delayed(uint64 t_offset)
     }
 }
 
+/**
+ * @brief Performs the immediate pre-impact phase shared by instant and delayed spells.
+ */
 void Spell::_handle_immediate_phase()
 {
     // handle some immediate features of the spell here
@@ -3669,6 +3866,9 @@ void Spell::_handle_immediate_phase()
     }
 }
 
+/**
+ * @brief Performs post-impact finishing logic before the spell completes.
+ */
 void Spell::_handle_finish_phase()
 {
     // spell log
@@ -3678,6 +3878,9 @@ void Spell::_handle_finish_phase()
     }
 }
 
+/**
+ * @brief Applies and sends cooldown data for player casts when appropriate.
+ */
 void Spell::SendSpellCooldown()
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -3696,6 +3899,11 @@ void Spell::SendSpellCooldown()
     _player->AddSpellAndCategoryCooldowns(m_spellInfo, m_CastItem ? m_CastItem->GetEntry() : 0, this);
 }
 
+/**
+ * @brief Updates the spell state machine during preparation or channeling.
+ *
+ * @param difftime The elapsed update time in milliseconds.
+ */
 void Spell::update(uint32 difftime)
 {
     // update pointers based at it's GUIDs
@@ -3867,6 +4075,11 @@ void Spell::update(uint32 difftime)
     }
 }
 
+/**
+ * @brief Finalizes the spell and performs successful-completion side effects.
+ *
+ * @param ok True when the spell completed successfully; false otherwise.
+ */
 void Spell::finish(bool ok)
 {
     if (!m_caster)
@@ -3990,6 +4203,11 @@ void Spell::finish(bool ok)
 #endif
 }
 
+/**
+ * @brief Sends the cast result for this spell to the appropriate receiver.
+ *
+ * @param result The cast result code.
+ */
 void Spell::SendCastResult(SpellCastResult result)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -4005,6 +4223,13 @@ void Spell::SendCastResult(SpellCastResult result)
     SendCastResult((Player*)m_caster, m_spellInfo, m_cast_count, result);
 }
 
+/**
+ * @brief Sends a cast result packet for a specific player and spell.
+ *
+ * @param caster The player receiving the result.
+ * @param spellInfo The spell being reported.
+ * @param result The cast result code.
+ */
 void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, uint8 cast_count, SpellCastResult result, bool isPetCastResult /*=false*/)
 {
     if (result == SPELL_CAST_OK)
@@ -4074,6 +4299,9 @@ void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, uint8 ca
     caster->GetSession()->SendPacket(&data);
 }
 
+/**
+ * @brief Sends the spell start packet for visible casts.
+ */
 void Spell::SendSpellStart()
 {
     if (!IsNeedSendToClient())
@@ -4115,6 +4343,9 @@ void Spell::SendSpellStart()
     m_caster->SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Sends the spell go packet for visible casts.
+ */
 void Spell::SendSpellGo()
 {
     // not send invisible spell casting
@@ -4164,6 +4395,11 @@ void Spell::SendSpellGo()
     m_caster->SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Writes projectile display and inventory type data into a packet.
+ *
+ * @param data The packet being populated.
+ */
 void Spell::WriteAmmoToPacket(WorldPacket* data)
 {
     uint32 ammoInventoryType = 0;
@@ -4238,6 +4474,11 @@ void Spell::WriteAmmoToPacket(WorldPacket* data)
     *data << uint32(ammoInventoryType);
 }
 
+/**
+ * @brief Writes spell target guids into the spell-go packet and updates alive-target tracking.
+ *
+ * @param data The packet being populated.
+ */
 void Spell::WriteSpellGoTargets(WorldPacket* data)
 {
     size_t count_pos = data->wpos();
@@ -4295,6 +4536,9 @@ void Spell::WriteSpellGoTargets(WorldPacket* data)
     }
 }
 
+/**
+ * @brief Sends the spell log execute packet for special client-side effect logging.
+ */
 void Spell::SendLogExecute()
 {
     Unit* target = m_targets.getUnitTarget() ? m_targets.getUnitTarget() : m_caster;
@@ -4432,6 +4676,11 @@ void Spell::SendLogExecute()
     m_caster->SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Sends interruption packets for the current spell cast.
+ *
+ * @param result The interruption result code.
+ */
 void Spell::SendInterrupted(uint8 result)
 {
     WorldPacket data(SMSG_SPELL_FAILURE, (8 + 4 + 1));
@@ -4446,6 +4695,11 @@ void Spell::SendInterrupted(uint8 result)
     m_caster->SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Sends channel progress updates and clears channel state when ending.
+ *
+ * @param time The remaining channel time.
+ */
 void Spell::SendChannelUpdate(uint32 time)
 {
     if (time == 0)
@@ -4509,6 +4763,11 @@ void Spell::SendChannelUpdate(uint32 time)
     m_caster->SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Starts channeling visuals and channel state for the spell.
+ *
+ * @param duration The channel duration in milliseconds.
+ */
 void Spell::SendChannelStart(uint32 duration)
 {
     WorldObject* target = NULL;
@@ -4559,6 +4818,11 @@ void Spell::SendChannelStart(uint32 duration)
     m_caster->SetUInt32Value(UNIT_CHANNEL_SPELL, m_spellInfo->Id);
 }
 
+/**
+ * @brief Sends a resurrection request to the target player.
+ *
+ * @param target The player being offered resurrection.
+ */
 void Spell::SendResurrectRequest(Player* target)
 {
     // Both players and NPCs can resurrect using spells - have a look at creature 28487 for example
@@ -4577,6 +4841,9 @@ void Spell::SendResurrectRequest(Player* target)
     target->GetSession()->SendPacket(&data);
 }
 
+/**
+ * @brief Consumes or updates the cast item after spell use when required.
+ */
 void Spell::TakeCastItem()
 {
     if (!m_CastItem || m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -4644,6 +4911,9 @@ void Spell::TakeCastItem()
     }
 }
 
+/**
+ * @brief Deducts the spell power cost from the caster.
+ */
 void Spell::TakePower()
 {
     if (m_CastItem || m_triggeredByAuraSpell || m_IsTriggeredSpell)
@@ -4675,6 +4945,9 @@ void Spell::TakePower()
     }
 }
 
+/**
+ * @brief Consumes ammunition or durability for ranged attacks.
+ */
 void Spell::TakeAmmo()
 {
     if (m_attackType == RANGED_ATTACK && m_caster->GetTypeId() == TYPEID_PLAYER)
@@ -4709,6 +4982,9 @@ void Spell::TakeAmmo()
 }
 
 
+/**
+ * @brief Consumes spell reagents from the player caster inventory.
+ */
 void Spell::TakeReagents()
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -4768,6 +5044,9 @@ void Spell::TakeReagents()
     }
 }
 
+/**
+ * @brief Applies additional configured threat from spell_threat data.
+ */
 void Spell::HandleThreatSpells()
 {
     if (m_UniqueTargetInfo.empty())
@@ -4846,6 +5125,15 @@ void Spell::HandleThreatSpells()
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell %u added an additional %f threat for %s %zu target(s)", m_spellInfo->Id, threat, positive ? "assisting" : "harming", m_UniqueTargetInfo.size());
 }
 
+/**
+ * @brief Dispatches one spell effect against the current resolved targets.
+ *
+ * @param pUnitTarget The unit target, if any.
+ * @param pItemTarget The item target, if any.
+ * @param pGOTarget The game object target, if any.
+ * @param i The effect index to process.
+ * @param DamageMultiplier The damage multiplier to apply for the effect.
+ */
 void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOTarget, SpellEffectIndex i, float DamageMultiplier)
 {
     unitTarget = pUnitTarget;
@@ -4872,6 +5160,11 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOT
     }
 }
 
+/**
+ * @brief Queues a spell to be triggered after successful completion.
+ *
+ * @param spellId The triggered spell identifier.
+ */
 void Spell::AddTriggeredSpell(uint32 spellId)
 {
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
@@ -4885,6 +5178,11 @@ void Spell::AddTriggeredSpell(uint32 spellId)
     m_TriggerSpells.push_back(spellInfo);
 }
 
+/**
+ * @brief Queues a spell to be cast before applying effects to each target.
+ *
+ * @param spellId The precast spell identifier.
+ */
 void Spell::AddPrecastSpell(uint32 spellId)
 {
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
@@ -4898,6 +5196,9 @@ void Spell::AddPrecastSpell(uint32 spellId)
     m_preCastSpells.push_back(spellInfo);
 }
 
+/**
+ * @brief Casts spells queued to trigger after the main spell completes successfully.
+ */
 void Spell::CastTriggerSpells()
 {
     for (SpellInfoList::const_iterator si = m_TriggerSpells.begin(); si != m_TriggerSpells.end(); ++si)
@@ -4907,6 +5208,11 @@ void Spell::CastTriggerSpells()
     }
 }
 
+/**
+ * @brief Casts queued precast spells on the provided target.
+ *
+ * @param target The unit target for the precast spells.
+ */
 void Spell::CastPreCastSpells(Unit* target)
 {
     for (SpellInfoList::const_iterator si = m_preCastSpells.begin(); si != m_preCastSpells.end(); ++si)
@@ -4915,6 +5221,12 @@ void Spell::CastPreCastSpells(Unit* target)
     }
 }
 
+/**
+ * @brief Gets the first queued unit target guid for an effect, falling back to the explicit target guid.
+ *
+ * @param effIndex The effect index to inspect.
+ * @return The matching unit target guid, or the explicit unit target guid when none is queued.
+ */
 Unit* Spell::GetPrefilledUnitTargetOrUnitTarget(SpellEffectIndex effIndex) const
 {
     for (TargetList::const_iterator itr = m_UniqueTargetInfo.begin(); itr != m_UniqueTargetInfo.end(); ++itr)
@@ -4928,6 +5240,12 @@ Unit* Spell::GetPrefilledUnitTargetOrUnitTarget(SpellEffectIndex effIndex) const
     return m_targets.getUnitTarget();
 }
 
+/**
+ * @brief Validates whether the spell can currently be cast.
+ *
+ * @param strict True to perform full pre-cast validation including global cooldown checks.
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CheckCast(bool strict)
 {
     // check cooldowns to prevent cheating (ignore passive spells, that client side visual only)
@@ -6431,6 +6749,12 @@ SpellCastResult Spell::CheckCast(bool strict)
     return SPELL_CAST_OK;
 }
 
+/**
+ * @brief Validates whether a pet or charmed unit can cast the spell.
+ *
+ * @param target An optional explicit target override.
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CheckPetCast(Unit* target)
 {
     if (!m_caster->IsAlive())
@@ -6523,6 +6847,11 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
     return CheckCast(true);
 }
 
+/**
+ * @brief Checks whether active caster auras prevent this spell from being cast.
+ *
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CheckCasterAuras() const
 {
     // Flag drop spells totally immuned to caster auras
@@ -6697,6 +7026,12 @@ SpellCastResult Spell::CheckCasterAuras() const
     return SPELL_CAST_OK;
 }
 
+/**
+ * @brief Checks whether the spell can be automatically cast on a target.
+ *
+ * @param target The target being evaluated.
+ * @return True if automatic casting is allowed; otherwise, false.
+ */
 bool Spell::CanAutoCast(Unit* target)
 {
     ObjectGuid targetguid = target->GetObjectGuid();
@@ -6747,6 +7082,12 @@ bool Spell::CanAutoCast(Unit* target)
     return false;                                           // target invalid
 }
 
+/**
+ * @brief Validates spell range requirements for the current targets.
+ *
+ * @param strict True to use strict range validation.
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CheckRange(bool strict)
 {
     Unit* target = m_targets.getUnitTarget();
@@ -6831,6 +7172,15 @@ SpellCastResult Spell::CheckRange(bool strict)
     return SPELL_CAST_OK;
 }
 
+/**
+ * @brief Calculates the final power cost for a spell cast.
+ *
+ * @param spellInfo The spell prototype being cast.
+ * @param caster The casting unit.
+ * @param spell The active spell instance, if available.
+ * @param castItem The cast item, if the spell originates from an item.
+ * @return The resulting power cost.
+ */
 uint32 Spell::CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spell const* spell, Item* castItem)
 {
     // item cast not used power
@@ -6913,6 +7263,11 @@ uint32 Spell::CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spel
     return powerCost;
 }
 
+/**
+ * @brief Checks whether the caster has enough power to cast the spell.
+ *
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CheckPower()
 {
     // triggered spell use no power
@@ -6960,6 +7315,11 @@ SpellCastResult Spell::CheckPower()
     return SPELL_CAST_OK;
 }
 
+/**
+ * @brief Determines whether reagent and item requirements should be ignored.
+ *
+ * @return True if item requirements are ignored; otherwise, false.
+ */
 bool Spell::IgnoreItemRequirements() const
 {
     if (m_IsTriggeredSpell)
@@ -6986,6 +7346,11 @@ bool Spell::IgnoreItemRequirements() const
     return false;
 }
 
+/**
+ * @brief Validates cast item, target item, reagent, focus, and item-based spell requirements.
+ *
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CheckItems()
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -7464,6 +7829,9 @@ SpellCastResult Spell::CheckItems()
     return SPELL_CAST_OK;
 }
 
+/**
+ * @brief Applies spell pushback delay to a currently casting player spell.
+ */
 void Spell::Delayed()
 {
     if (!m_caster || m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -7512,6 +7880,9 @@ void Spell::Delayed()
     m_caster->SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Applies pushback to an active channeled spell and linked aura durations.
+ */
 void Spell::DelayedChannel()
 {
     if (!m_caster || m_caster->GetTypeId() != TYPEID_PLAYER || getState() != SPELL_STATE_CASTING)
@@ -7565,6 +7936,9 @@ void Spell::DelayedChannel()
     SendChannelUpdate(m_timer);
 }
 
+/**
+ * @brief Refreshes the cached original caster pointer from the stored guid.
+ */
 void Spell::UpdateOriginalCasterPointer()
 {
     if (m_originalCasterGUID == m_caster->GetObjectGuid())
@@ -7583,6 +7957,9 @@ void Spell::UpdateOriginalCasterPointer()
     }
 }
 
+/**
+ * @brief Refreshes cached caster and target pointers from stored guids.
+ */
 void Spell::UpdatePointers()
 {
     UpdateOriginalCasterPointer();
@@ -7590,6 +7967,12 @@ void Spell::UpdatePointers()
     m_targets.Update(m_caster);
 }
 
+/**
+ * @brief Checks whether a target matches the spell's creature type restrictions.
+ *
+ * @param target The target being validated.
+ * @return True if the target type is allowed; otherwise, false.
+ */
 bool Spell::CheckTargetCreatureType(Unit* target) const
 {
     uint32 spellCreatureTargetMask = m_spellInfo->TargetCreatureType;
@@ -7621,6 +8004,11 @@ bool Spell::CheckTargetCreatureType(Unit* target) const
     return true;
 }
 
+/**
+ * @brief Gets the current spell container slot used by this spell.
+ *
+ * @return The current spell container type.
+ */
 CurrentSpellTypes Spell::GetCurrentContainer()
 {
     if (IsNextMeleeSwingSpell())
@@ -7641,6 +8029,13 @@ CurrentSpellTypes Spell::GetCurrentContainer()
     }
 }
 
+/**
+ * @brief Validates whether a candidate target is acceptable for a specific effect.
+ *
+ * @param target The target being checked.
+ * @param eff The effect index being validated.
+ * @return True if the target is valid for the effect; otherwise, false.
+ */
 bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
 {
     // Check targets for creature type mask and remove not appropriate (skip explicit self target case, maybe need other explicit targets)
@@ -7773,17 +8168,33 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
     return true;
 }
 
+/**
+ * @brief Checks whether this spell cast should produce client-visible packets.
+ *
+ * @return True if packets should be sent to clients; otherwise, false.
+ */
 bool Spell::IsNeedSendToClient() const
 {
     return m_spellInfo->SpellVisual != 0 || IsChanneledSpell(m_spellInfo) ||
            m_spellInfo->speed > 0.0f || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
 }
 
+/**
+ * @brief Checks whether the triggered spell still requires redundant cast-time handling.
+ *
+ * @return True if redundant cast-time handling is needed; otherwise, false.
+ */
 bool Spell::IsTriggeredSpellWithRedundentCastTime() const
 {
     return m_IsTriggeredSpell && (m_spellInfo->manaCost || m_spellInfo->ManaCostPercentage);
 }
 
+/**
+ * @brief Checks whether any queued target entry contains a given effect.
+ *
+ * @param effect The effect index to look for.
+ * @return True if at least one target has the effect queued; otherwise, false.
+ */
 bool Spell::HaveTargetsForEffect(SpellEffectIndex effect) const
 {
     for (TargetList::const_iterator itr = m_UniqueTargetInfo.begin(); itr != m_UniqueTargetInfo.end(); ++itr)
@@ -7836,6 +8247,13 @@ SpellEvent::~SpellEvent()
     }
 }
 
+/**
+ * @brief Advances spell execution within the event queue.
+ *
+ * @param e_time The event execution time.
+ * @param p_time The elapsed update time in milliseconds.
+ * @return True when the event is complete and can be removed; otherwise, false.
+ */
 bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
 {
     // update spell if it is not finished
@@ -7925,6 +8343,11 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
     return false;                                           // event not complete
 }
 
+/**
+ * @brief Aborts the queued spell event and cancels the spell if needed.
+ *
+ * @param e_time Unused event time.
+ */
 void SpellEvent::Abort(uint64 /*e_time*/)
 {
     // oops, the spell we try to do is aborted
@@ -7934,11 +8357,26 @@ void SpellEvent::Abort(uint64 /*e_time*/)
     }
 }
 
+/**
+ * @brief Checks whether the underlying spell can be deleted.
+ *
+ * @return True if the spell is deletable; otherwise, false.
+ */
 bool SpellEvent::IsDeletable() const
 {
     return m_Spell->IsDeletable();
 }
 
+/**
+ * @brief Validates whether the caster can open a lock with this spell effect.
+ *
+ * @param effIndex The effect index performing the open-lock action.
+ * @param lockId The lock identifier.
+ * @param skillId Receives the required skill type.
+ * @param reqSkillValue Receives the required skill value.
+ * @param skillValue Receives the caster's effective skill value.
+ * @return The resulting cast status.
+ */
 SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, SkillType& skillId, int32& reqSkillValue, int32& skillValue)
 {
     if (!lockId)                                            // possible case for GO and maybe for items.
@@ -8032,6 +8470,16 @@ void Spell::FillAreaTargets(UnitList& targetUnitMap, float radius, SpellNotifyPu
     Cell::VisitAllObjects(notifier.GetCenterX(), notifier.GetCenterY(), m_caster->GetMap(), notifier, radius);
 }
 
+/**
+ * @brief Fills a target list with party or raid members around a reference unit.
+ *
+ * @param targetUnitMap The target list being populated.
+ * @param member The reference member.
+ * @param radius The search radius.
+ * @param raid True to include the whole raid; false to limit to the subgroup.
+ * @param withPets True to include pets.
+ * @param withcaster True to include the caster when applicable.
+ */
 void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float radius, bool raid, bool withPets, bool withcaster)
 {
     Player* pMember = member->GetCharmerOrOwnerPlayerOrPlayerItself();
@@ -8092,6 +8540,11 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
     }
 }
 
+/**
+ * @brief Gets the world object that should be used as the effective spell origin.
+ *
+ * @return The effective caster world object.
+ */
 WorldObject* Spell::GetAffectiveCasterObject() const
 {
     if (!m_originalCasterGUID)
@@ -8106,6 +8559,11 @@ WorldObject* Spell::GetAffectiveCasterObject() const
     return m_originalCaster;
 }
 
+/**
+ * @brief Gets the world object used for cast-position and line-of-sight calculations.
+ *
+ * @return The casting world object.
+ */
 WorldObject* Spell::GetCastingObject() const
 {
     if (m_originalCasterGUID.IsGameObject())
@@ -8118,6 +8576,9 @@ WorldObject* Spell::GetCastingObject() const
     }
 }
 
+/**
+ * @brief Clears the accumulated effect damage and healing counters.
+ */
 void Spell::ResetEffectDamageAndHeal()
 {
     m_damage = 0;
@@ -8200,6 +8661,9 @@ void Spell::SelectMountByAreaAndSkill(Unit* target, SpellEntry const* parentSpel
     return;
 }
 
+/**
+ * @brief Clears the cached cast item and unlinks it from target data when necessary.
+ */
 void Spell::ClearCastItem()
 {
     if (m_CastItem == m_targets.getItemTarget())
@@ -8210,6 +8674,11 @@ void Spell::ClearCastItem()
     m_CastItem = NULL;
 }
 
+/**
+ * @brief Checks whether the spell is currently blocked by the global cooldown.
+ *
+ * @return True if global cooldown is active; otherwise, false.
+ */
 bool Spell::HasGlobalCooldown()
 {
     // global cooldown have only player or controlled units
@@ -8227,6 +8696,9 @@ bool Spell::HasGlobalCooldown()
     }
 }
 
+/**
+ * @brief Starts the global cooldown for the caster when applicable.
+ */
 void Spell::TriggerGlobalCooldown()
 {
     int32 gcd = m_spellInfo->StartRecoveryTime;
@@ -8264,6 +8736,9 @@ void Spell::TriggerGlobalCooldown()
     }
 }
 
+/**
+ * @brief Cancels the global cooldown started by the current generic spell cast.
+ */
 void Spell::CancelGlobalCooldown()
 {
     if (!m_spellInfo->StartRecoveryTime)
@@ -8288,6 +8763,14 @@ void Spell::CancelGlobalCooldown()
     }
 }
 
+/**
+ * @brief Resolves effective radius, chain target count, and target cap modifiers for an effect.
+ *
+ * @param effIndex The effect index being evaluated.
+ * @param radius Receives the effective radius.
+ * @param EffectChainTarget Receives the effective chain target count.
+ * @param unMaxTargets Receives the effective maximum affected target count.
+ */
 void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uint32& EffectChainTarget, uint32& unMaxTargets) const
 {
     if (m_spellInfo->EffectRadiusIndex[effIndex])

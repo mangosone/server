@@ -22,6 +22,23 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file CharacterHandler.cpp
+ * @brief Character creation, deletion, and management handlers
+ *
+ * This file handles character-related opcodes including:
+ * - CMSG_CHAR_ENUM: List characters on account
+ * - CMSG_CHAR_CREATE: Create new character
+ * - CMSG_CHAR_DELETE: Delete character
+ * - CMSG_PLAYER_LOGIN: Login to world with character
+ * - CMSG_PLAYER_LOGOUT: Logout from world
+ * - CMSG_NAME_QUERY: Query character name
+ * - CMSG_CHAR_RENAME: Rename character
+ *
+ * Character creation includes validation of name, race, class,
+ * appearance customization, and starting location setup.
+ */
+
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -94,6 +111,11 @@ public:
 };
 #endif
 
+/**
+ * @brief Builds the set of delayed login queries required for a character load.
+ *
+ * @return true if all login queries were queued successfully; otherwise false.
+ */
 bool LoginQueryHolder::Initialize()
 {
     SetSize(MAX_PLAYER_LOGIN_QUERY);
@@ -236,6 +258,12 @@ class CharacterHandler
 } chrHandler;
 
 #ifdef ENABLE_PLAYERBOTS
+/**
+ * @brief Queues asynchronous login loading for a playerbot character.
+ *
+ * @param playerGuid The bot player guid.
+ * @param masterAccountId The controlling master account id.
+ */
 void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 {
     // has bot already been added?
@@ -260,6 +288,11 @@ void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 }
 #endif
 
+/**
+ * @brief Builds and sends the character enumeration list for the session account.
+ *
+ * @param result The query result containing character records.
+ */
 void WorldSession::HandleCharEnum(QueryResult* result)
 {
     WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
@@ -289,6 +322,11 @@ void WorldSession::HandleCharEnum(QueryResult* result)
     SendPacket(&data);
 }
 
+/**
+ * @brief Starts the asynchronous character enumeration query.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCharEnumOpcode(WorldPacket & /*recv_data*/)
 {
     /// get all the data necessary for loading all characters (along with their pets) on the account
@@ -319,6 +357,11 @@ void WorldSession::HandleCharEnumOpcode(WorldPacket & /*recv_data*/)
                                   PET_SAVE_AS_CURRENT, GetAccountId());
 }
 
+/**
+ * @brief Handles character creation requests from the client.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
 {
     std::string name;
@@ -536,6 +579,11 @@ void WorldSession::HandleCharCreateOpcode(WorldPacket& recv_data)
     delete pNewChar;                                        // created only to call SaveToDB()
 }
 
+/**
+ * @brief Deletes a character owned by the current account.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -610,6 +658,11 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
     SendPacket(&data);
 }
 
+/**
+ * @brief Starts the asynchronous player login sequence for a selected character.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
 {
     ObjectGuid playerGuid;
@@ -636,6 +689,11 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
     CharacterDatabase.DelayQueryHolder(&chrHandler, &CharacterHandler::HandlePlayerLoginCallback, holder);
 }
 
+/**
+ * @brief Completes player login after all delayed character queries have loaded.
+ *
+ * @param holder The populated login query holder.
+ */
 void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 {
     /* Store the player's GUID for later reference */
@@ -1001,6 +1059,11 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     delete holder;
 }
 
+/**
+ * @brief Updates the at-war state for a reputation entry.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetFactionAtWarOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_FACTION_ATWAR");
@@ -1023,6 +1086,11 @@ void WorldSession::HandleMeetingStoneInfoOpcode(WorldPacket & /*recv_data*/)
     SendPacket(&data);
 }
 
+/**
+ * @brief Marks a single tutorial flag as seen for the account.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
 {
     uint32 iFlag;
@@ -1043,6 +1111,11 @@ void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
     // DEBUG_LOG("Received Tutorial Flag Set {%u}.", iFlag);
 }
 
+/**
+ * @brief Sets all tutorial flags to completed for the account.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTutorialClearOpcode(WorldPacket & /*recv_data*/)
 {
     for (int i = 0; i < 8; ++i)
@@ -1051,6 +1124,11 @@ void WorldSession::HandleTutorialClearOpcode(WorldPacket & /*recv_data*/)
     }
 }
 
+/**
+ * @brief Resets all tutorial flags for the account.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTutorialResetOpcode(WorldPacket & /*recv_data*/)
 {
     for (int i = 0; i < 8; ++i)
@@ -1059,6 +1137,11 @@ void WorldSession::HandleTutorialResetOpcode(WorldPacket & /*recv_data*/)
     }
 }
 
+/**
+ * @brief Sets the watched faction shown in the reputation UI.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetWatchedFactionOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_WATCHED_FACTION");
@@ -1067,6 +1150,11 @@ void WorldSession::HandleSetWatchedFactionOpcode(WorldPacket& recv_data)
     GetPlayer()->SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, repId);
 }
 
+/**
+ * @brief Toggles a faction's inactive state in the reputation list.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetFactionInactiveOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_FACTION_INACTIVE");
@@ -1077,18 +1165,33 @@ void WorldSession::HandleSetFactionInactiveOpcode(WorldPacket& recv_data)
     _player->GetReputationMgr().SetInactive(replistid, inactive);
 }
 
+/**
+ * @brief Toggles the player's helm visibility flag.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleShowingHelmOpcode(WorldPacket & /*recv_data*/)
 {
     DEBUG_LOG("CMSG_SHOWING_HELM for %s", _player->GetName());
     _player->ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);
 }
 
+/**
+ * @brief Toggles the player's cloak visibility flag.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleShowingCloakOpcode(WorldPacket & /*recv_data*/)
 {
     DEBUG_LOG("CMSG_SHOWING_CLOAK for %s", _player->GetName());
     _player->ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
 }
 
+/**
+ * @brief Validates and starts the asynchronous character rename flow.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCharRenameOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -1136,6 +1239,13 @@ void WorldSession::HandleCharRenameOpcode(WorldPacket& recv_data)
                                  );
 }
 
+/**
+ * @brief Finalizes a character rename after the database validation query completes.
+ *
+ * @param result The rename validation query result.
+ * @param accountId The session account id.
+ * @param newname The requested new character name.
+ */
 void WorldSession::HandleChangePlayerNameOpcodeCallBack(QueryResult* result, uint32 accountId, std::string newname)
 {
     WorldSession* session = sWorld.FindSession(accountId);

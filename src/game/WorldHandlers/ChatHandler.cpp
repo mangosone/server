@@ -22,6 +22,21 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ChatHandler.cpp
+ * @brief Chat message opcode handlers
+ *
+ * This file handles chat-related opcodes including:
+ * - CMSG_MESSAGECHAT: Send chat messages (say, yell, whisper, channel, etc.)
+ * - CMSG_TEXT_EMOTE: Send text emotes
+ * - CMSG_CHAT_MESSAGE_AFK: Set AFK status
+ * - CMSG_CHAT_MESSAGE_DND: Set DND status
+ * - CMSG_CHAT_IGNORED: Manage ignore list
+ *
+ * Chat messages are routed based on type (say, yell, whisper, channel, emote)
+ * and filtered by language, distance, and other rules.
+ */
+
 #include "Common.h"
 #include "Log.h"
 #include "WorldPacket.h"
@@ -48,6 +63,13 @@
 #include "RandomPlayerbotMgr.h"
 #endif
 
+/**
+ * @brief Applies post-parse security checks to a chat message before broadcast.
+ *
+ * @param msg The chat message to validate and normalize.
+ * @param lang The message language.
+ * @return true if the message may continue processing; otherwise false.
+ */
 bool WorldSession::processChatmessageFurtherAfterSecurityChecks(std::string& msg, uint32 lang)
 {
     if (lang != LANG_ADDON)
@@ -74,6 +96,11 @@ bool WorldSession::processChatmessageFurtherAfterSecurityChecks(std::string& msg
     return true;
 }
 
+/**
+ * @brief Handles incoming chat packets for all chat message types.
+ *
+ * @param recv_data The incoming chat packet.
+ */
 void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 {
     uint32 type;
@@ -878,6 +905,11 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles a basic emote opcode from the client.
+ *
+ * @param recv_data The incoming emote packet.
+ */
 void WorldSession::HandleEmoteOpcode(WorldPacket& recv_data)
 {
     if (!GetPlayer()->IsAlive() || GetPlayer()->hasUnitState(UNIT_STAT_DIED))
@@ -934,6 +966,11 @@ namespace MaNGOS
     };
 }                                                           // namespace MaNGOS
 
+/**
+ * @brief Handles text emotes, local broadcast, and creature emote notifications.
+ *
+ * @param recv_data The incoming text emote packet.
+ */
 void WorldSession::HandleTextEmoteOpcode(WorldPacket& recv_data)
 {
     if (!GetPlayer()->IsAlive())
@@ -1005,6 +1042,11 @@ void WorldSession::HandleTextEmoteOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Notifies a player that their whisper target is ignoring them.
+ *
+ * @param recv_data The incoming ignored notification packet.
+ */
 void WorldSession::HandleChatIgnoredOpcode(WorldPacket& recv_data)
 {
     ObjectGuid iguid;
@@ -1025,6 +1067,11 @@ void WorldSession::HandleChatIgnoredOpcode(WorldPacket& recv_data)
     player->GetSession()->SendPacket(&data);
 }
 
+/**
+ * @brief Sends the standard player-not-found chat error.
+ *
+ * @param name The unresolved player name.
+ */
 void WorldSession::SendPlayerNotFoundNotice(const std::string &name)
 {
     WorldPacket data(SMSG_CHAT_PLAYER_NOT_FOUND, name.size() + 1);
@@ -1032,12 +1079,18 @@ void WorldSession::SendPlayerNotFoundNotice(const std::string &name)
     SendPacket(&data);
 }
 
+/**
+ * @brief Sends the standard wrong-faction chat error.
+ */
 void WorldSession::SendWrongFactionNotice()
 {
     WorldPacket data(SMSG_CHAT_WRONG_FACTION, 0);
     SendPacket(&data);
 }
 
+/**
+ * @brief Sends the standard restricted-chat notice.
+ */
 void WorldSession::SendChatRestrictedNotice(ChatRestrictionType restriction)
 {
     WorldPacket data(SMSG_CHAT_RESTRICTED, 1);
