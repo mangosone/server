@@ -49,10 +49,16 @@
 
 INSTANTIATE_SINGLETON_1(AuctionHouseMgr);
 
+/**
+ * @brief Initializes the auction house manager.
+ */
 AuctionHouseMgr::AuctionHouseMgr()
 {
 }
 
+/**
+ * @brief Destroys the auction house manager and frees cached auction items.
+ */
 AuctionHouseMgr::~AuctionHouseMgr()
 {
     for (ItemMap::const_iterator itr = mAitems.begin(); itr != mAitems.end(); ++itr)
@@ -61,6 +67,12 @@ AuctionHouseMgr::~AuctionHouseMgr()
     }
 }
 
+/**
+ * @brief Retrieves the auction collection for a specific auction house entry.
+ *
+ * @param house The auction house entry.
+ * @return Pointer to the auction collection serving that house.
+ */
 AuctionHouseObject* AuctionHouseMgr::GetAuctionsMap(AuctionHouseEntry const* house)
 {
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
@@ -79,6 +91,14 @@ AuctionHouseObject* AuctionHouseMgr::GetAuctionsMap(AuctionHouseEntry const* hou
 
 
 
+/**
+ * @brief Calculates the auction deposit required for an item listing.
+ *
+ * @param entry The auction house entry containing deposit settings.
+ * @param time The auction duration.
+ * @param pItem The item being listed.
+ * @return The required deposit amount.
+ */
 uint32 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item* pItem)
 {
     float deposit = float(pItem->GetProto()->SellPrice * pItem->GetCount() * (time / MIN_AUCTION_TIME));
@@ -96,6 +116,11 @@ uint32 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32
 }
 
 // does not clear ram
+/**
+ * @brief Sends the winning bidder mail for a completed auction.
+ *
+ * @param auction The completed auction entry.
+ */
 void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
 {
     Item* pItem = GetAItem(auction->itemGuidLow);
@@ -223,6 +248,11 @@ void AuctionHouseMgr::SendAuctionSalePendingMail(AuctionEntry* auction)
 }
 
 // call this method to send mail to auction owner, when auction is successful, it does not clear ram
+/**
+ * @brief Sends the successful sale mail to the auction owner.
+ *
+ * @param auction The completed auction entry.
+ */
 void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction)
 {
     ObjectGuid owner_guid = ObjectGuid(HIGHGUID_PLAYER, auction->owner);
@@ -265,6 +295,11 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction)
 }
 
 // does not clear ram
+/**
+ * @brief Sends the expired auction mail returning the item to the owner.
+ *
+ * @param auction The expired auction entry.
+ */
 void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
 {
     // return an item in auction to its owner by mail
@@ -313,6 +348,9 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
     }
 }
 
+/**
+ * @brief Loads auction items from the database into memory.
+ */
 void AuctionHouseMgr::LoadAuctionItems()
 {
     // data needs to be at first place for Item::LoadFromDB 0  1        2
@@ -365,6 +403,9 @@ void AuctionHouseMgr::LoadAuctionItems()
     sLog.outString();
 }
 
+/**
+ * @brief Loads auction listings from the database.
+ */
 void AuctionHouseMgr::LoadAuctions()
 {
     QueryResult* result = CharacterDatabase.Query("SELECT COUNT(*) FROM `auction`");
@@ -506,6 +547,11 @@ void AuctionHouseMgr::LoadAuctions()
     sLog.outString();
 }
 
+/**
+ * @brief Adds an auction item to the in-memory item cache.
+ *
+ * @param it The item to cache.
+ */
 void AuctionHouseMgr::AddAItem(Item* it)
 {
     MANGOS_ASSERT(it);
@@ -513,6 +559,12 @@ void AuctionHouseMgr::AddAItem(Item* it)
     mAitems[it->GetGUIDLow()] = it;
 }
 
+/**
+ * @brief Removes an auction item from the in-memory item cache.
+ *
+ * @param id The low GUID of the cached item.
+ * @return true if the item was removed; otherwise, false.
+ */
 bool AuctionHouseMgr::RemoveAItem(uint32 id)
 {
     ItemMap::iterator i = mAitems.find(id);
@@ -524,6 +576,9 @@ bool AuctionHouseMgr::RemoveAItem(uint32 id)
     return true;
 }
 
+/**
+ * @brief Updates all auction house collections.
+ */
 void AuctionHouseMgr::Update()
 {
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
@@ -532,6 +587,12 @@ void AuctionHouseMgr::Update()
     }
 }
 
+/**
+ * @brief Resolves the team associated with an auction house entry.
+ *
+ * @param house The auction house entry.
+ * @return The team identifier, or 0 for neutral houses.
+ */
 uint32 AuctionHouseMgr::GetAuctionHouseTeam(AuctionHouseEntry const* house)
 {
     // auction houses have faction field pointing to PLAYER,* factions,
@@ -549,6 +610,12 @@ uint32 AuctionHouseMgr::GetAuctionHouseTeam(AuctionHouseEntry const* house)
     }
 }
 
+/**
+ * @brief Determines which auction house entry a unit should access.
+ *
+ * @param unit The interacting unit.
+ * @return Pointer to the selected auction house entry.
+ */
 AuctionHouseEntry const* AuctionHouseMgr::GetAuctionHouseEntry(Unit* unit)
 {
     uint32 houseid = 1;                                     // dwarf auction house (used for normal cut/etc percents)
@@ -620,6 +687,9 @@ AuctionHouseEntry const* AuctionHouseMgr::GetAuctionHouseEntry(Unit* unit)
     return sAuctionHouseStore.LookupEntry(houseid);
 }
 
+/**
+ * @brief Updates auction entries and expires finished auctions.
+ */
 void AuctionHouseObject::Update()
 {
     time_t curTime = sWorld.GetGameTime();
@@ -649,6 +719,14 @@ void AuctionHouseObject::Update()
     }
 }
 
+/**
+ * @brief Builds the list of auctions the player is currently bidding on.
+ *
+ * @param data The packet buffer to append to.
+ * @param player The player requesting the list.
+ * @param count Receives the number of appended entries.
+ * @param totalcount Receives the total number of matching entries.
+ */
 void AuctionHouseObject::BuildListBidderItems(WorldPacket& data, Player* player, uint32& count, uint32& totalcount)
 {
     for (AuctionEntryMap::const_iterator itr = AuctionsMap.begin(); itr != AuctionsMap.end(); ++itr)
@@ -665,6 +743,14 @@ void AuctionHouseObject::BuildListBidderItems(WorldPacket& data, Player* player,
     }
 }
 
+/**
+ * @brief Builds the list of auctions owned by the player.
+ *
+ * @param data The packet buffer to append to.
+ * @param player The player requesting the list.
+ * @param count Receives the number of appended entries.
+ * @param totalcount Receives the total number of matching entries.
+ */
 void AuctionHouseObject::BuildListOwnerItems(WorldPacket& data, Player* player, uint32& count, uint32& totalcount)
 {
     for (AuctionEntryMap::const_iterator itr = AuctionsMap.begin(); itr != AuctionsMap.end(); ++itr)
@@ -681,6 +767,23 @@ void AuctionHouseObject::BuildListOwnerItems(WorldPacket& data, Player* player, 
     }
 }
 
+/**
+ * @brief Builds the filtered public auction browse list.
+ *
+ * @param data The packet buffer to append to.
+ * @param player The player requesting the list.
+ * @param wsearchedname The search string in wide-character form.
+ * @param listfrom The starting result offset.
+ * @param levelmin The minimum required item level filter.
+ * @param levelmax The maximum required item level filter.
+ * @param usable Whether only usable items should be listed.
+ * @param inventoryType The inventory type filter.
+ * @param itemClass The item class filter.
+ * @param itemSubClass The item subclass filter.
+ * @param quality The minimum quality filter.
+ * @param count Receives the number of appended entries.
+ * @param totalcount Receives the total number of matching entries.
+ */
 int AuctionEntry::CompareAuctionEntry(uint32 column, const AuctionEntry* auc, Player* viewPlayer) const
 {
     switch (column)
@@ -977,6 +1080,18 @@ void WorldSession::BuildListAuctionItems(std::vector<AuctionEntry*> const& aucti
     }
 }
 
+/**
+ * @brief Creates and stores a new auction from a player's item.
+ *
+ * @param auctionHouseEntry The target auction house entry.
+ * @param newItem The item being auctioned.
+ * @param etime The requested auction duration.
+ * @param bid The starting bid.
+ * @param buyout The buyout price.
+ * @param deposit The deposit amount.
+ * @param pl The player creating the auction.
+ * @return Pointer to the created auction entry.
+ */
 AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= NULL*/)
 {
     uint32 auction_time = uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
@@ -1031,6 +1146,17 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
     return AH;
 }
 
+/**
+ * @brief Creates and stores a new auction for an explicit owner GUID.
+ *
+ * @param auctionHouseEntry The target auction house entry.
+ * @param newItem The item being auctioned.
+ * @param etime The requested auction duration.
+ * @param bid The starting bid.
+ * @param buyout The buyout price.
+ * @param lowguid The low GUID of the auction owner.
+ * @return Pointer to the created auction entry.
+ */
 AuctionEntry* AuctionHouseObject::AddAuctionByGuid(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 lowguid)
 {
     uint32 auction_time = uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
@@ -1065,6 +1191,12 @@ AuctionEntry* AuctionHouseObject::AddAuctionByGuid(AuctionHouseEntry const* auct
 }
 
 // this function inserts to WorldPacket auction's data
+/**
+ * @brief Serializes auction information into a packet.
+ *
+ * @param data The packet buffer to append to.
+ * @return true if the auction item data was available; otherwise, false.
+ */
 bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
 {
     Item* pItem = sAuctionMgr.GetAItem(itemGuidLow);
@@ -1098,6 +1230,11 @@ bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
     return true;
 }
 
+/**
+ * @brief Computes the auction house cut for the final bid.
+ *
+ * @return The auction house cut amount.
+ */
 uint32 AuctionEntry::GetAuctionCut() const
 {
     return uint32(auctionHouseEntry->cutPercent * bid * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_CUT) / 100.0f);
@@ -1114,12 +1251,18 @@ uint32 AuctionEntry::GetAuctionOutBid() const
     return outbid;
 }
 
+/**
+ * @brief Deletes this auction entry from the character database.
+ */
 void AuctionEntry::DeleteFromDB() const
 {
     // No SQL injection (Id is integer)
     CharacterDatabase.PExecute("DELETE FROM `auction` WHERE `id` = '%u'", Id);
 }
 
+/**
+ * @brief Saves this auction entry to the character database.
+ */
 void AuctionEntry::SaveToDB() const
 {
     // No SQL injection (no strings)
@@ -1128,6 +1271,11 @@ void AuctionEntry::SaveToDB() const
                                Id, auctionHouseEntry->houseId, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);
 }
 
+/**
+ * @brief Finalizes a winning auction bid and completes the sale.
+ *
+ * @param newbidder The winning bidder, if online.
+ */
 void AuctionEntry::AuctionBidWinning(Player* newbidder)
 {
     sAuctionMgr.SendAuctionSalePendingMail(this);
@@ -1148,6 +1296,13 @@ void AuctionEntry::AuctionBidWinning(Player* newbidder)
     delete this;
 }
 
+/**
+ * @brief Updates the current bid and handles buyout completion if reached.
+ *
+ * @param newbid The new bid amount.
+ * @param newbidder The player placing the bid.
+ * @return true if the auction remains active after the update; otherwise, false.
+ */
 bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
 {
     Player* auction_owner = owner ? sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, owner)) : NULL;

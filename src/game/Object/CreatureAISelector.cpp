@@ -37,6 +37,12 @@ INSTANTIATE_SINGLETON_1(MovementGeneratorRegistry);
 
 namespace FactorySelector
 {
+    /**
+     * @brief Selects the most appropriate AI implementation for a creature.
+     *
+     * @param creature The creature requiring an AI instance.
+     * @return The selected AI implementation.
+     */
     CreatureAI* selectAI(Creature* creature)
     {
         // Allow scripting AI for normal creatures and not controlled pets (guardians and mini-pets)
@@ -103,6 +109,12 @@ namespace FactorySelector
         return (ai_factory == NULL ? new NullCreatureAI(creature) : ai_factory->Create(creature));
     }
 
+    /**
+     * @brief Selects the default movement generator for a creature.
+     *
+     * @param creature The creature requiring a movement generator.
+     * @return The selected movement generator, or null if none is registered.
+     */
     MovementGenerator* selectMovementGenerator(Creature* creature)
     {
         MovementGeneratorRegistry& mv_registry(MovementGeneratorRepository::Instance());

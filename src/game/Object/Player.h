@@ -22,6 +22,32 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Player.h
+ * @brief Player character class definition and related structures.
+ *
+ * This file defines the Player class which represents a player character in the game.
+ * It extends the Unit class with player-specific functionality including:
+ * - Character information and attributes
+ * - Inventory and equipment management
+ * - Quest and achievement tracking
+ * - Talent and ability management
+ * - Guild and group mechanics
+ * - PvP rating and honor systems
+ * - Mail and trade systems
+ * - Reputation and faction standing
+ * - Skill and profession systems
+ * - Cosmetic customization
+ * - Account and session management
+ *
+ * The file also contains enumerations and constants for player-related functionality.
+ *
+ * @see Player for the main player implementation
+ * @see Unit for the base unit class
+ * @see Item for player inventory items
+ * @see Group for player grouping mechanics
+ */
+
 #ifndef MANGOS_H_PLAYER
 #define MANGOS_H_PLAYER
 
@@ -73,115 +99,189 @@ typedef std::deque<Mail*> PlayerMails;
 #define PLAYER_MAX_DAILY_QUESTS     25
 #define PLAYER_EXPLORED_ZONES_SIZE  128
 
-// Note: SPELLMOD_* values is aura types in fact
+/**
+ * @brief Spell modifier type enumeration
+ *
+ * Note: SPELLMOD_* values are aura types in fact.
+ */
 enum SpellModType
 {
-    SPELLMOD_FLAT               = 107,                      // SPELL_AURA_ADD_FLAT_MODIFIER
-    SPELLMOD_PCT                = 108                       // SPELL_AURA_ADD_PCT_MODIFIER
+    SPELLMOD_FLAT = 107, ///< Flat modifier (SPELL_AURA_ADD_FLAT_MODIFIER)
+    SPELLMOD_PCT = 108   ///< Percentage modifier (SPELL_AURA_ADD_PCT_MODIFIER)
 };
 
-// 2^n internal values, they are never sent to the client
+/**
+ * @brief Player underwater state enumeration
+ *
+ * 2^n internal values, they are never sent to the client.
+ */
 enum PlayerUnderwaterState
 {
-    UNDERWATER_NONE             = 0x00,
-    UNDERWATER_INWATER          = 0x01,                     // terrain type is water and player is afflicted by it
-    UNDERWATER_INLAVA           = 0x02,                     // terrain type is lava and player is afflicted by it
-    UNDERWATER_INSLIME          = 0x04,                     // terrain type is lava and player is afflicted by it
-    UNDERWATER_INDARKWATER      = 0x08,                     // terrain type is dark water and player is afflicted by it
+    UNDERWATER_NONE = 0x00,        ///< Not underwater
+    UNDERWATER_INWATER = 0x01,     ///< In water (terrain type is water and player is afflicted by it)
+    UNDERWATER_INLAVA = 0x02,      ///< In lava (terrain type is lava and player is afflicted by it)
+    UNDERWATER_INSLIME = 0x04,     ///< In slime (terrain type is slime and player is afflicted by it)
+    UNDERWATER_INDARKWATER = 0x08, ///< In dark water (terrain type is dark water and player is afflicted by it)
 
-    UNDERWATER_EXIST_TIMERS     = 0x10
+    UNDERWATER_EXIST_TIMERS = 0x10 ///< Underwater timers exist
 };
 
+/**
+ * @brief Buy bank slot result enumeration
+ */
 enum BuyBankSlotResult
 {
-    ERR_BANKSLOT_FAILED_TOO_MANY    = 0,
-    ERR_BANKSLOT_INSUFFICIENT_FUNDS = 1,
-    ERR_BANKSLOT_NOTBANKER          = 2,
-    ERR_BANKSLOT_OK                 = 3
+    ERR_BANKSLOT_FAILED_TOO_MANY = 0,    ///< Failed - too many bank slots
+    ERR_BANKSLOT_INSUFFICIENT_FUNDS = 1, ///< Failed - insufficient funds
+    ERR_BANKSLOT_NOTBANKER = 2,          ///< Failed - not a banker
+    ERR_BANKSLOT_OK = 3                  ///< Success
 };
 
+/**
+ * @brief Player spell state enumeration
+ */
 enum PlayerSpellState
 {
-    PLAYERSPELL_UNCHANGED       = 0,
-    PLAYERSPELL_CHANGED         = 1,
-    PLAYERSPELL_NEW             = 2,
-    PLAYERSPELL_REMOVED         = 3
+    PLAYERSPELL_UNCHANGED = 0, ///< Spell unchanged
+    PLAYERSPELL_CHANGED = 1,   ///< Spell changed
+    PLAYERSPELL_NEW = 2,       ///< New spell
+    PLAYERSPELL_REMOVED = 3    ///< Spell removed
 };
 
-// Structure to hold player spell information
+/**
+ * @brief Structure to hold player spell information
+ */
 struct PlayerSpell
 {
-    PlayerSpellState state : 8;  // State of the spell
-    bool active            : 1;  // Show in spellbook
-    bool dependent         : 1;  // Learned as result of another spell learn, skill grow, quest reward, etc
-    bool disabled          : 1;  // First rank has been learned as a result of talent learn but currently talent unlearned, save max learned ranks
+    PlayerSpellState state : 8; ///< State of the spell
+    bool active : 1;            ///< Show in spellbook
+    bool dependent : 1;         ///< Learned as result of another spell learn, skill grow, quest reward, etc
+    bool disabled : 1;          ///< First rank has been learned as a result of talent learn but currently talent unlearned, save max learned ranks
 };
 
 typedef UNORDERED_MAP<uint32, PlayerSpell> PlayerSpellMap;
 
-// Spell modifier (used for modifying other spells)
+/**
+ * @brief Spell modifier structure
+ *
+ * Used for modifying other spells.
+ */
 struct SpellModifier
 {
+    /**
+     * @brief Constructor
+     */
     SpellModifier() : op(SpellModOp()), type(SPELLMOD_FLAT), charges(0), value(0), spellId(0), lastAffected(NULL) {}
 
 
+    /**
+     * @brief Constructor with uint64 mask
+     * @param _op Spell modifier operation
+     * @param _type Spell modifier type
+     * @param _value Modifier value
+     * @param _spellId Spell ID
+     * @param _mask Class family mask (uint64)
+     * @param _charges Number of charges
+     */
     SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, uint32 _spellId, uint64 _mask, int16 _charges = 0)
         : op(_op), type(_type), charges(_charges), value(_value), mask(_mask), spellId(_spellId), lastAffected(NULL)
     {}
 
+    /**
+     * @brief Constructor with ClassFamilyMask
+     * @param _op Spell modifier operation
+     * @param _type Spell modifier type
+     * @param _value Modifier value
+     * @param _spellId Spell ID
+     * @param _mask Class family mask
+     * @param _charges Number of charges
+     */
     SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, uint32 _spellId, ClassFamilyMask _mask, int16 _charges = 0)
         : op(_op), type(_type), charges(_charges), value(_value), mask(_mask), spellId(_spellId), lastAffected(NULL)
     {}
 
+    /**
+     * @brief Constructor with spell entry
+     * @param _op Spell modifier operation
+     * @param _type Spell modifier type
+     * @param _value Modifier value
+     * @param spellEntry Spell entry
+     * @param eff Spell effect index
+     * @param _charges Number of charges
+     */
     SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, SpellEntry const* spellEntry, SpellEffectIndex eff, int16 _charges = 0);
 
+    /**
+     * @brief Constructor with aura
+     * @param _op Spell modifier operation
+     * @param _type Spell modifier type
+     * @param _value Modifier value
+     * @param aura Aura
+     * @param _charges Number of charges
+     */
     SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, Aura const* aura, int16 _charges = 0);
 
+    /**
+     * @brief Check if modifier affects a spell
+     * @param spell Spell entry
+     * @return True if affected, false otherwise
+     */
     bool isAffectedOnSpell(SpellEntry const* spell) const;
 
-    SpellModOp   op   : 8;  // Operation type
-    SpellModType type : 8;  // Modifier type
-    int16 charges     : 16; // Number of charges
-    int32 value;            // Modifier value
-    ClassFamilyMask mask;   // Class family mask
-    uint32 spellId;         // Spell ID
-    Spell const* lastAffected; // Last affected spell, used for cleanup delayed remove spellmods at spell success or restore charges at cast fail
+    SpellModOp op : 8;         ///< Operation type
+    SpellModType type : 8;     ///< Modifier type
+    int16 charges : 16;        ///< Number of charges
+    int32 value;               ///< Modifier value
+    ClassFamilyMask mask;      ///< Class family mask
+    uint32 spellId;            ///< Spell ID
+    Spell const* lastAffected; ///< Last affected spell (used for cleanup delayed remove spellmods at spell success or restore charges at cast fail)
 };
 
 typedef std::list<SpellModifier*> SpellModList;
 
-// Structure to hold spell cooldown information
+/**
+ * @brief Structure to hold spell cooldown information
+ */
 struct SpellCooldown
 {
-    time_t end;    // End time of the cooldown
-    uint16 itemid; // Item ID associated with the cooldown
+    time_t end;    ///< End time of the cooldown
+    uint16 itemid; ///< Item ID associated with the cooldown
 };
 
 typedef std::map<uint32, SpellCooldown> SpellCooldowns;
 
+/**
+ * @brief Trainer spell state enumeration
+ */
 enum TrainerSpellState
 {
-    TRAINER_SPELL_GREEN          = 0,
-    TRAINER_SPELL_RED            = 1,
-    TRAINER_SPELL_GRAY           = 2,
-    TRAINER_SPELL_GREEN_DISABLED = 10 // Custom value, not sent to client: formally green but learn not allowed
+    TRAINER_SPELL_GREEN = 0,          ///< Green (can learn)
+    TRAINER_SPELL_RED = 1,            ///< Red (cannot learn)
+    TRAINER_SPELL_GRAY = 2,           ///< Gray (already learned)
+    TRAINER_SPELL_GREEN_DISABLED = 10 ///< Green disabled (custom value, not sent to client: formally green but learn not allowed)
 };
 
+/**
+ * @brief Action button update state enumeration
+ */
 enum ActionButtonUpdateState
 {
-    ACTIONBUTTON_UNCHANGED      = 0,
-    ACTIONBUTTON_CHANGED        = 1,
-    ACTIONBUTTON_NEW            = 2,
+    ACTIONBUTTON_UNCHANGED = 0, ///< Button unchanged
+    ACTIONBUTTON_CHANGED = 1,   ///< Button changed
+    ACTIONBUTTON_NEW = 2,       ///< New button
     ACTIONBUTTON_DELETED        = 3
 };
 
+/**
+ * @brief Action button type enumeration
+ */
 enum ActionButtonType
 {
-    ACTION_BUTTON_SPELL         = 0x00,
-    ACTION_BUTTON_C             = 0x01, // Click?
-    ACTION_BUTTON_MACRO         = 0x40,
-    ACTION_BUTTON_CMACRO        = ACTION_BUTTON_C | ACTION_BUTTON_MACRO,
-    ACTION_BUTTON_ITEM          = 0x80
+    ACTION_BUTTON_SPELL = 0x00,                                   ///< Spell button
+    ACTION_BUTTON_C = 0x01,                                       ///< Click button
+    ACTION_BUTTON_MACRO = 0x40,                                   ///< Macro button
+    ACTION_BUTTON_CMACRO = ACTION_BUTTON_C | ACTION_BUTTON_MACRO, ///< Click macro button
+    ACTION_BUTTON_ITEM = 0x80                                     ///< Item button
 };
 
 #define ACTION_BUTTON_ACTION(X) (uint32(X) & 0x00FFFFFF)
@@ -938,6 +1038,9 @@ class PlayerTaxi
         std::deque<uint32> m_TaxiDestinations; // Queue of taxi destinations
 };
 
+/**
+ * Writes the taxi path state into a string stream.
+ */
 std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi);
 
 /// Structure to hold battleground data
@@ -4207,7 +4310,14 @@ class Player : public Unit
         uint32 m_timeSyncServer;
 };
 
+/**
+ * Applies item set bonuses for an item that has been equipped by the player.
+ */
 void AddItemsSetItem(Player* player, Item* item);
+
+/**
+ * Removes item set bonuses for an item template that is no longer active on the player.
+ */
 void RemoveItemsSetItem(Player* player, ItemPrototype const* proto);
 
 // "the bodies of template functions must be made available in a header file"
