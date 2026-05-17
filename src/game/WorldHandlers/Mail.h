@@ -207,7 +207,7 @@ class MailDraft
          * Creates a new MailDraft object using mail template id.
          *
          * @param mailTemplateId The ID of the Template to be used.
-         * @param a boolean specifying whether the mail needs items or not.
+         * @param need_items Boolean specifying whether the mail needs items or not.
          *
          */
         explicit MailDraft(uint16 mailTemplateId, bool need_items = true)
@@ -217,7 +217,7 @@ class MailDraft
          * Creates a new MailDraft object using subject and content texts.
          *
          * @param subject The subject of the mail.
-         * @param itemText The text of the body of the mail.
+         * @param body The text of the body of the mail.
          */
         MailDraft(std::string subject, std::string body)
             : m_mailTemplateId(0), m_mailTemplateItemsNeed(false), m_subject(subject), m_body(body), m_money(0), m_COD(0) {}

@@ -579,8 +579,6 @@ void WorldSession::HandlePetCancelAuraOpcode(WorldPacket& recvPacket)
 
 /**
  * @brief Handles the legacy cancel-growth-aura opcode.
- *
- * @param recvPacket The unused incoming packet.
  */
 void WorldSession::HandleCancelGrowthAuraOpcode(WorldPacket& /*recvPacket*/)
 {
@@ -589,8 +587,6 @@ void WorldSession::HandleCancelGrowthAuraOpcode(WorldPacket& /*recvPacket*/)
 
 /**
  * @brief Cancels the current auto-repeat spell.
- *
- * @param recvPacket The unused incoming packet.
  */
 void WorldSession::HandleCancelAutoRepeatSpellOpcode(WorldPacket& /*recvPacket*/)
 {
@@ -648,8 +644,6 @@ void WorldSession::HandleTotemDestroyed(WorldPacket& recvPacket)
 
 /**
  * @brief Handles use of the player's self-resurrection spell.
- *
- * @param recv_data The unused incoming packet.
  */
 void WorldSession::HandleSelfResOpcode(WorldPacket& /*recv_data*/)
 {

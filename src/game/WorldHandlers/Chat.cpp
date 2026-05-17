@@ -3168,10 +3168,10 @@ char* ChatHandler::ExtractKeyFromLink(char** text, char const* const* linkTypes,
 
 /**
  * Function extract uint32 key from shift-link "|color|LINKTYPE:RETURN|h[name]|h|r if linkType == LINKTYPE
- * It also extract direct number if not shift-link in args
+ * It also extract direct number if not shift-link in text
  *
- * @param args       variable pointer to non parsed args string, updated at function call to new position (with skipped white spaces)
- *                   if args have sift link with linkType != LINKTYPE then args still pointing to this arg (unmodified pointer)
+ * @param text       variable pointer to non parsed argument string, updated at function call to new position (with skipped white spaces)
+ *                   if text has shift link with linkType != LINKTYPE then text still points to this argument (unmodified pointer)
  *
  * @param linkType   shift-link must fit by link type to this arg value or extraction fail
  *

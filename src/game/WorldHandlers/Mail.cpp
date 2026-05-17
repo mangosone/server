@@ -112,7 +112,7 @@ MailReceiver::MailReceiver(Player* receiver) : m_receiver(receiver), m_receiver_
  * Creates a new MailReceiver object with a specified GUID.
  *
  * @param receiver The player receiving the mail.
- * @param receiver_lowguid The GUID to use instead of the receivers.
+ * @param receiver_guid The GUID to use instead of the receiver's current GUID.
  */
 MailReceiver::MailReceiver(Player* receiver, ObjectGuid receiver_guid) : m_receiver(receiver), m_receiver_guid(receiver_guid)
 {

@@ -61,12 +61,6 @@ GridState::~GridState()
 
 /**
  * @brief Update invalid state - no operation
- * @param m Map reference (unused)
- * @param grid Grid container (unused)
- * @param info Grid info (unused)
- * @param x Grid X coordinate (unused)
- * @param y Grid Y coordinate (unused)
- * @param t_diff Time delta (unused)
  *
  * Invalid state is a placeholder/initial state that performs no actions.
  * Used as the default state before proper state assignment.
@@ -116,10 +110,8 @@ void ActiveState::Update(Map& m, NGridType& grid, GridInfo& info, const uint32& 
  * @brief Update idle grid state
  * @param m Map containing the grid
  * @param grid The grid being updated
- * @param info Grid timing information (unused)
  * @param x Grid X coordinate
  * @param y Grid Y coordinate
- * @param t_diff Time delta (unused)
  *
  * Idle state prepares the grid for potential removal. Objects are suspended
  * but not yet unloaded. Resets the expiry timer and transitions to

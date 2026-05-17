@@ -421,7 +421,6 @@ Player* Group::GetInvited(const std::string& name) const
  *
  * @param guid The member player GUID.
  * @param name The member player name.
- * @param joinMethod The join source indicator.
  * @return true if the member was added successfully; otherwise false.
  */
 bool Group::AddMember(ObjectGuid guid, const char* name)
@@ -1223,7 +1222,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 /**
  * @brief Checks whether rolling is complete for a specific loot item.
  *
- * @param pObject The looted world object.
+ * @param pCreature The looted creature.
  * @param pItem The loot item being checked.
  * @return true if no active multi-player roll remains for the item; otherwise false.
  */

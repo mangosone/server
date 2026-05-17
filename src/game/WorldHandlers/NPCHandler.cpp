@@ -188,7 +188,6 @@ void WorldSession::SendTrainerList(ObjectGuid guid)
  *
  * @param data The packet being built.
  * @param tSpell The trainer spell entry.
- * @param triggerSpell The spell actually learned or triggered.
  * @param state The trainer spell state for the player.
  * @param fDiscountMod The reputation price discount multiplier.
  * @param can_learn_primary_prof Whether a primary profession can still be learned.

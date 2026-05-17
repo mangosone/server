@@ -554,9 +554,6 @@ bool Transport::RemovePassenger(Player* passenger)
 
 /**
  * @brief Updates global transport position along its generated path.
- *
- * @param update_diff The elapsed update time.
- * @param p_time The current path time parameter.
  */
 void Transport::Update(uint32 /*update_diff*/, uint32 /*p_time*/)
 {

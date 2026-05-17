@@ -577,8 +577,6 @@ void WorldSession::HandleQuestgiverCompleteQuest(WorldPacket& recv_data)
 
 /**
  * @brief Handles the client quest auto-launch notification.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleQuestgiverQuestAutoLaunch(WorldPacket& /*recvPacket*/)
 {
@@ -678,11 +676,6 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
     }
 }
 
-/**
- * @brief Relays a quest sharing result back to the original sharer.
- *
- * @param recvPacket The received opcode packet.
- */
 /**
  * What - if any - kind of exclamation mark or question-mark should a quest-giver display for a player
  * @param pPlayer - for whom
@@ -814,8 +807,6 @@ uint32 WorldSession::getDialogStatus(Player* pPlayer, Object* questgiver, uint32
 
 /**
  * @brief Queries quest status markers for all visible quest givers.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket*/)
 {

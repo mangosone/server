@@ -3117,9 +3117,6 @@ void Aura::HandleAuraHover(bool apply, bool Real)
 
 /**
  * @brief Refreshes client breathing timers for the target.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleWaterBreathing(bool /*apply*/, bool /*Real*/)
 {
@@ -3682,7 +3679,6 @@ void Aura::HandleForceReaction(bool apply, bool Real)
  * @brief Applies or removes a player skill bonus from the aura.
  *
  * @param apply True to apply the bonus; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModSkill(bool apply, bool /*Real*/)
 {
@@ -3770,7 +3766,6 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
  * @brief Redirects the caster camera to the target while the aura is active.
  *
  * @param apply True to bind sight; false to restore normal view.
- * @param Real Unused.
  */
 void Aura::HandleBindSight(bool apply, bool /*Real*/)
 {
@@ -3795,7 +3790,6 @@ void Aura::HandleBindSight(bool apply, bool /*Real*/)
  * @brief Redirects the caster camera for farsight while the aura is active.
  *
  * @param apply True to enable farsight; false to restore normal view.
- * @param Real Unused.
  */
 void Aura::HandleFarSight(bool apply, bool /*Real*/)
 {
@@ -3820,7 +3814,6 @@ void Aura::HandleFarSight(bool apply, bool /*Real*/)
  * @brief Applies or removes creature tracking flags on a player.
  *
  * @param apply True to enable tracking; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandleAuraTrackCreatures(bool apply, bool /*Real*/)
 {
@@ -3848,7 +3841,6 @@ void Aura::HandleAuraTrackCreatures(bool apply, bool /*Real*/)
  * @brief Applies or removes resource tracking flags on a player.
  *
  * @param apply True to enable tracking; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandleAuraTrackResources(bool apply, bool /*Real*/)
 {
@@ -3876,7 +3868,6 @@ void Aura::HandleAuraTrackResources(bool apply, bool /*Real*/)
  * @brief Applies or removes stealthed-unit tracking on a player.
  *
  * @param apply True to enable tracking; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandleAuraTrackStealthed(bool apply, bool /*Real*/)
 {
@@ -3897,7 +3888,6 @@ void Aura::HandleAuraTrackStealthed(bool apply, bool /*Real*/)
  * @brief Applies or removes a scale modifier and refreshes model data.
  *
  * @param apply True to apply the scale change; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModScale(bool apply, bool /*Real*/)
 {
@@ -4690,7 +4680,6 @@ void Aura::HandleInvisibilityDetect(bool apply, bool Real)
  * @brief Applies or removes the detect amore player flag.
  *
  * @param apply True to apply the flag; false to remove it.
- * @param real Unused.
  */
 void Aura::HandleDetectAmore(bool apply, bool /*real*/)
 {
@@ -4979,8 +4968,6 @@ void Aura::HandleAuraModIncreaseSpeed(bool /*apply*/, bool Real)
 
 /**
  * @brief Refreshes mounted movement speed after aura changes.
- *
- * @param apply Unused.
  * @param Real True when processing the real aura state change.
  */
 void Aura::HandleAuraModIncreaseMountedSpeed(bool /*apply*/, bool Real)
@@ -5027,8 +5014,6 @@ void Aura::HandleAuraModIncreaseFlightSpeed(bool apply, bool Real)
 
 /**
  * @brief Refreshes swim speed after aura changes.
- *
- * @param apply Unused.
  * @param Real True when processing the real aura state change.
  */
 void Aura::HandleAuraModIncreaseSwimSpeed(bool /*apply*/, bool Real)
@@ -5077,8 +5062,6 @@ void Aura::HandleAuraModDecreaseSpeed(bool apply, bool Real)
 
 /**
  * @brief Refreshes movement to normal-speed handling after aura changes.
- *
- * @param apply Unused.
  * @param Real True when processing the real aura state change.
  */
 void Aura::HandleAuraModUseNormalSpeed(bool /*apply*/, bool Real)
@@ -5162,7 +5145,6 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
  * @brief Applies or removes immunity to a mechanic mask.
  *
  * @param apply True to apply immunity; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModMechanicImmunityMask(bool apply, bool /*Real*/)
 {
@@ -5290,7 +5272,6 @@ void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
  * @brief Applies or removes immunity to a damage school mask.
  *
  * @param apply True to apply immunity; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModDmgImmunity(bool apply, bool /*Real*/)
 {
@@ -5347,7 +5328,6 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
  * @brief Applies or removes the tracked-unit dynamic flag.
  *
  * @param apply True to mark the unit as tracked; false to clear it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModStalked(bool apply, bool /*Real*/)
 {
@@ -5407,7 +5387,6 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
  * @brief Enables or disables periodic trigger handling with an explicit value.
  *
  * @param apply True to enable periodic processing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicTriggerSpellWithValue(bool apply, bool /*Real*/)
 {
@@ -5418,7 +5397,6 @@ void Aura::HandlePeriodicTriggerSpellWithValue(bool apply, bool /*Real*/)
  * @brief Enables or disables periodic energize processing.
  *
  * @param apply True to enable periodic processing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicEnergize(bool apply, bool /*Real*/)
 {
@@ -5429,7 +5407,6 @@ void Aura::HandlePeriodicEnergize(bool apply, bool /*Real*/)
  * @brief Enables or disables periodic power burn processing.
  *
  * @param apply True to enable periodic processing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandleAuraPowerBurn(bool apply, bool /*Real*/)
 {
@@ -5485,7 +5462,6 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
  * @brief Enables periodic healing and precalculates healing bonuses when applied.
  *
  * @param apply True to enable periodic healing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicHeal(bool apply, bool /*Real*/)
 {
@@ -5652,7 +5628,6 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
  * @brief Enables or disables periodic percentage-based damage processing.
  *
  * @param apply True to enable periodic processing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicDamagePCT(bool apply, bool /*Real*/)
 {
@@ -5663,7 +5638,6 @@ void Aura::HandlePeriodicDamagePCT(bool apply, bool /*Real*/)
  * @brief Enables periodic health leech and precalculates spell bonuses when applied.
  *
  * @param apply True to enable periodic leeching; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicLeech(bool apply, bool /*Real*/)
 {
@@ -5694,7 +5668,6 @@ void Aura::HandlePeriodicLeech(bool apply, bool /*Real*/)
  * @brief Enables or disables periodic mana leech processing.
  *
  * @param apply True to enable periodic processing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicManaLeech(bool apply, bool /*Real*/)
 {
@@ -5705,7 +5678,6 @@ void Aura::HandlePeriodicManaLeech(bool apply, bool /*Real*/)
  * @brief Enables periodic health funnel processing and precalculates bonuses when applied.
  *
  * @param apply True to enable periodic processing; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandlePeriodicHealthFunnel(bool apply, bool /*Real*/)
 {
@@ -5759,7 +5731,6 @@ void Aura::HandleAuraModResistanceExclusive(bool apply, bool /*Real*/)
  * @brief Applies or removes flat resistance modifiers.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModResistance(bool apply, bool /*Real*/)
 {
@@ -5782,7 +5753,6 @@ void Aura::HandleAuraModResistance(bool apply, bool /*Real*/)
  * @brief Applies or removes percentage modifiers to base resistances.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModBaseResistancePCT(bool apply, bool /*Real*/)
 {
@@ -5811,7 +5781,6 @@ void Aura::HandleAuraModBaseResistancePCT(bool apply, bool /*Real*/)
  * @brief Applies or removes percentage modifiers to total resistances.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModResistancePercent(bool apply, bool /*Real*/)
 {
@@ -5835,7 +5804,6 @@ void Aura::HandleModResistancePercent(bool apply, bool /*Real*/)
  * @brief Applies or removes flat modifiers to base resistances.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModBaseResistance(bool apply, bool /*Real*/)
 {
@@ -5889,7 +5857,6 @@ void Aura::HandleAuraModStat(bool apply, bool /*Real*/)
  * @brief Applies or removes percentage modifiers to player base stats.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModPercentStat(bool apply, bool /*Real*/)
 {
@@ -5916,9 +5883,6 @@ void Aura::HandleModPercentStat(bool apply, bool /*Real*/)
 
 /**
  * @brief Refreshes player spell damage and healing data derived from stats.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleModSpellDamagePercentFromStat(bool /*apply*/, bool /*Real*/)
 {
@@ -5935,9 +5899,6 @@ void Aura::HandleModSpellDamagePercentFromStat(bool /*apply*/, bool /*Real*/)
 
 /**
  * @brief Refreshes player healing data derived from stats.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleModSpellHealingPercentFromStat(bool /*apply*/, bool /*Real*/)
 {
@@ -5989,9 +5950,6 @@ void Aura::HandleModSpellHealingPercentFromAttackPower(bool /*apply*/, bool /*Re
 
 /**
  * @brief Refreshes player healing bonus data exposed to the client.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleModHealingDone(bool /*apply*/, bool /*Real*/)
 {
@@ -6008,7 +5966,6 @@ void Aura::HandleModHealingDone(bool /*apply*/, bool /*Real*/)
  * @brief Applies or removes percentage modifiers to total stats and preserves health ratios when required.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModTotalPercentStat(bool apply, bool /*Real*/)
 {
@@ -6047,9 +6004,6 @@ void Aura::HandleModTotalPercentStat(bool apply, bool /*Real*/)
 
 /**
  * @brief Refreshes armor-from-stat style resistance data for players.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleAuraModResistenceOfStatPercent(bool /*apply*/, bool /*Real*/)
 {
@@ -6082,7 +6036,6 @@ void Aura::HandleAuraModTotalHealthPercentRegen(bool apply, bool /*Real*/)
  * @brief Enables periodic total mana regeneration using a one-second tick when needed.
  *
  * @param apply True to enable the periodic effect; false to disable it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModTotalManaPercentRegen(bool apply, bool /*Real*/)
 {
@@ -6139,8 +6092,6 @@ void Aura::HandleModPowerRegen(bool apply, bool Real)       // drinking
 
 /**
  * @brief Refreshes player mana regeneration after percentage-based regen changes.
- *
- * @param apply Unused.
  * @param Real True when processing the real aura state change.
  */
 void Aura::HandleModPowerRegenPCT(bool /*apply*/, bool Real)
@@ -6269,7 +6220,6 @@ void  Aura::HandleAuraModIncreaseMaxHealth(bool apply, bool /*Real*/)
  * @brief Applies or removes a flat increase to the current power type's maximum value.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModIncreaseEnergy(bool apply, bool /*Real*/)
 {
@@ -6289,7 +6239,6 @@ void Aura::HandleAuraModIncreaseEnergy(bool apply, bool /*Real*/)
  * @brief Applies or removes a percentage increase to the current power type.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModIncreaseEnergyPercent(bool apply, bool /*Real*/)
 {
@@ -6308,7 +6257,6 @@ void Aura::HandleAuraModIncreaseEnergyPercent(bool apply, bool /*Real*/)
  * @brief Applies or removes a percentage increase to maximum health.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModIncreaseHealthPercent(bool apply, bool /*Real*/)
 {
@@ -6331,9 +6279,6 @@ void Aura::HandleAuraModParryPercent(bool /*apply*/, bool /*Real*/)
 
 /**
  * @brief Refreshes player dodge percentage after aura changes.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleAuraModDodgePercent(bool /*apply*/, bool /*Real*/)
 {
@@ -6348,9 +6293,6 @@ void Aura::HandleAuraModDodgePercent(bool /*apply*/, bool /*Real*/)
 
 /**
  * @brief Refreshes player block percentage after aura changes.
- *
- * @param apply Unused.
- * @param Real Unused.
  */
 void Aura::HandleAuraModBlockPercent(bool /*apply*/, bool /*Real*/)
 {
@@ -6365,8 +6307,6 @@ void Aura::HandleAuraModBlockPercent(bool /*apply*/, bool /*Real*/)
 
 /**
  * @brief Refreshes player mana regeneration rules after regen-interrupt changes.
- *
- * @param apply Unused.
  * @param Real True when processing the real aura state change.
  */
 void Aura::HandleAuraModRegenInterrupt(bool /*apply*/, bool Real)
@@ -6430,7 +6370,6 @@ void Aura::HandleAuraModCritPercent(bool apply, bool Real)
  * @brief Applies or removes melee and ranged hit chance modifiers.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModHitChance(bool apply, bool /*Real*/)
 {
@@ -6452,7 +6391,6 @@ void Aura::HandleModHitChance(bool apply, bool /*Real*/)
  * @brief Applies or removes spell hit chance modifiers.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModSpellHitChance(bool apply, bool /*Real*/)
 {
@@ -6492,8 +6430,6 @@ void Aura::HandleModSpellCritChance(bool apply, bool Real)
 
 /**
  * @brief Refreshes per-school spell critical strike chance for players.
- *
- * @param apply Unused.
  * @param Real True when processing the real aura state change.
  */
 void Aura::HandleModSpellCritChanceShool(bool /*apply*/, bool Real)
@@ -6557,7 +6493,6 @@ void Aura::HandleModCombatSpeedPct(bool apply, bool /*Real*/)
  * @brief Applies or removes haste effects to main-hand attack speed.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModAttackSpeed(bool apply, bool /*Real*/)
 {
@@ -6579,7 +6514,6 @@ void Aura::HandleModAttackSpeed(bool apply, bool /*Real*/)
  * @brief Applies or removes haste effects to both melee attack speeds.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
 {
@@ -6603,7 +6537,6 @@ void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
  * @brief Applies or removes haste effects to ranged attack speed.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModRangedHaste(bool apply, bool /*Real*/)
 {
@@ -6625,7 +6558,6 @@ void Aura::HandleAuraModRangedHaste(bool apply, bool /*Real*/)
  * @brief Applies or removes ammo-based ranged haste when the equipped weapon uses ammunition.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
 {
@@ -6679,7 +6611,6 @@ void Aura::HandleAuraModAttackPower(bool apply, bool /*Real*/)
  * @brief Applies or removes flat ranged attack power bonuses.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
 {
@@ -6706,7 +6637,6 @@ void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
  * @brief Applies or removes percentage modifiers to melee attack power.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModAttackPowerPercent(bool apply, bool /*Real*/)
 {
@@ -6729,7 +6659,6 @@ void Aura::HandleAuraModAttackPowerPercent(bool apply, bool /*Real*/)
  * @brief Applies or removes percentage modifiers to ranged attack power.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraModRangedAttackPowerPercent(bool apply, bool /*Real*/)
 {
@@ -7170,7 +7099,6 @@ void Aura::HandleShapeshiftBoosts(bool apply)
  * @brief Applies or removes the empathy special-info flag for supported targets.
  *
  * @param apply True to apply the flag; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraEmpathy(bool apply, bool /*Real*/)
 {
@@ -7190,7 +7118,6 @@ void Aura::HandleAuraEmpathy(bool apply, bool /*Real*/)
  * @brief Applies or removes the untrackable unit byte flag.
  *
  * @param apply True to apply the flag; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraUntrackable(bool apply, bool /*Real*/)
 {
@@ -7208,7 +7135,6 @@ void Aura::HandleAuraUntrackable(bool apply, bool /*Real*/)
  * @brief Applies or removes the pacified unit flag.
  *
  * @param apply True to pacify; false to remove pacify.
- * @param Real Unused.
  */
 void Aura::HandleAuraModPacify(bool apply, bool /*Real*/)
 {
@@ -7238,7 +7164,6 @@ void Aura::HandleAuraModPacifyAndSilence(bool apply, bool Real)
  * @brief Applies or removes the ghost player flag.
  *
  * @param apply True to apply the flag; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleAuraGhost(bool apply, bool /*Real*/)
 {
@@ -7342,7 +7267,6 @@ void Aura::HandleModTargetResistance(bool apply, bool Real)
  * @brief Applies or removes shield block value modifiers.
  *
  * @param apply True to apply the modifier; false to remove it.
- * @param Real Unused.
  */
 void Aura::HandleShieldBlockValue(bool apply, bool /*Real*/)
 {

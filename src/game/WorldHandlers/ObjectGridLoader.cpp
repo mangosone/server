@@ -211,7 +211,6 @@ template <class T>
  * @tparam T The object type to load.
  * @param guid_set The guids to load.
  * @param cell The destination cell.
- * @param m The type map container.
  * @param count Receives the number of loaded objects.
  * @param map The owning map.
  * @param grid The target grid cell container.

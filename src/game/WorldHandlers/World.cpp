@@ -2319,8 +2319,6 @@ void World::ShutdownCancel()
 
 /**
  * @brief Updates all active sessions and integrates newly queued ones.
- *
- * @param diff The elapsed world update time in milliseconds.
  */
 void World::UpdateSessions(uint32 /*diff*/)
 {

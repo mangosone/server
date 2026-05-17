@@ -3317,8 +3317,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
  *
  * @param targets The resolved spell cast targets.
  * @param triggeredByAura The triggering aura, if this spell was aura-triggered.
- * @param chance Optional roll chance required before proceeding.
- * @return The resulting cast status.
  */
 void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
 {
@@ -8345,8 +8343,6 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
 
 /**
  * @brief Aborts the queued spell event and cancels the spell if needed.
- *
- * @param e_time Unused event time.
  */
 void SpellEvent::Abort(uint64 /*e_time*/)
 {
@@ -8457,12 +8453,9 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
  * Fill target list by units around (x,y) points at radius distance
 
  * @param targetUnitMap        Reference to target list that filled by function
- * @param x                    X coordinates of center point for target search
- * @param y                    Y coordinates of center point for target search
  * @param radius               Radius around (x,y) for target search
  * @param pushType             Additional rules for target area selection (in front, angle, etc)
  * @param spellTargets         Additional rules for target selection base at hostile/friendly state to original spell caster
- * @param originalCaster       If provided set alternative original caster, if =NULL then used Spell::GetAffectiveObject() return
  */
 void Spell::FillAreaTargets(UnitList& targetUnitMap, float radius, SpellNotifyPushType pushType, SpellTargets spellTargets, WorldObject* originalCaster /*=NULL*/)
 {

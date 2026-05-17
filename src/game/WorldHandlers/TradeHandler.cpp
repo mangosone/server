@@ -80,8 +80,6 @@ void WorldSession::SendTradeStatus(const TradeStatusInfo& info)
 
 /**
  * @brief Handles the client notification that a trade request was ignored.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleIgnoreTradeOpcode(WorldPacket& /*recvPacket*/)
 {
@@ -91,8 +89,6 @@ void WorldSession::HandleIgnoreTradeOpcode(WorldPacket& /*recvPacket*/)
 
 /**
  * @brief Handles the client notification that the target is busy trading.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleBusyTradeOpcode(WorldPacket& /*recvPacket*/)
 {
@@ -593,8 +589,6 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
 
 /**
  * @brief Clears the local accepted state for the active trade.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleUnacceptTradeOpcode(WorldPacket& /*recvPacket*/)
 {
@@ -609,8 +603,6 @@ void WorldSession::HandleUnacceptTradeOpcode(WorldPacket& /*recvPacket*/)
 
 /**
  * @brief Opens the trade window for both participants.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleBeginTradeOpcode(WorldPacket& /*recvPacket*/)
 {
@@ -643,8 +635,6 @@ void WorldSession::SendCancelTrade()
 
 /**
  * @brief Cancels the current trade session.
- *
- * @param recvPacket The received opcode packet.
  */
 void WorldSession::HandleCancelTradeOpcode(WorldPacket& /*recvPacket*/)
 {

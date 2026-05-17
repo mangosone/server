@@ -220,8 +220,6 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS] =
 
 /**
  * @brief Handles a no-op spell effect used only as a marker.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectEmpty(SpellEffectIndex /*eff_idx*/)
 {
@@ -230,8 +228,6 @@ void Spell::EffectEmpty(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Handles a legacy null spell effect placeholder.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectNULL(SpellEffectIndex /*eff_idx*/)
 {
@@ -240,8 +236,6 @@ void Spell::EffectNULL(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Handles an unused spell effect slot.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectUnused(SpellEffectIndex /*eff_idx*/)
 {
@@ -285,8 +279,6 @@ void Spell::EffectResurrectNew(SpellEffectIndex eff_idx)
 
 /**
  * @brief Instantly kills the unit target and handles spell-specific side effects.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
 {
@@ -3464,8 +3456,6 @@ void Spell::EffectPowerBurn(SpellEffectIndex eff_idx)
 
 /**
  * @brief Accumulates healing for the current unit target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
 {
@@ -3571,8 +3561,6 @@ void Spell::EffectHealPct(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Heals a mechanical target immediately.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectHealMechanical(SpellEffectIndex /*eff_idx*/)
 {
@@ -4181,8 +4169,6 @@ void Spell::EffectSummonChangeItem(SpellEffectIndex eff_idx)
 
 /**
  * @brief Grants weapon or armor proficiency to a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectProficiency(SpellEffectIndex /*eff_idx*/)
 {
@@ -4665,8 +4651,6 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
 
 /**
  * @brief Enables dual wielding for a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectDualWield(SpellEffectIndex /*eff_idx*/)
 {
@@ -4678,8 +4662,6 @@ void Spell::EffectDualWield(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Placeholder for pull-style spell effects.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectPull(SpellEffectIndex /*eff_idx*/)
 {
@@ -4689,8 +4671,6 @@ void Spell::EffectPull(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Turns and distracts a non-combat unit target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
 {
@@ -4717,8 +4697,6 @@ void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Attempts to pickpocket a valid creature target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
 {
@@ -5082,8 +5060,6 @@ void Spell::EffectLearnSkill(SpellEffectIndex eff_idx)
 
 /**
  * @brief Awards a fixed amount of honor to a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectAddHonor(SpellEffectIndex /*eff_idx*/)
 {
@@ -5100,8 +5076,6 @@ void Spell::EffectAddHonor(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Placeholder handler for trade-skill effects.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectTradeSkill(SpellEffectIndex /*eff_idx*/)
 {
@@ -5331,8 +5305,6 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
 
 /**
  * @brief Converts the creature target into a hunter pet for the caster.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectTameCreature(SpellEffectIndex /*eff_idx*/)
 {
@@ -5626,8 +5598,6 @@ void Spell::EffectLearnPetSpell(SpellEffectIndex eff_idx)
 
 /**
  * @brief Prepares taunt threat adjustments before the taunt aura is applied.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectTaunt(SpellEffectIndex /*eff_idx*/)
 {
@@ -5873,8 +5843,6 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
 
 /**
  * @brief Adds flat threat from the caster to the unit target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectThreat(SpellEffectIndex /*eff_idx*/)
 {
@@ -5893,8 +5861,6 @@ void Spell::EffectThreat(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Heals the target for an amount equal to the caster's maximum health.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectHealMaxHealth(SpellEffectIndex /*eff_idx*/)
 {
@@ -5914,8 +5880,6 @@ void Spell::EffectHealMaxHealth(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Interrupts interruptible non-melee spells on the unit target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectInterruptCast(SpellEffectIndex /*eff_idx*/)
 {
@@ -7125,8 +7089,6 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
 /**
  * @brief Clears combat and threat state for the target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
 {
@@ -7148,8 +7110,6 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Adds combo points to the caster for the unit target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectAddComboPoints(SpellEffectIndex /*eff_idx*/)
 {
@@ -7270,8 +7230,6 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
 
 /**
  * @brief Teleports a player target to its homebind as an unstuck action.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectStuck(SpellEffectIndex /*eff_idx*/)
 {
@@ -7310,8 +7268,6 @@ void Spell::EffectStuck(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Sends a summon request to a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectSummonPlayer(SpellEffectIndex /*eff_idx*/)
 {
@@ -7714,8 +7670,6 @@ void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
 
 /**
  * @brief Starts disenchanting loot generation for the target item.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
 {
@@ -7739,8 +7693,6 @@ void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Increases the drunk state of a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectInebriate(SpellEffectIndex /*eff_idx*/)
 {
@@ -7809,8 +7761,6 @@ void Spell::EffectFeedPet(SpellEffectIndex eff_idx)
 
 /**
  * @brief Dismisses the caster's living pet.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectDismissPet(SpellEffectIndex /*eff_idx*/)
 {
@@ -7908,8 +7858,6 @@ void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
 
 /**
  * @brief Sends a resurrection request with percentage-based health and mana restoration.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectResurrect(SpellEffectIndex /*eff_idx*/)
 {
@@ -7966,8 +7914,6 @@ void Spell::EffectResurrect(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Adds queued extra attacks to the target unit.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectAddExtraAttacks(SpellEffectIndex /*eff_idx*/)
 {
@@ -7986,8 +7932,6 @@ void Spell::EffectAddExtraAttacks(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Grants the ability to parry to a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectParry(SpellEffectIndex /*eff_idx*/)
 {
@@ -7999,8 +7943,6 @@ void Spell::EffectParry(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Grants the ability to block to a player target.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectBlock(SpellEffectIndex /*eff_idx*/)
 {
@@ -8295,8 +8237,6 @@ void Spell::EffectSelfResurrect(SpellEffectIndex eff_idx)
 
 /**
  * @brief Opens skinning loot for a creature and updates the player's gathering skill.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectSkinning(SpellEffectIndex /*eff_idx*/)
 {
@@ -8327,8 +8267,6 @@ void Spell::EffectSkinning(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Moves the caster into melee contact with the target and starts attacking if appropriate.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
 {
@@ -8587,8 +8525,6 @@ void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)
 
 /**
  * @brief Restores the caster's dead pet and revives it with percentage-based health.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectSummonDeadPet(SpellEffectIndex /*eff_idx*/)
 {
@@ -8625,8 +8561,6 @@ void Spell::EffectSummonDeadPet(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Unsummons all totems currently owned by the caster.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectDestroyAllTotems(SpellEffectIndex /*eff_idx*/)
 {
@@ -8731,8 +8665,6 @@ void Spell::EffectDurabilityDamagePCT(SpellEffectIndex eff_idx)
 
 /**
  * @brief Modifies the caster's threat on the target by a percentage.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectModifyThreatPercent(SpellEffectIndex /*eff_idx*/)
 {
@@ -8919,8 +8851,6 @@ void Spell::EffectSkill(SpellEffectIndex /*eff_idx*/)
 
 /**
  * @brief Fully resurrects a dead player target as part of a spirit heal effect.
- *
- * @param eff_idx Unused effect index.
  */
 void Spell::EffectSpiritHeal(SpellEffectIndex /*eff_idx*/)
 {
@@ -9135,8 +9065,6 @@ void Spell::EffectBind(SpellEffectIndex eff_idx)
 
 /**
  * @brief Sends a battleground player target to its graveyard.
- *
- * @param eff_idx The teleport effect index.
  */
 void Spell::EffectRedirectThreat(SpellEffectIndex /*eff_idx*/)
 {
