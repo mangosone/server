@@ -7425,7 +7425,8 @@ struct SQLSpellLoader : public SQLStorageLoaderBase<SQLSpellLoader, SQLHashStora
     {
         if (field_pos == LOADED_SPELLDBC_FIELD_POS_SPELLNAME_0)
         {
-            dst = SERVER_SIDE_SPELL;
+            dst = new char[sizeof(SERVER_SIDE_SPELL)]; // SERVER_SIDE_SPELL is (const char *)
+            memcpy(dst, SERVER_SIDE_SPELL, sizeof(SERVER_SIDE_SPELL) );
         }
         else
         {
