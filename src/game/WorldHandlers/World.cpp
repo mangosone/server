@@ -1588,13 +1588,7 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    // depend on next event
     sLog.outString();
 
-    sLog.outString("Loading grids for active creatures and local transports...");
-    sMapMgr.LoadContinents();
-    sLog.outString();
-
-    sLog.outString("Loading global transports...");
-    sMapMgr.LoadTransports();
-    sLog.outString();
+    sLog.outString("Loading grids for active creatures or transports...");
     sObjectMgr.LoadActiveEntities(NULL);
     sLog.outString();
 
