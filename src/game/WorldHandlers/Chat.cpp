@@ -853,14 +853,9 @@ ChatCommand* ChatHandler::getCommandTable()
         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
 #ifdef ENABLE_PLAYERBOTS
         { "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
-       //{ "rndbot",         SEC_CONSOLE,        true,  &ChatHandler::HandlePlayerbotConsoleCommand,    "", NULL },
+        { "rndbot",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleRandomPlayerbotCommand,     "", NULL },
         { "ahbot",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleAhBotCommand,               "", NULL },
         { "gtask",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleGuildTaskCommand,           "", NULL },
-        //{ "pmon",           SEC_GAMEMASTER,     true,  &ChatHandler::HandlePerfMonCommand,             "", NULL },
-        { "rndbot",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleRandomPlayerbotCommand,     "", NULL },
-
-
-
 #endif
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
@@ -1328,7 +1323,10 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
         ++text;
     }
 
-    while (*text == ' ') { ++text; }
+    while (*text == ' ')
+    {
+        ++text;
+    }
 
     // search first level command in table
     for (uint32 i = 0; table[i].Name != NULL; ++i)
@@ -1494,10 +1492,12 @@ void ChatHandler::ExecuteCommand(const char* text)
                 }
 
                 if (ChatCommand* showCommand = (strlen(command->Name) == 0 && parentCommand ? parentCommand : command))
+                {
                     if (ChatCommand* childs = showCommand->ChildCommands)
                     {
                         ShowHelpForSubCommands(childs, showCommand->Name);
                     }
+                }
 
                 SetSentErrorMessage(true);
             }
@@ -4099,6 +4099,7 @@ int CliHandler::GetSessionDbLocaleIndex() const
 
 // Check/ Output if a NPC or GO (by guid) is part of a pool or game event
 template <typename T>
+
 /**
  * @brief Reports pool and game event ownership information for a creature or game object spawn.
  *
@@ -4152,6 +4153,7 @@ void ChatHandler::ShowNpcOrGoSpawnInformation(uint32 guid)
 
 // Prepare ShortString for a NPC or GO (by guid) with pool or game event IDs
 template <typename T>
+
 /**
  * @brief Builds a short descriptive string about pool or game event ownership for a spawn.
  *
@@ -4493,8 +4495,6 @@ bool ChatHandler::ShowPlayerListHelper(QueryResult* result, uint32* limit, bool 
 
     return true;
 }
-
-
 
 // Instantiate template for helper function
 template void ChatHandler::ShowNpcOrGoSpawnInformation<Creature>(uint32 guid);

@@ -49,7 +49,7 @@
 #endif
 
  /**********************************************************************
-     CommandTable : commandTable
+    CommandTable : commandTable
   ***********************************************************************/
 
 /**
@@ -188,7 +188,6 @@ bool ChatHandler::HandleModifyFactionCommand(char* args)
 
     return true;
 }
-
 
 /**
  * @brief Handler for HandleNpcAddCommand command.
@@ -1215,7 +1214,6 @@ bool ChatHandler::HandleNpcChangeEntryCommand(char* args)
 bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
 {
     Creature* target = getSelectedCreature();
-
     if (!target)
     {
         SendSysMessage(LANG_SELECT_CREATURE);

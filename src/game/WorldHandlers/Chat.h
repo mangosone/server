@@ -30,7 +30,6 @@
 #include "ObjectGuid.h"
 #include "Language.h"
 
-
 struct AreaTrigger;
 struct AreaTriggerEntry;
 struct FactionEntry;
@@ -63,21 +62,21 @@ class ChatCommand
         ChatCommand* ChildCommands;
 
         ChatCommand(
-          const char* pName,
-          uint32 pSecurityLevel,
-          bool pAllowConsole,
-          bool (ChatHandler::* pHandler)(char* args),
-          std::string pHelp,
-          ChatCommand* pChildCommands
+            const char* pName,
+            uint32 pSecurityLevel,
+            bool pAllowConsole,
+            bool (ChatHandler::* pHandler)(char* args),
+            std::string pHelp,
+            ChatCommand* pChildCommands
         )
-         : Id(-1)
+        : Id(-1)
         {
-          Name = pName;
-          SecurityLevel = pSecurityLevel;
-          AllowConsole = pAllowConsole;
-          Handler = pHandler;
-          Help = pHelp;
-          ChildCommands = pChildCommands;
+            Name = pName;
+            SecurityLevel = pSecurityLevel;
+            AllowConsole = pAllowConsole;
+            Handler = pHandler;
+            Help = pHelp;
+            ChildCommands = pChildCommands;
         }
 };
 
@@ -127,7 +126,10 @@ class ChatHandler
         ChatCommand const* FindCommand(char const* text);
 
         bool isValidChatMessage(const char* msg);
-        bool HasSentErrorMessage() { return sentErrorMessage;}
+        bool HasSentErrorMessage()
+        {
+            return sentErrorMessage;
+        }
 
 #ifdef ENABLE_PLAYERBOTS
         WorldSession* GetSession() { return m_session; }
@@ -667,7 +669,6 @@ class ChatHandler
         bool HandleUnfreezePlayerCommand(char* args);
 
 #ifdef ENABLE_PLAYERBOTS
-
        // bool HandlePlayerbotConsoleCommand(char* args);
         bool HandlePlayerbotCommand(char* args);
         bool HandleRandomPlayerbotCommand(char* args);
