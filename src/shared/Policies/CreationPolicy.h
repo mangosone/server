@@ -31,6 +31,7 @@
 namespace MaNGOS
 {
     template<class T>
+
     /**
      * @brief OperatorNew policy creates an object on the heap using new.
      *
@@ -61,35 +62,37 @@ namespace MaNGOS
     };
 
     template<class T>
+
     /**
      * @brief LocalStaticCreation policy creates an object on the stack the first time call Create.
      *
      */
     class LocalStaticCreation
     {
+        /**
+         * @brief
+         *
+         */
+        union MaxAlign
+        {
+            char t_[sizeof(T)]; /**< TODO */
+            short int shortInt_; /**< TODO */
+            int int_; /**< TODO */
+            long int longInt_; /**< TODO */
+            float float_; /**< TODO */
+            double double_; /**< TODO */
+            long double longDouble_; /**< TODO */
+            struct Test;
+            int Test::* pMember_; /**< TODO */
+
             /**
              * @brief
              *
+             * @param Test::pMemberFn_)(int
+             * @return int
              */
-            union MaxAlign
-            {
-                char t_[sizeof(T)]; /**< TODO */
-                short int shortInt_; /**< TODO */
-                int int_; /**< TODO */
-                long int longInt_; /**< TODO */
-                float float_; /**< TODO */
-                double double_; /**< TODO */
-                long double longDouble_; /**< TODO */
-                struct Test;
-                int Test::* pMember_; /**< TODO */
-                /**
-                 * @brief
-                 *
-                 * @param Test::pMemberFn_)(int
-                 * @return int
-                 */
-                int (Test::*pMemberFn_)(int);
-            };
+            int (Test::*pMemberFn_)(int);
+        };
 
         public:
 
@@ -119,6 +122,7 @@ namespace MaNGOS
      * CreateUsingMalloc by pass the memory manger.
      */
     template<class T>
+
     /**
      * @brief
      *
@@ -157,6 +161,7 @@ namespace MaNGOS
     };
 
     template<class T, class CALL_BACK>
+
     /**
      * @brief CreateOnCallBack creates the object base on the call back.
      *

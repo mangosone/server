@@ -34,14 +34,15 @@
 namespace ACE_Based
 {
     template < class T, class LockType, typename StorageType = std::deque<T> >
+
     /**
      * @brief
      *
      */
     class LockedQueue
     {
-            LockType _lock; /**< Lock access to the queue. */
-            StorageType _queue; /**< Storage backing the queue. */
+        LockType _lock; /**< Lock access to the queue. */
+        StorageType _queue; /**< Storage backing the queue. */
 
         public:
 
@@ -94,6 +95,7 @@ namespace ACE_Based
             }
 
             template<class Checker>
+
             /**
              * @brief
              *
@@ -119,7 +121,6 @@ namespace ACE_Based
                 _queue.pop_front();
                 return true;
             }
-
 
             /**
              * @brief Checks if we're empty or not with locks held

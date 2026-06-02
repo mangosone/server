@@ -35,13 +35,13 @@
 
 namespace MaNGOS
 {
-    template
-    <
-    typename T,
-             class ThreadingModel = MaNGOS::SingleThreaded<T>,
-             class CreatePolicy = MaNGOS::OperatorNew<T>,
-             class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
-             >
+    template <
+        typename T,
+        class ThreadingModel = MaNGOS::SingleThreaded<T>,
+        class CreatePolicy = MaNGOS::OperatorNew<T>,
+        class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
+        >
+
     /**
      * @brief Singleton class template
      *
@@ -106,12 +106,13 @@ namespace MaNGOS
     };
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< Initialize singleton instance pointer to NULL */
+        T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< Initialize singleton instance pointer to NULL */
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< Initialize destroyed flag to false */
+        bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< Initialize destroyed flag to false */
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
+
     /**
      * @brief Get the singleton instance
      *
@@ -141,6 +142,7 @@ namespace MaNGOS
     }
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
+
     /**
      * @brief Destroy the singleton instance
      */
@@ -153,15 +155,15 @@ namespace MaNGOS
 }
 
 #define INSTANTIATE_SINGLETON_1(TYPE) \
-    template class MaNGOS::Singleton<TYPE, MaNGOS::SingleThreaded<TYPE>, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
+template class MaNGOS::Singleton<TYPE, MaNGOS::SingleThreaded<TYPE>, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
 
 #define INSTANTIATE_SINGLETON_2(TYPE, THREADINGMODEL) \
-    template class MaNGOS::Singleton<TYPE, THREADINGMODEL, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
+template class MaNGOS::Singleton<TYPE, THREADINGMODEL, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
 
 #define INSTANTIATE_SINGLETON_3(TYPE, THREADINGMODEL, CREATIONPOLICY ) \
-    template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, MaNGOS::ObjectLifeTime<TYPE> >;
+template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, MaNGOS::ObjectLifeTime<TYPE> >;
 
 #define INSTANTIATE_SINGLETON_4(TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME) \
-    template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >;
+template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >;
 
 #endif

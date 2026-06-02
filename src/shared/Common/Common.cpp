@@ -26,15 +26,14 @@
 
 char const* localeNames[MAX_LOCALE] =
 {
-    "enUS",                                                 // also enGB
-    "koKR",
-    "frFR",
-    "deDE",
-    "zhCN",
-    "zhTW",
-    "esES",
-    "esMX",
-    "ruRU",
+        "enUS",    // also enGB
+        "koKR",
+        "frFR",
+        "deDE",
+        "zhCN",
+        "zhTW",
+        "esES",
+        "esMX",
 };
 
 // used for search by name or iterate all names
@@ -59,10 +58,11 @@ LocaleNameStr const fullLocaleNameList[] =
 LocaleConstant GetLocaleByName(const std::string& name)
 {
     for (LocaleNameStr const* itr = &fullLocaleNameList[0]; itr->name; ++itr)
+    {
         if (name == itr->name)
         {
             return itr->locale;
         }
-
+    }
     return LOCALE_enUS;                                     // including enGB case
 }

@@ -45,14 +45,15 @@ template<class A, class T, class O> class GridLoader;
  */
 
 template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAINER>
-class Grid
+    class Grid
 {
-        // allows the GridLoader to access its internals
-        template<class A, class T, class O> friend class GridLoader;
+    // allows the GridLoader to access its internals
+    template<class A, class T, class O> friend class GridLoader;
 
     public:
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief an object of interested enters the grid
          *
@@ -65,6 +66,7 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief an object of interested exits the grid
          *
@@ -77,6 +79,7 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief Inserts a container type object into the grid.
          *
@@ -94,6 +97,7 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief Removes a container type object from the grid
          *
@@ -111,13 +115,13 @@ class Grid
         }
 
         template<class T>
-        void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
+            void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
         {
             visitor.Visit(i_gridContainer);
         }
 
         template<class T>
-        void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
+            void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
         {
             visitor.Visit(i_worldContainer);
         }

@@ -39,14 +39,14 @@
 class ByteBufferException
 {
     public:
-    /**
-     * @brief Constructs a new ByteBufferException
-     *
-     * @param _add True if exception occurred during append/write operation, false for read
-     * @param _pos Current position in buffer where overflow occurred
-     * @param _esize Size of element that was being added/read
-     * @param _size Total size of the buffer
-     */
+        /**
+         * @brief Constructs a new ByteBufferException
+         *
+         * @param _add True if exception occurred during append/write operation, false for read
+         * @param _pos Current position in buffer where overflow occurred
+         * @param _esize Size of element that was being added/read
+         * @param _size Total size of the buffer
+         */
         ByteBufferException(bool _add, size_t _pos, size_t _esize, size_t _size)
             : add(_add), pos(_pos), esize(_esize), size(_size)
         {
@@ -67,6 +67,7 @@ class ByteBufferException
 };
 
 template<class T>
+
 /**
  * @brief Template for marking unused template parameters
  *
@@ -76,9 +77,10 @@ template<class T>
  */
 struct Unused
 {
-/**
- * @brief Constructs an Unused instance
- */
+
+    /**
+     * @brief Constructs an Unused instance
+     */
     Unused() {}
 };
 
@@ -130,7 +132,7 @@ class ByteBuffer
          *
          * @param buf Source ByteBuffer to copy from
          */
-        ByteBuffer(const ByteBuffer& buf): _rpos(buf._rpos), _wpos(buf._wpos), _storage(buf._storage) { }
+        ByteBuffer(const ByteBuffer& buf): _rpos(buf._rpos), _wpos(buf._wpos), _storage(buf._storage) {}
 
         /**
          * @brief Clear the buffer and reset positions
@@ -501,6 +503,7 @@ class ByteBuffer
         }
 
         template<class T>
+
         /**
          * @brief
          *
@@ -512,7 +515,6 @@ class ByteBuffer
             read_skip<T>();
             return *this;
         }
-
 
         /**
          * @brief
@@ -569,11 +571,15 @@ class ByteBuffer
         }
 
         template<typename T>
+
         /**
          * @brief
          *
          */
-        void read_skip() { read_skip(sizeof(T)); }
+        void read_skip()
+        {
+            read_skip(sizeof(T));
+        }
 
         /**
          * @brief
@@ -678,6 +684,7 @@ class ByteBuffer
          * @return size_t
          */
         size_t size() const { return _storage.size(); }
+
         /**
          * @brief
          *
@@ -840,11 +847,13 @@ class ByteBuffer
          *
          */
         void print_storage() const;
+
         /**
          * @brief
          *
          */
         void textlike() const;
+
         /**
          * @brief
          *
@@ -869,6 +878,7 @@ class ByteBuffer
 };
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -887,6 +897,7 @@ inline ByteBuffer& operator<<(ByteBuffer& b, std::vector<T> const& v)
 }
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -909,6 +920,7 @@ inline ByteBuffer& operator>>(ByteBuffer& b, std::vector<T>& v)
 }
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -927,6 +939,7 @@ inline ByteBuffer& operator<<(ByteBuffer& b, std::list<T> const& v)
 }
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -949,6 +962,7 @@ inline ByteBuffer& operator>>(ByteBuffer& b, std::list<T>& v)
 }
 
 template <typename K, typename V>
+
 /**
  * @brief
  *
@@ -968,6 +982,7 @@ inline ByteBuffer& operator<<(ByteBuffer& b, std::map<K, V>& m)
 }
 
 template <typename K, typename V>
+
 /**
  * @brief
  *
@@ -992,6 +1007,7 @@ inline ByteBuffer& operator>>(ByteBuffer& b, std::map<K, V>& m)
 }
 
 template<>
+
 /**
  * @brief
  *
@@ -1003,6 +1019,7 @@ inline void ByteBuffer::read_skip<char*>()
 }
 
 template<>
+
 /**
  * @brief
  *
@@ -1013,6 +1030,7 @@ inline void ByteBuffer::read_skip<char const*>()
 }
 
 template<>
+
 /**
  * @brief
  *

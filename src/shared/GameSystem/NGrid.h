@@ -82,16 +82,27 @@ class GridInfo
          * @param on
          */
         void setUnloadExplicitLock(bool on) { i_unloadExplicitLock = on; }
+
         /**
          * @brief
          *
          */
-        void incUnloadActiveLock() { ++i_unloadActiveLockCount; }
+        void incUnloadActiveLock()
+        {
+            ++i_unloadActiveLockCount;
+        }
+
         /**
          * @brief
          *
          */
-        void decUnloadActiveLock() { if (i_unloadActiveLockCount) { --i_unloadActiveLockCount; } }
+        void decUnloadActiveLock()
+        {
+            if (i_unloadActiveLockCount)
+            {
+                --i_unloadActiveLockCount;
+            }
+        }
 
         /**
          * @brief
@@ -99,12 +110,14 @@ class GridInfo
          * @param pTimer
          */
         void setTimer(const TimeTracker& pTimer) { i_timer = pTimer; }
+
         /**
          * @brief
          *
          * @param interval
          */
         void ResetTimeTracker(time_t interval) { i_timer.Reset(interval); }
+
         /**
          * @brief
          *
@@ -132,13 +145,8 @@ typedef enum
     MAX_GRID_STATE = 4
 } grid_state_t;
 
-template
-<
-uint32 N,
-       class ACTIVE_OBJECT,
-       class WORLD_OBJECT_TYPES,
-       class GRID_OBJECT_TYPES
-       >
+template <uint32 N, class ACTIVE_OBJECT, class WORLD_OBJECT_TYPES, class GRID_OBJECT_TYPES>
+
 /**
  * @brief
  *
@@ -202,30 +210,35 @@ class NGrid
          * @return const uint32
          */
         const uint32& GetGridId() const { return i_gridId; }
+
         /**
          * @brief
          *
          * @param id
          */
         void SetGridId(const uint32 id) { i_gridId = id; }
+
         /**
          * @brief
          *
          * @return grid_state_t
          */
         grid_state_t GetGridState() const { return i_cellstate; }
+
         /**
          * @brief
          *
          * @param s
          */
         void SetGridState(grid_state_t s) { i_cellstate = s; }
+
         /**
          * @brief
          *
          * @return uint32
          */
         uint32 getX() const { return i_x; }
+
         /**
          * @brief
          *
@@ -252,6 +265,7 @@ class NGrid
          * @return bool
          */
         bool isGridObjectDataLoaded() const { return i_GridObjectDataLoaded; }
+
         /**
          * @brief
          *
@@ -264,41 +278,57 @@ class NGrid
          *
          * @return GridInfo
          */
-        GridInfo* getGridInfoRef() { return &i_GridInfo; }
+        GridInfo* getGridInfoRef()
+        {
+            return &i_GridInfo;
+        }
+
         /**
          * @brief
          *
          * @return const TimeTracker
          */
         const TimeTracker& getTimeTracker() const { return i_GridInfo.getTimeTracker(); }
+
         /**
          * @brief
          *
          * @return bool
          */
         bool getUnloadLock() const { return i_GridInfo.getUnloadLock(); }
+
         /**
          * @brief
          *
          * @param on
          */
         void setUnloadExplicitLock(bool on) { i_GridInfo.setUnloadExplicitLock(on); }
+
         /**
          * @brief
          *
          */
-        void incUnloadActiveLock() { i_GridInfo.incUnloadActiveLock(); }
+        void incUnloadActiveLock()
+        {
+            i_GridInfo.incUnloadActiveLock();
+        }
+
         /**
          * @brief
          *
          */
-        void decUnloadActiveLock() { i_GridInfo.decUnloadActiveLock(); }
+        void decUnloadActiveLock()
+        {
+            i_GridInfo.decUnloadActiveLock();
+        }
+
         /**
          * @brief
          *
          * @param interval
          */
         void ResetTimeTracker(time_t interval) { i_GridInfo.ResetTimeTracker(interval); }
+
         /**
          * @brief
          *
@@ -307,6 +337,7 @@ class NGrid
         void UpdateTimeTracker(time_t diff) { i_GridInfo.UpdateTimeTracker(diff); }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *
@@ -320,6 +351,7 @@ class NGrid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *
@@ -333,6 +365,7 @@ class NGrid
         }
 
         template<class T, class TT>
+
         /**
          * @brief
          *
@@ -342,13 +375,16 @@ class NGrid
         void Visit(TypeContainerVisitor<T, TT>& visitor)
         {
             for (uint32 x = 0; x < N; ++x)
+            {
                 for (uint32 y = 0; y < N; ++y)
                 {
                     i_cells[x][y].Visit(visitor);
                 }
+            }
         }
 
         template<class T, class TT>
+
         /**
          * @brief
          *
@@ -371,15 +407,18 @@ class NGrid
         {
             uint32 count = 0;
             for (uint32 x = 0; x < N; ++x)
+            {
                 for (uint32 y = 0; y < N; ++y)
                 {
                     count += i_cells[x][y].ActiveObjectsInGrid();
                 }
+            }
 
             return count;
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *
@@ -394,6 +433,7 @@ class NGrid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *

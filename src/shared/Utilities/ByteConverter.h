@@ -39,12 +39,13 @@
 
 namespace ByteConverter
 {
+
     /**
      * @brief Reverse byte order for a value of size T
      * @param val Pointer to value to convert
      */
     template<size_t T>
-    inline void convert(char* val)
+        inline void convert(char* val)
     {
         std::swap(*val, *(val + T - 1));
         convert < T - 2 > (val + 1);
@@ -54,6 +55,7 @@ namespace ByteConverter
      * @brief Template specialization for size 0 (no-op)
      */
     template<> inline void convert<0>(char*) {}
+
     /**
      * @brief Template specialization for size 1 (no-op, single byte)
      */
@@ -64,25 +66,27 @@ namespace ByteConverter
      * @param val Pointer to value to convert
      */
     template<typename T>
-    inline void apply(T* val)
+        inline void apply(T* val)
     {
         convert<sizeof(T)>((char*)(val));
     }
 }
 
 #if MANGOS_ENDIAN == MANGOS_BIGENDIAN
+
 /**
  * @brief Convert from host to little-endian byte order (big-endian host)
  * @param val Value to convert
  */
 template<typename T> inline void EndianConvert(T& val) { ByteConverter::apply<T>(&val); }
+
 /**
  * @brief Reverse byte order (no-op on big-endian host)
  * @param val Value to convert
  */
-template<typename T> inline void EndianConvertReverse(T&) { }
+template<typename T> inline void EndianConvertReverse(T&) {}
 #else
-template<typename T> inline void EndianConvert(T&) { }
+template<typename T> inline void EndianConvert(T&) {}
 template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::apply<T>(&val); }
 #endif
 
@@ -90,6 +94,7 @@ template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::a
  * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
 template<typename T> void EndianConvert(T*);
+
 /**
  * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
@@ -98,18 +103,21 @@ template<typename T> void EndianConvertReverse(T*);
 /**
  * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvert(uint8&) { }
+inline void EndianConvert(uint8&) {}
+
 /**
  * @brief No-op for int8 (single byte)
  */
-inline void EndianConvert(int8&)  { }
+inline void EndianConvert(int8&)  {}
+
 /**
  * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvertReverse(uint8&) { }
+inline void EndianConvertReverse(uint8&) {}
+
 /**
  * @brief No-op for int8 (single byte)
  */
-inline void EndianConvertReverse(int8&) { }
+inline void EndianConvertReverse(int8&) {}
 
 #endif

@@ -35,6 +35,7 @@
 namespace MaNGOS
 {
     template<typename MUTEX>
+
     /**
      * @brief
      *
@@ -71,6 +72,7 @@ namespace MaNGOS
              * @param
              */
             GeneralLock(const GeneralLock&);
+
             /**
              * @brief
              *
@@ -82,6 +84,7 @@ namespace MaNGOS
     };
 
     template<class T>
+
     /**
      * @brief
      *
@@ -96,6 +99,7 @@ namespace MaNGOS
              */
             struct Lock
             {
+
                 /**
                  * @brief
                  *
@@ -103,6 +107,7 @@ namespace MaNGOS
                 Lock()
                 {
                 }
+
                 /**
                  * @brief
                  *
@@ -124,6 +129,7 @@ namespace MaNGOS
     };
 
     template<class T, class MUTEX>
+
     /**
      * @brief
      *
@@ -176,6 +182,7 @@ namespace MaNGOS
              * @param
              */
             ObjectLevelLockable(const ObjectLevelLockable<T, MUTEX>&);
+
             /**
              * @brief
              *
@@ -189,6 +196,7 @@ namespace MaNGOS
     };
 
     template<class T, class MUTEX>
+
     /**
      * @brief
      *
@@ -265,6 +273,5 @@ namespace MaNGOS
 template<class T, class MUTEX> MUTEX MaNGOS::ClassLevelLockable<T, MUTEX>::si_mtx; /**< TODO */
 
 #define INSTANTIATE_CLASS_MUTEX(CTYPE, MUTEX) \
-    template class MaNGOS::ClassLevelLockable<CTYPE, MUTEX>
-
+template class MaNGOS::ClassLevelLockable<CTYPE, MUTEX>
 #endif

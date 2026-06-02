@@ -39,11 +39,11 @@ class SqlConnection;
  */
 class SqlDelayThread : public ACE_Based::Runnable
 {
-        /**
-         * @brief
-         *
-         */
-        typedef ACE_Based::LockedQueue<SqlOperation*, ACE_Thread_Mutex> SqlQueue;
+    /**
+     * @brief
+     *
+     */
+    typedef ACE_Based::LockedQueue<SqlOperation*, ACE_Thread_Mutex> SqlQueue;
 
     private:
         SqlQueue m_sqlQueue;                                /**< Queue of SQL statements */
@@ -65,6 +65,7 @@ class SqlDelayThread : public ACE_Based::Runnable
          * @param conn
          */
         SqlDelayThread(Database* db, SqlConnection* conn);
+
         /**
          * @brief
          *
@@ -84,6 +85,7 @@ class SqlDelayThread : public ACE_Based::Runnable
          *
          */
         virtual void Stop();
+
         /**
          * @brief Main Thread loop
          *
