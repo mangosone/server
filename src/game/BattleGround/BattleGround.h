@@ -838,13 +838,28 @@ class BattleGround
             O = m_TeamStartLocO[idx];
         }
 
+        /**
+         * @brief Sets the maximum start distance.
+         *
+         * @param startMaxDist The maximum start distance.
+         */
+        void SetStartMaxDist(float startMaxDist) { m_startMaxDist = startMaxDist; }
+
+        /**
+         * @brief Gets the maximum start distance.
+         *
+         * @return float The maximum start distance.
+         */
+        float GetStartMaxDist() const { return m_startMaxDist; }
+
         /* Packet Transfer */
         // method that should fill worldpacket with actual world states (not yet implemented for all battlegrounds!)
+
         /**
-         * @brief
+         * @brief Fills the initial world states.
          *
-         * @param
-         * @param
+         * @param data The world packet.
+         * @param count The count of world states.
          */
         virtual void FillInitialWorldStates(WorldPacket& /*data*/, uint32& /*count*/) {}
         /**
@@ -1408,6 +1423,15 @@ class BattleGround
         uint32 m_ClientInstanceID;                          /**< the instance-id which is sent to the client and without any other internal use */
         uint32 m_StartTime; /**< TODO */
         bool m_ArenaBuffSpawned;                            // to cache if arenabuff event is started (cause bool is faster than checking IsActiveEvent)
+
+        /**
+         * @brief Timer for valid start position.
+         */
+        uint32 m_validStartPositionTimer; /**< Valid start position timer */
+
+        /**
+         * @brief End time of the battleground.
+         */
         int32 m_EndTime;                                    /**< it is set to 120000 when bg is ending and it decreases itself */
         BattleGroundBracketId m_BracketId; /**< TODO */
         ArenaType  m_ArenaType;                             // 2=2v2, 3=3v3, 5=5v5
@@ -1456,6 +1480,15 @@ class BattleGround
         /* Start location */
         uint32 m_MapId; /**< TODO */
         BattleGroundMap* m_Map; /**< TODO */
+
+        /**
+         * @brief Maximum start distance.
+         */
+        float m_startMaxDist; /**< Maximum start distance */
+
+        /**
+         * @brief Array of X coordinates for team start locations.
+         */
         float m_TeamStartLocX[PVP_TEAM_COUNT]; /**< TODO */
         float m_TeamStartLocY[PVP_TEAM_COUNT]; /**< TODO */
         float m_TeamStartLocZ[PVP_TEAM_COUNT]; /**< TODO */
