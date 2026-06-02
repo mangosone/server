@@ -33,6 +33,12 @@
 #include "SharedDefines.h"
 #include <map>
 
+/**
+ * \addtogroup game
+ * @{
+ * \file
+ */
+
 enum GMTicketResponse
 {
     GMTICKET_RESPONSE_ALREADY_EXIST     = 1,
@@ -42,12 +48,6 @@ enum GMTicketResponse
     GMTICKET_RESPONSE_UPDATE_ERROR      = 5,
     GMTICKET_RESPONSE_TICKET_DELETED    = 9
 };
-
-/**
- * \addtogroup game
- * @{
- * \file
- */
 
 /**
  * This is the class that takes care of representing a ticket made to the GMs on the server

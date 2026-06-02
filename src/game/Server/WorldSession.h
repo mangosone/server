@@ -163,6 +163,7 @@ class PacketFilter
     protected:
         WorldSession* const m_pSession;
 };
+
 /**
  * @brief Map session filter class
  *
@@ -282,7 +283,6 @@ class WorldSession
             return m_playerLogout && m_playerSave;
         }
 
-
         void SizeError(WorldPacket const& packet, uint32 size) const;
 
         void SendPacket(WorldPacket const* packet);
@@ -307,6 +307,18 @@ class WorldSession
         Player* GetPlayer() const
         {
             return _player;
+        }
+        ObjectGuid const& GetNpcWatchLastGuid() const
+        {
+            return m_npcWatchLastGuid;
+        }
+        void SetNpcWatchLastGuid(ObjectGuid const& guid)
+        {
+            m_npcWatchLastGuid = guid;
+        }
+        void ClearNpcWatchLastGuid()
+        {
+            m_npcWatchLastGuid.Clear();
         }
         char const* GetPlayerName() const;
         void SetSecurity(AccountTypes security)
@@ -959,9 +971,8 @@ class WorldSession
         uint32 m_Tutorials[8];
         TutorialDataState m_tutorialState;
         int32 m_clientTimeDelay;
+        ObjectGuid m_npcWatchLastGuid;
         ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
 };
-
 #endif
-
 /// @}

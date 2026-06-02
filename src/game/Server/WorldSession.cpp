@@ -100,7 +100,6 @@ static bool MapSessionFilterHelper(WorldSession* session, OpcodeHandler const& o
     return plr->IsInWorld();
 }
 
-
 /**
  * @brief Process packet in Map context
  * @param packet Packet to process
@@ -149,7 +148,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
     _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), m_expansion(expansion), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
-    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED)
+    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
 {
     if (sock)
     {
@@ -211,7 +210,8 @@ char const* WorldSession::GetPlayerName() const
 void WorldSession::SendPacket(WorldPacket const* packet)
 {
 #ifdef ENABLE_PLAYERBOTS
-    if (GetPlayer()) {
+    if (GetPlayer())
+    {
         if (GetPlayer()->GetPlayerbotAI())
         {
             GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);
@@ -470,6 +470,7 @@ bool WorldSession::Update(PacketFilter& updater)
 }
 
 #ifdef ENABLE_PLAYERBOTS
+
 /**
  * @brief Processes queued packets for a playerbot-controlled session.
  */
@@ -703,6 +704,7 @@ void WorldSession::LogoutPlayer(bool Save)
             Map::DeleteFromWorld(_player);
         }
 
+        ClearNpcWatchLastGuid();
         SetPlayer(NULL);                                    // deleted in Remove/DeleteFromWorld call
 
         ///- Send the 'logout complete' packet to the client
