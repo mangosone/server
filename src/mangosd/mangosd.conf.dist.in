@@ -784,6 +784,33 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #                   0 (AB is disabled)
 #        Default: 600 (AB every 10 minutes)
 #                   N (>0, AB every N seconds)
+#
+#    ScheduledExit.Enable
+#        Enable or disable local wall-clock scheduled shutdown/restart.
+#        Default: 0 (disabled)
+#
+#    ScheduledExit.DayOfWeek
+#        Local day of week for scheduled shutdown/restart.
+#        Default: 3 (Wednesday)
+#                 0 (Sunday) ... 6 (Saturday)
+#
+#    ScheduledExit.Time
+#        Local time for scheduled shutdown/restart in strict HH:MM format.
+#        Default: "05:00"
+#
+#    ScheduledExit.Mode
+#        Exit mode to schedule.
+#        Default: "restart"
+#                 "shutdown"
+#
+#    ScheduledExit.Delay
+#        Countdown delay, in seconds, after the scheduled minute fires.
+#        Default: 900
+#
+#    ScheduledExit.WarningTimes
+#        Comma-separated countdown milestones, in seconds, for localized
+#        ScheduledExit maintenance warnings.
+#        Default: "900,600,300,60"
 ################################################################################
 
 GameType                                  = 1
@@ -847,6 +874,12 @@ WaitAtStartupError                        = 10
 PlayerCommands                            = 0
 Motd                                      = "Welcome to Mangos One"
 AutoBroadcast                             = 0
+ScheduledExit.Enable                      = 0
+ScheduledExit.DayOfWeek                   = 3
+ScheduledExit.Time                        = "05:00"
+ScheduledExit.Mode                        = "restart"
+ScheduledExit.Delay                       = 900
+ScheduledExit.WarningTimes                = "900,600,300,60"
 
 ################################################################################
 # PLAYER INTERACTION

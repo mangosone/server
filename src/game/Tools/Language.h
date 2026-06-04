@@ -953,6 +953,16 @@ Faction Template: %u. */
     LANG_COMMAND_FREEZE_PLAYER_PLAYER_NOT_FOUND               = 1713,    /* You can only freeze online characters. */
     LANG_COMMAND_UNFREEZE_PLAYER_PLAYER_NOT_FOUND             = 1714,    /* You can only unfreeze online characters. */
 
+    // Scheduled exit warnings
+    LANG_SCHEDULED_EXIT_RESTART_15_MIN                        = 1730,
+    LANG_SCHEDULED_EXIT_RESTART_10_MIN                        = 1731,
+    LANG_SCHEDULED_EXIT_RESTART_5_MIN                         = 1732,
+    LANG_SCHEDULED_EXIT_RESTART_1_MIN                         = 1733,
+    LANG_SCHEDULED_EXIT_SHUTDOWN_15_MIN                       = 1734,
+    LANG_SCHEDULED_EXIT_SHUTDOWN_10_MIN                       = 1735,
+    LANG_SCHEDULED_EXIT_SHUTDOWN_5_MIN                        = 1736,
+    LANG_SCHEDULED_EXIT_SHUTDOWN_1_MIN                        = 1737,
+
     // Use for not-in-official-sources patches
     //                                    10000-10999
 
