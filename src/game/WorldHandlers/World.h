@@ -30,6 +30,7 @@
 #define MANGOS_H_WORLD
 
 #include "Common.h"
+#include "Utilities/ScheduledExit.h"
 #include "Utilities/Util.h"
 #include "Timer.h"
 #include "Policies/Singleton.h"
@@ -706,10 +707,30 @@ class World
         bool m_broadcastEnable;
         IntervalTimer m_broadcastTimer;
 
+        struct ScheduledExitWarning
+        {
+            uint32 remainingSeconds;
+            int32 textId;
+            bool sent;
+        };
+
+        void LoadScheduledExitConfig();
+        void CheckScheduledExit();
+        void StartScheduledExit();
+        void ResetScheduledExitWarnings();
+        void SendScheduledExitWarnings();
+        void SendScheduledExitWarning(ScheduledExitWarning& warning);
+
         static volatile bool m_stopEvent;
         static uint8 m_ExitCode;
         uint32 m_ShutdownTimer;
         uint32 m_ShutdownMask;
+
+        MaNGOS::ScheduledExitSchedule m_scheduledExit;
+        MaNGOS::ScheduledExitState m_scheduledExitState;
+        uint32 m_scheduledExitDelay;
+        std::vector<ScheduledExitWarning> m_scheduledExitWarnings;
+        bool m_scheduledExitCountdownActive;
 
         time_t m_startTime;
         time_t m_gameTime;
