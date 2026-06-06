@@ -470,30 +470,36 @@ struct LookingForGroup
     bool HaveInSlot(uint32 _entry, uint32 _type) const
     {
         for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
+        {
             if (slots[i].Is(_entry, _type))
             {
                 return true;
             }
+        }
         return false;
     }
 
     bool canAutoJoin() const
     {
         for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
+        {
             if (slots[i].canAutoJoin())
             {
                 return true;
             }
+        }
         return false;
     }
 
     bool Empty() const
     {
         for (int i = 0; i < MAX_LOOKING_FOR_GROUP_SLOT; ++i)
+        {
             if (!slots[i].Empty())
             {
                 return false;
             }
+        }
         return more.Empty();
     }
 
@@ -3427,10 +3433,12 @@ class Player : public Unit
         bool InBattleGroundQueue() const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId != BATTLEGROUND_QUEUE_NONE)
                 {
                     return true;
                 }
+            }
             return false;
         }
 
@@ -3441,10 +3449,12 @@ class Player : public Unit
         uint32 GetBattleGroundQueueIndex(BattleGroundQueueTypeId bgQueueTypeId) const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == bgQueueTypeId)
                 {
                     return i;
                 }
+            }
             return PLAYER_MAX_BATTLEGROUND_QUEUES;
         }
 
@@ -3452,10 +3462,12 @@ class Player : public Unit
         bool IsInvitedForBattleGroundQueueType(BattleGroundQueueTypeId bgQueueTypeId) const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == bgQueueTypeId)
                 {
                     return m_bgBattleGroundQueueID[i].invitedToInstance != 0;
                 }
+            }
             return false;
         }
 
@@ -3492,10 +3504,12 @@ class Player : public Unit
         bool HasFreeBattleGroundQueueId()
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == BATTLEGROUND_QUEUE_NONE)
                 {
                     return true;
                 }
+            }
             return false;
         }
 
@@ -3517,20 +3531,24 @@ class Player : public Unit
         void SetInviteForBattleGroundQueueType(BattleGroundQueueTypeId bgQueueTypeId, uint32 instanceId)
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == bgQueueTypeId)
                 {
                     m_bgBattleGroundQueueID[i].invitedToInstance = instanceId;
                 }
+            }
         }
 
         // Check if the player is invited for a specific battleground instance
         bool IsInvitedForBattleGroundInstance(uint32 instanceId) const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].invitedToInstance == instanceId)
                 {
                     return true;
                 }
+            }
             return false;
         }
 

@@ -766,12 +766,14 @@ void Player::UpdateManaRegen()
     // Bonus from some dummy auras
     AuraList const& mDummyAuras = GetAurasByType(SPELL_AURA_PERIODIC_DUMMY);
     for (AuraList::const_iterator i = mDummyAuras.begin(); i != mDummyAuras.end(); ++i)
+    {
         if ((*i)->GetId() == 34074)                         // Aspect of the Viper
         {
             power_regen_mp5 += (*i)->GetModifier()->m_amount * Intellect / 500.0f;
             // Add regen bonus from level in this dummy
             power_regen_mp5 += getLevel() * 35 / 100;
         }
+    }
 
     // Set regen rate in cast state apply only on spirit based regen
     int32 modManaRegenInterrupt = GetTotalAuraModifier(SPELL_AURA_MOD_MANA_REGEN_INTERRUPT);

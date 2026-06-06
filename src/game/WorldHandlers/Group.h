@@ -312,10 +312,12 @@ class Group
         ObjectGuid GetMemberGuid(const std::string& name)
         {
             for (member_citerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
+            {
                 if (itr->name == name)
                 {
                     return itr->guid;
                 }
+            }
 
             return ObjectGuid();
         }
@@ -522,10 +524,12 @@ class Group
         member_citerator _getMemberCSlot(ObjectGuid guid) const
         {
             for (member_citerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
+            {
                 if (itr->guid == guid)
                 {
                     return itr;
                 }
+            }
 
             return m_memberSlots.end();
         }
@@ -533,10 +537,12 @@ class Group
         member_witerator _getMemberWSlot(ObjectGuid guid)
         {
             for (member_witerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
+            {
                 if (itr->guid == guid)
                 {
                     return itr;
                 }
+            }
 
             return m_memberSlots.end();
         }

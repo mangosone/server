@@ -380,10 +380,12 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                     {
                         uint32 count = 0;
                         for (TargetList::const_iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+                        {
                             if (ihit->effectMask & (1 << effect_idx))
                             {
                                 ++count;
                             }
+                        }
 
                         damage /= count;                    // divide to all targets
                         break;
@@ -2240,10 +2242,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     // Improved Life Tap mod
                     Unit::AuraList const& auraDummy = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
                     for (Unit::AuraList::const_iterator itr = auraDummy.begin(); itr != auraDummy.end(); ++itr)
+                    {
                         if ((*itr)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARLOCK && (*itr)->GetSpellProto()->SpellIconID == 208)
                         {
                             mana = ((*itr)->GetModifier()->m_amount + 100) * mana / 100;
                         }
+                    }
 
                     m_caster->CastCustomSpell(m_caster, 31818, &mana, NULL, NULL, true);
 
@@ -3477,10 +3481,12 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
             int damageAmount = 0;
             Unit::AuraList const& mDummyAuras = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
             for (Unit::AuraList::const_iterator i = mDummyAuras.begin(); i != mDummyAuras.end(); ++i)
+            {
                 if ((*i)->GetId() == 45062)
                 {
                     damageAmount += (*i)->GetModifier()->m_amount;
                 }
+            }
             if (damageAmount)
             {
                 m_caster->RemoveAurasDueToSpell(45062);
@@ -6345,10 +6351,12 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     // check presence
                     for (int j = 0; j < 4; ++j)
+                    {
                         if (unitTarget->HasAura(spells[j], EFFECT_INDEX_0))
                         {
                             return;
                         }
+                    }
 
                     unitTarget->CastSpell(unitTarget, spells[urand(0, 3)], true);
                     return;
@@ -7032,10 +7040,12 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     // don't overwrite an existing aura
                     for (uint8 i = 0; i < 5; ++i)
+                    {
                         if (unitTarget->HasAura(spellid + i, EFFECT_INDEX_0))
                         {
                             return;
                         }
+                    }
 
                     unitTarget->CastSpell(unitTarget, spellid + urand(0, 4), true);
                     break;
