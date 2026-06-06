@@ -168,11 +168,11 @@ typedef UNORDERED_MAP<uint32, PlayerSpell> PlayerSpellMap;
  */
 struct SpellModifier
 {
+
     /**
      * @brief Constructor
      */
     SpellModifier() : op(SpellModOp()), type(SPELLMOD_FLAT), charges(0), value(0), spellId(0), lastAffected(NULL) {}
-
 
     /**
      * @brief Constructor with uint64 mask
@@ -345,7 +345,7 @@ struct PlayerClassLevelInfo
 // Structure to hold player class info
 struct PlayerClassInfo
 {
-    PlayerClassInfo() : levelInfo(NULL) { }
+    PlayerClassInfo() : levelInfo(NULL) {}
 
     PlayerClassLevelInfo* levelInfo; // Level info array [level-1] 0..MaxPlayerLevel-1
 };
@@ -4247,6 +4247,9 @@ class Player : public Unit
 
         // The player's camera
         Camera m_camera;
+
+        // Countdown (ms) for the periodic observer-side visibility sweep
+        uint32 m_visibilityObserverSweepTimer;
 
         // Grid reference for the player
         GridReference<Player> m_gridRef;

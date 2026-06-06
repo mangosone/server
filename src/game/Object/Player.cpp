@@ -405,13 +405,14 @@ Item* TradeData::GetItem(TradeSlots slot) const
 bool TradeData::HasItem(ObjectGuid item_guid) const
 {
     for (int i = 0; i < TRADE_SLOT_COUNT; ++i)
+    {
         if (m_items[i] == item_guid)
         {
             return true;
         }
+    }
     return false;
 }
-
 
 /**
  * @brief Gets the item used as the current trade spell reagent.
@@ -562,6 +563,8 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_speakTime = 0;
     m_speakCount = 0;
+
+    m_visibilityObserverSweepTimer = World::GetVisibilityObserverSweepInterval();
 
     m_objectType |= TYPEMASK_PLAYER;
     m_objectTypeId = TYPEID_PLAYER;
@@ -1499,11 +1502,13 @@ void Player::HandleDrowning(uint32 time_diff)
     // Recheck timers flag
     m_MirrorTimerFlags &= ~UNDERWATER_EXIST_TIMERS;
     for (int i = 0; i < MAX_TIMERS; ++i)
+    {
         if (m_MirrorTimer[i] != DISABLED_MIRROR_TIMER)
         {
             m_MirrorTimerFlags |= UNDERWATER_EXIST_TIMERS;
             break;
         }
+    }
     m_MirrorTimerFlagsLast = m_MirrorTimerFlags;
 }
 
@@ -1612,6 +1617,28 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     SetCanDelayTeleport(true);
     Unit::Update(update_diff, p_time);
     SetCanDelayTeleport(false);
+
+    // Periodic observer-side visibility maintenance.
+    // The owner's visible set is otherwise refreshed only when the player moves
+    // (Camera::UpdateVisibilityForOwner via OnRelocated), while an object moving
+    // out of range only re-notifies observers still near that object. A
+    // near-stationary player therefore never gets an out-of-range update for an
+    // active object that walks away, leaving it frozen on the client. Sweep the
+    // owner's visible set on an interval so out-of-range objects are dropped even
+    // when the player stands still. Skipped mid-teleport (visibility is rebuilt
+    // by the teleport path) and gated by config.
+    if (World::GetVisibilityObserverSweepEnabled() && !IsBeingTeleported())
+    {
+        if (m_visibilityObserverSweepTimer <= update_diff)
+        {
+            m_visibilityObserverSweepTimer = World::GetVisibilityObserverSweepInterval();
+            GetCamera().UpdateVisibilityForOwner();
+        }
+        else
+        {
+            m_visibilityObserverSweepTimer -= update_diff;
+        }
+    }
 
     // Update player-only attacks
     if (uint32 ranged_att = getAttackTimer(RANGED_ATTACK))
@@ -2081,7 +2108,6 @@ bool Player::BuildEnumData(QueryResult* result, WorldPacket* p_data)
         *p_data << uint32(petFamily);
     }
 
-
     Tokens data = StrSplit(fields[19].GetCppString(), " ");
     for (uint8 slot = 0; slot < EQUIPMENT_SLOT_END; ++slot)
     {
@@ -2253,10 +2279,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     // We have to perform this check before the teleport, otherwise the
     // ObjectAccessor won't find the flag.
     if (duel && GetMapId() != mapid)
+    {
         if (GetMap()->GetGameObject(GetGuidValue(PLAYER_DUEL_ARBITER)))
         {
             DuelComplete(DUEL_FLED);
         }
+    }
 
     // reset movement flags at teleport, because player will continue move with these flags after teleport
     m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
@@ -2363,10 +2391,12 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             // stop spellcasting
             // not attempt interrupt teleportation spell at caster teleport
             if (!(options & TELE_TO_SPELL))
+            {
                 if (IsNonMeleeSpellCasted(true))
                 {
                     InterruptNonMeleeSpells(true);
                 }
+            }
 
             // remove auras before removing from map...
             RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_CHANGE_MAP | AURA_INTERRUPT_FLAG_MOVE | AURA_INTERRUPT_FLAG_TURNING);
