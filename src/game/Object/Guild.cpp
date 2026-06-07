@@ -2994,10 +2994,12 @@ void Guild::DeleteGuildBankItems(bool alsoInDB /*= false*/)
 bool GuildItemPosCount::isContainedIn(GuildItemPosCountVec const& vec) const
 {
     for (GuildItemPosCountVec::const_iterator itr = vec.begin(); itr != vec.end(); ++itr)
+    {
         if (itr->Slot == this->Slot)
         {
             return true;
         }
+    }
 
     return false;
 }

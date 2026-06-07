@@ -246,10 +246,12 @@ void Bag::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) cons
     Item::BuildCreateUpdateBlockForPlayer(data, target);
 
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i])
         {
             m_bagslot[i]->BuildCreateUpdateBlockForPlayer(data, target);
         }
+    }
 }
 
 /**
@@ -260,10 +262,12 @@ void Bag::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) cons
 bool Bag::IsEmpty() const
 {
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i])
         {
             return false;
         }
+    }
 
     return true;
 }
@@ -277,10 +281,12 @@ bool Bag::IsEmpty() const
 Item* Bag::GetItemByEntry(uint32 item) const
 {
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i] && m_bagslot[i]->GetEntry() == item)
         {
             return m_bagslot[i];
         }
+    }
 
     return NULL;
 }
@@ -297,11 +303,13 @@ uint32 Bag::GetItemCount(uint32 item, Item* eItem) const
     uint32 count = 0;
 
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i])
             if (m_bagslot[i] != eItem && m_bagslot[i]->GetEntry() == item)
             {
                 count += m_bagslot[i]->GetCount();
             }
+    }
 
     if (eItem && eItem->GetProto()->GemProperties)
     {

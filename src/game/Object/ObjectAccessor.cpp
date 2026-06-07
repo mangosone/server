@@ -142,10 +142,12 @@ Player* ObjectAccessor::FindPlayerByName(const char* name)
 {
     ACE_READ_GUARD_RETURN(HashMapHolder<Player>::LockType, guard, i_playerMap.GetLock(), nullptr)
     for (auto& iter : i_playerMap.GetContainer())
+    {
         if (iter.second->IsInWorld() && (::strcmp(name, iter.second->GetName()) == 0))
         {
             return iter.second;
         }
+    }
     return nullptr;
 }
 
@@ -265,6 +267,7 @@ void ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, 
     ACE_GUARD(LockType, guard, i_corpseGuard)
 
     for (Player2CorpsesMapType::iterator iter = i_player2corpse.begin(); iter != i_player2corpse.end(); ++iter)
+    {
       if (iter->second->GetGrid() == gridpair)
       {
           // verify, if the corpse in our instance (add only corpses which are)
@@ -280,6 +283,7 @@ void ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, 
               grid.AddWorldObject(iter->second);
           }
       }
+    }
 }
 
 /**

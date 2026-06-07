@@ -138,10 +138,12 @@ WeaponAttackType GetWeaponAttackType(SpellEntry const* spellInfo);
 inline bool IsSpellHaveEffect(SpellEntry const* spellInfo, SpellEffects effect)
 {
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (SpellEffects(spellInfo->Effect[i]) == effect)
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -163,11 +165,13 @@ inline bool IsAuraApplyEffect(SpellEntry const* spellInfo, SpellEffectIndex effe
 inline bool IsSpellAppliesAura(SpellEntry const* spellInfo, uint32 effectMask = ((1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)))
 {
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (effectMask & (1 << i))
             if (IsAuraApplyEffect(spellInfo, SpellEffectIndex(i)))
             {
                 return true;
             }
+    }
 
     return false;
 }
@@ -203,21 +207,25 @@ inline bool IsPeriodicRegenerateEffect(SpellEntry const* spellInfo, SpellEffectI
 inline bool IsSpellHaveAura(SpellEntry const* spellInfo, AuraType aura, uint32 effectMask = (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2))
 {
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (effectMask & (1 << i))
             if (AuraType(spellInfo->EffectApplyAuraName[i]) == aura)
             {
                 return true;
             }
+    }
     return false;
 }
 
 inline bool IsSpellLastAuraEffect(SpellEntry const* spellInfo, SpellEffectIndex effecIdx)
 {
     for (int i = effecIdx + 1; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (spellInfo->EffectApplyAuraName[i])
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -501,10 +509,12 @@ inline bool IsAreaAuraEffect(uint32 effect)
 inline bool HasAreaAuraEffect(SpellEntry const* spellInfo)
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (IsAreaAuraEffect(spellInfo->Effect[i]))
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -642,11 +652,14 @@ inline uint32 GetAllSpellMechanicMask(SpellEntry const* spellInfo)
     {
         mask |= 1 << (spellInfo->Mechanic - 1);
     }
+
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (spellInfo->EffectMechanic[i])
         {
             mask |= 1 << (spellInfo->EffectMechanic[i] - 1);
         }
+    }
     return mask;
 }
 
@@ -685,10 +698,12 @@ inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
     }
 
     for (int i = 0; i < 3; i++)
+    {
         if (spellproto->EffectApplyAuraName[i] == auraType)
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -1258,10 +1273,12 @@ class SpellMgr
 
             // check present in same rank chain
             for (; itr != mSpellChains.end(); itr = mSpellChains.find(itr->second.prev))
+            {
                 if (itr->second.prev == spell2)
                 {
                     return true;
                 }
+            }
 
             return false;
         }
@@ -1304,10 +1321,12 @@ class SpellMgr
         {
             SpellLearnSpellMapBounds bounds = GetSpellLearnSpellMapBounds(spell_id1);
             for (SpellLearnSpellMap::const_iterator i = bounds.first; i != bounds.second; ++i)
+            {
                 if (i->second.spell == spell_id2)
                 {
                     return true;
                 }
+            }
             return false;
         }
 

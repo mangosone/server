@@ -2244,12 +2244,14 @@ bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
 void Pet::CleanupActionBar()
 {
     for (int i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
+    {
         if (UnitActionBarEntry const* ab = m_charmInfo->GetActionBarEntry(i))
             if (uint32 action = ab->GetAction())
                 if (ab->IsActionBarForSpell() && !HasSpell(action))
                 {
                     m_charmInfo->SetActionBar(i, 0, ACT_DISABLED);
                 }
+    }
 }
 
 /**
@@ -2739,10 +2741,12 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             {
                 AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
                 for (AuraList::const_iterator it = auras.begin(); it != auras.end(); ++it)
+                {
                     if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
                     {
                         main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
                     }
+                }
             }
             else
             {

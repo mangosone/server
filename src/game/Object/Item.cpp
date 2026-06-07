@@ -76,10 +76,12 @@ void AddItemsSetItem(Player* player, Item* item)
 
         size_t x = 0;
         for (; x < player->ItemSetEff.size(); ++x)
+        {
             if (!player->ItemSetEff[x])
             {
                 break;
             }
+        }
 
         if (x < player->ItemSetEff.size())
         {
@@ -107,10 +109,12 @@ void AddItemsSetItem(Player* player, Item* item)
 
         uint32 z = 0;
         for (; z < 8; ++z)
+        {
             if (eff->spells[z] && eff->spells[z]->Id == set->spells[x])
             {
                 break;
             }
+        }
 
         if (z < 8)
         {
@@ -1215,10 +1219,12 @@ bool Item::IsTargetValidForItemUse(Unit* pUnitTarget)
     }
 
     for (ItemRequiredTargetMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+    {
         if (itr->second.IsFitToRequirements(pUnitTarget))
         {
             return true;
         }
+    }
 
     return false;
 }

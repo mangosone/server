@@ -207,7 +207,10 @@ struct PetLevelInfo
 {
     PetLevelInfo() : health(0), mana(0), armor(0)
     {
-        for (int i = 0; i < MAX_STATS; ++i) stats[i] = 0;
+        for (int i = 0; i < MAX_STATS; ++i)
+        {
+            stats[i] = 0;
+        }
     }
 
     uint16 stats[MAX_STATS];
@@ -870,10 +873,12 @@ class ObjectMgr
             }
 
             for (MailLevelRewardList::const_iterator set_itr = map_itr->second.begin(); set_itr != map_itr->second.end(); ++set_itr)
+            {
                 if (set_itr->raceMask & raceMask)
                 {
                     return &*set_itr;
                 }
+            }
 
             return NULL;
         }
@@ -904,10 +909,12 @@ class ObjectMgr
         void DoCreatureData(Worker& worker) const
         {
             for (CreatureDataMap::const_iterator itr = mCreatureDataMap.begin(); itr != mCreatureDataMap.end(); ++itr)
+            {
                 if (worker(*itr))
                 {
                     break;
                 }
+            }
         }
 
         CreatureLocale const* GetCreatureLocale(uint32 entry) const
@@ -1026,10 +1033,12 @@ class ObjectMgr
         void DoGOData(Worker& worker) const
         {
             for (GameObjectDataMap::const_iterator itr = mGameObjectDataMap.begin(); itr != mGameObjectDataMap.end(); ++itr)
+            {
                 if (worker(*itr))                           // arg = GameObjectDataPair
                 {
                     break;
                 }
+            }
         }
 
         MangosStringLocale const* GetMangosStringLocale(int32 entry) const
