@@ -9383,11 +9383,11 @@ GameTele const* ObjectMgr::GetGameTele(const std::string& name) const
         {
             return &itr->second;
         }
-    }
         else if (alt == NULL && itr->second.wnameLow.find(wname) != std::wstring::npos)
         {
             alt = &itr->second;
         }
+    }
 
     return alt;
 }

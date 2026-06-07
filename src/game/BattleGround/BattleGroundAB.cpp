@@ -380,11 +380,11 @@ void BattleGroundAB::FillInitialWorldStates(WorldPacket& data, uint32& count)
         {
             ++ally;
         }
-    }
         else if (m_Nodes[node] == BG_AB_NODE_STATUS_HORDE_OCCUPIED)
         {
             ++horde;
         }
+    }
 
     FillInitialWorldState(data, count, BG_AB_OP_OCCUPIED_BASES_ALLY, ally);
     FillInitialWorldState(data, count, BG_AB_OP_OCCUPIED_BASES_HORDE, horde);
@@ -427,11 +427,11 @@ void BattleGroundAB::_SendNodeUpdate(uint8 node)
         {
             ++ally;
         }
-    }
         else if (m_Nodes[i] == BG_AB_NODE_STATUS_HORDE_OCCUPIED)
         {
             ++horde;
         }
+    }
 
     UpdateWorldState(BG_AB_OP_OCCUPIED_BASES_ALLY, ally);
     UpdateWorldState(BG_AB_OP_OCCUPIED_BASES_HORDE, horde);
