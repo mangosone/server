@@ -636,10 +636,12 @@ void Transport::UpdateForMap(Map const* targetMap)
         transData.BuildPacket(&out_packet, true);
 
         for (Map::PlayerList::const_iterator itr = pl.begin(); itr != pl.end(); ++itr)
+        {
             if (this != itr->getSource()->GetTransport())
             {
                 itr->getSource()->SendDirectMessage(&out_packet);
             }
+        }
     }
 }
 

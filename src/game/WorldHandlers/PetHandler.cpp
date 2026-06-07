@@ -769,11 +769,13 @@ void WorldSession::HandlePetUnlearnOpcode(WorldPacket& recvPacket)
     pet->SetTP(pet->getLevel() * (pet->GetLoyaltyLevel() - 1));
 
     for (int i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
+    {
         if (UnitActionBarEntry const* ab = charmInfo->GetActionBarEntry(i))
             if (ab->GetAction() && ab->IsActionBarForSpell())
             {
                 charmInfo->SetActionBar(i, 0, ACT_DISABLED);
             }
+    }
 
     // relearn pet passives
     pet->LearnPetPassives();

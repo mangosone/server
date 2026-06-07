@@ -534,10 +534,12 @@ Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* curr
 
     if (SpellEntry const* triggeredSpellInfo = sSpellStore.LookupEntry(triggeredSpellId))
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+        {
             if (triggeredSpellInfo->EffectImplicitTargetA[i] == TARGET_SINGLE_ENEMY)
             {
                 return new SingleEnemyTargetAura(spellproto, eff, currentBasePoints, holder, target, caster, castItem);
             }
+        }
 
     return new Aura(spellproto, eff, currentBasePoints, holder, target, caster, castItem);
 }
@@ -1081,11 +1083,13 @@ void Aura::ReapplyAffectedPassiveAuras()
     // re-apply talents/passives/area auras applied to group members (it affected by player spellmods)
     if (Group* group = ((Player*)GetTarget())->GetGroup())
         for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+        {
             if (Player* member = itr->getSource())
                 if (member != GetTarget() && member->IsInMap(GetTarget()))
                 {
                     ReapplyAffectedPassiveAuras(member, false);
                 }
+        }
 }
 
 /*********************************************************/
@@ -1323,10 +1327,12 @@ void Aura::TriggerSpell()
                         Cell::VisitGridObjects(triggerTarget, searcher, 15.0f);
 
                         for (std::list<Creature*>::const_iterator itr = lList.begin(); itr != lList.end(); ++itr)
+                        {
                             if ((*itr)->IsAlive())
                             {
                                 (*itr)->AddThreat(triggerTarget, float(5000));
                             }
+                        }
 
                         return;
                     }
@@ -3351,10 +3357,12 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
         // serverside just needs to register the new spells so that player isn't kicked as cheater
         if (target->GetTypeId() == TYPEID_PLAYER)
             for (uint32 i = 0; i < 8; ++i)
+            {
                 if (ssEntry->spellId[i])
                 {
                     ((Player*)target)->addSpell(ssEntry->spellId[i], true, false, false, false);
                 }
+            }
     }
     else
     {
@@ -3395,10 +3403,12 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
         // look at the comment in apply-part
         if (target->GetTypeId() == TYPEID_PLAYER)
             for (uint32 i = 0; i < 8; ++i)
+            {
                 if (ssEntry->spellId[i])
                 {
                     ((Player*)target)->removeSpell(ssEntry->spellId[i], false, false, false);
                 }
+            }
     }
 
     // adding/removing linked auras
@@ -4789,12 +4799,14 @@ void Aura::HandleAuraModSilence(bool apply, bool Real)
         target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
         // Stop cast only spells vs PreventionType == SPELL_PREVENTION_TYPE_SILENCE
         for (uint32 i = CURRENT_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
+        {
             if (Spell* spell = target->GetCurrentSpell(CurrentSpellTypes(i)))
                 if (spell->m_spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
                     // Stop spells on prepare or casting state
                 {
                     target->InterruptSpell(CurrentSpellTypes(i), false);
                 }
+        }
 
         switch (GetId())
         {
@@ -4874,10 +4886,12 @@ void Aura::HandleModThreat(bool apply, bool Real)
 
     if (target->GetTypeId() == TYPEID_PLAYER)
         for (int8 x = 0; x < MAX_SPELL_SCHOOL; ++x)
+        {
             if (m_modifier.m_miscvalue & int32(1 << x))
             {
                 ApplyPercentModFloatVar(target->m_threatModifier[x], float(m_modifier.m_amount), apply);
             }
+        }
 }
 
 /**
@@ -5819,10 +5833,12 @@ void Aura::HandleModBaseResistance(bool apply, bool /*Real*/)
     else
     {
         for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
+        {
             if (m_modifier.m_miscvalue & (1 << i))
             {
                 GetTarget()->HandleStatModifier(UnitMods(UNIT_MOD_RESISTANCE_START + i), TOTAL_VALUE, float(m_modifier.m_amount), apply);
             }
+        }
     }
 }
 
@@ -6344,10 +6360,12 @@ void Aura::HandleAuraModCritPercent(bool apply, bool Real)
     if (Real)
     {
         for (int i = 0; i < MAX_ATTACK; ++i)
+        {
             if (Item* pItem = ((Player*)target)->GetWeaponForAttack(WeaponAttackType(i), true, false))
             {
                 ((Player*)target)->_ApplyWeaponDependentAuraCritMod(pItem, WeaponAttackType(i), this, apply);
             }
+        }
     }
 
     // mods must be applied base at equipped weapon class and subclass comparison
@@ -6446,10 +6464,12 @@ void Aura::HandleModSpellCritChanceShool(bool /*apply*/, bool Real)
     }
 
     for (int school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
+    {
         if (m_modifier.m_miscvalue & (1 << school))
         {
             ((Player*)GetTarget())->UpdateSpellCritChance(school);
         }
+    }
 }
 
 /********************************/
@@ -6707,10 +6727,12 @@ void Aura::HandleModDamageDone(bool apply, bool Real)
     if (Real && target->GetTypeId() == TYPEID_PLAYER)
     {
         for (int i = 0; i < MAX_ATTACK; ++i)
+        {
             if (Item* pItem = ((Player*)target)->GetWeaponForAttack(WeaponAttackType(i), true, false))
             {
                 ((Player*)target)->_ApplyWeaponDependentAuraDamageMod(pItem, WeaponAttackType(i), this, apply);
             }
+        }
     }
 
     // m_modifier.m_miscvalue is bitmask of spell schools
@@ -6811,10 +6833,12 @@ void Aura::HandleModDamagePercentDone(bool apply, bool Real)
     if (Real && target->GetTypeId() == TYPEID_PLAYER)
     {
         for (int i = 0; i < MAX_ATTACK; ++i)
+        {
             if (Item* pItem = ((Player*)target)->GetWeaponForAttack(WeaponAttackType(i), true, false))
             {
                 ((Player*)target)->_ApplyWeaponDependentAuraDamageMod(pItem, WeaponAttackType(i), this, apply);
             }
+        }
     }
 
     // m_modifier.m_miscvalue is bitmask of spell schools
@@ -6903,10 +6927,12 @@ void Aura::HandleModPowerCostPCT(bool apply, bool Real)
 
     float amount = m_modifier.m_amount / 100.0f;
     for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
+    {
         if (m_modifier.m_miscvalue & (1 << i))
         {
             GetTarget()->ApplyModSignedFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + i, amount, apply);
         }
+    }
 }
 
 /**
@@ -6924,10 +6950,12 @@ void Aura::HandleModPowerCost(bool apply, bool Real)
     }
 
     for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
+    {
         if (m_modifier.m_miscvalue & (1 << i))
         {
             GetTarget()->ApplyModInt32Value(UNIT_FIELD_POWER_COST_MODIFIER + i, m_modifier.m_amount, apply);
         }
+    }
 }
 
 /*********************************************************/
@@ -7207,10 +7235,12 @@ void Aura::HandleModRating(bool apply, bool Real)
     }
 
     for (uint32 rating = 0; rating < MAX_COMBAT_RATING; ++rating)
+    {
         if (m_modifier.m_miscvalue & (1 << rating))
         {
             ((Player*)GetTarget())->ApplyRatingMod(CombatRating(rating), m_modifier.m_amount, apply);
         }
+    }
 }
 
 void Aura::HandleForceMoveForward(bool apply, bool Real)
@@ -7686,11 +7716,13 @@ void Aura::PeriodicTick()
 
             if (!target->IsAlive() && pCaster->IsNonMeleeSpellCasted(false))
                 for (uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
+                {
                     if (Spell* spell = pCaster->GetCurrentSpell(CurrentSpellTypes(i)))
                         if (spell->m_spellInfo->Id == GetId())
                         {
                             spell->cancel();
                         }
+                }
 
             if (Player* modOwner = pCaster->GetSpellModOwner())
             {
@@ -8574,10 +8606,12 @@ void Aura::HandleAuraSafeFall(bool Apply, bool Real)
 bool Aura::IsLastAuraOnHolder()
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (i != GetEffIndex() && GetHolder()->m_auras[i])
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -8685,10 +8719,12 @@ void SpellAuraHolder::RemoveAura(SpellEffectIndex index)
 void SpellAuraHolder::ApplyAuraModifiers(bool apply, bool real)
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX && !IsDeleted(); ++i)
+    {
         if (Aura* aur = GetAuraByEffectIndex(SpellEffectIndex(i)))
         {
             aur->ApplyModifier(apply, real);
         }
+    }
 }
 
 /**
@@ -9257,10 +9293,12 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                 // If target still has one of Warrior's bleeds, do nothing
                 Unit::AuraList const& PeriodicDamage = m_target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
                 for (Unit::AuraList::const_iterator i = PeriodicDamage.begin(); i != PeriodicDamage.end(); ++i)
+                {
                     if ((*i)->GetCasterGuid() == GetCasterGuid() &&
                             (*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARRIOR &&
                             (*i)->GetSpellProto()->Mechanic == MECHANIC_BLEED)
                         return;
+                }
 
                 spellId1 = 30069;                           // Blood Frenzy (Rank 1)
                 spellId2 = 30070;                           // Blood Frenzy (Rank 2)
@@ -9352,10 +9390,12 @@ SpellAuraHolder::~SpellAuraHolder()
 {
     // note: auras in delete list won't be affected since they clear themselves from holder when adding to deletedAuraslist
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (Aura* aur = m_auras[i])
         {
             delete aur;
         }
+    }
 }
 
 /**
@@ -9478,10 +9518,12 @@ bool SpellAuraHolder::HasMechanic(uint32 mechanic) const
     }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (m_auras[i] && m_spellProto->EffectMechanic[i] == mechanic)
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -9499,10 +9541,12 @@ bool SpellAuraHolder::HasMechanicMask(uint32 mechanicMask) const
     }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (m_auras[i] && m_spellProto->EffectMechanic[i] && ((1 << (m_spellProto->EffectMechanic[i] - 1)) & mechanicMask))
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -9514,11 +9558,13 @@ bool SpellAuraHolder::HasMechanicMask(uint32 mechanicMask) const
 bool SpellAuraHolder::IsPersistent() const
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (Aura* aur = m_auras[i])
             if (aur->IsPersistent())
             {
                 return true;
             }
+    }
     return false;
 }
 
@@ -9530,11 +9576,13 @@ bool SpellAuraHolder::IsPersistent() const
 bool SpellAuraHolder::IsAreaAura() const
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (Aura* aur = m_auras[i])
             if (aur->IsAreaAura())
             {
                 return true;
             }
+    }
     return false;
 }
 
@@ -9546,11 +9594,13 @@ bool SpellAuraHolder::IsAreaAura() const
 bool SpellAuraHolder::IsPositive() const
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (Aura* aur = m_auras[i])
             if (!aur->IsPositive())
             {
                 return false;
             }
+    }
     return true;
 }
 
@@ -9562,10 +9612,12 @@ bool SpellAuraHolder::IsPositive() const
 bool SpellAuraHolder::IsEmptyHolder() const
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (m_auras[i])
         {
             return false;
         }
+    }
     return true;
 }
 

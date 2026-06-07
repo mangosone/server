@@ -115,9 +115,11 @@ Group::~Group()
     // will be unloaded first so we must be prepared for both cases
     // this may unload some dungeon persistent state
     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
-    for (BoundInstancesMap::iterator itr2 = m_boundInstances[i].begin(); itr2 != m_boundInstances[i].end(); ++itr2)
     {
-        itr2->second.state->RemoveGroup(this);
+        for (BoundInstancesMap::iterator itr2 = m_boundInstances[i].begin(); itr2 != m_boundInstances[i].end(); ++itr2)
+        {
+            itr2->second.state->RemoveGroup(this);
+        }
     }
 
     // Sub group counters clean up
@@ -291,10 +293,12 @@ void Group::ConvertToRaid()
 
     // update quest related GO states (quest activity dependent from raid membership)
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
+    {
         if (Player* player = sObjectMgr.GetPlayer(citr->guid))
         {
             player->UpdateForQuestWorldObjects();
         }
+    }
 }
 
 /**
@@ -390,10 +394,12 @@ void Group::RemoveAllInvites()
 Player* Group::GetInvited(ObjectGuid guid) const
 {
     for (InvitesList::const_iterator itr = m_invitees.begin(); itr != m_invitees.end(); ++itr)
+    {
         if ((*itr)->GetObjectGuid() == guid)
         {
             return (*itr);
         }
+    }
 
     return NULL;
 }
@@ -918,10 +924,12 @@ bool Group::CountRollVote(Player* player, ObjectGuid const& lootedTarget, uint32
 {
     Rolls::iterator rollI = RollId.begin();
     for (; rollI != RollId.end(); ++rollI)
+    {
         if ((*rollI)->isValid() && (*rollI)->lootedTargetGUID == lootedTarget && (*rollI)->itemSlot == itemSlot)
         {
             break;
         }
+    }
 
     if (rollI == RollId.end())
     {
@@ -1262,10 +1270,12 @@ void Group::SetTargetIcon(uint8 id, ObjectGuid targetGuid)
     // clean other icons
     if (targetGuid)
         for (int i = 0; i < TARGET_ICON_COUNT; ++i)
+        {
             if (m_targetIcons[i] == targetGuid)
             {
                 SetTargetIcon(i, ObjectGuid());
             }
+        }
 
     m_targetIcons[id] = targetGuid;
 
@@ -1446,11 +1456,13 @@ void Group::UpdatePlayerOutOfRange(Player* pPlayer)
     pPlayer->GetSession()->BuildPartyMemberStatsChangedPacket(pPlayer, &data);
 
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
+    {
         if (Player* player = itr->getSource())
             if (player != pPlayer && !player->HaveAtClient(pPlayer))
             {
                 player->GetSession()->SendPacket(&data);
             }
+    }
 }
 
 /**

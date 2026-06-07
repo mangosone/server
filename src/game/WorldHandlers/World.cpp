@@ -408,10 +408,12 @@ int32 World::GetQueuedSessionPos(WorldSession* sess)
     uint32 position = 1;
 
     for (Queue::const_iterator iter = m_QueuedSessions.begin(); iter != m_QueuedSessions.end(); ++iter, ++position)
+    {
         if ((*iter) == sess)
         {
             return position;
         }
+    }
 
     return 0;
 }
@@ -2133,11 +2135,13 @@ void World::KickAllLess(AccountTypes sec)
 {
     // session not removed at kick and will removed in next update tick
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
         if (WorldSession* session = itr->second)
             if (session->GetSecurity() < sec)
             {
                 session->KickPlayer();
             }
+    }
 }
 
 /// Ban an account or ban an IP address, duration_secs if it is positive used, otherwise permban
@@ -2753,10 +2757,12 @@ void World::ResetDailyQuests()
     DETAIL_LOG("Daily quests reset for all characters.");
     CharacterDatabase.Execute("DELETE FROM `character_queststatus_daily`");
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
         if (itr->second->GetPlayer())
         {
             itr->second->GetPlayer()->ResetDailyQuestStatus();
         }
+    }
 
     m_NextDailyQuestReset = time_t(m_NextDailyQuestReset + DAY);
     CharacterDatabase.PExecute("UPDATE `saved_variables` SET `NextDailyQuestResetTime` = '" UI64FMTD "'", uint64(m_NextDailyQuestReset));
