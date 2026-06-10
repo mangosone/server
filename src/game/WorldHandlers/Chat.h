@@ -677,6 +677,10 @@ class ChatHandler
         //bool HandlePerfMonCommand(char* args);
 #endif
 
+        //! LivingWorld grid occupancy diagnostic (read-only, GM-only, in-game only)
+        bool HandleGridInfoCommand(char* args);
+        bool HandleGridAnchorsCommand(char* args);
+
         //! Development Commands
         bool HandleSaveAllCommand(char* args);
 
