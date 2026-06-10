@@ -240,7 +240,7 @@ class BattleGroundEYScore : public BattleGroundScore
 
 class BattleGroundEY : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         BattleGroundEY();

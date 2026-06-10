@@ -300,6 +300,7 @@ const uint32 BG_AV_NodeWorldStates[BG_AV_NODES_MAX][4] = /**< alliance_control a
 };
 
 #define BG_AV_MAX_GRAVETYPES 4
+
 /**
  * @brief Through the armor scrap quest, 4 different grave defenders exist.
  *
@@ -365,14 +366,13 @@ inline BG_AV_Nodes& operator++(BG_AV_Nodes& i)
 class BattleGroundAVScore : public BattleGroundScore
 {
     public:
-/**
- * @brief
- *
- */
-        BattleGroundAVScore() : GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), SecondaryObjectives(0) {};
         /**
-         * @brief
-         *
+         * @brief Constructor for BattleGroundAVScore.
+         */
+        BattleGroundAVScore() : GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), SecondaryObjectives(0) {};
+
+        /**
+         * @brief Destructor for BattleGroundAVScore.
          */
         virtual ~BattleGroundAVScore() {};
 
@@ -383,11 +383,11 @@ class BattleGroundAVScore : public BattleGroundScore
         uint32 GetAttr4() const { return TowersDefended; }       ///< Number of defended towers
         uint32 GetAttr5() const { return SecondaryObjectives; }  ///< Number of secondary objectives completed
 
-        uint32 GraveyardsAssaulted; /**< TODO */
-        uint32 GraveyardsDefended; /**< TODO */
-        uint32 TowersAssaulted; /**< TODO */
-        uint32 TowersDefended; /**< TODO */
-        uint32 SecondaryObjectives; /**< TODO */
+        uint32 GraveyardsAssaulted; /**< Number of graveyards assaulted. */
+        uint32 GraveyardsDefended; /**< Number of graveyards defended. */
+        uint32 TowersAssaulted; /**< Number of towers assaulted. */
+        uint32 TowersDefended; /**< Number of towers defended. */
+        uint32 SecondaryObjectives; /**< Number of secondary objectives completed. */
 };
 
 /**
@@ -406,13 +406,14 @@ class BattleGroundAVScore : public BattleGroundScore
  */
 class BattleGroundAV : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         /**
          * @brief Constructor for BattleGroundAV.
          */
         BattleGroundAV();
+
         /**
          * @brief Updates the battleground.
          *
@@ -431,6 +432,7 @@ class BattleGroundAV : public BattleGround
          * @brief Opens the doors at the start of the battleground.
          */
         void StartingEventOpenDoors() override;
+
         /**
          * @brief Fills the initial world states for the battleground.
          *
@@ -439,7 +441,7 @@ class BattleGroundAV : public BattleGround
          */
         void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
-                /**
+        /**
          * @brief Handles an area trigger.
          *
          * @param source The player who triggered the area.
@@ -454,6 +456,7 @@ class BattleGroundAV : public BattleGround
         void Reset() override;
 
         /* General functions */
+
         /**
          * @brief Updates the score for a team.
          *
@@ -472,6 +475,7 @@ class BattleGroundAV : public BattleGround
         void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
 
         /* Event handling functions - these are are called from external scripts */
+
         /**
          * @brief Handles a player clicking on a flag.
          *
@@ -545,6 +549,7 @@ class BattleGroundAV : public BattleGround
 
     private:
         /* Node handling functions */
+
         /**
          * @brief Handles a player assaulting a point.
          *
@@ -632,6 +637,7 @@ class BattleGroundAV : public BattleGround
         bool IsGrave(BG_AV_Nodes node) const { return (node == BG_AV_NODES_ERROR) ? false : !m_Nodes[node].Tower; }
 
         /* Mine handling functions */
+
         /**
          * @brief Changes the owner of a mine.
          *
@@ -641,6 +647,7 @@ class BattleGroundAV : public BattleGround
         void ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx);
 
         /* World state handling functions */
+
         /**
          * @brief Gets the world state type for a node.
          *

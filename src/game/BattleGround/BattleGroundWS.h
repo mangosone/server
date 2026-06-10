@@ -128,6 +128,7 @@ class BattleGroundWGScore : public BattleGroundScore
          * @brief Constructor for BattleGroundWGScore.
          */
         BattleGroundWGScore() : FlagCaptures(0), FlagReturns(0) {};
+
         /**
          * @brief Destructor for BattleGroundWGScore.
          */
@@ -168,13 +169,14 @@ enum BG_WS_Events
  */
 class BattleGroundWS : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         /**
          * @brief Constructor for BattleGroundWS.
          */
         BattleGroundWS();
+
         /**
          * @brief Updates the battleground.
          * @param diff The time difference.
@@ -186,6 +188,7 @@ class BattleGroundWS : public BattleGround
          * @param plr Pointer to the player.
          */
         void AddPlayer(Player* plr) override;
+
         /**
          * @brief Opens the doors at the start of the event.
          */
@@ -196,6 +199,7 @@ class BattleGroundWS : public BattleGround
          * @return ObjectGuid The GUID of the alliance flag carrier.
          */
         ObjectGuid GetAllianceFlagCarrierGuid() const { return m_flagCarrierAlliance; }
+
         /**
          * @brief Gets the GUID of the horde flag carrier.
          * @return ObjectGuid The GUID of the horde flag carrier.
@@ -207,6 +211,7 @@ class BattleGroundWS : public BattleGround
          * @param guid The GUID of the alliance flag carrier.
          */
         void SetAllianceFlagCarrier(ObjectGuid guid) { m_flagCarrierAlliance = guid; }
+
         /**
          * @brief Sets the GUID of the horde flag carrier.
          * @param guid The GUID of the horde flag carrier.
@@ -216,17 +221,25 @@ class BattleGroundWS : public BattleGround
         /**
          * @brief Clears the GUID of the alliance flag carrier.
          */
-        void ClearAllianceFlagCarrier() { m_flagCarrierAlliance.Clear(); }
+        void ClearAllianceFlagCarrier()
+        {
+            m_flagCarrierAlliance.Clear();
+        }
+
         /**
          * @brief Clears the GUID of the horde flag carrier.
          */
-        void ClearHordeFlagCarrier() { m_flagCarrierHorde.Clear(); }
+        void ClearHordeFlagCarrier()
+        {
+            m_flagCarrierHorde.Clear();
+        }
 
         /**
          * @brief Checks if the alliance flag is picked up.
          * @return bool True if the alliance flag is picked up, false otherwise.
          */
         bool IsAllianceFlagPickedUp() const { return !m_flagCarrierAlliance.IsEmpty(); }
+
         /**
          * @brief Checks if the horde flag is picked up.
          * @return bool True if the horde flag is picked up, false otherwise.
@@ -239,11 +252,13 @@ class BattleGroundWS : public BattleGround
          * @param captured True if the flag was captured, false otherwise.
          */
         void RespawnFlag(Team team, bool captured);
+
         /**
          * @brief Respawns the dropped flag for a team.
          * @param team The team.
          */
         void RespawnDroppedFlag(Team team);
+
         /**
          * @brief Gets the flag state for a team.
          * @param team The team.
@@ -256,12 +271,14 @@ class BattleGroundWS : public BattleGround
          * @param source The player who dropped the flag.
          */
         void EventPlayerDroppedFlag(Player* source) override;
+
         /**
          * @brief Handles the event when a player clicks on the flag.
          * @param source The player who clicked on the flag.
          * @param target_obj The flag object.
          */
         void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
+
         /**
          * @brief Handles the event when a player captures the flag.
          * @param source The player who captured the flag.
@@ -274,6 +291,7 @@ class BattleGroundWS : public BattleGround
          * @param guid The GUID of the player.
          */
         void RemovePlayer(Player* plr, ObjectGuid guid) override;
+
         /**
          * @brief Handles area triggers.
          * @param source The player who triggered the area.
@@ -281,21 +299,25 @@ class BattleGroundWS : public BattleGround
          * @return bool True if the trigger was handled, false otherwise.
          */
         bool HandleAreaTrigger(Player* source, uint32 trigger) override;
+
         /**
          * @brief Handles the event when a player is killed.
          * @param player The player who was killed.
          * @param killer The player who killed.
          */
         void HandleKillPlayer(Player* player, Player* killer) override;
+
         /**
          * @brief Resets the battleground.
          */
         void Reset() override;
+
         /**
          * @brief Ends the battleground.
          * @param winner The winning team.
          */
         void EndBattleGround(Team winner) override;
+
         /**
          * @brief Gets the closest graveyard for a player.
          * @param player The player.
@@ -309,11 +331,13 @@ class BattleGroundWS : public BattleGround
          * @param value The flag state value.
          */
         void UpdateFlagState(Team team, uint32 value);
+
         /**
          * @brief Updates the team score.
          * @param team The team.
          */
         void UpdateTeamScore(Team team);
+
         /**
          * @brief Updates the player score.
          * @param source The player.
@@ -321,29 +345,34 @@ class BattleGroundWS : public BattleGround
          * @param value The score value.
          */
         void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
+
         /**
          * @brief Sets the GUID of the dropped flag for a team.
          * @param guid The GUID of the dropped flag.
          * @param team The team.
          */
         void SetDroppedFlagGuid(ObjectGuid guid, Team team)  { m_DroppedFlagGuid[GetTeamIndexByTeamId(team)] = guid;}
+
         /**
          * @brief Clears the GUID of the dropped flag for a team.
          * @param team The team.
          */
         void ClearDroppedFlagGuid(Team team)  { m_DroppedFlagGuid[GetTeamIndexByTeamId(team)].Clear();}
+
         /**
          * @brief Gets the GUID of the dropped flag for a team.
          * @param team The team.
          * @return const ObjectGuid The GUID of the dropped flag.
          */
         ObjectGuid const& GetDroppedFlagGuid(Team team) const { return m_DroppedFlagGuid[GetTeamIndexByTeamId(team)];}
+
         /**
          * @brief Fills the initial world states.
          * @param data The world packet data.
          * @param count The count of world states.
          */
         void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
+
         /**
          * @brief Gets the premature winner of the battleground.
          * @return Team The premature winner.

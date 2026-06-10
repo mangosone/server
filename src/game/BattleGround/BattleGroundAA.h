@@ -37,7 +37,7 @@ class BattleGroundAAScore : public BattleGroundScore
 
 class BattleGroundAA : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         BattleGroundAA();

@@ -295,7 +295,7 @@ void BattleGroundAV::HandleQuestComplete(uint32 questid, Player* player)
             break;
         default:
             DEBUG_LOG("BattleGroundAV: Quest %i completed but is not interesting for us", questid);
-            return;
+            return;  // TODO: Don't think this is needed as well as break; below
             break;
     }
     if (reputation)
@@ -452,19 +452,23 @@ void BattleGroundAV::EndBattleGround(Team winner)
     for (BG_AV_Nodes i = BG_AV_NODES_DUNBALDAR_SOUTH; i <= BG_AV_NODES_STONEHEART_BUNKER; ++i)
     {
         if (m_Nodes[i].State == POINT_CONTROLLED)
+        {
             if (m_Nodes[i].TotalOwner == BG_AV_TEAM_ALLIANCE)
             {
                 ++tower_survived[TEAM_INDEX_ALLIANCE];
             }
+        }
     }
 
     for (BG_AV_Nodes i = BG_AV_NODES_ICEBLOOD_TOWER; i <= BG_AV_NODES_FROSTWOLF_WTOWER; ++i)
     {
         if (m_Nodes[i].State == POINT_CONTROLLED)
+        {
             if (m_Nodes[i].TotalOwner == BG_AV_TEAM_HORDE)
             {
                 ++tower_survived[TEAM_INDEX_HORDE];
             }
+        }
     }
 
     // graves all controlled
@@ -679,8 +683,8 @@ void BattleGroundAV::ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx
         PlaySoundToAll((teamIdx == BG_AV_TEAM_ALLIANCE) ? BG_AV_SOUND_ALLIANCE_GOOD : BG_AV_SOUND_HORDE_GOOD);
         m_Mine_Reclaim_Timer[mine] = BG_AV_MINE_RECLAIM_TIMER;
         SendYell2ToAll(LANG_BG_AV_MINE_TAKEN , LANG_UNIVERSAL, GetSingleCreatureGuid(BG_AV_HERALD, 0),
-                       (teamIdx == BG_AV_TEAM_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE,
-                       (mine == BG_AV_NORTH_MINE) ? LANG_BG_AV_MINE_NORTH : LANG_BG_AV_MINE_SOUTH);
+            (teamIdx == BG_AV_TEAM_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE,
+            (mine == BG_AV_NORTH_MINE) ? LANG_BG_AV_MINE_NORTH : LANG_BG_AV_MINE_SOUTH);
     }
 }
 
@@ -813,16 +817,16 @@ void BattleGroundAV::EventPlayerDefendsPoint(Player* player, BG_AV_Nodes node)
     if (IsTower(node))
     {
         SendYell2ToAll(LANG_BG_AV_TOWER_DEFENDED, LANG_UNIVERSAL, GetSingleCreatureGuid(BG_AV_HERALD, 0),
-                       GetNodeName(node),
-                       (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
+            GetNodeName(node),
+            (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
         UpdatePlayerScore(player, SCORE_TOWERS_DEFENDED, 1);
         PlaySoundToAll(BG_AV_SOUND_BOTH_TOWER_DEFEND);
     }
     else
     {
         SendYell2ToAll(LANG_BG_AV_GRAVE_DEFENDED, LANG_UNIVERSAL, GetSingleCreatureGuid(BG_AV_HERALD, 0),
-                       GetNodeName(node),
-                       (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
+            GetNodeName(node),
+            (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
         UpdatePlayerScore(player, SCORE_GRAVEYARDS_DEFENDED, 1);
         // update the statistic for the defending player
         PlaySoundToAll((teamIdx == TEAM_INDEX_ALLIANCE) ? BG_AV_SOUND_ALLIANCE_GOOD : BG_AV_SOUND_HORDE_GOOD);
@@ -855,15 +859,15 @@ void BattleGroundAV::EventPlayerAssaultsPoint(Player* player, BG_AV_Nodes node)
     if (IsTower(node))
     {
         SendYell2ToAll(LANG_BG_AV_TOWER_ASSAULTED, LANG_UNIVERSAL, GetSingleCreatureGuid(BG_AV_HERALD, 0),
-                       GetNodeName(node),
-                       (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
+            GetNodeName(node),
+            (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
         UpdatePlayerScore(player, SCORE_TOWERS_ASSAULTED, 1);
     }
     else
     {
         SendYell2ToAll(LANG_BG_AV_GRAVE_ASSAULTED, LANG_UNIVERSAL, GetSingleCreatureGuid(BG_AV_HERALD, 0),
-                       GetNodeName(node),
-                       (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
+            GetNodeName(node),
+            (teamIdx == TEAM_INDEX_ALLIANCE) ? LANG_BG_ALLY : LANG_BG_HORDE);
         // update the statistic for the assaulting player
         UpdatePlayerScore(player, SCORE_GRAVEYARDS_ASSAULTED, 1);
     }
@@ -889,9 +893,9 @@ void BattleGroundAV::FillInitialWorldStates(WorldPacket& data, uint32& count)
         {
             stateok = (m_Nodes[i].State == j);
             FillInitialWorldState(data, count, BG_AV_NodeWorldStates[i][GetWorldStateType(j, BG_AV_TEAM_ALLIANCE)],
-                                  m_Nodes[i].Owner == BG_AV_TEAM_ALLIANCE && stateok);
+                m_Nodes[i].Owner == BG_AV_TEAM_ALLIANCE && stateok);
             FillInitialWorldState(data, count, BG_AV_NodeWorldStates[i][GetWorldStateType(j, BG_AV_TEAM_HORDE)],
-                                  m_Nodes[i].Owner == BG_AV_TEAM_HORDE && stateok);
+                m_Nodes[i].Owner == BG_AV_TEAM_HORDE && stateok);
         }
     }
 

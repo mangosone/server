@@ -36,7 +36,7 @@ class BattleGroundBEScore : public BattleGroundScore
 
 class BattleGroundBE : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         BattleGroundBE();

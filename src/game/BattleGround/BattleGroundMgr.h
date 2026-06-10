@@ -112,17 +112,17 @@ typedef std::map<ObjectGuid, PlayerQueueInfo*> GroupQueueInfoPlayers;
  */
 struct GroupQueueInfo
 {
-    GroupQueueInfoPlayers Players;                          /**< player queue info map */
-    Team  GroupTeam;                                        /**< Player team (ALLIANCE/HORDE) */
-    BattleGroundTypeId BgTypeId;                            /**< battleground type id */
-    bool    IsRated;                                        // rated
-    ArenaType arenaType;                                    // 2v2, 3v3, 5v5 or 0 when BG
-    uint32  ArenaTeamId;                                    // team id if rated match
-    uint32  JoinTime;                                       /**< time when group was added */
-    uint32  RemoveInviteTime;                               /**< time when we will remove invite for players in group */
-    uint32  IsInvitedToBGInstanceGUID;                      /**< was invited to certain BG */
-    uint32  ArenaTeamRating;                                // if rated match, inited to the rating of the team
-    uint32  OpponentsTeamRating;                            // for rated arena matches
+    GroupQueueInfoPlayers Players; /**< Player queue info map */
+    Team GroupTeam; /**< Player team (ALLIANCE/HORDE) */
+    BattleGroundTypeId BgTypeId; /**< Battleground type id */
+    bool IsRated; // rated
+    ArenaType arenaType; // 2v2, 3v3, 5v5 or 0 when BG
+    uint32 ArenaTeamId; // team id if rated match
+    uint32 JoinTime; /**< Time when group was added */
+    uint32 RemoveInviteTime; /**< Time when we will remove invite for players in group */
+    uint32 IsInvitedToBGInstanceGUID; /**< Was invited to certain BG */
+    uint32 ArenaTeamRating; // if rated match, inited to the rating of the team
+    uint32 OpponentsTeamRating; // for rated arena matches
 };
 
 /**
@@ -149,6 +149,7 @@ class BattleGroundQueue
          * @brief Constructor for BattleGroundQueue.
          */
         BattleGroundQueue();
+
         /**
          * @brief Destructor for BattleGroundQueue.
          */
@@ -261,10 +262,10 @@ class BattleGroundQueue
          * @brief Two dimensional array for storing all queued groups.
          * First dimension specifies the bgTypeId.
          * Second dimension specifies the player's group types.
-             BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
-             BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
-             BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
-             BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
+         *  BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
+         *  BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
+         *  BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
+         *  BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
          */
         GroupsQueueType m_QueuedGroups[MAX_BATTLEGROUND_BRACKETS][BG_QUEUE_GROUP_TYPES_COUNT]; /**< Two dimensional array for storing all queued groups. */
 
@@ -342,8 +343,8 @@ class BGQueueInviteEvent : public BasicEvent
          * @param arenaType
          * @param removeTime The remove time.
          */
-        BGQueueInviteEvent(ObjectGuid pl_guid, uint32 BgInstanceGUID, BattleGroundTypeId BgTypeId, ArenaType arenaType, uint32 removeTime) :
-            m_PlayerGuid(pl_guid), m_BgInstanceGUID(BgInstanceGUID), m_BgTypeId(BgTypeId), m_ArenaType(arenaType), m_RemoveTime(removeTime)
+        BGQueueInviteEvent(ObjectGuid pl_guid, uint32 BgInstanceGUID, BattleGroundTypeId BgTypeId, ArenaType arenaType, uint32 removeTime)
+            : m_PlayerGuid(pl_guid), m_BgInstanceGUID(BgInstanceGUID), m_BgTypeId(BgTypeId), m_ArenaType(arenaType), m_RemoveTime(removeTime)
         {};
 
         /**
@@ -533,6 +534,7 @@ class BattleGroundMgr
          * @return BattleGround* Pointer to the battleground template.
          */
         BattleGround* GetBattleGroundTemplate(BattleGroundTypeId bgTypeId);
+
         /**
          * @brief Creates a new battleground instance.
          *

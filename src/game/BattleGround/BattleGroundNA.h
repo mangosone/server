@@ -37,7 +37,7 @@ class BattleGroundNAScore : public BattleGroundScore
 
 class BattleGroundNA : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         BattleGroundNA();
