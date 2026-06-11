@@ -49,6 +49,7 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "CinematicFlyover.h"
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "UpdateMask.h"
@@ -847,7 +848,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 
     /* If it's the player's first login, send a cinematic */
-    if (!pCurrChar->getCinematic())
+    bool isFirstLogin = !pCurrChar->getCinematic();
+    if (isFirstLogin)
     {
         pCurrChar->setCinematic(1);
 
@@ -903,6 +905,20 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     /* Send packets that must be sent only after player is added to the map */
     pCurrChar->SendInitialPacketsAfterAddToMap();
+
+    /* If it's the player's first login, create cinematic flyover if enabled */
+    /* Note: isFirstLogin was captured before setCinematic(1) mutated the flag */
+    /* The flyover is created after the player is fully in-world; it arms here */
+    /* and begins on the first CMSG_NEXT_CINEMATIC_CAMERA */
+    if (isFirstLogin && sWorld.getConfig(CONFIG_BOOL_CINEMATIC_FLYOVER_ENABLE))
+    {
+        if (sChrRacesStore.LookupEntry(pCurrChar->getRace()))
+        {
+            pCurrChar->SetCinematicFlyover(
+                std::make_unique<CinematicFlyover>(pCurrChar,
+                                                   pCurrChar->getRace()));
+        }
+    }
 
     /* Mark player as online in the database */
     static SqlStatementID updChars;
