@@ -1282,7 +1282,7 @@ GM.MaxSpeedFactor        = 10
 ################################################################################
 
 Visibility.GroupMode               = 0
-Visibility.Distance.Continents     = 90
+Visibility.Distance.Continents     = 100
 Visibility.Distance.Instances      = 120
 Visibility.Distance.BGArenas       = 180
 Visibility.Distance.InFlight       = 100
