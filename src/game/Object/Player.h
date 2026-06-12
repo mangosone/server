@@ -88,6 +88,8 @@ class Item;
 
 struct AreaTrigger;
 
+#include "CinematicFlyover.h"
+
 #ifdef ENABLE_PLAYERBOTS
 class PlayerbotAI;
 class PlayerbotMgr;
@@ -3755,6 +3757,12 @@ class Player : public Unit
         // Get the player's camera
         Camera& GetCamera() { return m_camera; }
 
+        // Get the cinematic flyover manager
+        CinematicFlyover* GetCinematicFlyover() { return m_cinematicFlyover.get(); }
+
+        // Set the cinematic flyover manager
+        void SetCinematicFlyover(std::unique_ptr<CinematicFlyover> flyover) { m_cinematicFlyover = std::move(flyover); }
+
         // Forced speed changes
         uint8 m_forced_speed_changes[MAX_MOVE_TYPE];
 
@@ -4265,6 +4273,9 @@ class Player : public Unit
 
         // The player's camera
         Camera m_camera;
+
+        // Cinematic flyover manager (optional, for first-login intro visibility)
+        std::unique_ptr<CinematicFlyover> m_cinematicFlyover;
 
         // Countdown (ms) for the periodic observer-side visibility sweep
         uint32 m_visibilityObserverSweepTimer;
