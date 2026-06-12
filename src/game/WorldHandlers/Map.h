@@ -73,7 +73,6 @@
 #endif /* ENABLE_ELUNA */
 
 #include <bitset>
-#include <set>
 
 struct CreatureInfo;
 class Creature;

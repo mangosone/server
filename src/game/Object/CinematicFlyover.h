@@ -24,7 +24,6 @@
 
 #include "CinematicFlyoverRoute.h"
 #include "ObjectGuid.h"
-#include <memory>
 
 class Player;
 class Creature;
