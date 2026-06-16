@@ -283,8 +283,7 @@ class WaypointMovementGenerator<Creature>
          * @param startPoint Iterator to the first waypoint of the segment.
          * @param pathPoints Output spline points; left empty when smoothing is skipped.
          */
-        void BuildSmoothPath(Creature& creature, WaypointPath::const_iterator startPoint,
-                             Movement::PointsArray& pathPoints);
+        void BuildSmoothPath(Creature& creature, WaypointPath::const_iterator startPoint, Movement::PointsArray& pathPoints);
 
         TimeTracker i_nextMoveTime; ///< Time tracker for the next move
         bool m_isArrivalDone; ///< Indicates if the arrival is done
