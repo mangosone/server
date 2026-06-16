@@ -573,10 +573,22 @@ bool WaypointMovementGenerator<Creature>::Update(Creature& creature, const uint3
     }
     else
     {
-        ProcessActiveSegmentProgress(creature);
-
+        // Sample the stopped state BEFORE arrival handling: the final
+        // waypoint's OnArrived() clears UNIT_STAT_ROAMING_MOVE and does not
+        // re-add it once the spline is Finalized. Sampling IsStopped()
+        // afterwards makes a normally-finished smoothed segment look
+        // force-stopped, parking the unit for STOP_TIME_FOR_PLAYER (e.g. a
+        // looping NPC freezing at its last node). Run
+        // ProcessActiveSegmentProgress() inside the Moving/Finalized cases
+        // only, never before the switch.
         switch (GetWaypointSegmentUpdateState(creature.movespline->Finalized(), creature.IsStopped()))
         {
+            case WaypointSegmentUpdateState::Stopped:
+            {
+                ClearActiveSegment();
+                Stop(STOP_TIME_FOR_PLAYER);
+                break;
+            }
             case WaypointSegmentUpdateState::Finalized:
             {
                 ProcessActiveSegmentProgress(creature);
@@ -588,14 +600,9 @@ bool WaypointMovementGenerator<Creature>::Update(Creature& creature, const uint3
                 StartMove(creature);
                 break;
             }
-            case WaypointSegmentUpdateState::Stopped:
-            {
-                ClearActiveSegment();
-                Stop(STOP_TIME_FOR_PLAYER);
-                break;
-            }
             case WaypointSegmentUpdateState::Moving:
             {
+                ProcessActiveSegmentProgress(creature);
                 break;
             }
         }
