@@ -287,6 +287,7 @@ CleanCharacterDB                  = 1
 #    LogFilter_Pathfinding
 #    LogFilter_MapsLoading
 #    LogFilter_EventAiDev
+#    LogFilter_CellEnvelope
 #        Log filters (active by default - meaning: the filter is active, hence the log is not displayed)
 #        Default: 1 - not include with any log level
 #                 0 - include in log if log level permit
@@ -396,6 +397,7 @@ LogFilter_DbStrictedCheck    = 1
 LogFilter_Pathfinding        = 1
 LogFilter_MapsLoading        = 1
 LogFilter_EventAiDev         = 1
+LogFilter_CellEnvelope       = 1
 LogFilter_PeriodicAffects    = 0
 LogFilter_PlayerMoves        = 1
 LogFilter_SQLText            = 1
@@ -930,6 +932,47 @@ AllowTwoSide.Interaction.Mail     = 0
 AllowTwoSide.WhoList              = 0
 AllowTwoSide.AddFriend            = 0
 TalentsInspecting                 = 1
+
+################################################################################
+# LIVINGWORLD SETTINGS
+#
+#    LivingWorld keeps selected important actors active (and their grids
+#    resident) without force-loading whole maps. All features default OFF.
+#
+#    LivingWorld.AnchorPolicyMask
+#        Bitmask selecting which high-confidence creature categories are marked
+#        as LivingWorld active anchors (active object + grid kept resident).
+#        Continent-only (maps 0/1); raid/dungeon/battleground spawns are excluded.
+#        0 = off (default; behavior identical to upstream)
+#        1 = continent world bosses & faction/capital leaders (creature rank = WORLDBOSS)
+#        2 = continent flight masters (npcflag FLIGHTMASTER)
+#        3 = both of the above
+#        4 = continent settlement defenders (defender-faction waypoint patrollers,
+#            e.g. town mountaineers/guards; combat-capable, leave route to fight & return)
+#        7 = all of the above
+#        Default: 0
+#
+################################################################################
+
+#    LivingWorld.CellEnvelopeLoad
+#        EXPERIMENTAL (default 0). When 1, a LivingWorld anchor with no player
+#        nearby force-loads only its 3x3 cell envelope (following it as it moves)
+#        instead of its whole 256-cell grid, reducing resident memory. A player
+#        entering or seeing the grid still loads it fully. Requires
+#        LivingWorld.AnchorPolicyMask to select anchors. Continent maps only.
+#        Default: 0 (off — whole-grid load, unchanged behaviour)
+#
+#    LivingWorld.CellEnvelopeDowngradeDelay
+#        Milliseconds a FULL anchor grid stays fully loaded after its LAST player
+#        leaves, before downgrading back to its anchor 3x3 envelope (reclaiming the
+#        rest of the grid's memory). Only applies when CellEnvelopeLoad = 1 and the
+#        grid still holds an anchor; anchorless grids unload via GridCleanUpDelay as
+#        usual. Lower = reclaim sooner but re-fill if players return; higher = smoother.
+#        Default: 300000 (5 minutes). 0 = downgrade at the next grid-state check.
+
+LivingWorld.CellEnvelopeLoad = 0
+LivingWorld.CellEnvelopeDowngradeDelay = 300000
+LivingWorld.AnchorPolicyMask              = 0
 
 ################################################################################
 # CREATURE AND GAMEOBJECT SETTINGS
