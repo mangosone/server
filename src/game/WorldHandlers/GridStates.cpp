@@ -97,7 +97,7 @@ void ActiveState::Update(Map& m, NGridType& grid, GridInfo& info, const uint32& 
     // alone is not enough -- a player standing in a neighbour grid re-loads this one every
     // tick and we thrash load/unload. The timer is reset while a player is near and only
     // accrues real time (every tick) once the area is clear, honouring the configured delay.
-    if (sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+    if (m.UseLivingWorldCellEnvelope()
         && grid.isGridObjectDataLoaded())                 // FULL anchor grid
     {
         if (m.HasPlayerInOrAroundGrid(x, y))
