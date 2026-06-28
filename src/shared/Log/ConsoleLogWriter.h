@@ -73,7 +73,7 @@ class ConsoleLogWriter : public ACE_Based::Runnable
         /**
          * @brief Drain+render loop; runs on the dedicated writer thread
          */
-        virtual void run() override;
+        void run() override;
 
     private:
         /**
