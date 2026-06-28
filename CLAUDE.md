@@ -60,6 +60,20 @@ The **in-process AuctionHouseBot is the default**; the out-of-process AH service
 (`AH.Service.Enabled`). `mangosd` is the **sole authority** over game state — worker/service "intents" are
 re-validated server-side before they are applied.
 
+## Logging
+
+Console output is rendered on a dedicated off-thread writer (`src/shared/Log/ConsoleLogWriter`) so the
+world/map-update threads never block on console I/O. Two rules follow:
+
+- **Never write to stdout directly** (`printf`/`fprintf`, progress bars, ad-hoc notices) for console output —
+  route it through `Log::ConsoleEmitRaw` so stdout has a single owner and lines can't tear against, or
+  overtake, the writer's output.
+- **Gate high-volume runtime debug** with `DEBUG_FILTER_LOG(LOG_FILTER_*, …)` (or `DETAIL_`/`BASIC_`),
+  reusing an existing `LogFilters` bit where one fits. All filters ship **default-on (suppressed)**; set a
+  `LogFilter_*` key to `0` to see a category. **Never filter `outError`/`outErrorDb`** — errors must always show.
+
+Recommended runtime mode: `LogLevel=1` (quiet console) + `LogFileLevel=3` (buffered full file).
+
 ## Review focus (for `@claude`)
 
 Prioritise: **(1)** correctness/safety in `src/game/` handlers and anything touching live world/DB state or
