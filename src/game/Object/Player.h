@@ -65,6 +65,7 @@
 #include "MapReference.h"
 #include "Util.h"                                           // for Tokens typedef
 #include "ReputationMgr.h"
+#include "SpellCooldownMgr.h"                                // held by value on Player; brings in SpellCooldown struct + owns the cooldown map
 #include "BattleGround.h"
 #include "DBCStores.h"
 #include "SharedDefines.h"
@@ -241,16 +242,7 @@ struct SpellModifier
 
 typedef std::list<SpellModifier*> SpellModList;
 
-/**
- * @brief Structure to hold spell cooldown information
- */
-struct SpellCooldown
-{
-    time_t end;    ///< End time of the cooldown
-    uint16 itemid; ///< Item ID associated with the cooldown
-};
-
-typedef std::map<uint32, SpellCooldown> SpellCooldowns;
+// SpellCooldown struct and SpellCooldowns typedef moved to SpellCooldownMgr.h.
 
 /**
  * @brief Trainer spell state enumeration
@@ -2456,11 +2448,8 @@ class Player : public Unit
             return m_spells;
         }
 
-        // Get the player's spell cooldown map
-        SpellCooldowns const& GetSpellCooldownMap() const
-        {
-            return m_spellCooldowns;
-        }
+        // Spell-cooldown API — thin delegating wrappers around m_spellCooldownMgr.
+        SpellCooldowns const& GetSpellCooldownMap() const { return m_spellCooldownMgr.GetSpellCooldownMap(); }
 
         // Add a spell modifier to the player
         void AddSpellMod(SpellModifier* mod, bool apply);
@@ -2483,38 +2472,22 @@ class Player : public Unit
         static uint32 const infinityCooldownDelay = MONTH; // used for set "infinity cooldowns" for spells and check
         static uint32 const infinityCooldownDelayCheck = MONTH / 2;
 
-        // Check if the player has a spell cooldown
-        bool HasSpellCooldown(uint32 spell_id) const
-        {
-            SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
-            return itr != m_spellCooldowns.end() && itr->second.end > time(NULL);
-        }
+        bool HasSpellCooldown(uint32 spell_id) const { return m_spellCooldownMgr.HasSpellCooldown(spell_id); }
 
-        // Get the delay for a spell cooldown
-        time_t GetSpellCooldownDelay(uint32 spell_id) const
-        {
-            SpellCooldowns::const_iterator itr = m_spellCooldowns.find(spell_id);
-            time_t t = time(NULL);
-            return itr != m_spellCooldowns.end() && itr->second.end > t ? itr->second.end - t : 0;
-        }
+        time_t GetSpellCooldownDelay(uint32 spell_id) const { return m_spellCooldownMgr.GetSpellCooldownDelay(spell_id); }
 
-        // Add spell and category cooldowns
-        void AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell = NULL, bool infinityCooldown = false);
+        void AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell = NULL, bool infinityCooldown = false) { m_spellCooldownMgr.AddSpellAndCategoryCooldowns(spellInfo, itemId, spell, infinityCooldown); }
 
-        // Add a spell cooldown
-        void AddSpellCooldown(uint32 spell_id, uint32 itemid, time_t end_time);
+        void AddSpellCooldown(uint32 spell_id, uint32 itemid, time_t end_time) { m_spellCooldownMgr.AddSpellCooldown(spell_id, itemid, end_time); }
 
-        // Send a cooldown event to the client
-        void SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId = 0, Spell* spell = NULL);
+        void SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId = 0, Spell* spell = NULL) { m_spellCooldownMgr.SendCooldownEvent(spellInfo, itemId, spell); }
 
         // Prohibit a spell school for a specific duration
         void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs) override;
 
-        // Remove a spell cooldown
-        void RemoveSpellCooldown(uint32 spell_id, bool update = false);
+        void RemoveSpellCooldown(uint32 spell_id, bool update = false) { m_spellCooldownMgr.RemoveSpellCooldown(spell_id, update); }
 
-        // Remove a spell category cooldown
-        void RemoveSpellCategoryCooldown(uint32 cat, bool update = false);
+        void RemoveSpellCategoryCooldown(uint32 cat, bool update = false) { m_spellCooldownMgr.RemoveSpellCategoryCooldown(cat, update); }
 
         // Send a clear cooldown message to the client
         void SendClearCooldown(uint32 spell_id, Unit* target);
@@ -2525,17 +2498,13 @@ class Player : public Unit
             return m_GlobalCooldownMgr;
         }
 
-        // Remove all arena spell cooldowns
-        void RemoveArenaSpellCooldowns();
+        void RemoveArenaSpellCooldowns() { m_spellCooldownMgr.RemoveArenaSpellCooldowns(); }
 
-        // Remove all spell cooldowns
-        void RemoveAllSpellCooldown();
+        void RemoveAllSpellCooldown() { m_spellCooldownMgr.RemoveAllSpellCooldown(); }
 
-        // Load spell cooldowns from the database
-        void _LoadSpellCooldowns(QueryResult* result);
+        void _LoadSpellCooldowns(QueryResult* result) { m_spellCooldownMgr.LoadFromDB(result); }
 
-        // Save spell cooldowns to the database
-        void _SaveSpellCooldowns();
+        void _SaveSpellCooldowns() { m_spellCooldownMgr.SaveToDB(); }
 
         // Set resurrect request data
         void setResurrectRequestData(ObjectGuid guid, uint32 mapId, float X, float Y, float Z, uint32 health, uint32 mana)
@@ -4130,7 +4099,7 @@ class Player : public Unit
 
         PlayerMails m_mail; // Player mails
         PlayerSpellMap m_spells; // Player spells
-        SpellCooldowns m_spellCooldowns; // Spell cooldowns
+        SpellCooldownMgr m_spellCooldownMgr; // owns the spell-cooldown map + load/save/apply lifecycle
 
         GlobalCooldownMgr m_GlobalCooldownMgr; // Global cooldown manager
 

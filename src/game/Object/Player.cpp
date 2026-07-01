@@ -379,7 +379,7 @@ UpdateMask Player::updateVisualBits;
  *
  * @param session The owning world session.
  */
-Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_reputationMgr(this)
+Player::Player(WorldSession* session): Unit(), m_spellCooldownMgr(this), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
 #ifdef ENABLE_PLAYERBOTS
     m_playerbotAI = 0;
@@ -2774,7 +2774,7 @@ void Player::SendInitialSpells()
      * * * * * * * * * * * * * * * * */
     uint16 spellCount = 0;
 
-    WorldPacket data(SMSG_INITIAL_SPELLS, (1 + 2 + 4 * m_spells.size() + 2 + m_spellCooldowns.size() * (2 + 2 + 2 + 4 + 4)));
+    WorldPacket data(SMSG_INITIAL_SPELLS, (1 + 2 + 4 * m_spells.size() + 2 + m_spellCooldownMgr.GetSpellCooldownMap().size() * (2 + 2 + 2 + 4 + 4)));
     data << uint8(0);
 
     /* * * * * * * * * * * * * * * * *
@@ -2810,9 +2810,10 @@ void Player::SendInitialSpells()
     data.put<uint16>(countPos, spellCount);                 // write real count value
 
     /* For each spell the player has on cooldown */
-    uint16 spellCooldowns = m_spellCooldowns.size();
+    SpellCooldowns const& spellCooldownMap = m_spellCooldownMgr.GetSpellCooldownMap();
+    uint16 spellCooldowns = spellCooldownMap.size();
     data << uint16(spellCooldowns);
-    for (SpellCooldowns::const_iterator itr = m_spellCooldowns.begin(); itr != m_spellCooldowns.end(); ++itr)
+    for (SpellCooldowns::const_iterator itr = spellCooldownMap.begin(); itr != spellCooldownMap.end(); ++itr)
     {
         /* If the spell doesn't exist in the spellbook, just ignore it */
         SpellEntry const* sEntry = sSpellStore.LookupEntry(itr->first);
@@ -2864,165 +2865,11 @@ void Player::SendInitialSpells()
 
 
 
-/**
- * @brief Removes a cooldown entry for a specific spell.
- *
- * @param spell_id The spell identifier whose cooldown should be removed.
- * @param update True to notify the client that the cooldown was cleared.
- */
-void Player::RemoveSpellCooldown(uint32 spell_id, bool update /* = false */)
-{
-    m_spellCooldowns.erase(spell_id);
 
-    if (update)
-    {
-        SendClearCooldown(spell_id, this);
-    }
-}
 
-/**
- * @brief Removes cooldowns for all spells in a cooldown category.
- *
- * @param cat The spell category identifier.
- * @param update True to notify the client for cleared cooldowns.
- */
-void Player::RemoveSpellCategoryCooldown(uint32 cat, bool update /* = false */)
-{
-    SpellCategoryStore::const_iterator ct = sSpellCategoryStore.find(cat);
-    if (ct == sSpellCategoryStore.end())
-    {
-        return;
-    }
 
-    const SpellCategorySet& ct_set = ct->second;
-    for (SpellCooldowns::const_iterator i = m_spellCooldowns.begin(); i != m_spellCooldowns.end();)
-    {
-        if (ct_set.find(i->first) != ct_set.end())
-        {
-            RemoveSpellCooldown((i++)->first, update);
-        }
-        else
-        {
-            ++i;
-        }
-    }
-}
 
-void Player::RemoveArenaSpellCooldowns()
-{
-    // remove cooldowns on spells that has < 15 min CD
-    SpellCooldowns::iterator itr, next;
-    // iterate spell cooldowns
-    for (itr = m_spellCooldowns.begin(); itr != m_spellCooldowns.end(); itr = next)
-    {
-        next = itr;
-        ++next;
-        SpellEntry const* entry = sSpellStore.LookupEntry(itr->first);
-        // check if spellentry is present and if the cooldown is less than 15 mins
-        if (entry &&
-                entry->RecoveryTime <= 15 * MINUTE * IN_MILLISECONDS &&
-                entry->CategoryRecoveryTime <= 15 * MINUTE * IN_MILLISECONDS)
-        {
-            // remove & notify
-            RemoveSpellCooldown(itr->first, true);
-        }
-    }
-}
 
-/**
- * @brief Clears all tracked spell cooldowns for the player.
- */
-void Player::RemoveAllSpellCooldown()
-{
-    if (!m_spellCooldowns.empty())
-    {
-        for (SpellCooldowns::const_iterator itr = m_spellCooldowns.begin(); itr != m_spellCooldowns.end(); ++itr)
-        {
-            SendClearCooldown(itr->first, this);
-        }
-
-        m_spellCooldowns.clear();
-    }
-}
-
-/**
- * @brief Loads persisted spell cooldowns from the database query result.
- *
- * @param result The query result containing cooldown rows.
- */
-void Player::_LoadSpellCooldowns(QueryResult* result)
-{
-    // some cooldowns can be already set at aura loading...
-
-    // QueryResult *result = CharacterDatabase.PQuery("SELECT `spell`,`item`,`time` FROM `character_spell_cooldown` WHERE `guid` = '%u'",GetGUIDLow());
-
-    if (result)
-    {
-        time_t curTime = time(NULL);
-
-        do
-        {
-            Field* fields = result->Fetch();
-
-            uint32 spell_id = fields[0].GetUInt32();
-            uint32 item_id  = fields[1].GetUInt32();
-            time_t db_time  = (time_t)fields[2].GetUInt64();
-
-            if (!sSpellStore.LookupEntry(spell_id))
-            {
-                sLog.outError("Player %u has unknown spell %u in `character_spell_cooldown`, skipping.", GetGUIDLow(), spell_id);
-                continue;
-            }
-
-            // skip outdated cooldown
-            if (db_time <= curTime)
-            {
-                continue;
-            }
-
-            AddSpellCooldown(spell_id, item_id, db_time);
-
-            DEBUG_LOG("Player (GUID: %u) spell %u, item %u cooldown loaded (%u secs).", GetGUIDLow(), spell_id, item_id, uint32(db_time - curTime));
-        }
-        while (result->NextRow());
-
-        delete result;
-    }
-}
-
-/**
- * @brief Saves active spell cooldowns to the database.
- */
-void Player::_SaveSpellCooldowns()
-{
-    static SqlStatementID deleteSpellCooldown ;
-    static SqlStatementID insertSpellCooldown ;
-
-    SqlStatement stmt = CharacterDatabase.CreateStatement(deleteSpellCooldown, "DELETE FROM `character_spell_cooldown` WHERE `guid` = ?");
-    stmt.PExecute(GetGUIDLow());
-
-    time_t curTime = time(NULL);
-    time_t infTime = curTime + infinityCooldownDelayCheck;
-
-    // remove outdated and save active
-    for (SpellCooldowns::iterator itr = m_spellCooldowns.begin(); itr != m_spellCooldowns.end();)
-    {
-        if (itr->second.end <= curTime)
-        {
-            m_spellCooldowns.erase(itr++);
-        }
-        else if (itr->second.end <= infTime)                // not save locked cooldowns, it will be reset or set at reload
-        {
-            stmt = CharacterDatabase.CreateStatement(insertSpellCooldown, "INSERT INTO `character_spell_cooldown` (`guid`,`spell`,`item`,`time`) VALUES( ?, ?, ?, ?)");
-            stmt.PExecute(GetGUIDLow(), itr->first, itr->second.itemid, uint64(itr->second.end));
-            ++itr;
-        }
-        else
-        {
-            ++itr;
-        }
-    }
-}
 
 
 
@@ -4981,161 +4828,8 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
 
 
 
-/**
- * @brief Applies personal and category cooldowns for a spell cast.
- *
- * @param spellInfo The spell entry that triggered the cooldown.
- * @param itemId The casting item entry, if any.
- * @param spell The active spell instance.
- * @param infinityCooldown True to apply a long-lived cooldown marker.
- */
-void Player::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell, bool infinityCooldown)
-{
-    // init cooldown values
-    uint32 cat   = 0;
-    int32 rec    = -1;
-    int32 catrec = -1;
 
-    // some special item spells without correct cooldown in SpellInfo
-    // cooldown information stored in item prototype
-    // This used in same way in WorldSession::HandleItemQuerySingleOpcode data sending to client.
 
-    if (itemId)
-    {
-        if (ItemPrototype const* proto = ObjectMgr::GetItemPrototype(itemId))
-        {
-            for (int idx = 0; idx < MAX_ITEM_PROTO_SPELLS; ++idx)
-            {
-                if (proto->Spells[idx].SpellId == spellInfo->Id)
-                {
-                    cat    = proto->Spells[idx].SpellCategory;
-                    rec    = proto->Spells[idx].SpellCooldown;
-                    catrec = proto->Spells[idx].SpellCategoryCooldown;
-                    break;
-                }
-            }
-        }
-    }
-
-    // if no cooldown found above then base at DBC data
-    if (rec < 0 && catrec < 0)
-    {
-        cat = spellInfo->Category;
-        rec = spellInfo->RecoveryTime;
-        catrec = spellInfo->CategoryRecoveryTime;
-    }
-
-    time_t curTime = time(NULL);
-
-    time_t catrecTime;
-    time_t recTime;
-
-    // overwrite time for selected category
-    if (infinityCooldown)
-    {
-        // use +MONTH as infinity mark for spell cooldown (will checked as MONTH/2 at save ans skipped)
-        // but not allow ignore until reset or re-login
-        catrecTime = catrec > 0 ? curTime + infinityCooldownDelay : 0;
-        recTime    = rec    > 0 ? curTime + infinityCooldownDelay : catrecTime;
-    }
-    else
-    {
-        // shoot spells used equipped item cooldown values already assigned in GetAttackTime(RANGED_ATTACK)
-        // prevent 0 cooldowns set by another way
-        if (rec <= 0 && catrec <= 0 && (cat == 76 || cat == 351))
-        {
-            rec = GetAttackTime(RANGED_ATTACK);
-        }
-
-        // Now we have cooldown data (if found any), time to apply mods
-        if (rec > 0)
-        {
-            ApplySpellMod(spellInfo->Id, SPELLMOD_COOLDOWN, rec, spell);
-        }
-
-        if (catrec > 0)
-        {
-            ApplySpellMod(spellInfo->Id, SPELLMOD_COOLDOWN, catrec, spell);
-        }
-
-        // replace negative cooldowns by 0
-        if (rec < 0)
-        {
-            rec = 0;
-        }
-        if (catrec < 0)
-        {
-            catrec = 0;
-        }
-
-        // no cooldown after applying spell mods
-        if (rec == 0 && catrec == 0)
-        {
-            return;
-        }
-
-        catrecTime = catrec ? curTime + catrec / IN_MILLISECONDS : 0;
-        recTime    = rec ? curTime + rec / IN_MILLISECONDS : catrecTime;
-    }
-
-    // self spell cooldown
-    if (recTime > 0)
-    {
-        AddSpellCooldown(spellInfo->Id, itemId, recTime);
-    }
-
-    // category spells
-    if (cat && catrec > 0)
-    {
-        SpellCategoryStore::const_iterator i_scstore = sSpellCategoryStore.find(cat);
-        if (i_scstore != sSpellCategoryStore.end())
-        {
-            for (SpellCategorySet::const_iterator i_scset = i_scstore->second.begin(); i_scset != i_scstore->second.end(); ++i_scset)
-            {
-                if (*i_scset == spellInfo->Id)              // skip main spell, already handled above
-                {
-                    continue;
-                }
-
-                AddSpellCooldown(*i_scset, itemId, catrecTime);
-            }
-        }
-    }
-}
-
-/**
- * @brief Stores a cooldown entry for a spell.
- *
- * @param spellid The spell identifier.
- * @param itemid The associated item identifier, if any.
- * @param end_time The server time when the cooldown ends.
- */
-void Player::AddSpellCooldown(uint32 spellid, uint32 itemid, time_t end_time)
-{
-    SpellCooldown sc;
-    sc.end = end_time;
-    sc.itemid = itemid;
-    m_spellCooldowns[spellid] = sc;
-}
-
-/**
- * @brief Applies cooldowns and notifies the client about a spell cooldown event.
- *
- * @param spellInfo The spell entry that triggered the cooldown.
- * @param itemId The associated item entry, if any.
- * @param spell The active spell instance.
- */
-void Player::SendCooldownEvent(SpellEntry const* spellInfo, uint32 itemId, Spell* spell)
-{
-    // start cooldowns at server side, if any
-    AddSpellAndCategoryCooldowns(spellInfo, itemId, spell);
-
-    // Send activate cooldown timer (possible 0) at client side
-    WorldPacket data(SMSG_COOLDOWN_EVENT, (4 + 8));
-    data << uint32(spellInfo->Id);
-    data << GetObjectGuid();
-    SendDirectMessage(&data);
-}
 
 
 
