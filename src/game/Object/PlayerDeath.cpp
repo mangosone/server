@@ -421,3 +421,125 @@ void Player::RepopAtGraveyard()
         }
     }
 }
+
+// Constants shared with the parent TU (duplicated, guarded).
+#ifndef DEATH_EXPIRE_STEP
+#define DEATH_EXPIRE_STEP (5*MINUTE)
+#endif
+#ifndef MAX_DEATH_COUNT
+#define MAX_DEATH_COUNT 3
+#endif
+
+static const uint32 corpseReclaimDelay[MAX_DEATH_COUNT] = {30, 60, 120};
+
+/**
+ * @brief Gets the current corpse reclaim delay for PvE or PvP death.
+ *
+ * @param pvp True for PvP death rules; false for PvE death rules.
+ * @return The reclaim delay in seconds.
+ */
+uint32 Player::GetCorpseReclaimDelay(bool pvp) const
+{
+    if ((pvp && !sWorld.getConfig(CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVP)) ||
+        (!pvp && !sWorld.getConfig(CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVE)))
+    {
+        return corpseReclaimDelay[0];
+    }
+
+    time_t now = time(NULL);
+    // 0..2 full period
+    uint32 count = (now < m_deathExpireTime) ? uint32((m_deathExpireTime - now) / DEATH_EXPIRE_STEP) : 0;
+    return corpseReclaimDelay[count];
+}
+
+/**
+ * @brief Advances the corpse reclaim delay escalation after death.
+ */
+void Player::UpdateCorpseReclaimDelay()
+{
+    bool pvp = m_ExtraFlags & PLAYER_EXTRA_PVP_DEATH;
+
+    if ((pvp && !sWorld.getConfig(CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVP)) ||
+        (!pvp && !sWorld.getConfig(CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVE)))
+    {
+        return;
+    }
+
+    time_t now = time(NULL);
+    if (now < m_deathExpireTime)
+    {
+        // full and partly periods 1..3
+        uint32 count = uint32((m_deathExpireTime - now) / DEATH_EXPIRE_STEP + 1);
+        if (count < MAX_DEATH_COUNT)
+        {
+            m_deathExpireTime = now + (count + 1) * DEATH_EXPIRE_STEP;
+        }
+        else
+        {
+            m_deathExpireTime = now + MAX_DEATH_COUNT * DEATH_EXPIRE_STEP;
+        }
+    }
+    else
+    {
+        m_deathExpireTime = now + DEATH_EXPIRE_STEP;
+    }
+}
+
+/**
+ * @brief Sends the current corpse reclaim delay to the client.
+ *
+ * @param load True when restoring the delay from saved corpse state.
+ */
+void Player::SendCorpseReclaimDelay(bool load)
+{
+    Corpse* corpse = GetCorpse();
+    if (!corpse)
+    {
+        return;
+    }
+
+    uint32 delay;
+    if (load)
+    {
+        if (corpse->GetGhostTime() > m_deathExpireTime)
+        {
+            return;
+        }
+
+        bool pvp = corpse->GetType() == CORPSE_RESURRECTABLE_PVP;
+
+        uint32 count;
+        if ((pvp && sWorld.getConfig(CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVP)) ||
+            (!pvp && sWorld.getConfig(CONFIG_BOOL_DEATH_CORPSE_RECLAIM_DELAY_PVE)))
+        {
+            count = uint32(m_deathExpireTime - corpse->GetGhostTime()) / DEATH_EXPIRE_STEP;
+            if (count >= MAX_DEATH_COUNT)
+            {
+                count = MAX_DEATH_COUNT - 1;
+            }
+        }
+        else
+        {
+            count = 0;
+        }
+
+        time_t expected_time = corpse->GetGhostTime() + corpseReclaimDelay[count];
+
+        time_t now = time(NULL);
+        if (now >= expected_time)
+        {
+            return;
+        }
+
+        delay = uint32(expected_time - now);
+    }
+    else
+    {
+        delay = GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP);
+    }
+
+    //! corpse reclaim delay 30 * 1000ms or longer at often deaths
+    WorldPacket data(SMSG_CORPSE_RECLAIM_DELAY, 4);
+    data << uint32(delay * IN_MILLISECONDS);
+    GetSession()->SendPacket(&data);
+}
