@@ -1740,76 +1740,7 @@ void WorldSession::HandleTimeSyncResp(WorldPacket& recv_data)
     _player->m_timeSyncClient = clientTicks;
 }
 
-/**
- * @brief Resets the player's or group's saved instances.
- *
- * @param recv_data The received opcode packet.
- */
-void WorldSession::HandleResetInstancesOpcode(WorldPacket& /*recv_data*/)
-{
-    DEBUG_LOG("WORLD: Received opcode CMSG_RESET_INSTANCES");
 
-    if (Group* pGroup = _player->GetGroup())
-    {
-        if (pGroup->IsLeader(_player->GetObjectGuid()))
-        {
-            pGroup->ResetInstances(INSTANCE_RESET_ALL, _player);
-        }
-    }
-    else
-    {
-        _player->ResetInstances(INSTANCE_RESET_ALL);
-    }
-}
-
-void WorldSession::HandleSetDungeonDifficultyOpcode(WorldPacket& recv_data)
-{
-    DEBUG_LOG("WORLD: Received opcode MSG_SET_DUNGEON_DIFFICULTY");
-
-    uint32 mode;
-    recv_data >> mode;
-
-    if (mode >= MAX_DIFFICULTY)
-    {
-        sLog.outError("WorldSession::HandleSetDungeonDifficultyOpcode: player %d sent an invalid instance mode %d!", _player->GetGUIDLow(), mode);
-        return;
-    }
-
-    if (Difficulty(mode) == _player->GetDifficulty())
-    {
-        return;
-    }
-
-    // cannot reset while in an instance
-    Map* map = _player->GetMap();
-    if (map && map->IsDungeon())
-    {
-        sLog.outError("WorldSession::HandleSetDungeonDifficultyOpcode: player %d tried to reset the instance while inside!", _player->GetGUIDLow());
-        return;
-    }
-
-    // Exception to set mode to normal for low-level players
-    if (_player->getLevel() < LEVELREQUIREMENT_HEROIC && mode > REGULAR_DIFFICULTY)
-    {
-        return;
-    }
-
-    if (Group* pGroup = _player->GetGroup())
-    {
-        if (pGroup->IsLeader(_player->GetObjectGuid()))
-        {
-            // the difficulty is set even if the instances can't be reset
-            //_player->SendDungeonDifficulty(true);
-            pGroup->ResetInstances(INSTANCE_RESET_CHANGE_DIFFICULTY, _player);
-            pGroup->SetDifficulty(Difficulty(mode));
-        }
-    }
-    else
-    {
-        _player->ResetInstances(INSTANCE_RESET_CHANGE_DIFFICULTY);
-        _player->SetDifficulty(Difficulty(mode));
-    }
-}
 
 /**
  * @brief Cancels the player's mount aura when allowed.
