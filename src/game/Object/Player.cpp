@@ -8650,28 +8650,6 @@ void Player::InitDisplayIds()
     }
 }
 
-void Player::TakeExtendedCost(uint32 extendedCostId, uint32 count)
-{
-    ItemExtendedCostEntry const* extendedCost = sItemExtendedCostStore.LookupEntry(extendedCostId);
-
-    if (extendedCost->reqhonorpoints)
-    {
-        ModifyHonorPoints(-int32(extendedCost->reqhonorpoints * count));
-    }
-    if (extendedCost->reqarenapoints)
-    {
-        ModifyArenaPoints(-int32(extendedCost->reqarenapoints * count));
-    }
-
-    for (uint8 i = 0; i < MAX_EXTENDED_COST_ITEMS; ++i)
-    {
-        if (extendedCost->reqitem[i])
-        {
-            DestroyItemCount(extendedCost->reqitem[i], extendedCost->reqitemcount[i] * count, true);
-        }
-    }
-}
-
 // Return true is the bought item has a max count to force refresh of window by caller
 bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, uint8 bag, uint8 slot)
 {
@@ -8888,28 +8866,6 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
     SendNewItem(pItem, totalCount, true, false, false);
 
     return crItem->maxcount != 0;
-}
-
-uint32 Player::GetMaxPersonalArenaRatingRequirement()
-{
-    // returns the maximal personal arena rating that can be used to purchase items requiring this condition
-    // the personal rating of the arena team must match the required limit as well
-    // so return max[in arenateams](min(personalrating[teamtype], teamrating[teamtype]))
-    uint32 max_personal_rating = 0;
-    for (int i = 0; i < MAX_ARENA_SLOT; ++i)
-    {
-        if (ArenaTeam* at = sObjectMgr.GetArenaTeamById(GetArenaTeamId(i)))
-        {
-            uint32 p_rating = GetArenaPersonalRating(i);
-            uint32 t_rating = at->GetRating();
-            p_rating = p_rating < t_rating ? p_rating : t_rating;
-            if (max_personal_rating < p_rating)
-            {
-                max_personal_rating = p_rating;
-            }
-        }
-    }
-    return max_personal_rating;
 }
 
 /**
