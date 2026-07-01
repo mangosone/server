@@ -1979,16 +1979,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 }
 
 /**
- * @brief Teleports the player back to the saved battleground entry point.
- *
- * @return true if the teleport was initiated successfully; otherwise, false.
- */
-bool Player::TeleportToBGEntryPoint()
-{
-    return TeleportTo(m_bgData.joinPos);
-}
-
-/**
  * @brief Executes queued delayed player operations.
  */
 void Player::ProcessDelayedOperations()
@@ -5453,29 +5443,6 @@ void Player::RemovePetitionsAndSigns(ObjectGuid guid, uint32 type)
     CharacterDatabase.CommitTransaction();
 }
 
-void Player::LeaveAllArenaTeams(ObjectGuid guid)
-{
-    uint32 lowguid = guid.GetCounter();
-    QueryResult* result = CharacterDatabase.PQuery("SELECT `arena_team_member`.`arenateamid` FROM `arena_team_member` JOIN `arena_team` ON `arena_team_member`.`arenateamid` = `arena_team`.`arenateamid` WHERE `guid`='%u'", lowguid);
-    if (!result)
-    {
-        return;
-    }
-
-    do
-    {
-        Field* fields = result->Fetch();
-        if (uint32 at_id = fields[0].GetUInt32())
-            if (ArenaTeam* at = sObjectMgr.GetArenaTeamById(at_id))
-            {
-                at->DelMember(guid);
-            }
-    }
-    while (result->NextRow());
-
-    delete result;
-}
-
 /**
  * @brief Sets the player's accumulated rested experience bonus.
  *
@@ -6193,128 +6160,6 @@ void Player::ToggleMetaGemsActive(uint8 exceptslot, bool apply)
 }
 
 /**
- * @brief Stores the location used to return the player after leaving a battleground.
- *
- * @param leader The group leader to mirror entry positioning from, or NULL.
- */
-void Player::SetBattleGroundEntryPoint(Player* leader /*= NULL*/)
-{
-    // chat command use case, or non-group join
-    if (!leader || !leader->IsInWorld() || leader->IsTaxiFlying() || leader->GetMap()->IsDungeon() || leader->GetMap()->IsBattleGroundOrArena())
-    {
-        leader = this;
-    }
-
-    if (leader->IsInWorld() && !leader->IsTaxiFlying())
-    {
-        // If map is dungeon find linked graveyard
-        if (leader->GetMap()->IsDungeon())
-        {
-            if (const WorldSafeLocsEntry* entry = sObjectMgr.GetClosestGraveYard(leader->GetPositionX(), leader->GetPositionY(), leader->GetPositionZ(), leader->GetMapId(), leader->GetTeam()))
-            {
-                m_bgData.joinPos = WorldLocation(entry->map_id, entry->x, entry->y, entry->z, 0.0f);
-                m_bgData.m_needSave = true;
-                return;
-            }
-            else
-            {
-                sLog.outError("SetBattleGroundEntryPoint: Dungeon map %u has no linked graveyard, setting home location as entry point.", leader->GetMapId());
-            }
-        }
-        // If new entry point is not BG or arena set it
-        else if (!leader->GetMap()->IsBattleGroundOrArena())
-        {
-            m_bgData.joinPos = WorldLocation(leader->GetMapId(), leader->GetPositionX(), leader->GetPositionY(), leader->GetPositionZ(), leader->GetOrientation());
-            m_bgData.m_needSave = true;
-            return;
-        }
-    }
-
-    // In error cases use homebind position
-    m_bgData.joinPos = WorldLocation(m_homebindMapId, m_homebindX, m_homebindY, m_homebindZ, 0.0f);
-    m_bgData.m_needSave = true;
-}
-
-/**
- * @brief Removes the player from the battleground and handles deserter penalties.
- *
- * @param teleportToEntryPoint True to teleport the player back to the saved entry point.
- */
-void Player::LeaveBattleground(bool teleportToEntryPoint)
-{
-    if (BattleGround* bg = GetBattleGround())
-    {
-        bg->RemovePlayerAtLeave(GetObjectGuid(), teleportToEntryPoint, true);
-
-        // call after remove to be sure that player resurrected for correct cast
-        if (bg->isBattleGround() && !isGameMaster() && sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_CAST_DESERTER))
-        {
-            if (bg->GetStatus() == STATUS_IN_PROGRESS || bg->GetStatus() == STATUS_WAIT_JOIN)
-            {
-                // lets check if player was teleported from BG and schedule delayed Deserter spell cast
-                if (IsBeingTeleportedFar())
-                {
-                    ScheduleDelayedOperation(DELAYED_SPELL_CAST_DESERTER);
-                    return;
-                }
-
-                CastSpell(this, 26013, true);               // Deserter
-            }
-        }
-    }
-}
-
-/**
- * @brief Checks whether the player may currently join a battleground.
- *
- * @return True if the player can join; otherwise, false.
- */
-bool Player::CanJoinToBattleground() const
-{
-    // check Deserter debuff
-    if (GetDummyAura(26013))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool Player::CanReportAfkDueToLimit()
-{
-    // a player can complain about 15 people per 5 minutes
-    if (m_bgData.bgAfkReportedCount++ >= 15)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-/// This player has been blamed to be inactive in a battleground
-void Player::ReportedAfkBy(Player* reporter)
-{
-    BattleGround* bg = GetBattleGround();
-    if (!bg || bg != reporter->GetBattleGround() || GetTeam() != reporter->GetTeam())
-    {
-        return;
-    }
-
-    // check if player has 'Idle' or 'Inactive' debuff
-    if (m_bgData.bgAfkReporter.find(reporter->GetGUIDLow()) == m_bgData.bgAfkReporter.end() && !HasAura(43680, EFFECT_INDEX_0) && !HasAura(43681, EFFECT_INDEX_0) && reporter->CanReportAfkDueToLimit())
-    {
-        m_bgData.bgAfkReporter.insert(reporter->GetGUIDLow());
-        // 3 players have to complain to apply debuff
-        if (m_bgData.bgAfkReporter.size() >= 3)
-        {
-            // cast 'Idle' spell
-            CastSpell(this, 43680, true);
-            m_bgData.bgAfkReporter.clear();
-        }
-    }
-}
-
-/**
  * @brief Initializes the number of primary professions the player may learn.
  */
 void Player::InitPrimaryProfessions()
@@ -6589,55 +6434,6 @@ void Player::SendAuraDurationsForTarget(Unit* target)
 
         holder->SendAuraDurationForCaster(this);
     }
-}
-
-/**
- * @brief Gets the battleground instance the player is currently associated with.
- *
- * @return The active battleground instance, or NULL if none exists.
- */
-BattleGround* Player::GetBattleGround() const
-{
-    if (GetBattleGroundId() == 0)
-    {
-        return NULL;
-    }
-
-    return sBattleGroundMgr.GetBattleGround(GetBattleGroundId(), m_bgData.bgTypeID);
-}
-
-bool Player::InArena() const
-{
-    BattleGround* bg = GetBattleGround();
-    if (!bg || !bg->isArena())
-    {
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * @brief Checks whether the player's level fits a battleground's allowed range.
- *
- * @param bgTypeId The battleground type to evaluate.
- * @return True if the player's level is within range; otherwise, false.
- */
-bool Player::GetBGAccessByLevel(BattleGroundTypeId bgTypeId) const
-{
-    // get a template bg instead of running one
-    BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(bgTypeId);
-    if (!bg)
-    {
-        return false;
-    }
-
-    if (getLevel() < bg->GetMinLevel() || getLevel() > bg->GetMaxLevel())
-    {
-        return false;
-    }
-
-    return true;
 }
 
 /**
@@ -7292,37 +7088,6 @@ PartyResult Player::CanUninviteFromGroup() const
 }
 
 /**
- * @brief Moves the player into a battleground raid group.
- *
- * @param group The battleground raid group.
- * @param subgroup The battleground subgroup index.
- */
-void Player::SetBattleGroundRaid(Group* group, int8 subgroup)
-{
-    // we must move references from m_group to m_originalGroup
-    SetOriginalGroup(GetGroup(), GetSubGroup());
-
-    m_group.unlink();
-    m_group.link(group, this);
-    m_group.setSubGroup((uint8)subgroup);
-}
-
-/**
- * @brief Restores the player's original group after leaving a battleground raid.
- */
-void Player::RemoveFromBattleGroundRaid()
-{
-    // remove existing reference
-    m_group.unlink();
-    if (Group* group = GetOriginalGroup())
-    {
-        m_group.link(group, this);
-        m_group.setSubGroup(GetOriginalSubGroup());
-    }
-    SetOriginalGroup(NULL);
-}
-
-/**
  * @brief Stores the player's original non-battleground group reference.
  *
  * @param group The original group, or NULL to clear it.
@@ -7521,23 +7286,6 @@ bool ItemPosCount::isContainedIn(ItemPosCountVec const& vec) const
     }
 
     return false;
-}
-
-/**
- * @brief Checks whether the player can interact with a battleground object.
- *
- * @return True if the player can use the object; otherwise, false.
- */
-bool Player::CanUseBattleGroundObject()
-{
-    // TODO : some spells gives player ForceReaction to one faction (ReputationMgr::ApplyForceReaction)
-    // maybe gameobject code should handle that ForceReaction usage
-    return (IsAlive() &&                                    // living
-            // the following two are incorrect, because invisible/stealthed players should get visible when they click on flag
-            !HasStealthAura() &&                            // not stealthed
-            !HasInvisibilityAura() &&                       // visible
-            !isTotalImmune() &&                             // vulnerable (not immune)
-            !HasAura(SPELL_RECENTLY_DROPPED_FLAG, EFFECT_INDEX_0));
 }
 
 /**
