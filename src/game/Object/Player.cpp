@@ -379,7 +379,7 @@ UpdateMask Player::updateVisualBits;
  *
  * @param session The owning world session.
  */
-Player::Player(WorldSession* session): Unit(), m_spellCooldownMgr(this), m_mover(this), m_camera(this), m_reputationMgr(this)
+Player::Player(WorldSession* session): Unit(), m_petMgr(this), m_spellCooldownMgr(this), m_mover(this), m_camera(this), m_reputationMgr(this)
 {
 #ifdef ENABLE_PLAYERBOTS
     m_playerbotAI = 0;
@@ -520,7 +520,7 @@ Player::Player(WorldSession* session): Unit(), m_spellCooldownMgr(this), m_mover
     m_ammoDPS = 0.0f;
 
     // Initialize temporary unsummoned pet number to 0
-    m_temporaryUnsummonedPetNumber = 0;
+    // m_temporaryUnsummonedPetNumber initialized by m_petMgr ctor
 
     //////////////////// Rest System/////////////////////
     // Initialize time of entering inn to 0
@@ -554,7 +554,7 @@ Player::Player(WorldSession* session): Unit(), m_spellCooldownMgr(this), m_mover
     }
 
     // Initialize stable slots to 0
-    m_stableSlots = 0;
+    // m_stableSlots initialized by m_petMgr ctor
 
     /////////////////// Instance System /////////////////////
     // Initialize homebind timer to 0
@@ -4281,18 +4281,6 @@ void Player::SetFFAPvP(bool state)
 }
 
 
-/**
- * @brief Unsummons the player's current pet using the requested save mode.
- *
- * @param mode The persistence mode to use when removing the pet.
- */
-void Player::RemovePet(PetSaveMode mode)
-{
-    if (Pet* pet = GetPet())
-    {
-        pet->Unsummon(mode, this);
-    }
-}
 
 /**
  * @brief Unsummons the player's active mini-pet.
@@ -4328,15 +4316,6 @@ Pet* Player::GetMiniPet() const
 
 
 
-/**
- * @brief Clears the pet action bar on the client.
- */
-void Player::RemovePetActionBar()
-{
-    WorldPacket data(SMSG_PET_SPELLS, 8);
-    data << ObjectGuid();
-    SendDirectMessage(&data);
-}
 
 /**
  * @brief Checks whether a spell modifier currently applies to a spell.
@@ -6175,54 +6154,7 @@ void Player::HandleFall(MovementInfo const& movementInfo)
 
 
 
-/**
- * @brief Temporarily unsummons the current pet when the player's state requires it.
- */
-void Player::UnsummonPetTemporaryIfAny()
-{
-    Pet* pet = GetPet();
-    if (!pet)
-    {
-        return;
-    }
 
-    if (!m_temporaryUnsummonedPetNumber && pet->isControlled() && !pet->isTemporarySummoned())
-    {
-        m_temporaryUnsummonedPetNumber = pet->GetCharmInfo()->GetPetNumber();
-    }
-
-    pet->Unsummon(PET_SAVE_AS_CURRENT, this);
-}
-
-/**
- * @brief Resummons a pet that was temporarily unsummoned earlier.
- */
-void Player::ResummonPetTemporaryUnSummonedIfAny()
-{
-    if (!m_temporaryUnsummonedPetNumber)
-    {
-        return;
-    }
-
-    // not resummon in not appropriate state
-    if (IsPetNeedBeTemporaryUnsummoned())
-    {
-        return;
-    }
-
-    if (GetPetGuid())
-    {
-        return;
-    }
-
-    Pet* NewPet = new Pet;
-    if (!NewPet->LoadPetFromDB(this, 0, m_temporaryUnsummonedPetNumber, true))
-    {
-        delete NewPet;
-    }
-
-    m_temporaryUnsummonedPetNumber = 0;
-}
 
 
 

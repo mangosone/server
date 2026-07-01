@@ -66,6 +66,7 @@
 #include "Util.h"                                           // for Tokens typedef
 #include "ReputationMgr.h"
 #include "SpellCooldownMgr.h"                                // held by value on Player; brings in SpellCooldown struct + owns the cooldown map
+#include "PetMgr.h"                                          // held by value on Player; owns stable-slot count + temp-unsummon pet number
 #include "BattleGround.h"
 #include "DBCStores.h"
 #include "SharedDefines.h"
@@ -1438,7 +1439,7 @@ class Player : public Unit
         }
 
         // Remove the player's pet
-        void RemovePet(PetSaveMode mode);
+        void RemovePet(PetSaveMode mode) { m_petMgr.Remove(mode); }
 
         // Remove the player's mini pet
         void RemoveMiniPet();
@@ -1844,7 +1845,7 @@ class Player : public Unit
         // Load the player's pet
         void LoadPet();
 
-        uint32 m_stableSlots; // Number of stable slots
+        PetMgr m_petMgr; // owns stable-slot count + temp-unsummon pet number
 
         /*********************************************************/
         /***                    GOSSIP SYSTEM                  ***/
@@ -2341,7 +2342,7 @@ class Player : public Unit
         void PossessSpellInitialize();
 
         // Remove the pet action bar
-        void RemovePetActionBar();
+        void RemovePetActionBar() { m_petMgr.RemoveActionBar(); }
 
         // Check if the player has a specific spell
         bool HasSpell(uint32 spell) const override;
@@ -3748,10 +3749,13 @@ class Player : public Unit
         LookingForGroup m_lookingForGroup;
 
         // Temporarily removed pet cache
-        uint32 GetTemporaryUnsummonedPetNumber() const { return m_temporaryUnsummonedPetNumber; }
-        void SetTemporaryUnsummonedPetNumber(uint32 petnumber) { m_temporaryUnsummonedPetNumber = petnumber; }
-        void UnsummonPetTemporaryIfAny();
-        void ResummonPetTemporaryUnSummonedIfAny();
+        // Pet-metadata API — thin delegating wrappers around m_petMgr.
+        uint32 GetStableSlots() const { return m_petMgr.GetStableSlots(); }
+        void SetStableSlots(uint32 slots) { m_petMgr.SetStableSlots(slots); }
+        uint32 GetTemporaryUnsummonedPetNumber() const { return m_petMgr.GetTemporaryUnsummonedPetNumber(); }
+        void SetTemporaryUnsummonedPetNumber(uint32 petnumber) { m_petMgr.SetTemporaryUnsummonedPetNumber(petnumber); }
+        void UnsummonPetTemporaryIfAny() { m_petMgr.UnsummonTemporaryIfAny(); }
+        void ResummonPetTemporaryUnSummonedIfAny() { m_petMgr.ResummonTemporaryUnsummonedIfAny(); }
         bool IsPetNeedBeTemporaryUnsummoned() const { return !IsInWorld() || !IsAlive() || IsMounted() /*+in flight*/; }
 
         // Send cinematic start to the client
@@ -4298,8 +4302,7 @@ class Player : public Unit
         // Detect invisibility timer
         uint32 m_DetectInvTimer;
 
-        // Temporary removed pet cache
-        uint32 m_temporaryUnsummonedPetNumber;
+        // Temporary removed pet cache and stable-slot count now owned by m_petMgr.
 
         // Reputation manager for the player
         ReputationMgr  m_reputationMgr;
