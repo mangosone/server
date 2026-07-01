@@ -4578,27 +4578,6 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
 }
 
 /**
- * @brief Consumes and returns the rested experience bonus for an XP award.
- *
- * @param xp The base experience amount being awarded.
- * @return The rested bonus experience amount.
- */
-uint32 Player::GetXPRestBonus(uint32 xp)
-{
-    uint32 rested_bonus = (uint32)GetRestBonus();           // xp for each rested bonus
-
-    if (rested_bonus > xp)                                  // max rested_bonus == xp or (r+x) = 200% xp
-    {
-        rested_bonus = xp;
-    }
-
-    SetRestBonus(GetRestBonus() - rested_bonus);
-
-    DETAIL_LOG("Player gain %u xp (+ %u Rested Bonus). Rested points=%f", xp + rested_bonus, rested_bonus, GetRestBonus());
-    return rested_bonus;
-}
-
-/**
  * @brief Sends a bind point confirmation prompt to the client.
  *
  * @param guid The binder NPC GUID.
@@ -5283,49 +5262,6 @@ void Player::RemovePetitionsAndSigns(ObjectGuid guid, uint32 type)
         CharacterDatabase.PExecute("DELETE FROM `petition_sign` WHERE `ownerguid` = '%u' AND `type` = '%u'", lowguid, type);
     }
     CharacterDatabase.CommitTransaction();
-}
-
-/**
- * @brief Sets the player's accumulated rested experience bonus.
- *
- * @param rest_bonus_new The new rested bonus amount.
- */
-void Player::SetRestBonus(float rest_bonus_new)
-{
-    // Prevent resting on max level
-    if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-    {
-        rest_bonus_new = 0;
-    }
-
-    if (rest_bonus_new < 0)
-    {
-        rest_bonus_new = 0;
-    }
-
-    float rest_bonus_max = (float)GetUInt32Value(PLAYER_NEXT_LEVEL_XP) * 1.5f / 2.0f;
-
-    if (rest_bonus_new > rest_bonus_max)
-    {
-        m_rest_bonus = rest_bonus_max;
-    }
-    else
-    {
-        m_rest_bonus = rest_bonus_new;
-    }
-
-    // update data for client
-    if (m_rest_bonus > 10)
-    {
-        SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_RESTED);
-    }
-    else if (m_rest_bonus <= 1)
-    {
-        SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_NORMAL);
-    }
-
-    // RestTickUpdate
-    SetUInt32Value(PLAYER_REST_STATE_EXPERIENCE, uint32(m_rest_bonus));
 }
 
 /**
@@ -7442,40 +7378,6 @@ Object* Player::GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask)
 }
 
 /**
- * @brief Updates the player's current resting state.
- *
- * @param n_r_type The new rest type.
- * @param areaTriggerId The inn or rest area trigger identifier, if applicable.
- */
-void Player::SetRestType(RestType n_r_type, uint32 areaTriggerId /*= 0*/)
-{
-    rest_type = n_r_type;
-
-    if (rest_type == REST_TYPE_NO)
-    {
-        RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
-
-        // Set player to FFA PVP when not in rested environment.
-        if (sWorld.IsFFAPvPRealm())
-        {
-            SetFFAPvP(true);
-        }
-    }
-    else
-    {
-        SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
-
-        inn_trigger_id = areaTriggerId;
-        time_inn_enter = time(NULL);
-
-        if (sWorld.IsFFAPvPRealm())
-        {
-            SetFFAPvP(false);
-        }
-    }
-}
-
-/**
  * @brief Checks whether the player is immune to a specific spell effect.
  *
  * @param spellInfo The spell entry being evaluated.
@@ -7652,38 +7554,3 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
 
     return AREA_LOCKSTATUS_OK;
 };
-
-/**
- * @brief Computes rested experience gained over a period of time.
- *
- * @param timePassed The elapsed time in seconds.
- * @param offline True when the gain is being computed for offline time.
- * @param inRestPlace True when the player is in a rest area while offline.
- * @return The amount of rested experience bonus gained.
- */
-float Player::ComputeRest(time_t timePassed, bool offline /*= false*/, bool inRestPlace /*= false*/)
-{
-    // Every 8h in resting zone we gain a bubble
-    // A bubble is 5% of the total xp so there is 20 bubbles
-    // So we gain (total XP/20 every 8h) (8h = 288800 sec)
-    // (TotalXP/20)/28800; simplified to (TotalXP/576000) per second
-    // Client automatically double the value sent so we have to divide it by 2
-    // So final formula (TotalXP/1152000)
-    float bonus = timePassed * (GetUInt32Value(PLAYER_NEXT_LEVEL_XP) / 1152000.0f); // Get the gained rest xp for given second
-    if (!offline)
-    {
-        bonus *= sWorld.getConfig(CONFIG_FLOAT_RATE_REST_INGAME);                   // Apply the custom setting
-    }
-    else
-    {
-        if (inRestPlace)
-        {
-            bonus *= sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_TAVERN_OR_CITY);
-        }
-        else
-        {
-            bonus *= sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_WILDERNESS) / 4.0f; // bonus is reduced by 4 when not in rest place
-        }
-    }
-    return bonus;
-}
