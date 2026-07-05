@@ -36,6 +36,8 @@
 #include "AuctionHouseMgr.h"
 #include "Item.h"
 
+#include <memory>
+
 struct ItemPrototype;
 struct AuctionEntry;
 struct AuctionHouseEntry;
@@ -949,7 +951,11 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
-        SessionTransport* m_Socket;
+        // RAII owner of one transport reference. Set on construction, reset
+        // only on the main thread (in Update's ProcessLogout branch) so it is
+        // never written while a map thread reads it. Resetting releases the
+        // held reference via the shared_ptr deleter.
+        std::shared_ptr<SessionTransport> m_Socket;
         std::string m_Address;
 
         AccountTypes _security;

@@ -143,10 +143,27 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
     return !MapSessionFilterHelper(m_pSession, opHandle);
 }
 
+namespace
+{
+    /// Wrap a transport in a shared_ptr that adds one reference on creation and
+    /// removes it when the last owner is gone. This gives the session RAII
+    /// ownership of exactly one transport reference.
+    std::shared_ptr<SessionTransport> AcquireTransport(SessionTransport* transport)
+    {
+        if (!transport)
+        {
+            return std::shared_ptr<SessionTransport>();
+        }
+
+        transport->AddReference();
+        return std::shared_ptr<SessionTransport>(transport, [](SessionTransport* t) { t->RemoveReference(); });
+    }
+}
+
 /// WorldSession constructor
 WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
     LookingForGroup_auto_join(false), LookingForGroup_auto_add(false), m_muteTime(mute_time),
-    _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), m_expansion(expansion), _logoutTime(0),
+    _player(NULL), m_Socket(AcquireTransport(sock)), _security(sec), _accountId(id), _warden(NULL), _build(0), m_expansion(expansion), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
@@ -154,7 +171,6 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
     if (sock)
     {
         m_Address = sock->GetRemoteAddress();
-        sock->AddReference();
     }
 }
 
@@ -171,8 +187,7 @@ WorldSession::~WorldSession()
     if (m_Socket)
     {
         m_Socket->CloseSocket();
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket.reset(); // releases the held reference via the shared_ptr deleter
     }
 
     // Warden
@@ -431,13 +446,6 @@ bool WorldSession::Update(PacketFilter& updater)
     }
 #endif
 
-    ///- Cleanup socket pointer if need
-    if (m_Socket && m_Socket->IsClosed())
-    {
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
-    }
-
     // Warden
     if (m_Socket && !m_Socket->IsClosed() && _warden)
     {
@@ -448,6 +456,15 @@ bool WorldSession::Update(PacketFilter& updater)
     // logout procedure should happen only in World::UpdateSessions() method!!!
     if (updater.ProcessLogout())
     {
+        ///- Cleanup socket pointer if need. This is done only here, in the
+        /// main-thread ProcessLogout branch, so m_Socket is never reset while a
+        /// map thread reads it (the world update and map updates run in
+        /// disjoint phases). Resetting releases the reference via the deleter.
+        if (m_Socket && m_Socket->IsClosed())
+        {
+            m_Socket.reset();
+        }
+
         ///- If necessary, log the player out
         time_t currTime = time(NULL);
         if (!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading))
