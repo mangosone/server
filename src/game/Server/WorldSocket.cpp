@@ -123,6 +123,7 @@ WorldSocket::WorldSocket(void) :
     WorldHandler(),
     m_LastPingTime(ACE_Time_Value::zero),
     m_OverSpeedPings(0),
+    m_SessionLock(),
     m_Session(0),
     m_RecvWPct(0),
     m_RecvPct(),
@@ -175,17 +176,24 @@ bool WorldSocket::IsClosed(void) const
  */
 void WorldSocket::CloseSocket(void)
 {
-    ACE_GUARD(LockType, Guard, m_OutBufferLock);
-
-    if (closing_)
     {
-        return;
+        ACE_GUARD(LockType, Guard, m_OutBufferLock);
+
+        if (closing_)
+        {
+            return;
+        }
+
+        closing_ = true;
+        peer().close_writer();
     }
 
-    closing_ = true;
-    peer().close_writer();
-
-    m_Session = NULL;
+    // Clear the session pointer under its own lock (not the output-buffer
+    // lock) so the network thread can never route a packet to a session that
+    // is being torn down. This is done outside the block above to keep a
+    // single, consistent lock order (m_OutBufferLock is never held while
+    // taking m_SessionLock).
+    SetSession(NULL);
 }
 
 /**
@@ -473,7 +481,9 @@ int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
         }
     }
 
-    m_Session = NULL;
+    // Clear the session pointer under m_SessionLock so a concurrent packet
+    // route on the network thread sees a consistent value.
+    SetSession(NULL);
 
     reactor()->remove_handler(this, ACE_Event_Handler::DONT_CALL | ACE_Event_Handler::ALL_EVENTS_MASK);
     return 0;
@@ -689,7 +699,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
             case CMSG_PING:
                 return HandlePing(*new_pct);
             case CMSG_AUTH_SESSION:
-                if (m_Session)
+                if (GetSession())
                 {
                     sLog.outError("WorldSocket::ProcessIncoming: Player send CMSG_AUTH_SESSION again");
                     return -1;
@@ -698,7 +708,8 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 #ifdef ENABLE_ELUNA
                 if (Eluna* e = sWorld.GetEluna())
                 {
-                    if (!e->OnPacketReceive(m_Session, *new_pct))
+                    // No session exists yet at this point, so pass NULL to the hook.
+                    if (!e->OnPacketReceive(NULL, *new_pct))
                     {
                         return 0;
                     }
@@ -711,12 +722,21 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 #ifdef ENABLE_ELUNA
                 if (Eluna* e = sWorld.GetEluna())
                 {
-                    e->OnPacketReceive(m_Session, *new_pct);
+                    // Snapshot the session under the lock, then release it before
+                    // calling into the hook so we never run script code while
+                    // holding the lock.
+                    e->OnPacketReceive(GetSession(), *new_pct);
                 }
 #endif /* ENABLE_ELUNA */
                 return 0;
             default:
             {
+                // Hold the session lock across QueuePacket so the session
+                // cannot be cleared (and later destroyed) while we hand the
+                // packet to it. QueuePacket only touches its own queue lock,
+                // so there is no lock-order conflict with m_OutBufferLock.
+                ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
+
                 if (m_Session != NULL)
                 {
                     // OK ,give the packet to WorldSession
@@ -734,8 +754,9 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     }
     catch (ByteBufferException&)
     {
+        WorldSession* session = GetSession();
         sLog.outError("WorldSocket::ProcessIncoming ByteBufferException occured while parsing an instant handled packet (opcode: %u) from client %s, accountid=%i.",
-                      opcode, GetRemoteAddress().c_str(), m_Session ? m_Session->GetAccountId() : -1);
+                      opcode, GetRemoteAddress().c_str(), session ? session->GetAccountId() : -1);
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))
         {
             DEBUG_LOG("Dumping error-causing packet:");
@@ -745,7 +766,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
         if (sWorld.getConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET))
         {
             DETAIL_LOG("Disconnecting session [account id %i / address %s] for badly formatted packet.",
-                       m_Session ? m_Session->GetAccountId() : -1, GetRemoteAddress().c_str());
+                       session ? session->GetAccountId() : -1, GetRemoteAddress().c_str());
 
             return -1;
         }
@@ -965,11 +986,16 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     stmt.PExecute(address.c_str(), account.c_str());
 
     // NOTE ATM the socket is single-threaded, have this in mind ...
-    ACE_NEW_RETURN(m_Session, WorldSession(id, this, AccountTypes(security), expansion, mutetime, locale), -1);
+    WorldSession* session = NULL;
+    ACE_NEW_RETURN(session, WorldSession(id, this, AccountTypes(security), expansion, mutetime, locale), -1);
+
+    // Publish the session under the lock so the network thread routes incoming
+    // packets to it consistently.
+    SetSession(session);
 
     m_Crypt.Init(&K);
 
-    m_Session->LoadTutorialsData();
+    session->LoadTutorialsData();
 
     // In case needed sometime the second arg is in microseconds 1 000 000 = 1 sec
     ACE_OS::sleep(ACE_Time_Value(0, 10000));
@@ -977,10 +1003,10 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // Warden: Initialize Warden system only if it is enabled by config
     if (wardenActive)
     {
-        m_Session->InitWarden(uint16(BuiltNumberClient), &K, os);
+        session->InitWarden(uint16(BuiltNumberClient), &K, os);
     }
 
-    sWorld.AddSession(m_Session);
+    sWorld.AddSession(session);
 
     // Create and send the Addon packet
     WorldPacket SendAddonPacked;
@@ -1026,6 +1052,10 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
 
             if (max_count && m_OverSpeedPings > max_count)
             {
+                // Read the session under the lock so it cannot be cleared while
+                // we inspect its security level.
+                ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
+
                 if (m_Session && m_Session->GetSecurity() == SEC_PLAYER)
                 {
                     sLog.outError("WorldSocket::HandlePing: Player kicked for "
@@ -1042,18 +1072,24 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
         }
     }
 
-    if (m_Session)
     {
-        m_Session->SetLatency(latency);
-        m_Session->SetClientTimeDelay(0); // recalculated on next movement packet
-    }
-    else
-    {
-        sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "
-                      "but is not authenticated or got recently kicked,"
-                      " address = %s",
-                      GetRemoteAddress().c_str());
-        return -1;
+        // Update the session's latency under the lock so it cannot be cleared
+        // (and destroyed) while we dereference it.
+        ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
+
+        if (m_Session)
+        {
+            m_Session->SetLatency(latency);
+            m_Session->SetClientTimeDelay(0); // recalculated on next movement packet
+        }
+        else
+        {
+            sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "
+                          "but is not authenticated or got recently kicked,"
+                          " address = %s",
+                          GetRemoteAddress().c_str());
+            return -1;
+        }
     }
 
     WorldPacket packet(SMSG_PONG, 4);
@@ -1136,4 +1172,30 @@ bool WorldSocket::iFlushPacketQueue()
     }
 
     return haveone;
+}
+
+/**
+ * @brief Returns the current session pointer under m_SessionLock.
+ *
+ * The returned pointer is either a live session or NULL, never a dangling
+ * pointer, because the session is always cleared under the same lock before it
+ * is destroyed.
+ *
+ * @return WorldSession* The current session, or NULL if none/closed.
+ */
+WorldSession* WorldSocket::GetSession()
+{
+    ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, NULL);
+    return m_Session;
+}
+
+/**
+ * @brief Stores the session pointer under m_SessionLock.
+ *
+ * @param session The session to associate with this socket, or NULL to clear.
+ */
+void WorldSocket::SetSession(WorldSession* session)
+{
+    ACE_GUARD(LockType, Guard, m_SessionLock);
+    m_Session = session;
 }

@@ -173,6 +173,15 @@ class WorldSocket : protected WorldHandler
         /// to mark the socket for output ).
         bool iFlushPacketQueue();
 
+        /// Return the current session pointer, read under m_SessionLock.
+        /// The result is either a live session or NULL, never a dangling
+        /// pointer, because the session is always cleared under the same lock
+        /// before it is destroyed.
+        WorldSession* GetSession();
+
+        /// Store the session pointer under m_SessionLock.
+        void SetSession(WorldSession* session);
+
     private:
         /// Time in which the last ping was received
         ACE_Time_Value m_LastPingTime;
@@ -185,6 +194,12 @@ class WorldSocket : protected WorldHandler
 
         /// Class used for managing encryption of the headers
         AuthCrypt m_Crypt;
+
+        /// Mutex protecting m_Session. It is set from the network thread on
+        /// authentication and cleared on close, while the network thread also
+        /// reads it to route incoming packets, so every access goes through
+        /// this lock.
+        LockType m_SessionLock;
 
         /// Session to which received packets are routed
         WorldSession* m_Session;
