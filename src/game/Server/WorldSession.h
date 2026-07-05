@@ -51,6 +51,7 @@ class Unit;
 class Warden;
 class WorldPacket;
 class WorldSocket;
+class SessionTransport;
 class QueryResult;
 class LoginQueryHolder;
 class CharacterHandler;
@@ -948,7 +949,7 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
-        WorldSocket* m_Socket;
+        SessionTransport* m_Socket;
         std::string m_Address;
 
         AccountTypes _security;

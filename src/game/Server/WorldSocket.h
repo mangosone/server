@@ -48,6 +48,7 @@
 
 #include "Common.h"
 #include "Auth/AuthCrypt.h"
+#include "SessionTransport.h"
 
 class ACE_Message_Block;
 class WorldPacket;
@@ -93,7 +94,7 @@ typedef ACE_Acceptor< WorldSocket, ACE_SOCK_ACCEPTOR > WorldAcceptor;
  *
  */
 
-class WorldSocket : protected WorldHandler
+class WorldSocket : protected WorldHandler, public SessionTransport
 {
     public:
         /// Declare some friends
@@ -107,24 +108,24 @@ class WorldSocket : protected WorldHandler
         typedef ACE_Unbounded_Queue< WorldPacket* > PacketQueueT;
 
         /// Check if socket is closed.
-        bool IsClosed(void) const;
+        bool IsClosed(void) const override;
 
         /// Close the socket.
-        void CloseSocket(void);
+        void CloseSocket(void) override;
 
         /// Get address of connected peer.
-        const std::string& GetRemoteAddress(void) const;
+        const std::string& GetRemoteAddress(void) const override;
 
         /// Send A packet on the socket, this function is reentrant.
         /// @param pct packet to send
         /// @return -1 of failure
-        int SendPacket(const WorldPacket& pct);
+        int SendPacket(const WorldPacket& pct) override;
 
         /// Add reference to this object.
-        long AddReference(void);
+        long AddReference(void) override;
 
         /// Remove reference to this object.
-        long RemoveReference(void);
+        long RemoveReference(void) override;
 
     protected:
         /// things called by ACE framework.
