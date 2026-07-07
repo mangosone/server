@@ -1108,12 +1108,12 @@ void PlayerbotFactory::EnchantItem(Item* item)
             }
 
             SpellItemEnchantmentEntry const* enchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
-            if (!enchant || enchant->slot != PERM_ENCHANTMENT_SLOT)
+            if (!enchant || enchant->Flags != PERM_ENCHANTMENT_SLOT)
             {
                 continue;
             }
 
-            const SpellEntry *enchantSpell = sSpellStore.LookupEntry(enchant->spellid[0]);
+            const SpellEntry *enchantSpell = sSpellStore.LookupEntry(enchant->EffectArg[0]);
             if (!enchantSpell || (enchantSpell->spellLevel && enchantSpell->spellLevel > level))
             {
                 continue;
@@ -1122,12 +1122,12 @@ void PlayerbotFactory::EnchantItem(Item* item)
             uint8 sp = 0, ap = 0, tank = 0;
             for (int i = 0; i < 3; ++i)
             {
-                if (enchant->type[i] != ITEM_ENCHANTMENT_TYPE_STAT)
+                if (enchant->Effect[i] != ITEM_ENCHANTMENT_TYPE_STAT)
                 {
                     continue;
                 }
 
-                AddItemStats(enchant->spellid[i], sp, ap, tank);
+                AddItemStats(enchant->EffectArg[i], sp, ap, tank);
             }
 
             if (!CheckItemStats(sp, ap, tank))

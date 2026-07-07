@@ -2474,7 +2474,7 @@ SpellCastResult Spell::CheckItems()
                     {
                         return SPELL_FAILED_ERROR;
                     }
-                    if (pEnchant->slot & ENCHANTMENT_CAN_SOULBOUND)
+                    if (pEnchant->Flags & ENCHANTMENT_CAN_SOULBOUND)
                     {
                         return SPELL_FAILED_NOT_TRADEABLE;
                     }
@@ -2497,7 +2497,7 @@ SpellCastResult Spell::CheckItems()
                     {
                         return SPELL_FAILED_ERROR;
                     }
-                    if (pEnchant->slot & ENCHANTMENT_CAN_SOULBOUND)
+                    if (pEnchant->Flags & ENCHANTMENT_CAN_SOULBOUND)
                     {
                         return SPELL_FAILED_NOT_TRADEABLE;
                     }

@@ -339,7 +339,7 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
                 {
                     if (SpellItemEnchantmentEntry const* enchantEntry = sSpellItemEnchantmentStore.LookupEntry(OldEnchants[j]))
                     {
-                        if (iGemProto->ItemId == enchantEntry->GemID)
+                        if (iGemProto->ItemId == enchantEntry->Src_itemID)
                         {
                             _player->SendEquipError(EQUIP_ERR_ITEM_UNIQUE_EQUIPPABLE_SOCKETED, itemTarget, NULL);
                             return;

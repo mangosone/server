@@ -268,7 +268,7 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
         return;
     }
 
-    if (!ignore_condition && pEnchant->EnchantmentCondition && !EnchantmentFitsRequirements(pEnchant->EnchantmentCondition, -1))
+    if (!ignore_condition && pEnchant->Condition_id && !EnchantmentFitsRequirements(pEnchant->Condition_id, -1))
     {
         return;
     }
@@ -277,9 +277,9 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
     {
         for (int s = 0; s < 3; ++s)
         {
-            uint32 enchant_display_type = pEnchant->type[s];
-            uint32 enchant_amount = pEnchant->amount[s];
-            uint32 enchant_spell_id = pEnchant->spellid[s];
+            uint32 enchant_display_type = pEnchant->Effect[s];
+            uint32 enchant_amount = pEnchant->EffectPointsMin[s];
+            uint32 enchant_spell_id = pEnchant->EffectArg[s];
 
             switch (enchant_display_type)
             {

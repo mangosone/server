@@ -194,7 +194,7 @@ void LoadDisables()
                     CONTINUE;
                 }
                 bool isFlagInvalid = false;
-                switch (mapEntry->map_type)
+                switch (mapEntry->InstanceType)
                 {
                     case MAP_COMMON:
                     case MAP_INSTANCE:
@@ -251,7 +251,7 @@ void LoadDisables()
                     ERROR_DB_STRICT_LOG("Map entry %u from `disables` doesn't exist in dbc, skipped.", entry);
                     CONTINUE;
                 }
-                switch (mapEntry->map_type)
+                switch (mapEntry->InstanceType)
                 {
                     case MAP_COMMON:
                         if (flags & VMAP::VMAP_DISABLE_AREAFLAG)
@@ -291,7 +291,7 @@ void LoadDisables()
                     ERROR_DB_STRICT_LOG("Map entry %u from `disables` doesn't exist in dbc, skipped.", entry);
                     CONTINUE;
                 }
-                switch (mapEntry->map_type)
+                switch (mapEntry->InstanceType)
                 {
                     case MAP_COMMON:
                         sLog.outDebug("Pathfinding disabled for world map %u.", entry);

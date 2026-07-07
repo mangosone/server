@@ -158,7 +158,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         PSendSysMessage("Location: Map %u (%s), Zone %u (%s)",
                         mapId,
-                        (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+                        (mapEntry ? mapEntry->MapName_lang[GetSessionDbcLocale()] : "<unknown>"),
                         zoneId,
                         (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
 

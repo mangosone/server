@@ -775,7 +775,7 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
     SetMap(sMapMgr.CreateMap(info->mapId, this));
 
     // Set player's power type based on class
-    uint8 powertype = cEntry->powerType;
+    uint8 powertype = cEntry->DisplayPower;
 
     // Set player's faction based on race
     setFactionForRace(race);
@@ -1606,7 +1606,7 @@ bool Player::BuildEnumData(QueryResult* result, WorldPacket* p_data)
 
         *p_data << uint32(proto->DisplayInfoID);
         *p_data << uint8(proto->InventoryType);
-        *p_data << uint32(enchant ? enchant->aura_id : 0);
+        *p_data << uint32(enchant ? enchant->ItemVisual : 0);
     }
 
     *p_data << uint32(0);                                   // first bag display id
@@ -3490,13 +3490,13 @@ Team Player::TeamForRace(uint8 race)
         return ALLIANCE;
     }
 
-    switch (rEntry->TeamID)
+    switch (rEntry->BaseLanguage)
     {
         case 7: return ALLIANCE;
         case 1: return HORDE;
     }
 
-    sLog.outError("Race %u have wrong teamid %u in DBC: wrong DBC files?", uint32(race), rEntry->TeamID);
+    sLog.outError("Race %u have wrong teamid %u in DBC: wrong DBC files?", uint32(race), rEntry->BaseLanguage);
     return TEAM_NONE;
 }
 
@@ -4352,9 +4352,9 @@ void Player::InitDataForForm(bool reapplyMods)
         default:                                            // 0, for example
         {
             ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(getClass());
-            if (cEntry && cEntry->powerType < MAX_POWERS && uint32(GetPowerType()) != cEntry->powerType)
+            if (cEntry && cEntry->DisplayPower < MAX_POWERS && uint32(GetPowerType()) != cEntry->DisplayPower)
             {
-                SetPowerType(Powers(cEntry->powerType));
+                SetPowerType(Powers(cEntry->DisplayPower));
             }
 
             break;
@@ -4954,24 +4954,24 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
         for (SkillRaceClassInfoMap::const_iterator itr = raceBounds.first; itr != raceBounds.second; ++itr)
         {
             SkillRaceClassInfoEntry const* skillRCEntry = itr->second;
-            if ((skillRCEntry->raceMask & racemask) && (skillRCEntry->classMask & classmask))
+            if ((skillRCEntry->RaceMask & racemask) && (skillRCEntry->ClassMask & classmask))
             {
-                if (skillRCEntry->flags & ABILITY_SKILL_NONTRAINABLE)
+                if (skillRCEntry->Flags & ABILITY_SKILL_NONTRAINABLE)
                 {
                     return false;
                 }
 
                 if (pReqlevel)                              // show trainers list case
                 {
-                    if (skillRCEntry->reqLevel)
+                    if (skillRCEntry->MinLevel)
                     {
-                        *pReqlevel = skillRCEntry->reqLevel;
+                        *pReqlevel = skillRCEntry->MinLevel;
                         return true;
                     }
                 }
                 else                                        // check availble case at train
                 {
-                    if (skillRCEntry->reqLevel && getLevel() < skillRCEntry->reqLevel)
+                    if (skillRCEntry->MinLevel && getLevel() < skillRCEntry->MinLevel)
                     {
                         return false;
                     }
@@ -5584,8 +5584,8 @@ bool Player::HasTitle(uint32 bitIndex) const
 
 void Player::SetTitle(CharTitlesEntry const* title, bool lost)
 {
-    uint32 fieldIndexOffset = title->bit_index / 32;
-    uint32 flag = 1 << (title->bit_index % 32);
+    uint32 fieldIndexOffset = title->Mask_ID / 32;
+    uint32 flag = 1 << (title->Mask_ID % 32);
 
     if (lost)
     {
@@ -5607,7 +5607,7 @@ void Player::SetTitle(CharTitlesEntry const* title, bool lost)
     }
 
     WorldPacket data(SMSG_TITLE_EARNED, 4 + 4);
-    data << uint32(title->bit_index);
+    data << uint32(title->Mask_ID);
     data << uint32(lost ? 0 : 1);                           // 1 - earned, 0 - lost
     GetSession()->SendPacket(&data);
 }
@@ -5880,7 +5880,7 @@ InventoryResult Player::CanEquipUniqueItem(Item* pItem, uint8 eslot) const
             continue;
         }
 
-        ItemPrototype const* pGem = ObjectMgr::GetItemPrototype(enchantEntry->GemID);
+        ItemPrototype const* pGem = ObjectMgr::GetItemPrototype(enchantEntry->Src_itemID);
         if (!pGem)
         {
             continue;

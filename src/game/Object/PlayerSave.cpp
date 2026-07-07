@@ -1140,7 +1140,7 @@ void Player::ResetInstances(InstanceResetMethod method)
         if (method == INSTANCE_RESET_ALL)
         {
             // the "reset all instances" method can only reset normal maps
-            if (entry->map_type == MAP_RAID || diff == DUNGEON_DIFFICULTY_HEROIC)
+            if (entry->InstanceType == MAP_RAID || diff == DUNGEON_DIFFICULTY_HEROIC)
             {
                 ++itr;
                 continue;
@@ -1913,7 +1913,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     // check node starting pos data set case if provided
     if (node->x != 0.0f || node->y != 0.0f || node->z != 0.0f)
     {
-        if (node->map_id != GetMapId() ||
+        if (node->ContinentID != GetMapId() ||
             (node->x - GetPositionX()) * (node->x - GetPositionX()) +
             (node->y - GetPositionY()) * (node->y - GetPositionY()) +
             (node->z - GetPositionZ()) * (node->z - GetPositionZ()) >
@@ -2012,7 +2012,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     {
         TaxiNodesEntry const* lastnode = sTaxiNodesStore.LookupEntry(nodes[nodes.size() - 1]);
         m_taxi.ClearTaxiDestinations();
-        TeleportTo(lastnode->map_id, lastnode->x, lastnode->y, lastnode->z, GetOrientation());
+        TeleportTo(lastnode->ContinentID, lastnode->x, lastnode->y, lastnode->z, GetOrientation());
         return false;
     }
     else

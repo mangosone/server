@@ -796,7 +796,7 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
     {
         return true;
     }
-    uint32 family = clsEntry->spellfamily;
+    uint32 family = clsEntry->SpellClassSet;
 
     for (uint32 i = 0; i < sSkillLineAbilityStore.GetNumRows(); ++i)
     {

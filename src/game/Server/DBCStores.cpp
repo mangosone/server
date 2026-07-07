@@ -332,9 +332,9 @@ void LoadDBCStores(const std::string& dataPath)
     for (uint32 i = 0; i < sFactionStore.GetNumRows(); ++i)
     {
         FactionEntry const* faction = sFactionStore.LookupEntry(i);
-        if (faction && faction->team)
+        if (faction && faction->ParentFactionID)
         {
-            SimpleFactionsList& flist = sFactionTeamMap[faction->team];
+            SimpleFactionsList& flist = sFactionTeamMap[faction->ParentFactionID];
             flist.push_back(i);
         }
     }
@@ -823,7 +823,7 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
 
     if (MapEntry const* mapEntry = sMapStore.LookupEntry(map_id))
     {
-        return GetAreaEntryByAreaID(mapEntry->linked_zone);
+        return GetAreaEntryByAreaID(mapEntry->AreaTableID);
     }
 
     return NULL;

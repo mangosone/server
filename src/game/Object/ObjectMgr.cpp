@@ -817,11 +817,11 @@ void ObjectMgr::LoadInstanceTemplate()
                 // use defaults from the DBC
                 if (mapEntry->SupportsHeroicMode())
                 {
-                    const_cast<InstanceTemplate*>(temp)->reset_delay = mapEntry->resetTimeHeroic / DAY;
+                    const_cast<InstanceTemplate*>(temp)->reset_delay = mapEntry->Field_2_0_3_6299_024 / DAY;
                 }
-                else if (mapEntry->resetTimeRaid && mapEntry->map_type == MAP_RAID)
+                else if (mapEntry->Field_2_0_3_6299_023 && mapEntry->InstanceType == MAP_RAID)
                 {
-                    const_cast<InstanceTemplate*>(temp)->reset_delay = mapEntry->resetTimeRaid / DAY;
+                    const_cast<InstanceTemplate*>(temp)->reset_delay = mapEntry->Field_2_0_3_6299_023 / DAY;
                 }
             }
 

@@ -808,10 +808,10 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType)
         }
         for (int s = 0; s < 3; ++s)
         {
-            uint32 proc_spell_id = pEnchant->spellid[s];
+            uint32 proc_spell_id = pEnchant->EffectArg[s];
 
             // Flametongue Weapon (Passive), Ranks (used not existed equip spell id in pre-3.x spell.dbc)
-            if (pEnchant->type[s] == ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
+            if (pEnchant->Effect[s] == ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
             {
                 switch (proc_spell_id)
                 {
@@ -826,7 +826,7 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType)
                         continue;
                 }
             }
-            else if (pEnchant->type[s] != ITEM_ENCHANTMENT_TYPE_COMBAT_SPELL)
+            else if (pEnchant->Effect[s] != ITEM_ENCHANTMENT_TYPE_COMBAT_SPELL)
             {
                 continue;
             }
@@ -843,7 +843,7 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType)
 
             float chance = ppmRate
                            ? GetPPMProcChance(proto->Delay, ppmRate)
-                           : pEnchant->amount[s] != 0 ? float(pEnchant->amount[s]) : GetWeaponProcChance();
+                           : pEnchant->EffectPointsMin[s] != 0 ? float(pEnchant->EffectPointsMin[s]) : GetWeaponProcChance();
 
 
             ApplySpellMod(spellInfo->Id, SPELLMOD_CHANCE_OF_SUCCESS, chance);

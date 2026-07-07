@@ -31,7 +31,7 @@ bool TellReputationAction::Execute(Event event)
     int32 reputation = bot->GetReputationMgr().GetReputation(faction);
 
     ostringstream out;
-    out << entry->name[0] << ": ";
+    out << entry->Name_lang[0] << ": ";
     out << "|cff";
     ReputationRank rank = bot->GetReputationMgr().GetRank(entry);
     switch (rank) {

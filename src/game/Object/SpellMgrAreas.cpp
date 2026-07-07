@@ -285,7 +285,7 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
     {
         uint32 v_map = GetVirtualMapForMapAndZone(map_id, zone_id);
         MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
-        if (!mapEntry || mapEntry->addon < 1 || !mapEntry->IsContinent())
+        if (!mapEntry || mapEntry->ExpansionID < 1 || !mapEntry->IsContinent())
         {
             return SPELL_FAILED_REQUIRES_AREA;
         }
@@ -454,12 +454,12 @@ void SpellMgr::LoadSkillRaceClassInfoMap()
         }
 
         // not all skills really listed in ability skills list
-        if (!sSkillLineStore.LookupEntry(skillRCInfo->skillId))
+        if (!sSkillLineStore.LookupEntry(skillRCInfo->SkillID))
         {
             continue;
         }
 
-        mSkillRaceClassInfoMap.insert(SkillRaceClassInfoMap::value_type(skillRCInfo->skillId, skillRCInfo));
+        mSkillRaceClassInfoMap.insert(SkillRaceClassInfoMap::value_type(skillRCInfo->SkillID, skillRCInfo));
 
         ++count;
     }

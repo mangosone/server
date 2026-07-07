@@ -1182,7 +1182,7 @@ bool GameObject::IsHostileTo(Unit const* unit) const
 
             // apply reputation state
             FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction);
-            if (raw_tester_faction && raw_tester_faction->reputationListID >= 0)
+            if (raw_tester_faction && raw_tester_faction->ReputationIndex >= 0)
             {
                 return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) <= REP_HOSTILE;
             }
@@ -1245,7 +1245,7 @@ bool GameObject::IsFriendlyTo(Unit const* unit) const
 
             // apply reputation state
             if (FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction))
-                if (raw_tester_faction->reputationListID >= 0)
+                if (raw_tester_faction->ReputationIndex >= 0)
                 {
                     return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) >= REP_FRIENDLY;
                 }
