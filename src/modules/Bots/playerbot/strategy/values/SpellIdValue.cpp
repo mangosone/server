@@ -20,7 +20,7 @@ uint32 SpellIdValue::Calculate()
     if (extractedSpellId)
     {
         const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(extractedSpellId);
-        if (pSpellInfo) namepart = pSpellInfo->SpellName[0];
+        if (pSpellInfo) namepart = pSpellInfo->Name_lang[0];
     }
 
     wstring wnamepart;
@@ -69,7 +69,7 @@ uint32 SpellIdValue::Calculate()
             }
         }
 
-        char* spellName = pSpellInfo->SpellName[loc];
+        char* spellName = pSpellInfo->Name_lang[loc];
         if (!useByItem && (tolower(spellName[0]) != firstSymbol || strlen(spellName) != spellLength || !Utf8FitTo(spellName, wnamepart)))
         {
             continue;
@@ -123,7 +123,7 @@ uint32 SpellIdValue::Calculate()
                 continue;
             }
 
-            char* spellName = pSpellInfo->SpellName[loc];
+            char* spellName = pSpellInfo->Name_lang[loc];
             if (tolower(spellName[0]) != firstSymbol || strlen(spellName) != spellLength || !Utf8FitTo(spellName, wnamepart))
             {
                 continue;

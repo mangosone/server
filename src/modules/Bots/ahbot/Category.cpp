@@ -252,7 +252,7 @@ bool TradeSkill::IsCraftedBySpell(ItemPrototype const* proto, uint32 spellId)
 
         if (proto->ItemId == entry->Reagent[x])
         {
-            sLog.outDetail("%s is crafted by %s", proto->Name1, entry->SpellName[0]);
+            sLog.outDetail("%s is crafted by %s", proto->Name1, entry->Name_lang[0]);
             return true;
         }
     }
@@ -295,7 +295,7 @@ bool TradeSkill::IsCraftedBy(ItemPrototype const* proto, uint32 spellId)
             uint32 itemId = craft->Reagent[i];
             if (itemId == proto->ItemId)
             {
-                sLog.outDetail("%s is crafted by %s", proto->Name1, craft->SpellName[0]);
+                sLog.outDetail("%s is crafted by %s", proto->Name1, craft->Name_lang[0]);
                 return true;
             }
         }

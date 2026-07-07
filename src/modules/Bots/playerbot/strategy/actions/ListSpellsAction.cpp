@@ -41,7 +41,7 @@ bool CompareSpells(pair<uint32, string>& s1, pair<uint32, string>& s2)
 
     if (p1 == p2)
     {
-        return strcmp(si1->SpellName[0], si1->SpellName[1]) > 0;
+        return strcmp(si1->Name_lang[0], si1->Name_lang[1]) > 0;
     }
 
     return p1 > p2;
@@ -152,13 +152,13 @@ bool ListSpellsAction::Execute(Event event)
             continue;
         }
 
-        string comp = pSpellInfo->SpellName[0];
+        string comp = pSpellInfo->Name_lang[0];
         if (!(ignoreList.find(comp) == std::string::npos && alreadySeenList.find(comp) == std::string::npos))
         {
             continue;
         }
 
-        if (!filter.empty() && !strstri(pSpellInfo->SpellName[0], filter.c_str()))
+        if (!filter.empty() && !strstri(pSpellInfo->Name_lang[0], filter.c_str()))
         {
             continue;
         }
@@ -300,7 +300,7 @@ bool ListSpellsAction::Execute(Event event)
         }
 
         spells.push_back(pair<uint32, string>(spellId, out.str()));
-        alreadySeenList += pSpellInfo->SpellName[0];
+        alreadySeenList += pSpellInfo->Name_lang[0];
         alreadySeenList += ",";
     }
 
