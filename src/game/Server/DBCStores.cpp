@@ -505,7 +505,7 @@ void LoadDBCStores(const std::string& dataPath)
 
             }
 
-            sTalentTabPages[cls][talentTabInfo->tabpage] = talentTabId;
+            sTalentTabPages[cls][talentTabInfo->OrderIndex] = talentTabId;
 
             // add total amount bits for first rank starting from talent tab first talent rank pos.
             uint32 pos = 0;

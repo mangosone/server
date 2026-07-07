@@ -1612,7 +1612,7 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
         }
 
         TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry( talentInfo->TalentTab );
-        if (!talentTabInfo || talentTabInfo->tabpage != specNo)
+        if (!talentTabInfo || talentTabInfo->OrderIndex != specNo)
         {
             continue;
         }

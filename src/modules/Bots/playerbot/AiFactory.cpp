@@ -112,7 +112,7 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
             }
 
         }
-        tabs[talentTabInfo->tabpage] += maxRank;
+        tabs[talentTabInfo->OrderIndex] += maxRank;
     }
 
     return tabs;

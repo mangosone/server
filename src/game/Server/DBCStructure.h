@@ -276,7 +276,7 @@ struct CreatureDisplayInfoEntry
     // 1        m_modelID
     // 2        m_soundID
     uint32      ExtendedDisplayInfoID;                      // 3        m_extendedDisplayInfoID - Extended info (see CreatureDisplayInfoExtraEntry).
-    float       scale;                                      // 4        m_creatureModelScale - Scale of the Creature.
+    float       CreatureModelScale;                                      // 4        m_creatureModelScale - Scale of the Creature.
     // 5        m_creatureModelAlpha
     // 6-8      m_textureVariation[3]
     // 9        m_portraitTextureName
@@ -355,7 +355,7 @@ struct CreatureTypeEntry
 struct DurabilityCostsEntry
 {
     uint32    Itemlvl;                                      // 0        m_ID - ID in DBC.
-    uint32    multiplier[29];                               // 1-29     m_weaponSubClassCost m_armorSubClassCost
+    uint32    WeaponSubClassCost[29];                               // 1-29     m_weaponSubClassCost m_armorSubClassCost
 };
 
 /**
@@ -543,17 +543,17 @@ struct GemPropertiesEntry
 
 struct GtCombatRatingsEntry
 {
-    float    ratio;
+    float    Data;
 };
 
 struct GtChanceToMeleeCritBaseEntry
 {
-    float    base;
+    float    Data;
 };
 
 struct GtChanceToMeleeCritEntry
 {
-    float    ratio;
+    float    Data;
 };
 
 struct GtChanceToSpellCritBaseEntry
@@ -563,12 +563,12 @@ struct GtChanceToSpellCritBaseEntry
 
 struct GtChanceToSpellCritEntry
 {
-    float    ratio;
+    float    Data;
 };
 
 struct GtOCTRegenHPEntry
 {
-    float    ratio;
+    float    Data;
 };
 
 // struct GtOCTRegenMPEntry
@@ -578,12 +578,12 @@ struct GtOCTRegenHPEntry
 
 struct GtRegenHPPerSptEntry
 {
-    float    ratio;
+    float    Data;
 };
 
 struct GtRegenMPPerSptEntry
 {
-    float    ratio;
+    float    Data;
 };
 
 struct ItemEntry
@@ -809,10 +809,10 @@ struct QuestSortEntry
 struct RandomPropertiesPointsEntry
 {
     // uint32  Id;                                          // 0        m_ID
-    uint32    itemLevel;                                    // 1        m_ItemLevel
-    uint32    EpicPropertiesPoints[5];                      // 2-6      m_Epic
-    uint32    RarePropertiesPoints[5];                      // 7-11     m_Superior
-    uint32    UncommonPropertiesPoints[5];                  // 12-16    m_Good
+    uint32    ID;                                    // 1        m_ItemLevel
+    uint32    Epic[5];                      // 2-6      m_Epic
+    uint32    Superior[5];                      // 7-11     m_Superior
+    uint32    Good[5];                  // 12-16    m_Good
 };
 
 /*struct SkillLineCategoryEntry
@@ -1225,8 +1225,8 @@ struct SpellRadiusEntry
 struct SpellRangeEntry
 {
     uint32    ID;                                           // 0        m_ID
-    float     minRange;                                     // 1        m_rangeMin
-    float     maxRange;                                     // 2        m_rangeMax
+    float     RangeMin;                                     // 1        m_rangeMin
+    float     RangeMax;                                     // 2        m_rangeMax
     // uint32  Flags;                                       // 3        m_flags
     // char*   Name[16];                                    // 4-19     m_displayName_lang
     // uint32  NameFlags;                                   // 20 string flags
@@ -1342,13 +1342,13 @@ struct TalentEntry
 */
 struct TalentTabEntry
 {
-    uint32  TalentTabID;                                    // 0        m_ID
+    uint32  ID;                                    // 0        m_ID
     // char* name[16];                                      // 1-16     m_name_lang
     // uint32  nameFlags;                                   // 17 string flags
     // unit32  spellicon;                                   // 18       m_spellIconID
     // 19       m_raceMask
     uint32  ClassMask;                                      // 20       m_classMask
-    uint32  tabpage;                                        // 21       m_orderIndex
+    uint32  OrderIndex;                                        // 21       m_orderIndex
     // char* internalname;                                  // 22       m_backgroundFile
 };
 

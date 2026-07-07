@@ -223,7 +223,7 @@ float Player::GetMeleeCritFromAgility()
         return 0.0f;
     }
 
-    float crit = critBase->base + GetStat(STAT_AGILITY) * critRatio->ratio;
+    float crit = critBase->Data + GetStat(STAT_AGILITY) * critRatio->Data;
     return crit * 100.0f;
 }
 
@@ -277,7 +277,7 @@ float Player::GetDodgeFromAgility()
         return 0.0f;
     }
 
-    float dodge = dodge_base[pclass-1] + GetStat(STAT_AGILITY) * dodgeRatio->ratio * crit_to_dodge[pclass-1];
+    float dodge = dodge_base[pclass-1] + GetStat(STAT_AGILITY) * dodgeRatio->Data * crit_to_dodge[pclass-1];
     return dodge * 100.0f;
 }
 
@@ -300,7 +300,7 @@ float Player::GetSpellCritFromIntellect()
         return 0.0f;
     }
 
-    float crit = critBase->base + GetStat(STAT_INTELLECT) * critRatio->ratio;
+    float crit = critBase->base + GetStat(STAT_INTELLECT) * critRatio->Data;
     return crit * 100.0f;
 }
 
@@ -316,7 +316,7 @@ float Player::GetRatingMultiplier(CombatRating cr) const
         return 1.0f;                                        // By default use minimum coefficient (not must be called)
     }
 
-    return 1.0f / Rating->ratio;
+    return 1.0f / Rating->Data;
 }
 
 float Player::GetRatingBonusValue(CombatRating cr) const
@@ -365,7 +365,7 @@ float Player::OCTRegenHPPerSpirit()
         baseSpirit = 50;
     }
     float moreSpirit = spirit - baseSpirit;
-    float regen = baseSpirit * baseRatio->ratio + moreSpirit * moreRatio->ratio;
+    float regen = baseSpirit * baseRatio->Data + moreSpirit * moreRatio->Data;
     return regen;
 }
 
@@ -390,7 +390,7 @@ float Player::OCTRegenMPPerSpirit()
 
     // Formula get from PaperDollFrame script
     float spirit    = GetStat(STAT_SPIRIT);
-    float regen     = spirit * moreRatio->ratio;
+    float regen     = spirit * moreRatio->Data;
     return regen;
 }
 
