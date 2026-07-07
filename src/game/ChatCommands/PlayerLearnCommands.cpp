@@ -806,7 +806,7 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
             continue;
         }
 
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(entry->spellId);
+        SpellEntry const* spellInfo = sSpellStore.LookupEntry(entry->Spell);
         if (!spellInfo)
         {
             continue;
@@ -1036,36 +1036,36 @@ void ChatHandler::HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id)
         }
 
         // wrong skill
-        if (skillLine->skillId != skill_id)
+        if (skillLine->SkillLine != skill_id)
         {
             continue;
         }
 
         // not high rank
-        if (skillLine->forward_spellid)
+        if (skillLine->SupercededBySpell)
         {
             continue;
         }
 
         // skip racial skills
-        if (skillLine->racemask != 0)
+        if (skillLine->RaceMask != 0)
         {
             continue;
         }
 
         // skip wrong class skills
-        if (skillLine->classmask && (skillLine->classmask & classmask) == 0)
+        if (skillLine->ClassMask && (skillLine->ClassMask & classmask) == 0)
         {
             continue;
         }
 
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->Spell);
         if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, player, false))
         {
             continue;
         }
 
-        player->learnSpell(skillLine->spellId, false);
+        player->learnSpell(skillLine->Spell, false);
     }
 }
 
@@ -1085,9 +1085,9 @@ bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
             continue;
         }
 
-        if (skillInfo->categoryId == SKILL_CATEGORY_PROFESSION || skillInfo->categoryId == SKILL_CATEGORY_SECONDARY)
+        if (skillInfo->CategoryID == SKILL_CATEGORY_PROFESSION || skillInfo->CategoryID == SKILL_CATEGORY_SECONDARY)
         {
-            HandleLearnSkillRecipesHelper(m_session->GetPlayer(), skillInfo->id);
+            HandleLearnSkillRecipesHelper(m_session->GetPlayer(), skillInfo->ID);
         }
     }
 
@@ -1139,14 +1139,14 @@ bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
             continue;
         }
 
-        if (skillInfo->categoryId != SKILL_CATEGORY_PROFESSION &&
-            skillInfo->categoryId != SKILL_CATEGORY_SECONDARY)
+        if (skillInfo->CategoryID != SKILL_CATEGORY_PROFESSION &&
+            skillInfo->CategoryID != SKILL_CATEGORY_SECONDARY)
         {
             continue;
         }
 
         int loc = GetSessionDbcLocale();
-        name = skillInfo->name[loc];
+        name = skillInfo->DisplayName_lang[loc];
         if (name.empty())
         {
             continue;
@@ -1162,7 +1162,7 @@ bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
                     continue;
                 }
 
-                name = skillInfo->name[loc];
+                name = skillInfo->DisplayName_lang[loc];
                 if (name.empty())
                 {
                     continue;
@@ -1187,10 +1187,10 @@ bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
         return false;
     }
 
-    HandleLearnSkillRecipesHelper(target, targetSkillInfo->id);
+    HandleLearnSkillRecipesHelper(target, targetSkillInfo->ID);
 
-    uint16 maxLevel = target->GetPureMaxSkillValue(targetSkillInfo->id);
-    target->SetSkill(targetSkillInfo->id, maxLevel, maxLevel);
+    uint16 maxLevel = target->GetPureMaxSkillValue(targetSkillInfo->ID);
+    target->SetSkill(targetSkillInfo->ID, maxLevel, maxLevel);
     PSendSysMessage(LANG_COMMAND_LEARN_ALL_RECIPES, name.c_str());
     return true;
 }

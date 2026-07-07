@@ -226,7 +226,7 @@ bool ChatHandler::HandleLookupAreaCommand(char* args)
         if (areaEntry)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = areaEntry->area_name[loc];
+            std::string name = areaEntry->AreaName_lang[loc];
             if (name.empty())
             {
                 continue;
@@ -242,7 +242,7 @@ bool ChatHandler::HandleLookupAreaCommand(char* args)
                         continue;
                     }
 
-                    name = areaEntry->area_name[loc];
+                    name = areaEntry->AreaName_lang[loc];
                     if (name.empty())
                     {
                         continue;
@@ -948,7 +948,7 @@ bool ChatHandler::HandleLookupSkillCommand(char* args)
         if (skillInfo)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = skillInfo->name[loc];
+            std::string name = skillInfo->DisplayName_lang[loc];
             if (name.empty())
             {
                 continue;
@@ -964,7 +964,7 @@ bool ChatHandler::HandleLookupSkillCommand(char* args)
                         continue;
                     }
 
-                    name = skillInfo->name[loc];
+                    name = skillInfo->DisplayName_lang[loc];
                     if (name.empty())
                     {
                         continue;

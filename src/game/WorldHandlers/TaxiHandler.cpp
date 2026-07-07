@@ -285,7 +285,7 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
     if (uint32 pathid = GetPlayer()->m_taxi.GetCurrentTaxiPath())
     {
         TaxiPathNodeList const& nlist = sTaxiPathNodesByPath[pathid];
-        if (uint32 eventid = nlist[nlist.size() - 1].arrivalEventID)
+        if (uint32 eventid = nlist[nlist.size() - 1].ArrivalEventID)
             if (!sScriptMgr.OnProcessEvent(eventid, GetPlayer(), GetPlayer(), false))
             {
                 GetPlayer()->GetMap()->ScriptsStart(DBS_ON_EVENT, eventid, GetPlayer(), GetPlayer());
@@ -318,7 +318,7 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
             TaxiPathNodeEntry const& node = flight->GetPath()[flight->GetCurrentNode()];
             flight->SkipCurrentNode();
 
-            _player->TeleportTo(curDestNode->ContinentID, node.x, node.y, node.z, _player->GetOrientation());
+            _player->TeleportTo(curDestNode->ContinentID, node.LocX, node.LocY, node.LocZ, _player->GetOrientation());
         }
         return;
     }

@@ -53,20 +53,20 @@
 struct AreaTableEntry
 {
     uint32  ID;                                             // 0        m_ID - ID of the Area within the DBC.
-    uint32  mapid;                                          // 1        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, ...)
-    uint32  zone;                                           // 2        m_ParentAreaID - ID of the parent area.
-    uint32  exploreFlag;                                    // 3        m_AreaBit -
-    uint32  flags;                                          // 4        m_flags -
+    uint32  ContinentID;                                          // 1        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, ...)
+    uint32  ParentAreaID;                                           // 2        m_ParentAreaID - ID of the parent area.
+    uint32  AreaBit;                                    // 3        m_AreaBit -
+    uint32  Flags;                                          // 4        m_flags -
     // 5        m_SoundProviderPref
     // 6        m_SoundProviderPrefUnderwater
     // 7        m_AmbienceID
     // 8        m_ZoneMusic
     // 9        m_IntroSound
-    int32   area_level;                                     // 10       m_ExplorationLevel - Level of Area, used for XP reward calculation.
-    char*   area_name[16];                                  // 11-26    m_AreaName_lang
-    // 27 string flags
-    uint32  team;                                           // 28       m_factionGroupMask
-    uint32  LiquidTypeOverride;                             // 29       m_liquidTypeID override for water type
+    int32   ExplorationLevel;                                     // 10       m_ExplorationLevel - Level of Area, used for XP reward calculation.
+    char*   AreaName_lang[16];                                  // 11-26    m_AreaName_lang
+    // 27 string Flags
+    uint32  FactionGroupMask;                                           // 28       m_factionGroupMask
+    uint32  LiquidTypeID_0;                             // 29       m_liquidTypeID override for water type
     // 30-32    uknown/unused
     // 33       m_minElevation
     // 34       m_ambient_multiplier
@@ -116,14 +116,14 @@ struct BankBagSlotPricesEntry
 
 struct BattlemasterListEntry
 {
-    uint32  id;                                             // 0        m_ID
-    int32   mapid[8];                                       // 1-8      m_mapID[8]
-    uint32  type;                                           // 9        m_instanceType
-    uint32  minLevel;                                       // 10       m_minlevel
-    uint32  maxLevel;                                       // 11       m_maxlevel
-    uint32  maxplayersperteam;                              // 12
+    uint32  Id;                                             // 0        m_ID
+    int32   MapID[8];                                       // 1-8      m_mapID[8]
+    uint32  InstanceType;                                           // 9        m_instanceType
+    uint32  MinLevel;                                       // 10       m_minlevel
+    uint32  MaxLevel;                                       // 11       m_maxlevel
+    uint32  Unk_MaxPlayers12;                              // 12
     // 13-14 unused
-    char*       name[16];                                   // 15-30    m_name_lang
+    char*       Name_lang[16];                                   // 15-30    m_name_lang
     // 31 string flags
     // 32 unused
 };
@@ -261,7 +261,7 @@ struct ChrRacesEntry
 */
 struct CinematicSequencesEntry
 {
-    uint32      Id;                                         // 0        m_ID - ID in DBC.
+    uint32      ID;                                         // 0        m_ID - ID in DBC.
     // uint32      unk1;                                    // 1        m_soundID
     // uint32      cinematicCamera;                         // 2        m_camera[8]
 };
@@ -312,13 +312,13 @@ struct CreatureDisplayInfoExtraEntry
 struct CreatureFamilyEntry
 {
     uint32    ID;                                           // 0 - ID in DBC.
-    float     minScale;                                     // 1 - Min Scale of creature within the game.
-    uint32    minScaleLevel;                                // 2 0/1 - Minimum level for which the minScale is applicable.
-    float     maxScale;                                     // 3 - Max Scale of creature within the game.
-    uint32    maxScaleLevel;                                // 4 0/60 - Maximum level for which the maxScale is applicable.
-    uint32    skillLine[2];                                 // 5-6 - Skill Lines (See SkillLine.dbc).
-    uint32    petFoodMask;                                  // 7 - Food Mask for the given pet.
-    char*     Name[16];                                     // 8-23
+    float     MinScale;                                     // 1 - Min Scale of creature within the game.
+    uint32    MinScaleLevel;                                // 2 0/1 - Minimum level for which the MinScale is applicable.
+    float     MaxScale;                                     // 3 - Max Scale of creature within the game.
+    uint32    MaxScaleLevel;                                // 4 0/60 - Maximum level for which the MaxScale is applicable.
+    uint32    SkillLine[2];                                 // 5-6 - Skill Lines (See SkillLine.dbc).
+    uint32    PetFoodMask;                                  // 7 - Food Mask for the given pet.
+    char*     Name_lang[16];                                     // 8-23
     // 24 string flags, unused
     // 25 icon, unused
 };
@@ -851,14 +851,14 @@ struct SkillRaceClassInfoEntry
 */
 struct SkillLineEntry
 {
-    uint32    id;                                           // 0        m_ID
-    int32     categoryId;                                   // 1        m_categoryID
+    uint32    ID;                                           // 0        m_ID
+    int32     CategoryID;                                   // 1        m_categoryID
     // uint32    skillCostID;                               // 2        m_skillCostsID
-    char*     name[16];                                     // 3-18     m_displayName_lang
+    char*     DisplayName_lang[16];                                     // 3-18     m_displayName_lang
     // 19 string flags
     // char*     description[16];                           // 20-35    m_description_lang
     // 36 string flags
-    uint32    spellIcon;                                    // 37       m_spellIconID
+    uint32    SpellIconID;                                    // 37       m_spellIconID
 };
 
 /**
@@ -867,20 +867,20 @@ struct SkillLineEntry
 */
 struct SkillLineAbilityEntry
 {
-    uint32    id;                                           // 0, INDEX
-    uint32    skillId;                                      // 1
-    uint32    spellId;                                      // 2
-    uint32    racemask;                                     // 3
-    uint32    classmask;                                    // 4
+    uint32    Id;                                           // 0, INDEX
+    uint32    SkillLine;                                      // 1
+    uint32    Spell;                                      // 2
+    uint32    RaceMask;                                     // 3
+    uint32    ClassMask;                                    // 4
     // uint32    racemaskNot;                               // 5 always 0 in 2.4.2
     // uint32    classmaskNot;                              // 6 always 0 in 2.4.2
-    uint32    req_skill_value;                              // 7 for trade skill.not for training.
-    uint32    forward_spellid;                              // 8
-    uint32    learnOnGetSkill;                              // 9 can be 1 or 2 for spells learned on get skill
-    uint32    max_value;                                    // 10
-    uint32    min_value;                                    // 11
+    uint32    MinSkillLineRank;                              // 7 for trade skill.not for training.
+    uint32    SupercededBySpell;                              // 8
+    uint32    AcquireMethod;                              // 9 can be 1 or 2 for spells learned on get skill
+    uint32    TrivialSkillLineRankHigh;                                    // 10
+    uint32    TrivialSkillLineRankLow;                                    // 11
     // 12-13, unknown, always 0
-    uint32    reqtrainpoints;                               // 14
+    uint32    CharacterPoints_1;                               // 14
 };
 
 /**
@@ -889,7 +889,7 @@ struct SkillLineAbilityEntry
 */
 struct SoundEntriesEntry
 {
-    uint32    Id;                                           // 0        m_ID
+    uint32    ID;                                           // 0        m_ID
     // uint32    Type;                                      // 1        m_soundType
     // char*     InternalName;                              // 2        m_name
     // char*     FileName[10];                              // 3-12     m_File[10]
@@ -1395,16 +1395,16 @@ struct TaxiPathEntry
 struct TaxiPathNodeEntry
 {
     // 0        m_ID - ID in the DBC.
-    uint32    path;                                         // 1        m_PathID - ID of the path in the DBC.
-    uint32    index;                                        // 2        m_NodeIndex - Index of the Node in the path.
-    uint32    mapid;                                        // 3        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, 30 = Alterac Valley)
-    float     x;                                            // 4        m_LocX - X position of the Node.
-    float     y;                                            // 5        m_LocY - Y position of the Node.
-    float     z;                                            // 6        m_LocZ - Z position of the Node.
-    uint32    actionFlag;                                   // 7        m_flags - Unknown usage.
-    uint32    delay;                                        // 8        m_delay - Unknown usage.
-    uint32    arrivalEventID;                               // 9        m_arrivalEventID
-    uint32    departureEventID;                             // 10       m_departureEventID
+    uint32    PathID;                                         // 1        m_PathID - ID of the PathID in the DBC.
+    uint32    NodeIndex;                                        // 2        m_NodeIndex - Index of the Node in the PathID.
+    uint32    ContinentID;                                        // 3        m_ContinentID - ID of the Continent in DBC (0 = Azeroth, 1 = Kalimdor, 30 = Alterac Valley)
+    float     LocX;                                            // 4        m_LocX - X position of the Node.
+    float     LocY;                                            // 5        m_LocY - Y position of the Node.
+    float     LocZ;                                            // 6        m_LocZ - Z position of the Node.
+    uint32    Flags;                                   // 7        m_flags - Unknown usage.
+    uint32    Delay;                                        // 8        m_delay - Unknown usage.
+    uint32    ArrivalEventID;                               // 9        m_arrivalEventID
+    uint32    DepartureEventID;                             // 10       m_departureEventID
 };
 
 struct TotemCategoryEntry
@@ -1422,7 +1422,7 @@ struct TotemCategoryEntry
 */
 struct WMOAreaTableEntry
 {
-    uint32 Id;                                              // 0        m_ID index
+    uint32 ID;                                              // 0        m_ID index
     int32 rootId;                                           // 1        m_WMOID used in root WMO
     int32 adtId;                                            // 2        m_NameSetID used in adt file
     int32 groupId;                                          // 3        m_WMOGroupID used in group WMO

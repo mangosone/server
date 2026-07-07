@@ -299,12 +299,12 @@ void LoadDBCStores(const std::string& dataPath)
         if (AreaTableEntry const* area = sAreaStore.LookupEntry(i))
         {
             // fill AreaId->DBC records
-            sAreaFlagByAreaID.insert(AreaFlagByAreaID::value_type(uint16(area->ID), area->exploreFlag));
+            sAreaFlagByAreaID.insert(AreaFlagByAreaID::value_type(uint16(area->ID), area->AreaBit));
 
             // fill MapId->DBC records ( skip sub zones and continents )
-            if (area->zone == 0 && area->mapid != 0 && area->mapid != 1 && area->mapid != 530)
+            if (area->ParentAreaID == 0 && area->ContinentID != 0 && area->ContinentID != 1 && area->ContinentID != 530)
             {
-                sAreaFlagByMapID.insert(AreaFlagByMapID::value_type(area->mapid, area->exploreFlag));
+                sAreaFlagByMapID.insert(AreaFlagByMapID::value_type(area->ContinentID, area->AreaBit));
             }
         }
     }
@@ -396,7 +396,7 @@ void LoadDBCStores(const std::string& dataPath)
             continue;
         }
 
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->Spell);
         if (spellInfo && (spellInfo->Attributes & (SPELL_ATTR_ABILITY | SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE | SPELL_ATTR_HIDE_IN_COMBAT_LOG)) == (SPELL_ATTR_ABILITY | SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE | SPELL_ATTR_HIDE_IN_COMBAT_LOG))
         {
             for (unsigned int i = 1; i < sCreatureFamilyStore.GetNumRows(); ++i)
@@ -407,7 +407,7 @@ void LoadDBCStores(const std::string& dataPath)
                     continue;
                 }
 
-                if (skillLine->skillId != cFamily->skillLine[0] && skillLine->skillId != cFamily->skillLine[1])
+                if (skillLine->SkillLine != cFamily->SkillLine[0] && skillLine->SkillLine != cFamily->SkillLine[1])
                 {
                     continue;
                 }
@@ -550,9 +550,9 @@ void LoadDBCStores(const std::string& dataPath)
     {
         if (TaxiPathNodeEntry const* entry = sTaxiPathNodeStore.LookupEntry(i))
         {
-            if (pathLength[entry->path] < entry->index + 1)
+            if (pathLength[entry->PathID] < entry->NodeIndex + 1)
             {
-                pathLength[entry->path] = entry->index + 1;
+                pathLength[entry->PathID] = entry->NodeIndex + 1;
             }
         }
     }
@@ -567,7 +567,7 @@ void LoadDBCStores(const std::string& dataPath)
     {
         if (TaxiPathNodeEntry const* entry = sTaxiPathNodeStore.LookupEntry(i))
         {
-            sTaxiPathNodesByPath[entry->path].set(entry->index, entry);
+            sTaxiPathNodesByPath[entry->PathID].set(entry->NodeIndex, entry);
         }
     }
 
@@ -708,7 +708,7 @@ char const* GetPetName(uint32 petfamily, uint32 dbclang)
     {
         return NULL;
     }
-    return pet_family->Name[dbclang] ? pet_family->Name[dbclang] : NULL;
+    return pet_family->Name_lang[dbclang] ? pet_family->Name_lang[dbclang] : NULL;
 }
 
 /**

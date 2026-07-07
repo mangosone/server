@@ -6232,7 +6232,7 @@ bool Unit::IsAllowedDamageInArea(Unit* pVictim) const
 
     // can't damage player controlled unit by player controlled unit in sanctuary
     AreaTableEntry const* area = GetAreaEntryByAreaID(pVictim->GetAreaId());
-    if (area && area->flags & AREA_FLAG_SANCTUARY)
+    if (area && area->Flags & AREA_FLAG_SANCTUARY)
     {
         return false;
     }

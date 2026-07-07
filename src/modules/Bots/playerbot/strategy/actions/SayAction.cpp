@@ -108,7 +108,7 @@ bool SayAction::Execute(Event event)
                 AreaTableEntry const* area = sAreaStore.LookupEntry(areaId);
                 if (area)
                 {
-                    replaceAll(text, "<subzone>", area->area_name[0]);
+                    replaceAll(text, "<subzone>", area->AreaName_lang[0]);
                 }
             }
         }

@@ -1861,7 +1861,7 @@ string PlayerbotAI::HandleRemoteCommand(string command)
         uint32 area = bot->GetAreaId();
         if (const AreaTableEntry* entry = sAreaStore.LookupEntry(area))
         {
-            out << " |" << entry->area_name[0] << "|";
+            out << " |" << entry->AreaName_lang[0] << "|";
         }
         return out.str();
     }

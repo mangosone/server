@@ -142,12 +142,12 @@ bool TradeSkill::Contains(ItemPrototype const* proto)
     for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
     {
         SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
-        if (!skillLine || skillLine->skillId != skill)
+        if (!skillLine || skillLine->SkillLine != skill)
         {
             continue;
         }
 
-        if (IsCraftedBy(proto, skillLine->spellId))
+        if (IsCraftedBy(proto, skillLine->Spell))
         {
             return true;
         }
