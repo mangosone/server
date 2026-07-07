@@ -184,7 +184,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             if (((Player*)target)->HasSpell(17007))
             {
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(24932);
-                if (spellInfo && spellInfo->Stances & (1 << (form - 1)))
+                if (spellInfo && spellInfo->ShapeshiftMask & (1 << (form - 1)))
                 {
                     target->CastSpell(target, 24932, true, NULL, this);
                 }
@@ -529,11 +529,11 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
         if (target->GetTypeId() != TYPEID_PLAYER || !((Player*)target)->GetSession()->PlayerLoading())
         {
             float DoneActualBenefit = 0.0f;
-            switch (spellProto->SpellFamilyName)
+            switch (spellProto->SpellClassSet)
             {
                 case SPELLFAMILY_PRIEST:
                     // Power Word: Shield
-                    if (spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000001))
+                    if (spellProto->SpellClassMask & UI64LIT(0x0000000000000001))
                     {
                         //+30% from +healing bonus
                         DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto)) * 0.3f;
@@ -550,7 +550,7 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     break;
                 case SPELLFAMILY_WARLOCK:
                     // Shadow Ward
-                    if (!spellProto->SpellFamilyFlags)
+                    if (!spellProto->SpellClassMask)
                         //+10% from +spell bonus
                     {
                         DoneActualBenefit = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(spellProto)) * 0.1f;

@@ -475,7 +475,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
         for (SpellAuraHolderMap::const_iterator itr = vAuras.begin(); itr != vAuras.end(); ++itr)
         {
             SpellEntry const* spellInfo = (*itr).second->GetSpellProto();
-            if (spellInfo->AttributesEx3 & 0x40000 && spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN && ((*itr).second->GetCasterGuid() == GetObjectGuid()))
+            if (spellInfo->AttributesExC & 0x40000 && spellInfo->SpellClassSet == SPELLFAMILY_PALADIN && ((*itr).second->GetCasterGuid() == GetObjectGuid()))
             {
                 (*itr).second->RefreshHolder();
             }
@@ -509,7 +509,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
                 WorldPacket data(SMSG_SPELLDAMAGESHIELD, (8 + 8 + 4 + 4 + 4));
                 data << pVictim->GetObjectGuid();
                 data << GetObjectGuid();
-                data << uint32(i_spellProto->Id);
+                data << uint32(i_spellProto->ID);
                 data << uint32(damage);                  // Damage
                 data << uint32(i_spellProto->SchoolMask);
                 pVictim->SendMessageToSet(&data, true);

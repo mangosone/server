@@ -318,8 +318,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                     if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
                     {
                         WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                        data << uint16(spell_old->Id);
-                        data << uint16(spell_new->Id);
+                        data << uint16(spell_old->ID);
+                        data << uint16(spell_new->ID);
                         GetSession()->SendPacket(&data);
                     }
 
@@ -490,7 +490,7 @@ bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) cons
 
     // note: form passives activated with shapeshift spells be implemented by HandleShapeshiftBoosts instead of spell_learn_spell
     // talent dependent passives activated at form apply have proper stance data
-    bool need_cast = !spellInfo->Stances || (!form && spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
+    bool need_cast = !spellInfo->ShapeshiftMask || (!form && spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
 
     // Check CasterAuraStates
     return need_cast && (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState)));
@@ -1285,7 +1285,7 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
     }
 
     // check primary prof. limit
-    if (sSpellMgr.IsPrimaryProfessionFirstRankSpell(spell->Id) && GetFreePrimaryProfessionPoints() == 0)
+    if (sSpellMgr.IsPrimaryProfessionFirstRankSpell(spell->ID) && GetFreePrimaryProfessionPoints() == 0)
     {
         return TRAINER_SPELL_GREEN_DISABLED;
     }

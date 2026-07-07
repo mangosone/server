@@ -92,7 +92,7 @@ void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)
         SpellEntry const* spell = iter->second->GetSpellProto();
         if (iter->second->HasMechanic(mechanic))
         {
-            unitTarget->RemoveAurasDueToSpell(spell->Id);
+            unitTarget->RemoveAurasDueToSpell(spell->ID);
             if (Auras.empty())
             {
                 break;
@@ -156,7 +156,7 @@ void Spell::EffectDestroyAllTotems(SpellEffectIndex /*eff_idx*/)
                 uint32 spell_id = totem->GetUInt32Value(UNIT_CREATED_BY_SPELL);
                 if (SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell_id))
                 {
-                    uint32 manacost = spellInfo->manaCost + m_caster->GetCreateMana() * spellInfo->ManaCostPercentage / 100;
+                    uint32 manacost = spellInfo->ManaCost + m_caster->GetCreateMana() * spellInfo->ManaCostPct / 100;
                     mana += manacost * damage / 100;
                 }
             }
@@ -271,7 +271,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
     if (!goinfo)
     {
-        sLog.outErrorDb("Gameobject (Entry: %u) not exist and not created at spell (ID: %u) cast", name_id, m_spellInfo->Id);
+        sLog.outErrorDb("Gameobject (Entry: %u) not exist and not created at spell (ID: %u) cast", name_id, m_spellInfo->ID);
         return;
     }
 
@@ -282,15 +282,15 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
         m_targets.getDestination(fx, fy, fz);
     }
     // FIXME: this can be better check for most objects but still hack
-    else if (m_spellInfo->EffectRadiusIndex[eff_idx] && m_spellInfo->speed == 0)
+    else if (m_spellInfo->EffectRadiusIndex[eff_idx] && m_spellInfo->Speed == 0)
     {
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
         m_caster->GetClosePoint(fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
     }
     else
     {
-        float min_dis = GetSpellMinRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
-        float max_dis = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
+        float min_dis = GetSpellMinRange(sSpellRangeStore.LookupEntry(m_spellInfo->RangeIndex));
+        float max_dis = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->RangeIndex));
         float dis = rand_norm_f() * (max_dis - min_dis) + min_dis;
 
         // special code for fishing bobber (TARGET_SELF_FISHING), should not try to avoid objects
@@ -386,7 +386,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     pGameObj->SetOwnerGuid(m_caster->GetObjectGuid());
 
     pGameObj->SetUInt32Value(GAMEOBJECT_LEVEL, m_caster->getLevel());
-    pGameObj->SetSpellId(m_spellInfo->Id);
+    pGameObj->SetSpellId(m_spellInfo->ID);
 
     DEBUG_LOG("AddObject at SpellEfects.cpp EffectTransmitted");
     // m_caster->AddGameObject(pGameObj);
@@ -449,7 +449,7 @@ void Spell::EffectSpiritHeal(SpellEffectIndex /*eff_idx*/)
     {
         return;
     }
-    if (m_spellInfo->Id == 22012 && !unitTarget->HasAura(2584))
+    if (m_spellInfo->ID == 22012 && !unitTarget->HasAura(2584))
     {
         return;
     }
@@ -487,7 +487,7 @@ void Spell::EffectStealBeneficialBuff(SpellEffectIndex eff_idx)
     for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
     {
         SpellAuraHolder* holder = itr->second;
-        if (holder && (1 << holder->GetSpellProto()->Dispel) & dispelMask)
+        if (holder && (1 << holder->GetSpellProto()->DispelType) & dispelMask)
         {
             // Need check for passive? this
             if (holder->IsPositive() && !holder->IsPassive() && !holder->GetSpellProto()->HasAttribute(SPELL_ATTR_EX4_NOT_STEALABLE))
@@ -533,15 +533,15 @@ void Spell::EffectStealBeneficialBuff(SpellEffectIndex eff_idx)
             WorldPacket data(SMSG_SPELLSTEALLOG, 8 + 8 + 4 + 1 + 4 + count * 5);
             data << unitTarget->GetPackGUID();       // Victim GUID
             data << m_caster->GetPackGUID();         // Caster GUID
-            data << uint32(m_spellInfo->Id);         // Dispell spell id
+            data << uint32(m_spellInfo->ID);         // Dispell spell id
             data << uint8(0);                        // not used
             data << uint32(count);                   // count
             for (SuccessList::iterator j = success_list.begin(); j != success_list.end(); ++j)
             {
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(j->first);
-                data << uint32(spellInfo->Id);       // Spell Id
+                data << uint32(spellInfo->ID);       // Spell Id
                 data << uint8(0);                    // 0 - steals !=0 transfers
-                unitTarget->RemoveAurasDueToSpellBySteal(spellInfo->Id, j->second, m_caster);
+                unitTarget->RemoveAurasDueToSpellBySteal(spellInfo->ID, j->second, m_caster);
             }
             m_caster->SendMessageToSet(&data, true);
         }
@@ -578,7 +578,7 @@ void Spell::EffectPlaySound(SpellEffectIndex eff_idx)
     uint32 soundId = m_spellInfo->EffectMiscValue[eff_idx];
     if (!sSoundEntriesStore.LookupEntry(soundId))
     {
-        sLog.outError("EffectPlaySound: Sound (Id: %u) in spell %u does not exist.", soundId, m_spellInfo->Id);
+        sLog.outError("EffectPlaySound: Sound (Id: %u) in spell %u does not exist.", soundId, m_spellInfo->ID);
         return;
     }
 
@@ -595,7 +595,7 @@ void Spell::EffectPlayMusic(SpellEffectIndex eff_idx)
     uint32 soundId = m_spellInfo->EffectMiscValue[eff_idx];
     if (!sSoundEntriesStore.LookupEntry(soundId))
     {
-        sLog.outError("EffectPlayMusic: Sound (Id: %u) in spell %u does not exist.", soundId, m_spellInfo->Id);
+        sLog.outError("EffectPlayMusic: Sound (Id: %u) in spell %u does not exist.", soundId, m_spellInfo->ID);
         return;
     }
 

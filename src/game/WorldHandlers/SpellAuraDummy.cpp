@@ -90,7 +90,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     // AT APPLY
     if (apply)
     {
-        switch (GetSpellProto()->SpellFamilyName)
+        switch (GetSpellProto()->SpellClassSet)
         {
             case SPELLFAMILY_GENERIC:
             {
@@ -293,7 +293,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             case SPELLFAMILY_SHAMAN:
             {
                 // Earth Shield
-                if ((GetSpellProto()->SpellFamilyFlags & UI64LIT(0x40000000000)))
+                if ((GetSpellProto()->SpellClassMask & UI64LIT(0x40000000000)))
                 {
                     // prevent double apply bonuses
                     if (target->GetTypeId() != TYPEID_PLAYER || !((Player*)target)->GetSession()->PlayerLoading())
@@ -539,7 +539,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     }
 
     // AT APPLY & REMOVE
-    switch (GetSpellProto()->SpellFamilyName)
+    switch (GetSpellProto()->SpellClassSet)
     {
         case SPELLFAMILY_GENERIC:
         {
@@ -779,7 +779,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             }
 
             // Lifebloom
-            if (GetSpellProto()->SpellFamilyFlags & UI64LIT(0x1000000000))
+            if (GetSpellProto()->SpellClassMask & UI64LIT(0x1000000000))
             {
                 if (apply)
                 {

@@ -169,9 +169,9 @@ std::ostringstream& operator<< (std::ostringstream& ss, PlayerTaxi const& taxi)
  * @param eff The spell effect index.
  * @param _charges The initial charge count.
  */
-SpellModifier::SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, SpellEntry const* spellEntry, SpellEffectIndex eff, int16 _charges /*= 0*/) : op(_op), type(_type), charges(_charges), value(_value), spellId(spellEntry->Id), lastAffected(NULL)
+SpellModifier::SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, SpellEntry const* spellEntry, SpellEffectIndex eff, int16 _charges /*= 0*/) : op(_op), type(_type), charges(_charges), value(_value), spellId(spellEntry->ID), lastAffected(NULL)
 {
-    mask = sSpellMgr.GetSpellAffectMask(spellEntry->Id, eff);
+    mask = sSpellMgr.GetSpellAffectMask(spellEntry->ID, eff);
 }
 
 /**
@@ -198,7 +198,7 @@ bool SpellModifier::isAffectedOnSpell(SpellEntry const* spell) const
 {
     SpellEntry const* affect_spell = sSpellStore.LookupEntry(spellId);
     // False if affect_spell == NULL or spellFamily not equal
-    if (!affect_spell || affect_spell->SpellFamilyName != spell->SpellFamilyName)
+    if (!affect_spell || affect_spell->SpellClassSet != spell->SpellClassSet)
     {
         return false;
     }
@@ -4160,7 +4160,7 @@ bool Player::IsAffectedBySpellmod(SpellEntry const* spellInfo, SpellModifier* mo
                 return false;
             }
         }
-        else if (mod->lastAffected != FindCurrentSpellBySpellId(spellInfo->Id))
+        else if (mod->lastAffected != FindCurrentSpellBySpellId(spellInfo->ID))
         {
             return false;
         }
@@ -5236,7 +5236,7 @@ uint32 Player::GetResurrectionSpellId()
     for (AuraList::const_iterator itr = dummyAuras.begin(); itr != dummyAuras.end(); ++itr)
     {
         // Soulstone Resurrection                           // prio: 3 (max, non death persistent)
-        if (prio < 2 && (*itr)->GetSpellProto()->SpellVisual == 99 && (*itr)->GetSpellProto()->SpellIconID == 92)
+        if (prio < 2 && (*itr)->GetSpellProto()->SpellVisualID == 99 && (*itr)->GetSpellProto()->SpellIconID == 92)
         {
             switch ((*itr)->GetId())
             {
@@ -6187,7 +6187,7 @@ bool Player::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex
         default:
             break;
     }
-    switch (spellInfo->EffectApplyAuraName[index])
+    switch (spellInfo->EffectAura[index])
     {
         case SPELL_AURA_MOD_TAUNT:
             return true;
