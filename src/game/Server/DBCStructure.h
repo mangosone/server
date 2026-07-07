@@ -721,7 +721,7 @@ struct MailTemplateEntry
     uint32      ID;                                         // 0        m_ID
     // char*       subject[16];                             // 1-16     m_subject_lang
     // 17 string flags
-    char*       content[16];                                // 18-33    m_body_lang
+    char*       Body_lang[16];                                // 18-33    m_body_lang
 };
 
 /**
