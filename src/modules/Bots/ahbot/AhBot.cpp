@@ -861,13 +861,13 @@ void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
 
     sLog.outDetail( "AddToHistory: market price adjust");
     int count = entry->itemCount ? entry->itemCount : 1;
-    updateMarketPrice(proto->ItemId, entry->buyout / count, entry->auctionHouseEntry->houseId);
+    updateMarketPrice(proto->ItemId, entry->buyout / count, entry->auctionHouseEntry->ID);
 
     uint32 now = time(0);
     CharacterDatabase.PExecute("INSERT INTO `ahbot_history` (`buytime`, `item`, `bid`, `buyout`, `category`, `won`, `auction_house`) "
         "VALUES ('%u', '%u', '%u', '%u', '%s', '%u', '%u')",
         now, entry->itemTemplate, entry->bid ? entry->bid : entry->startbid, entry->buyout,
-        category.c_str(), won, factions[entry->auctionHouseEntry->houseId]);
+        category.c_str(), won, factions[entry->auctionHouseEntry->ID]);
 }
 
 uint32 AhBot::GetAnswerCount(uint32 itemId, uint32 auctionHouse, uint32 withinTime)
@@ -1245,13 +1245,13 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
         return;
     }
 
-    time_t entryTime = GetTime("entry", entry->Id, entry->auctionHouseEntry->houseId, AHBOT_SENDMAIL);
+    time_t entryTime = GetTime("entry", entry->Id, entry->auctionHouseEntry->ID, AHBOT_SENDMAIL);
     if (entryTime > time(0))
     {
         return;
     }
 
-    const AuctionHouseEntry* ahEntry = sAuctionHouseStore.LookupEntry(entry->auctionHouseEntry->houseId);
+    const AuctionHouseEntry* ahEntry = sAuctionHouseStore.LookupEntry(entry->auctionHouseEntry->ID);
     if (!ahEntry)
     {
         return;
@@ -1264,7 +1264,7 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
         AuctionEntry *otherEntry = itr->second;
         if (otherEntry->owner == entry->owner && otherEntry->Id != entry->Id && otherEntry->itemTemplate == entry->itemTemplate)
         {
-            time_t otherEntryTime = GetTime("entry", otherEntry->Id, entry->auctionHouseEntry->houseId, AHBOT_SENDMAIL);
+            time_t otherEntryTime = GetTime("entry", otherEntry->Id, entry->auctionHouseEntry->ID, AHBOT_SENDMAIL);
             if (otherEntryTime > time(0))
             {
                 return;
@@ -1299,7 +1299,7 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
     ObjectGuid receiverGuid(HIGHGUID_PLAYER, entry->owner);
     draft.SendMailTo(MailReceiver(receiverGuid), MailSender(MAIL_NORMAL, bidder));
 
-    SetTime("entry", entry->Id, entry->auctionHouseEntry->houseId, AHBOT_SENDMAIL, entry->expireTime);
+    SetTime("entry", entry->Id, entry->auctionHouseEntry->ID, AHBOT_SENDMAIL, entry->expireTime);
 }
 
 void AhBot::PurgeMailedItems()

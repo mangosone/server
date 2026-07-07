@@ -598,7 +598,7 @@ uint32 AuctionHouseMgr::GetAuctionHouseTeam(AuctionHouseEntry const* house)
     // auction houses have faction field pointing to PLAYER,* factions,
     // but player factions not have filled team field, and hard go from faction value to faction_template value,
     // so more easy just sort by auction house ids
-    switch (house->houseId)
+    switch (house->ID)
     {
         case 1: case 2: case 3:
             return ALLIANCE;
@@ -1269,7 +1269,7 @@ void AuctionEntry::SaveToDB() const
     // No SQL injection (no strings)
     CharacterDatabase.PExecute("INSERT INTO `auction` (`id`,`houseid`,`itemguid`,`item_template`,`item_count`,`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,`lastbid`,`startbid`,`deposit`) "
                                "VALUES ('%u', '%u', '%u', '%u', '%u', '%i', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u')",
-                               Id, auctionHouseEntry->houseId, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);
+                               Id, auctionHouseEntry->ID, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);
 }
 
 /**

@@ -98,7 +98,7 @@ struct AuctionEntry
     AuctionHouseEntry const* auctionHouseEntry;             // in AuctionHouse.dbc
 
     // helpers
-    uint32 GetHouseId() const { return auctionHouseEntry->houseId; }
+    uint32 GetHouseId() const { return auctionHouseEntry->ID; }
     uint32 GetHouseFaction() const { return auctionHouseEntry->faction; }
     uint32 GetAuctionCut() const;
     uint32 GetAuctionOutBid() const;

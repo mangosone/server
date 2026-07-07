@@ -209,14 +209,14 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
     // remove SPELL_AURA_EMPATHY
     target->RemoveSpellsCausingAura(SPELL_AURA_EMPATHY);
 
-    if (ssEntry->modelID_A)
+    if (ssEntry->CreatureDisplayID_0)
     {
         // i will asume that creatures will always take the defined model from the dbc
         // since no field in creature_templates describes wether an alliance or
         // horde modelid should be used at shapeshifting
         if (target->GetTypeId() != TYPEID_PLAYER)
         {
-            modelid = ssEntry->modelID_A;
+            modelid = ssEntry->CreatureDisplayID_0;
         }
         else
         {
@@ -224,13 +224,13 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             if (Player::TeamForRace(target->getRace()) == HORDE)
             {
                 // get model for race ( in 2.2.4 no horde models in dbc field, only 0 in it
-                modelid = sObjectMgr.GetModelForRace(ssEntry->modelID_A, target->getRaceMask());
+                modelid = sObjectMgr.GetModelForRace(ssEntry->CreatureDisplayID_0, target->getRaceMask());
             }
 
             // nothing found in above, so use default
             if (!modelid)
             {
-                modelid = ssEntry->modelID_A;
+                modelid = ssEntry->CreatureDisplayID_0;
             }
         }
     }
@@ -405,9 +405,9 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
         if (target->GetTypeId() == TYPEID_PLAYER)
             for (uint32 i = 0; i < 8; ++i)
             {
-                if (ssEntry->spellId[i])
+                if (ssEntry->PresetSpellID[i])
                 {
-                    ((Player*)target)->addSpell(ssEntry->spellId[i], true, false, false, false);
+                    ((Player*)target)->addSpell(ssEntry->PresetSpellID[i], true, false, false, false);
                 }
             }
     }
@@ -451,9 +451,9 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
         if (target->GetTypeId() == TYPEID_PLAYER)
             for (uint32 i = 0; i < 8; ++i)
             {
-                if (ssEntry->spellId[i])
+                if (ssEntry->PresetSpellID[i])
                 {
-                    ((Player*)target)->removeSpell(ssEntry->spellId[i], false, false, false);
+                    ((Player*)target)->removeSpell(ssEntry->PresetSpellID[i], false, false, false);
                 }
             }
     }

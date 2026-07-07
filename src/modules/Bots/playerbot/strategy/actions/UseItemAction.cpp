@@ -292,7 +292,7 @@ bool UseItemAction::SocketItem(Item* item, Item* gem, bool replace)
     {
         uint8 SocketColor = item->GetProto()->Socket[enchant_slot - SOCK_ENCHANTMENT_SLOT].Color;
         GemPropertiesEntry const* gemProperty = sGemPropertiesStore.LookupEntry(gem->GetProto()->GemProperties);
-        if (gemProperty && (gemProperty->color & SocketColor))
+        if (gemProperty && (gemProperty->Type & SocketColor))
         {
             if (fits)
             {

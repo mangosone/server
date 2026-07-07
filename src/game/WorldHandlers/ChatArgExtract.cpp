@@ -916,7 +916,7 @@ uint32 ChatHandler::ExtractSpellIdFromLink(char** text)
                         }
                         if (rank < MAX_TALENT_RANK)
                         {
-                            return talentEntry->RankID[rank];
+                            return talentEntry->SpellRank[rank];
                         }
                     }
                     break;

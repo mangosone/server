@@ -885,9 +885,9 @@ bool ChatHandler::HandleLearnAllMyTalentsCommand(char* /*args*/)
 
         for (int rank = MAX_TALENT_RANK - 1; rank >= 0; --rank)
         {
-            if (talentInfo->RankID[rank] != 0)
+            if (talentInfo->SpellRank[rank] != 0)
             {
-                spellid = talentInfo->RankID[rank];
+                spellid = talentInfo->SpellRank[rank];
                 break;
             }
         }

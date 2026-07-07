@@ -91,7 +91,7 @@ void WorldSession::SendAuctionHello(Unit* unit)
 
     WorldPacket data(MSG_AUCTION_HELLO, 12);
     data << unit->GetObjectGuid();
-    data << uint32(ahEntry->houseId);
+    data << uint32(ahEntry->ID);
     SendPacket(&data);
 }
 
@@ -377,7 +377,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     AuctionEntry* AH = auctionHouse->AddAuction(auctionHouseEntry, it, etime, bid, buyout, deposit, pl);
 
     DETAIL_LOG("selling %s to auctioneer %s with initial bid %u with buyout %u and with time %u (in sec) in auctionhouse %u",
-               itemGuid.GetString().c_str(), auctioneerGuid.GetString().c_str(), bid, buyout, etime, auctionHouseEntry->houseId);
+               itemGuid.GetString().c_str(), auctioneerGuid.GetString().c_str(), bid, buyout, etime, auctionHouseEntry->ID);
 
     SendAuctionCommandResult(AH, AUCTION_STARTED, AUCTION_OK);
 

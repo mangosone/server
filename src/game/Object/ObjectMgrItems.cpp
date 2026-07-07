@@ -177,15 +177,15 @@ void ObjectMgr::LoadItemPrototypes()
                 // It safe let use InventoryType from DB
             }
 
-            if (proto->DisplayInfoID != dbcitem->DisplayId)
+            if (proto->DisplayInfoID != dbcitem->DisplayInfoID)
             {
-                sLog.outErrorDb("Item (Entry: %u) not correct %u display id, must be %u (using it).", i, proto->DisplayInfoID, dbcitem->DisplayId);
-                const_cast<ItemPrototype*>(proto)->DisplayInfoID = dbcitem->DisplayId;
+                sLog.outErrorDb("Item (Entry: %u) not correct %u display id, must be %u (using it).", i, proto->DisplayInfoID, dbcitem->DisplayInfoID);
+                const_cast<ItemPrototype*>(proto)->DisplayInfoID = dbcitem->DisplayInfoID;
             }
-            if (proto->Sheath != dbcitem->Sheath)
+            if (proto->Sheath != dbcitem->SheatheType)
             {
-                sLog.outErrorDb("Item (Entry: %u) not correct %u sheath, must be %u  (using it).", i, proto->Sheath, dbcitem->Sheath);
-                const_cast<ItemPrototype*>(proto)->Sheath = dbcitem->Sheath;
+                sLog.outErrorDb("Item (Entry: %u) not correct %u sheath, must be %u  (using it).", i, proto->Sheath, dbcitem->SheatheType);
+                const_cast<ItemPrototype*>(proto)->Sheath = dbcitem->SheatheType;
             }
         }
         else

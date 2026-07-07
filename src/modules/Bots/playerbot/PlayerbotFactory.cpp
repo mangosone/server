@@ -1622,7 +1622,7 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
             continue;
         }
 
-        spells[talentInfo->Row].push_back(talentInfo);
+        spells[talentInfo->TierID].push_back(talentInfo);
     }
 
     uint32 freePoints = bot->GetFreeTalentPoints();
@@ -1642,7 +1642,7 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
             TalentEntry const *talentInfo = spells[index];
             for (int rank = 0; rank < MAX_TALENT_RANK && bot->GetFreeTalentPoints(); ++rank)
             {
-                uint32 spellId = talentInfo->RankID[rank];
+                uint32 spellId = talentInfo->SpellRank[rank];
                 if (!spellId)
                 {
                     continue;

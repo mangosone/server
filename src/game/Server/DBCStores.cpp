@@ -439,9 +439,9 @@ void LoadDBCStores(const std::string& dataPath)
         }
         for (int j = 0; j < 5; ++j)
         {
-            if (talentInfo->RankID[j])
+            if (talentInfo->SpellRank[j])
             {
-                sTalentSpellPosMap[talentInfo->RankID[j]] = TalentSpellPos(i, j);
+                sTalentSpellPosMap[talentInfo->SpellRank[j]] = TalentSpellPos(i, j);
             }
         }
     }
@@ -472,14 +472,14 @@ void LoadDBCStores(const std::string& dataPath)
             uint32 curtalent_maxrank = 0;
             for (uint32 k = 5; k > 0; --k)
             {
-                if (talentInfo->RankID[k - 1])
+                if (talentInfo->SpellRank[k - 1])
                 {
                     curtalent_maxrank = k;
                     break;
                 }
             }
 
-            sTalentBitSize[(talentInfo->Row << 24) + (talentInfo->Col << 16) + talentInfo->TalentID] = curtalent_maxrank;
+            sTalentBitSize[(talentInfo->TierID << 24) + (talentInfo->ColumnIndex << 16) + talentInfo->ID] = curtalent_maxrank;
             sTalentTabSizeInInspect[talentInfo->TalentTab] += curtalent_maxrank;
         }
 
@@ -536,7 +536,7 @@ void LoadDBCStores(const std::string& dataPath)
     {
         if (TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i))
         {
-            sTaxiPathSetBySource[entry->from][entry->to] = TaxiPathBySourceAndDestination(entry->ID, entry->price);
+            sTaxiPathSetBySource[entry->from][entry->to] = TaxiPathBySourceAndDestination(entry->Id, entry->price);
         }
     }
     uint32 pathCount = sTaxiPathStore.GetNumRows();
@@ -921,7 +921,7 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
         if (ch)
         {
             // need to remove %s from entryName if it exists before we match
-            std::string entryName(ch->pattern[0]);
+            std::string entryName(ch->Name_lang[0]);
             std::size_t removeString = entryName.find("%s");
 
             if (removeString != std::string::npos)
@@ -977,12 +977,12 @@ bool IsTotemCategoryCompatiableWith(uint32 itemTotemCategoryId, uint32 requiredT
         return false;
     }
 
-    if (itemEntry->categoryType != reqEntry->categoryType)
+    if (itemEntry->TotemCategoryType != reqEntry->TotemCategoryType)
     {
         return false;
     }
 
-    return (itemEntry->categoryMask & reqEntry->categoryMask) == reqEntry->categoryMask;
+    return (itemEntry->TotemCategoryMask & reqEntry->TotemCategoryMask) == reqEntry->TotemCategoryMask;
 }
 
 /**

@@ -146,7 +146,7 @@ bool Item::GemsFitSockets() const
                 GemPropertiesEntry const* gemProperty = sGemPropertiesStore.LookupEntry(gemProto->GemProperties);
                 if (gemProperty)
                 {
-                    GemColor = gemProperty->color;
+                    GemColor = gemProperty->Type;
                 }
             }
         }

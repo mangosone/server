@@ -406,7 +406,7 @@ bool ChatHandler::isValidChatMessage(const char* message)
                         return false;
                     }
 
-                    linkedSpell = sSpellStore.LookupEntry(talentInfo->RankID[0]);
+                    linkedSpell = sSpellStore.LookupEntry(talentInfo->SpellRank[0]);
                     if (!linkedSpell)
                     {
                         return false;
@@ -570,7 +570,7 @@ bool ChatHandler::isValidChatMessage(const char* message)
                     }
                     else if (linkedItem)
                     {
-                        char* const* suffix = itemSuffix ? itemSuffix->nameSuffix : (itemProperty ? itemProperty->nameSuffix : NULL);
+                        char* const* suffix = itemSuffix ? itemSuffix->Name_lang : (itemProperty ? itemProperty->Name_lang : NULL);
 
                         std::string expectedName = std::string(linkedItem->Name1);
                         if (suffix)
