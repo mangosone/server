@@ -690,10 +690,10 @@ struct ItemSetEntry
 */
 struct LiquidTypeEntry
 {
-    uint32 Id;                                              // 0
-    uint32 LiquidId;                                        // 1        1: Coilfang Raid - Water; 23: Water; 29: Ocean; 35: Magma; 41: Slime; 47: Naxxramas - Slime; 65: Hyjal Past - Water.
-    uint32 Type;                                            // 2        0: Magma; 2: Slime; 3: Water.
-    uint32 SpellId;                                         // 3        Reference to Spell.dbc
+    uint32 ID;                                              // 0        m_ID  (was Id)
+    char*  Name;                                            // 1        m_Name - liquid name string (Water/Ocean/Magma/Slime/...). Was mis-read as int 'LiquidId'.
+    uint32 Type;                                            // 2        0: Magma; 2: Slime; 3: Water.  (.dbd name: Flags)
+    uint32 SpellID;                                         // 3        m_SpellID - reference to Spell.dbc  (was SpellId)
 };
 
 #define MAX_LOCK_CASE 8
