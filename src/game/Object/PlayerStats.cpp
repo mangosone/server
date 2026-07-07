@@ -300,7 +300,7 @@ float Player::GetSpellCritFromIntellect()
         return 0.0f;
     }
 
-    float crit = critBase->base + GetStat(STAT_INTELLECT) * critRatio->Data;
+    float crit = critBase->Data + GetStat(STAT_INTELLECT) * critRatio->Data;
     return crit * 100.0f;
 }
 
