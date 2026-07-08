@@ -399,7 +399,7 @@ bool GuildTaskMgr::SendKillAdvertisement(uint32 creatureId, uint32 owner, uint32
         const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
         if (!entry) continue;
         {
-            location = entry->area_name[0];
+            location = entry->AreaName_lang[0];
         }
         break;
     } while (result->NextRow());

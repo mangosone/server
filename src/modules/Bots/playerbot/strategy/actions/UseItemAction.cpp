@@ -292,7 +292,7 @@ bool UseItemAction::SocketItem(Item* item, Item* gem, bool replace)
     {
         uint8 SocketColor = item->GetProto()->Socket[enchant_slot - SOCK_ENCHANTMENT_SLOT].Color;
         GemPropertiesEntry const* gemProperty = sGemPropertiesStore.LookupEntry(gem->GetProto()->GemProperties);
-        if (gemProperty && (gemProperty->color & SocketColor))
+        if (gemProperty && (gemProperty->Type & SocketColor))
         {
             if (fits)
             {
@@ -309,14 +309,14 @@ bool UseItemAction::SocketItem(Item* item, Item* gem, bool replace)
             }
 
             SpellItemEnchantmentEntry const* enchantEntry = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
-            if (!enchantEntry || !enchantEntry->GemID)
+            if (!enchantEntry || !enchantEntry->Src_itemID)
             {
                 *packet << gem->GetObjectGuid();
                 fits = true;
                 continue;
             }
 
-            if (replace && enchantEntry->GemID != gem->GetProto()->ItemId)
+            if (replace && enchantEntry->Src_itemID != gem->GetProto()->ItemId)
             {
                 *packet << gem->GetObjectGuid();
                 fits = true;

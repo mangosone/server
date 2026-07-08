@@ -863,7 +863,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
 
         BattleGroundTypeId bgTypeID = BattleGroundTypeId(bgTypeID_);
 
-        bool IsArena = (bl->type == TYPE_ARENA);
+        bool IsArena = (bl->InstanceType == TYPE_ARENA);
         uint32 MinPlayersPerTeam = fields[1].GetUInt32();
         uint32 MaxPlayersPerTeam = fields[2].GetUInt32();
         uint32 MinLvl = fields[3].GetUInt32();
@@ -872,13 +872,13 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         // check values from DB
         if (MaxPlayersPerTeam == 0 || MinPlayersPerTeam == 0 || MinPlayersPerTeam > MaxPlayersPerTeam)
         {
-            MaxPlayersPerTeam = bl->maxplayersperteam;
-            MinPlayersPerTeam = bl->maxplayersperteam / 2;
+            MaxPlayersPerTeam = bl->Unk_MaxPlayers12;
+            MinPlayersPerTeam = bl->Unk_MaxPlayers12 / 2;
         }
         if (MinLvl == 0 || MaxLvl == 0 || MinLvl > MaxLvl)
         {
-            MinLvl = bl->minLevel;
-            MaxLvl = bl->maxLevel;
+            MinLvl = bl->MinLevel;
+            MaxLvl = bl->MaxLevel;
         }
 
         float AStartLoc[4];
@@ -932,7 +932,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
 
         float startMaxDist = fields[9].GetFloat();
         // sLog.outDetail("Creating battleground %s, %u-%u", bl->name[sWorld.GetDBClang()], MinLvl, MaxLvl);
-        if (!CreateBattleGround(bgTypeID, IsArena, MinPlayersPerTeam, MaxPlayersPerTeam, MinLvl, MaxLvl, bl->name[sWorld.GetDefaultDbcLocale()], bl->mapid[0], AStartLoc[0], AStartLoc[1], AStartLoc[2], AStartLoc[3], HStartLoc[0], HStartLoc[1], HStartLoc[2], HStartLoc[3], startMaxDist))
+        if (!CreateBattleGround(bgTypeID, IsArena, MinPlayersPerTeam, MaxPlayersPerTeam, MinLvl, MaxLvl, bl->Name_lang[sWorld.GetDefaultDbcLocale()], bl->MapID[0], AStartLoc[0], AStartLoc[1], AStartLoc[2], AStartLoc[3], HStartLoc[0], HStartLoc[1], HStartLoc[2], HStartLoc[3], startMaxDist))
         {
             continue;
         }

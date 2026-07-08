@@ -131,7 +131,7 @@ string ImmersiveServer::HandleCommand(string request)
             const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
             if (entry)
             {
-                out << "|" << entry->area_name[0];
+                out << "|" << entry->AreaName_lang[0];
             }
         }
     }

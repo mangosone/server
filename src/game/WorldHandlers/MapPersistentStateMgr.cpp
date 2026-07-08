@@ -402,7 +402,7 @@ time_t DungeonPersistentState::GetResetTimeForDB() const
 {
     // only state the reset time for normal instances
     const MapEntry* entry = sMapStore.LookupEntry(GetMapId());
-    if (!entry || entry->map_type == MAP_RAID || GetDifficulty() == DUNGEON_DIFFICULTY_HEROIC)
+    if (!entry || entry->InstanceType == MAP_RAID || GetDifficulty() == DUNGEON_DIFFICULTY_HEROIC)
     {
         return 0;
     }
@@ -783,7 +783,7 @@ MapPersistentState* MapPersistentStateManager::AddPersistentState(MapEntry const
         {
             // initialize reset time
             // for normal instances if no creatures are killed the instance will reset in two hours
-            if (mapEntry->map_type == MAP_RAID || difficulty > DUNGEON_DIFFICULTY_NORMAL)
+            if (mapEntry->InstanceType == MAP_RAID || difficulty > DUNGEON_DIFFICULTY_NORMAL)
             {
                 resetTime = m_Scheduler.GetResetTimeFor(mapEntry->MapID);
             }

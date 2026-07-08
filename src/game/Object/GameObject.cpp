@@ -932,7 +932,7 @@ void GameObject::TriggerLinkedGameObject(Unit* target)
 
     if (trapSpell)                                          // checked at load already
     {
-        range = GetSpellMaxRange(sSpellRangeStore.LookupEntry(trapSpell->rangeIndex));
+        range = GetSpellMaxRange(sSpellRangeStore.LookupEntry(trapSpell->RangeIndex));
     }
 
     // search nearest linked GO
@@ -1182,7 +1182,7 @@ bool GameObject::IsHostileTo(Unit const* unit) const
 
             // apply reputation state
             FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction);
-            if (raw_tester_faction && raw_tester_faction->reputationListID >= 0)
+            if (raw_tester_faction && raw_tester_faction->ReputationIndex >= 0)
             {
                 return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) <= REP_HOSTILE;
             }
@@ -1245,7 +1245,7 @@ bool GameObject::IsFriendlyTo(Unit const* unit) const
 
             // apply reputation state
             if (FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction))
-                if (raw_tester_faction->reputationListID >= 0)
+                if (raw_tester_faction->ReputationIndex >= 0)
                 {
                     return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) >= REP_FRIENDLY;
                 }
@@ -1570,9 +1570,9 @@ float GameObject::GetObjectBoundingRadius() const
     // 2. In some cases this must be only interactive size, not GO size, current way can affect creature target point auto-selection in strange ways for big underground/virtual GOs
     if (m_displayInfo)
     {
-        float dx = m_displayInfo->geoBoxMaxX - m_displayInfo->geoBoxMinX;
-        float dy = m_displayInfo->geoBoxMaxY - m_displayInfo->geoBoxMinY;
-        float dz = m_displayInfo->geoBoxMaxZ - m_displayInfo->geoBoxMinZ;
+        float dx = m_displayInfo->GeoBoxMaxX - m_displayInfo->GeoBoxMinX;
+        float dy = m_displayInfo->GeoBoxMaxY - m_displayInfo->GeoBoxMinY;
+        float dz = m_displayInfo->GeoBoxMaxZ - m_displayInfo->GeoBoxMinZ;
 
         return (std::abs(dx) + std::abs(dy) + std::abs(dz)) / 2 * GetObjectScale();
     }

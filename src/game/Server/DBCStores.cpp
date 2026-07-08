@@ -299,12 +299,12 @@ void LoadDBCStores(const std::string& dataPath)
         if (AreaTableEntry const* area = sAreaStore.LookupEntry(i))
         {
             // fill AreaId->DBC records
-            sAreaFlagByAreaID.insert(AreaFlagByAreaID::value_type(uint16(area->ID), area->exploreFlag));
+            sAreaFlagByAreaID.insert(AreaFlagByAreaID::value_type(uint16(area->ID), area->AreaBit));
 
             // fill MapId->DBC records ( skip sub zones and continents )
-            if (area->zone == 0 && area->mapid != 0 && area->mapid != 1 && area->mapid != 530)
+            if (area->ParentAreaID == 0 && area->ContinentID != 0 && area->ContinentID != 1 && area->ContinentID != 530)
             {
-                sAreaFlagByMapID.insert(AreaFlagByMapID::value_type(area->mapid, area->exploreFlag));
+                sAreaFlagByMapID.insert(AreaFlagByMapID::value_type(area->ContinentID, area->AreaBit));
             }
         }
     }
@@ -332,9 +332,9 @@ void LoadDBCStores(const std::string& dataPath)
     for (uint32 i = 0; i < sFactionStore.GetNumRows(); ++i)
     {
         FactionEntry const* faction = sFactionStore.LookupEntry(i);
-        if (faction && faction->team)
+        if (faction && faction->ParentFactionID)
         {
-            SimpleFactionsList& flist = sFactionTeamMap[faction->team];
+            SimpleFactionsList& flist = sFactionTeamMap[faction->ParentFactionID];
             flist.push_back(i);
         }
     }
@@ -383,7 +383,7 @@ void LoadDBCStores(const std::string& dataPath)
         // DBC not support uint64 fields but SpellEntry have SpellFamilyFlags mapped at 2 uint32 fields
         // uint32 field already converted to bigendian if need, but must be swapped for correct uint64 bigendian view
 #if MANGOS_ENDIAN == MANGOS_BIGENDIAN
-        std::swap(*((uint32*)(&spell->SpellFamilyFlags)), *(((uint32*)(&spell->SpellFamilyFlags)) + 1));
+        std::swap(*((uint32*)(&spell->SpellClassMask)), *(((uint32*)(&spell->SpellClassMask)) + 1));
 #endif
     }
 
@@ -396,7 +396,7 @@ void LoadDBCStores(const std::string& dataPath)
             continue;
         }
 
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->Spell);
         if (spellInfo && (spellInfo->Attributes & (SPELL_ATTR_ABILITY | SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE | SPELL_ATTR_HIDE_IN_COMBAT_LOG)) == (SPELL_ATTR_ABILITY | SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE | SPELL_ATTR_HIDE_IN_COMBAT_LOG))
         {
             for (unsigned int i = 1; i < sCreatureFamilyStore.GetNumRows(); ++i)
@@ -407,12 +407,12 @@ void LoadDBCStores(const std::string& dataPath)
                     continue;
                 }
 
-                if (skillLine->skillId != cFamily->skillLine[0] && skillLine->skillId != cFamily->skillLine[1])
+                if (skillLine->SkillLine != cFamily->SkillLine[0] && skillLine->SkillLine != cFamily->SkillLine[1])
                 {
                     continue;
                 }
 
-                sPetFamilySpellsStore[i].insert(spellInfo->Id);
+                sPetFamilySpellsStore[i].insert(spellInfo->ID);
             }
         }
     }
@@ -439,9 +439,9 @@ void LoadDBCStores(const std::string& dataPath)
         }
         for (int j = 0; j < 5; ++j)
         {
-            if (talentInfo->RankID[j])
+            if (talentInfo->SpellRank[j])
             {
-                sTalentSpellPosMap[talentInfo->RankID[j]] = TalentSpellPos(i, j);
+                sTalentSpellPosMap[talentInfo->SpellRank[j]] = TalentSpellPos(i, j);
             }
         }
     }
@@ -472,14 +472,14 @@ void LoadDBCStores(const std::string& dataPath)
             uint32 curtalent_maxrank = 0;
             for (uint32 k = 5; k > 0; --k)
             {
-                if (talentInfo->RankID[k - 1])
+                if (talentInfo->SpellRank[k - 1])
                 {
                     curtalent_maxrank = k;
                     break;
                 }
             }
 
-            sTalentBitSize[(talentInfo->Row << 24) + (talentInfo->Col << 16) + talentInfo->TalentID] = curtalent_maxrank;
+            sTalentBitSize[(talentInfo->TierID << 24) + (talentInfo->ColumnIndex << 16) + talentInfo->ID] = curtalent_maxrank;
             sTalentTabSizeInInspect[talentInfo->TalentTab] += curtalent_maxrank;
         }
 
@@ -505,7 +505,7 @@ void LoadDBCStores(const std::string& dataPath)
 
             }
 
-            sTalentTabPages[cls][talentTabInfo->tabpage] = talentTabId;
+            sTalentTabPages[cls][talentTabInfo->OrderIndex] = talentTabId;
 
             // add total amount bits for first rank starting from talent tab first talent rank pos.
             uint32 pos = 0;
@@ -536,7 +536,7 @@ void LoadDBCStores(const std::string& dataPath)
     {
         if (TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i))
         {
-            sTaxiPathSetBySource[entry->from][entry->to] = TaxiPathBySourceAndDestination(entry->ID, entry->price);
+            sTaxiPathSetBySource[entry->from][entry->to] = TaxiPathBySourceAndDestination(entry->Id, entry->price);
         }
     }
     uint32 pathCount = sTaxiPathStore.GetNumRows();
@@ -550,9 +550,9 @@ void LoadDBCStores(const std::string& dataPath)
     {
         if (TaxiPathNodeEntry const* entry = sTaxiPathNodeStore.LookupEntry(i))
         {
-            if (pathLength[entry->path] < entry->index + 1)
+            if (pathLength[entry->PathID] < entry->NodeIndex + 1)
             {
-                pathLength[entry->path] = entry->index + 1;
+                pathLength[entry->PathID] = entry->NodeIndex + 1;
             }
         }
     }
@@ -567,7 +567,7 @@ void LoadDBCStores(const std::string& dataPath)
     {
         if (TaxiPathNodeEntry const* entry = sTaxiPathNodeStore.LookupEntry(i))
         {
-            sTaxiPathNodesByPath[entry->path].set(entry->index, entry);
+            sTaxiPathNodesByPath[entry->PathID].set(entry->NodeIndex, entry);
         }
     }
 
@@ -708,7 +708,7 @@ char const* GetPetName(uint32 petfamily, uint32 dbclang)
     {
         return NULL;
     }
-    return pet_family->Name[dbclang] ? pet_family->Name[dbclang] : NULL;
+    return pet_family->Name_lang[dbclang] ? pet_family->Name_lang[dbclang] : NULL;
 }
 
 /**
@@ -823,7 +823,7 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
 
     if (MapEntry const* mapEntry = sMapStore.LookupEntry(map_id))
     {
-        return GetAreaEntryByAreaID(mapEntry->linked_zone);
+        return GetAreaEntryByAreaID(mapEntry->AreaTableID);
     }
 
     return NULL;
@@ -921,7 +921,7 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
         if (ch)
         {
             // need to remove %s from entryName if it exists before we match
-            std::string entryName(ch->pattern[0]);
+            std::string entryName(ch->Name_lang[0]);
             std::size_t removeString = entryName.find("%s");
 
             if (removeString != std::string::npos)
@@ -977,12 +977,12 @@ bool IsTotemCategoryCompatiableWith(uint32 itemTotemCategoryId, uint32 requiredT
         return false;
     }
 
-    if (itemEntry->categoryType != reqEntry->categoryType)
+    if (itemEntry->TotemCategoryType != reqEntry->TotemCategoryType)
     {
         return false;
     }
 
-    return (itemEntry->categoryMask & reqEntry->categoryMask) == reqEntry->categoryMask;
+    return (itemEntry->TotemCategoryMask & reqEntry->TotemCategoryMask) == reqEntry->TotemCategoryMask;
 }
 
 /**

@@ -100,19 +100,19 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
         int maxRank = 0;
         for (int rank = MAX_TALENT_RANK - 1; rank >= 0; --rank)
         {
-            if (!talentInfo->RankID[rank])
+            if (!talentInfo->SpellRank[rank])
             {
                 continue;
             }
 
-            uint32 spellid = talentInfo->RankID[rank];
+            uint32 spellid = talentInfo->SpellRank[rank];
             if (spellid && bot->HasSpell(spellid))
             {
                 maxRank = rank + 1;
             }
 
         }
-        tabs[talentTabInfo->tabpage] += maxRank;
+        tabs[talentTabInfo->OrderIndex] += maxRank;
     }
 
     return tabs;

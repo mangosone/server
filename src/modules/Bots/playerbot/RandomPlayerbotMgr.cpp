@@ -672,12 +672,12 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     if (!area)
         return true;
 
-    if (area->team != AREATEAM_NONE)
+    if (area->FactionGroupMask != AREATEAM_NONE)
     {
         bool botIsAlliance = IsAlliance(bot->getRace());
-        if (botIsAlliance && area->team != AREATEAM_ALLY)
+        if (botIsAlliance && area->FactionGroupMask != AREATEAM_ALLY)
             return false;
-        if (!botIsAlliance && area->team != AREATEAM_HORDE)
+        if (!botIsAlliance && area->FactionGroupMask != AREATEAM_HORDE)
             return false;
     }
 

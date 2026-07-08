@@ -335,5 +335,5 @@ uint32 Quest::GetCharTitleBitIndex() const
         return 0;
     }
     CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(CharTitleId);
-    return titleEntry ? titleEntry->bit_index : 0;
+    return titleEntry ? titleEntry->Mask_ID : 0;
 }

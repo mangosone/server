@@ -175,22 +175,22 @@ struct DoSpellProcEvent
     }
     void AddEntry(SpellProcEventEntry const& spe, SpellEntry const* spell)
     {
-        spe_map[spell->Id] = spe;
+        spe_map[spell->ID] = spe;
 
         bool isCustom = false;
 
         if (spe.procFlags == 0)
         {
-            if (spell->procFlags == 0)
+            if (spell->ProcTypeMask == 0)
             {
-                sLog.outErrorDb("Spell %u listed in `spell_proc_event` probally not triggered spell (no proc flags)", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` probally not triggered spell (no proc flags)", spell->ID);
             }
         }
         else
         {
-            if (spell->procFlags == spe.procFlags)
+            if (spell->ProcTypeMask == spe.procFlags)
             {
-                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same proc flags as in spell.dbc, field value redundant", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same proc flags as in spell.dbc, field value redundant", spell->ID);
             }
             else
             {
@@ -209,9 +209,9 @@ struct DoSpellProcEvent
         }
         else
         {
-            if (spell->procChance == spe.customChance)
+            if (spell->ProcChance == spe.customChance)
             {
-                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same custom chance as in spell.dbc, field value redundant", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same custom chance as in spell.dbc, field value redundant", spell->ID);
             }
             else
             {
@@ -234,7 +234,7 @@ struct DoSpellProcEvent
             }
             if (empty)
             {
-                sLog.outErrorDb("Spell %u listed in `spell_proc_event` doesn't have any useful data", spell->Id);
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` doesn't have any useful data", spell->ID);
             }
         }
 

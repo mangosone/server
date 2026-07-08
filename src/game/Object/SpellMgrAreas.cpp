@@ -184,7 +184,7 @@ void SpellMgr::LoadSpellAreas()
                 continue;
             }
 
-            switch (spellInfo->EffectApplyAuraName[EFFECT_INDEX_0])
+            switch (spellInfo->EffectAura[EFFECT_INDEX_0])
             {
                 case SPELL_AURA_DUMMY:
                 case SPELL_AURA_GHOST:
@@ -275,7 +275,7 @@ void SpellMgr::LoadSpellAreas()
 SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spellInfo, uint32 map_id, uint32 zone_id, uint32 area_id, Player const* player)
 {
     // normal case
-    if (spellInfo->AreaId > 0 && spellInfo->AreaId != zone_id && spellInfo->AreaId != area_id)
+    if (spellInfo->RequiredAreasID > 0 && spellInfo->RequiredAreasID != zone_id && spellInfo->RequiredAreasID != area_id)
     {
         return SPELL_FAILED_REQUIRES_AREA;
     }
@@ -285,7 +285,7 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
     {
         uint32 v_map = GetVirtualMapForMapAndZone(map_id, zone_id);
         MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
-        if (!mapEntry || mapEntry->addon < 1 || !mapEntry->IsContinent())
+        if (!mapEntry || mapEntry->ExpansionID < 1 || !mapEntry->IsContinent())
         {
             return SPELL_FAILED_REQUIRES_AREA;
         }
@@ -302,7 +302,7 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
     }
 
     // DB base check (if non empty then must fit at least single for allow)
-    SpellAreaMapBounds saBounds = GetSpellAreaMapBounds(spellInfo->Id);
+    SpellAreaMapBounds saBounds = GetSpellAreaMapBounds(spellInfo->ID);
     if (saBounds.first != saBounds.second)
     {
         for (SpellAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
@@ -334,7 +334,7 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
             return SPELL_FAILED_ONLY_BATTLEGROUNDS;
         }
 
-    switch (spellInfo->Id)
+    switch (spellInfo->ID)
     {
             // a trinket in alterac valley allows to teleport to the boss
         case 22564:                                         // recall
@@ -426,7 +426,7 @@ void SpellMgr::LoadSkillLineAbilityMap()
             continue;
         }
 
-        mSkillLineAbilityMap.insert(SkillLineAbilityMap::value_type(SkillInfo->spellId, SkillInfo));
+        mSkillLineAbilityMap.insert(SkillLineAbilityMap::value_type(SkillInfo->Spell, SkillInfo));
         ++count;
     }
 
@@ -454,12 +454,12 @@ void SpellMgr::LoadSkillRaceClassInfoMap()
         }
 
         // not all skills really listed in ability skills list
-        if (!sSkillLineStore.LookupEntry(skillRCInfo->skillId))
+        if (!sSkillLineStore.LookupEntry(skillRCInfo->SkillID))
         {
             continue;
         }
 
-        mSkillRaceClassInfoMap.insert(SkillRaceClassInfoMap::value_type(skillRCInfo->skillId, skillRCInfo));
+        mSkillRaceClassInfoMap.insert(SkillRaceClassInfoMap::value_type(skillRCInfo->SkillID, skillRCInfo));
 
         ++count;
     }

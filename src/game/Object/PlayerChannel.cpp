@@ -139,7 +139,7 @@ void Player::UpdateLocalChannels(uint32 newZone)
         return;
     }
 
-    std::string current_zone_name = current_zone->area_name[GetSession()->GetSessionDbcLocale()];
+    std::string current_zone_name = current_zone->AreaName_lang[GetSession()->GetSessionDbcLocale()];
 
     for (JoinedChannelsList::iterator i = m_channels.begin(), next; i != m_channels.end(); i = next)
     {
@@ -157,14 +157,14 @@ void Player::UpdateLocalChannels(uint32 newZone)
             continue;
         }
 
-        if ((ch->flags & 4) == 4)                           // global channel without zone name in pattern
+        if ((ch->Flags & 4) == 4)                           // global channel without zone name in pattern
         {
             continue;
         }
 
         //  new channel
         char new_channel_name_buf[100];
-        snprintf(new_channel_name_buf, 100, ch->pattern[m_session->GetSessionDbcLocale()], current_zone_name.c_str());
+        snprintf(new_channel_name_buf, 100, ch->Name_lang[m_session->GetSessionDbcLocale()], current_zone_name.c_str());
         Channel* new_channel = cMgr->GetJoinChannel(new_channel_name_buf, ch->ChannelID);
 
         if ((*i) != new_channel)

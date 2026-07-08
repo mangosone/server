@@ -630,7 +630,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         }
 
         // Wyvern Sting
-        if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000100000000000))
+        if (GetSpellProto()->SpellClassSet == SPELLFAMILY_HUNTER && GetSpellProto()->SpellClassMask & UI64LIT(0x0000100000000000))
         {
             Unit* caster = GetCaster();
             if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
@@ -709,7 +709,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
                 for (Unit::AuraList::const_iterator i = mDummyAuras.begin(); i != mDummyAuras.end(); ++i)
                 {
                     // Master of Subtlety
-                    if ((*i)->GetSpellProto()->SpellIconID == 2114 && GetSpellProto()->SpellFamilyName == SPELLFAMILY_ROGUE)
+                    if ((*i)->GetSpellProto()->SpellIconID == 2114 && GetSpellProto()->SpellClassSet == SPELLFAMILY_ROGUE)
                     {
                         target->RemoveAurasDueToSpell(31666);
                         int32 bp = (*i)->GetModifier()->m_amount;
@@ -1299,7 +1299,7 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
     }
 
     // Bestial Wrath
-    if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellIconID == 1680)
+    if (GetSpellProto()->SpellClassSet == SPELLFAMILY_HUNTER && GetSpellProto()->SpellIconID == 1680)
     {
         // The Beast Within cast on owner if talent present
         if (Unit* owner = target->GetOwner())
@@ -1358,7 +1358,7 @@ void Aura::HandleAuraModEffectImmunity(bool apply, bool /*Real*/)
         }
         else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(player->GetCachedZoneId()))
         {
-            outdoorPvP->HandleDropFlag(player, GetSpellProto()->Id);
+            outdoorPvP->HandleDropFlag(player, GetSpellProto()->ID);
         }
     }
 
@@ -1425,9 +1425,9 @@ void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
             if ((GetSpellSchoolMask(spell) & school_mask)   // Check for school mask
                 && !spell->HasAttribute(SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY)   // Spells unaffected by invulnerability
                 && !iter->second->IsPositive()          // Don't remove positive spells
-                && spell->Id != GetId())                // Don't remove self
+                && spell->ID != GetId())                // Don't remove self
             {
-                target->RemoveAurasDueToSpell(spell->Id);
+                target->RemoveAurasDueToSpell(spell->ID);
                 if (Auras.empty())
                 {
                     break;

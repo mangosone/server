@@ -90,7 +90,7 @@ int32 ReputationMgr::GetBaseReputation(FactionEntry const* factionEntry) const
 
     int idx = factionEntry->GetIndexFitTo(raceMask, classMask);
 
-    return idx >= 0 ? factionEntry->BaseRepValue[idx] : 0;
+    return idx >= 0 ? factionEntry->ReputationBase[idx] : 0;
 }
 
 /**
@@ -301,11 +301,11 @@ void ReputationMgr::Initialize()
     {
         FactionEntry const* factionEntry = sFactionStore.LookupEntry(i);
 
-        if (factionEntry && (factionEntry->reputationListID >= 0))
+        if (factionEntry && (factionEntry->ReputationIndex >= 0))
         {
             FactionState newFaction;
             newFaction.ID = factionEntry->ID;
-            newFaction.ReputationListID = factionEntry->reputationListID;
+            newFaction.ReputationListID = factionEntry->ReputationIndex;
             newFaction.Standing = 0;
             newFaction.Flags = GetDefaultStateFlags(factionEntry);
             newFaction.needSend = true;
@@ -352,7 +352,7 @@ bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standi
         }
     }
     // spillover done, update faction itself
-    FactionStateList::iterator faction = m_factions.find(factionEntry->reputationListID);
+    FactionStateList::iterator faction = m_factions.find(factionEntry->ReputationIndex);
     if (faction != m_factions.end())
     {
         res = SetOneFactionReputation(factionEntry, standing, incremental);
@@ -372,7 +372,7 @@ bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standi
  */
 bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, int32 standing, bool incremental)
 {
-    FactionStateList::iterator itr = m_factions.find(factionEntry->reputationListID);
+    FactionStateList::iterator itr = m_factions.find(factionEntry->ReputationIndex);
     if (itr != m_factions.end())
     {
         FactionState &faction = itr->second;
@@ -435,12 +435,12 @@ void ReputationMgr::SetVisible(FactionTemplateEntry const* factionTemplateEntry)
  */
 void ReputationMgr::SetVisible(FactionEntry const* factionEntry)
 {
-    if (factionEntry->reputationListID < 0)
+    if (factionEntry->ReputationIndex < 0)
     {
         return;
     }
 
-    FactionStateList::iterator itr = m_factions.find(factionEntry->reputationListID);
+    FactionStateList::iterator itr = m_factions.find(factionEntry->ReputationIndex);
     if (itr == m_factions.end())
     {
         return;
@@ -600,9 +600,9 @@ void ReputationMgr::LoadFromDB(QueryResult* result)
             Field* fields = result->Fetch();
 
             FactionEntry const* factionEntry = sFactionStore.LookupEntry(fields[0].GetUInt32());
-            if (factionEntry && (factionEntry->reputationListID >= 0))
+            if (factionEntry && (factionEntry->ReputationIndex >= 0))
             {
-                FactionState* faction = &m_factions[factionEntry->reputationListID];
+                FactionState* faction = &m_factions[factionEntry->ReputationIndex];
 
                 // update standing to current
                 faction->Standing = int32(fields[1].GetUInt32());

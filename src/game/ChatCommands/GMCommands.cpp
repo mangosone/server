@@ -158,9 +158,9 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         PSendSysMessage("Location: Map %u (%s), Zone %u (%s)",
                         mapId,
-                        (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+                        (mapEntry ? mapEntry->MapName_lang[GetSessionDbcLocale()] : "<unknown>"),
                         zoneId,
-                        (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
+                        (zoneEntry ? zoneEntry->AreaName_lang[GetSessionDbcLocale()] : "<unknown>"));
 
         PSendSysMessage("Coordinates: X=%.2f Y=%.2f Z=%.2f O=%.2f",
                         posX, posY, posZ, orientation);
@@ -303,7 +303,7 @@ bool ChatHandler::HandleGMVisibleCommand(char* args)
         m_session->SendNotification(LANG_INVISIBLE_VISIBLE);
         if (invisibleAuraInfo)
         {
-            player->RemoveAurasDueToSpell(invisibleAuraInfo->Id);
+            player->RemoveAurasDueToSpell(invisibleAuraInfo->ID);
         }
     }
     else

@@ -23,7 +23,7 @@ bool SpellCastUsefulValue::Calculate()
         spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_2)
     {
         Spell* spell = bot->GetCurrentSpell(CURRENT_MELEE_SPELL);
-        if (spell && spell->m_spellInfo->Id == spellid && spell->IsNextMeleeSwingSpell() && bot->hasUnitState(UNIT_STAT_MELEE_ATTACKING))
+        if (spell && spell->m_spellInfo->ID == spellid && spell->IsNextMeleeSwingSpell() && bot->hasUnitState(UNIT_STAT_MELEE_ATTACKING))
   {
       return false;
   }
@@ -42,7 +42,7 @@ bool SpellCastUsefulValue::Calculate()
     }
 
     if (IsAutoRepeatRangedSpell(spellInfo) && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) &&
-            bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)->m_spellInfo->Id == spellid)
+            bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)->m_spellInfo->ID == spellid)
     {
         return false;
     }
@@ -64,7 +64,7 @@ bool SpellCastUsefulValue::Calculate()
         return false;
     }
 
-    const string spellName = spellInfo->SpellName[0];
+    const string spellName = spellInfo->Name_lang[0];
     for (set<uint32>::iterator i = skipSpells.begin(); i != skipSpells.end(); ++i)
     {
         SpellEntry const *spell = sSpellStore.LookupEntry(*i);
@@ -74,7 +74,7 @@ bool SpellCastUsefulValue::Calculate()
         }
 
         wstring wnamepart;
-        if (!Utf8toWStr(spell->SpellName[0], wnamepart))
+        if (!Utf8toWStr(spell->Name_lang[0], wnamepart))
         {
             continue;
         }

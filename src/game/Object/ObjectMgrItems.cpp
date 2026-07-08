@@ -177,15 +177,15 @@ void ObjectMgr::LoadItemPrototypes()
                 // It safe let use InventoryType from DB
             }
 
-            if (proto->DisplayInfoID != dbcitem->DisplayId)
+            if (proto->DisplayInfoID != dbcitem->DisplayInfoID)
             {
-                sLog.outErrorDb("Item (Entry: %u) not correct %u display id, must be %u (using it).", i, proto->DisplayInfoID, dbcitem->DisplayId);
-                const_cast<ItemPrototype*>(proto)->DisplayInfoID = dbcitem->DisplayId;
+                sLog.outErrorDb("Item (Entry: %u) not correct %u display id, must be %u (using it).", i, proto->DisplayInfoID, dbcitem->DisplayInfoID);
+                const_cast<ItemPrototype*>(proto)->DisplayInfoID = dbcitem->DisplayInfoID;
             }
-            if (proto->Sheath != dbcitem->Sheath)
+            if (proto->Sheath != dbcitem->SheatheType)
             {
-                sLog.outErrorDb("Item (Entry: %u) not correct %u sheath, must be %u  (using it).", i, proto->Sheath, dbcitem->Sheath);
-                const_cast<ItemPrototype*>(proto)->Sheath = dbcitem->Sheath;
+                sLog.outErrorDb("Item (Entry: %u) not correct %u sheath, must be %u  (using it).", i, proto->Sheath, dbcitem->SheatheType);
+                const_cast<ItemPrototype*>(proto)->Sheath = dbcitem->SheatheType;
             }
         }
         else
@@ -660,12 +660,12 @@ void ObjectMgr::LoadItemPrototypes()
 
         for (int j = 0; j < MAX_OUTFIT_ITEMS; ++j)
         {
-            if (entry->ItemId[j] <= 0)
+            if (entry->ItemID[j] <= 0)
             {
                 continue;
             }
 
-            uint32 item_id = entry->ItemId[j];
+            uint32 item_id = entry->ItemID[j];
 
             if (!GetItemPrototype(item_id))
             {
@@ -730,7 +730,7 @@ void ObjectMgr::LoadItemRequiredTarget()
             {
                 if (pItemProto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
                 {
-                    SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(pSpellInfo->Id);
+                    SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(pSpellInfo->ID);
                     if (bounds.first != bounds.second)
                     {
                         break;
@@ -738,10 +738,10 @@ void ObjectMgr::LoadItemRequiredTarget()
 
                     for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
                     {
-                        if (pSpellInfo->EffectImplicitTargetA[j] == TARGET_CHAIN_DAMAGE ||
-                            pSpellInfo->EffectImplicitTargetB[j] == TARGET_CHAIN_DAMAGE ||
-                            pSpellInfo->EffectImplicitTargetA[j] == TARGET_DUELVSPLAYER ||
-                            pSpellInfo->EffectImplicitTargetB[j] == TARGET_DUELVSPLAYER)
+                        if (pSpellInfo->ImplicitTargetA[j] == TARGET_CHAIN_DAMAGE ||
+                            pSpellInfo->ImplicitTargetB[j] == TARGET_CHAIN_DAMAGE ||
+                            pSpellInfo->ImplicitTargetA[j] == TARGET_DUELVSPLAYER ||
+                            pSpellInfo->ImplicitTargetB[j] == TARGET_DUELVSPLAYER)
                         {
                             bIsItemSpellValid = true;
                             break;

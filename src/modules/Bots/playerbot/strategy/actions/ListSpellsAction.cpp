@@ -20,15 +20,15 @@ bool CompareSpells(pair<uint32, string>& s1, pair<uint32, string>& s2)
     for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
     {
         SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
-        if (skillLine && skillLine->spellId == s1.first)
+        if (skillLine && skillLine->Spell == s1.first)
         {
-            skill1 = skillLine->skillId;
-            skillValue1 = skillLine->min_value;
+            skill1 = skillLine->SkillLine;
+            skillValue1 = skillLine->TrivialSkillLineRankLow;
         }
-        if (skillLine && skillLine->spellId == s2.first)
+        if (skillLine && skillLine->Spell == s2.first)
         {
-            skill2 = skillLine->skillId;
-            skillValue2 = skillLine->min_value;
+            skill2 = skillLine->SkillLine;
+            skillValue2 = skillLine->TrivialSkillLineRankLow;
         }
         if (skill1 && skill2) break;
     }
@@ -41,7 +41,7 @@ bool CompareSpells(pair<uint32, string>& s1, pair<uint32, string>& s2)
 
     if (p1 == p2)
     {
-        return strcmp(si1->SpellName[0], si1->SpellName[1]) > 0;
+        return strcmp(si1->Name_lang[0], si1->Name_lang[1]) > 0;
     }
 
     return p1 > p2;
@@ -62,7 +62,7 @@ bool ListSpellsAction::Execute(Event event)
             SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
             if (skillLine)
             {
-                skillSpells[skillLine->spellId] = skillLine;
+                skillSpells[skillLine->Spell] = skillLine;
             }
         }
     }
@@ -147,18 +147,18 @@ bool ListSpellsAction::Execute(Event event)
         }
 
         SkillLineAbilityEntry const* skillLine = skillSpells[spellId];
-        if (skill != SKILL_NONE && (!skillLine || skillLine->skillId != skill))
+        if (skill != SKILL_NONE && (!skillLine || skillLine->SkillLine != skill))
         {
             continue;
         }
 
-        string comp = pSpellInfo->SpellName[0];
+        string comp = pSpellInfo->Name_lang[0];
         if (!(ignoreList.find(comp) == std::string::npos && alreadySeenList.find(comp) == std::string::npos))
         {
             continue;
         }
 
-        if (!filter.empty() && !strstri(pSpellInfo->SpellName[0], filter.c_str()))
+        if (!filter.empty() && !strstri(pSpellInfo->Name_lang[0], filter.c_str()))
         {
             continue;
         }
@@ -267,12 +267,12 @@ bool ListSpellsAction::Execute(Event event)
 
         out << materials.str();
 
-        if (skillLine && skillLine->skillId)
+        if (skillLine && skillLine->SkillLine)
         {
-            int GrayLevel = (int)skillLine->max_value,
-                   GreenLevel = (int)(skillLine->max_value + skillLine->min_value) / 2,
-                   YellowLevel = (int)skillLine->min_value,
-                   SkillValue = (int)bot->GetBaseSkillValue(skillLine->skillId);
+            int GrayLevel = (int)skillLine->TrivialSkillLineRankHigh,
+                   GreenLevel = (int)(skillLine->TrivialSkillLineRankHigh + skillLine->TrivialSkillLineRankLow) / 2,
+                   YellowLevel = (int)skillLine->TrivialSkillLineRankLow,
+                   SkillValue = (int)bot->GetBaseSkillValue(skillLine->SkillLine);
 
             out << " - ";
             if (SkillValue >= GrayLevel)
@@ -300,7 +300,7 @@ bool ListSpellsAction::Execute(Event event)
         }
 
         spells.push_back(pair<uint32, string>(spellId, out.str()));
-        alreadySeenList += pSpellInfo->SpellName[0];
+        alreadySeenList += pSpellInfo->Name_lang[0];
         alreadySeenList += ",";
     }
 

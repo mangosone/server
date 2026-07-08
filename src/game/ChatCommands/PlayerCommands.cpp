@@ -704,7 +704,7 @@ bool ChatHandler::HandleLinkGraveCommand(char* args)
     uint32 zoneId = player->GetZoneId();
 
     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(zoneId);
-    if (!areaEntry || areaEntry->zone != 0)
+    if (!areaEntry || areaEntry->ParentAreaID != 0)
     {
         PSendSysMessage(LANG_COMMAND_GRAVEYARDWRONGZONE, g_id, zoneId);
         SetSentErrorMessage(true);
@@ -1428,7 +1428,7 @@ bool ChatHandler::HandleSetSkillCommand(char* args)
 
     if (!target->GetSkillValue(skill))
     {
-        PSendSysMessage(LANG_SET_SKILL_ERROR, tNameLink.c_str(), skill, sl->name[GetSessionDbcLocale()]);
+        PSendSysMessage(LANG_SET_SKILL_ERROR, tNameLink.c_str(), skill, sl->DisplayName_lang[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;
     }
@@ -1439,7 +1439,7 @@ bool ChatHandler::HandleSetSkillCommand(char* args)
     }
 
     target->SetSkill(skill, level, maxskill);
-    PSendSysMessage(LANG_SET_SKILL, skill, sl->name[GetSessionDbcLocale()], tNameLink.c_str(), level, maxskill);
+    PSendSysMessage(LANG_SET_SKILL, skill, sl->DisplayName_lang[GetSessionDbcLocale()], tNameLink.c_str(), level, maxskill);
 
     return true;
 }
@@ -2539,15 +2539,15 @@ bool ChatHandler::HandleModifyRepCommand(char* args)
         return false;
     }
 
-    if (factionEntry->reputationListID < 0)
+    if (factionEntry->ReputationIndex < 0)
     {
-        PSendSysMessage(LANG_COMMAND_FACTION_NOREP_ERROR, factionEntry->name[GetSessionDbcLocale()], factionId);
+        PSendSysMessage(LANG_COMMAND_FACTION_NOREP_ERROR, factionEntry->Name_lang[GetSessionDbcLocale()], factionId);
         SetSentErrorMessage(true);
         return false;
     }
 
     target->GetReputationMgr().SetReputation(factionEntry, amount);
-    PSendSysMessage(LANG_COMMAND_MODIFY_REP, factionEntry->name[GetSessionDbcLocale()], factionId,
+    PSendSysMessage(LANG_COMMAND_MODIFY_REP, factionEntry->Name_lang[GetSessionDbcLocale()], factionId,
                     GetNameLink(target).c_str(), target->GetReputationMgr().GetReputation(factionEntry));
     return true;
 }

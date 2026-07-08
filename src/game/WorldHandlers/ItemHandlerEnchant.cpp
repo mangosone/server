@@ -286,13 +286,13 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
         }
 
         // tried to put normal gem in meta socket
-        if (itemProto->Socket[i].Color == SOCKET_COLOR_META && GemProps[i]->color != SOCKET_COLOR_META)
+        if (itemProto->Socket[i].Color == SOCKET_COLOR_META && GemProps[i]->Type != SOCKET_COLOR_META)
         {
             return;
         }
 
         // tried to put meta gem in normal socket
-        if (itemProto->Socket[i].Color != SOCKET_COLOR_META && GemProps[i]->color == SOCKET_COLOR_META)
+        if (itemProto->Socket[i].Color != SOCKET_COLOR_META && GemProps[i]->Type == SOCKET_COLOR_META)
         {
             return;
         }
@@ -302,7 +302,7 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
     uint32 OldEnchants[MAX_GEM_SOCKETS];
     for (int i = 0; i < MAX_GEM_SOCKETS; ++i)               // get new and old enchantments
     {
-        GemEnchants[i] = (GemProps[i]) ? GemProps[i]->spellitemenchantement : 0;
+        GemEnchants[i] = (GemProps[i]) ? GemProps[i]->EnchantID : 0;
         OldEnchants[i] = itemTarget->GetEnchantmentId(EnchantmentSlot(SOCK_ENCHANTMENT_SLOT + i));
     }
 
@@ -339,7 +339,7 @@ void WorldSession::HandleSocketOpcode(WorldPacket& recv_data)
                 {
                     if (SpellItemEnchantmentEntry const* enchantEntry = sSpellItemEnchantmentStore.LookupEntry(OldEnchants[j]))
                     {
-                        if (iGemProto->ItemId == enchantEntry->GemID)
+                        if (iGemProto->ItemId == enchantEntry->Src_itemID)
                         {
                             _player->SendEquipError(EQUIP_ERR_ITEM_UNIQUE_EQUIPPABLE_SOCKETED, itemTarget, NULL);
                             return;

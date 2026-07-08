@@ -121,7 +121,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     uint32 curtalent_maxrank = 0;
     for (int32 k = MAX_TALENT_RANK - 1; k > -1; --k)
     {
-        if (talentInfo->RankID[k] && HasSpell(talentInfo->RankID[k]))
+        if (talentInfo->SpellRank[k] && HasSpell(talentInfo->SpellRank[k]))
         {
             curtalent_maxrank = k + 1;
             break;
@@ -141,15 +141,15 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     }
 
     // Check if it requires another talent
-    if (talentInfo->DependsOn > 0)
+    if (talentInfo->PrereqTalent_0 > 0)
     {
-        if (TalentEntry const* depTalentInfo = sTalentStore.LookupEntry(talentInfo->DependsOn))
+        if (TalentEntry const* depTalentInfo = sTalentStore.LookupEntry(talentInfo->PrereqTalent_0))
         {
             bool hasEnoughRank = false;
-            for (int i = talentInfo->DependsOnRank; i < MAX_TALENT_RANK; ++i)
+            for (int i = talentInfo->PrereqRank_0; i < MAX_TALENT_RANK; ++i)
             {
-                if (depTalentInfo->RankID[i] != 0)
-                    if (HasSpell(depTalentInfo->RankID[i]))
+                if (depTalentInfo->SpellRank[i] != 0)
+                    if (HasSpell(depTalentInfo->SpellRank[i]))
                     {
                         hasEnoughRank = true;
                     }
@@ -163,7 +163,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     }
 
     // Check if it requires spell
-    if (talentInfo->DependsOnSpell && !HasSpell(talentInfo->DependsOnSpell))
+    if (talentInfo->RequiredSpellID && !HasSpell(talentInfo->RequiredSpellID))
     {
         return;
     }
@@ -172,7 +172,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     uint32 spentPoints = 0;
 
     uint32 tTab = talentInfo->TalentTab;
-    if (talentInfo->Row > 0)
+    if (talentInfo->TierID > 0)
     {
         unsigned int numRows = sTalentStore.GetNumRows();
         for (unsigned int i = 0; i < numRows; ++i)          // Loop through all talents.
@@ -185,9 +185,9 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
                 {
                     for (int j = 0; j < MAX_TALENT_RANK; ++j)
                     {
-                        if (tmpTalent->RankID[j] != 0)
+                        if (tmpTalent->SpellRank[j] != 0)
                         {
-                            if (HasSpell(tmpTalent->RankID[j]))
+                            if (HasSpell(tmpTalent->SpellRank[j]))
                             {
                                 spentPoints += j + 1;
                             }
@@ -199,13 +199,13 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     }
 
     // not have required min points spent in talent tree
-    if (spentPoints < (talentInfo->Row * MAX_TALENT_RANK))
+    if (spentPoints < (talentInfo->TierID * MAX_TALENT_RANK))
     {
         return;
     }
 
     // spell not set in talent.dbc
-    uint32 spellid = talentInfo->RankID[talentRank];
+    uint32 spellid = talentInfo->SpellRank[talentRank];
     if (spellid == 0)
     {
         sLog.outError("Talent.dbc have for talent: %u Rank: %u spell id = 0", talentId, talentRank);

@@ -294,7 +294,7 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
     CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(pet_entry);
     if (!cInfo)
     {
-        sLog.outErrorDb("Spell::DoSummon: creature entry %u not found for spell %u.", pet_entry, m_spellInfo->Id);
+        sLog.outErrorDb("Spell::DoSummon: creature entry %u not found for spell %u.", pet_entry, m_spellInfo->ID);
         return;
     }
 
@@ -330,7 +330,7 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
     uint32 pet_number = sObjectMgr.GeneratePetNumber();
     if (!spawnCreature->Create(map->GenerateLocalLowGuid(HIGHGUID_PET), pos, cInfo, pet_number))
     {
-        sLog.outErrorDb("Spell::EffectSummon: can't create creature with entry %u for spell %u", cInfo->Entry, m_spellInfo->Id);
+        sLog.outErrorDb("Spell::EffectSummon: can't create creature with entry %u for spell %u", cInfo->Entry, m_spellInfo->ID);
         delete spawnCreature;
         return;
     }
@@ -351,7 +351,7 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
     spawnCreature->SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
     spawnCreature->SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
     spawnCreature->SetCreatorGuid(m_caster->GetObjectGuid());
-    spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
+    spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->ID);
 
     spawnCreature->InitStatsForLevel(level, m_caster);
 
@@ -424,7 +424,7 @@ void Spell::EffectAddHonor(SpellEffectIndex /*eff_idx*/)
     // 2.4.3 honor-spells don't scale with level and won't be casted by an item
     // also we must use damage+1 (spelldescription says +25 honor but damage is only 24)
     ((Player*)unitTarget)->RewardHonor(NULL, 1, float(damage + 1));
-    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "SpellEffect::AddHonor (spell_id %u) rewards %u honor points (non scale) for player: %u", m_spellInfo->Id, damage, ((Player*)unitTarget)->GetGUIDLow());
+    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "SpellEffect::AddHonor (spell_id %u) rewards %u honor points (non scale) for player: %u", m_spellInfo->ID, damage, ((Player*)unitTarget)->GetGUIDLow());
 }
 
 

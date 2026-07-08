@@ -185,7 +185,7 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
     int32 duration = GetSpellDuration(m_spellInfo);
 
     pGameObj->SetRespawnTime(duration > 0 ? duration / IN_MILLISECONDS : 0);
-    pGameObj->SetSpellId(m_spellInfo->Id);
+    pGameObj->SetSpellId(m_spellInfo->ID);
 
     // Wild object not have owner and check clickable by players
     map->Add(pGameObj);
@@ -298,14 +298,14 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
 
     // Players can only fight a duel with each other outside (=not inside dungeons and not in capital cities)
     AreaTableEntry const* casterAreaEntry = GetAreaEntryByAreaID(caster->GetAreaId());
-    if (casterAreaEntry && !(casterAreaEntry->flags & AREA_FLAG_DUEL))
+    if (casterAreaEntry && !(casterAreaEntry->Flags & AREA_FLAG_DUEL))
     {
         SendCastResult(SPELL_FAILED_NO_DUELING);            // Dueling isn't allowed here
         return;
     }
 
     AreaTableEntry const* targetAreaEntry = GetAreaEntryByAreaID(target->GetAreaId());
-    if (targetAreaEntry && !(targetAreaEntry->flags & AREA_FLAG_DUEL))
+    if (targetAreaEntry && !(targetAreaEntry->Flags & AREA_FLAG_DUEL))
     {
         SendCastResult(SPELL_FAILED_NO_DUELING);            // Dueling isn't allowed here
         return;
@@ -331,7 +331,7 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
     pGameObj->SetUInt32Value(GAMEOBJECT_LEVEL, m_caster->getLevel() + 1);
     int32 duration = GetSpellDuration(m_spellInfo);
     pGameObj->SetRespawnTime(duration > 0 ? duration / IN_MILLISECONDS : 0);
-    pGameObj->SetSpellId(m_spellInfo->Id);
+    pGameObj->SetSpellId(m_spellInfo->ID);
 
     m_caster->AddGameObject(pGameObj);
     map->Add(pGameObj);
@@ -501,7 +501,7 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
             break;
         case 16:                    // GO custom use - found mostly in Wind Stones spells, Simon Game spells and other GO target summoning spells
         {
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case 24734:         // Summon Templar Random
                 case 24744:         // Summon Templar (fire)
@@ -524,7 +524,7 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
                     uint32 dukes[] = {15206, 15207, 15208, 15220};
                     uint32 royals[] = {15203, 15204, 15205, 15305};
 
-                    switch (m_spellInfo->Id)
+                    switch (m_spellInfo->ID)
                     {
                         case 24734: npcEntry = templars[urand(0, 3)]; break;
                         case 24763: npcEntry = dukes[urand(0, 3)];    break;
@@ -592,7 +592,7 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
             gameObjTarget->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
             break;
         default:
-            sLog.outError("Spell::EffectActivateObject called with unknown misc value. Spell Id %u", m_spellInfo->Id);
+            sLog.outError("Spell::EffectActivateObject called with unknown misc value. Spell Id %u", m_spellInfo->ID);
             break;
     }
 }
@@ -674,7 +674,7 @@ void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
         return;
     }
 
-    p_caster->UpdateCraftSkill(m_spellInfo->Id);
+    p_caster->UpdateCraftSkill(m_spellInfo->ID);
 
     ((Player*)m_caster)->SendLoot(itemTarget->GetObjectGuid(), LOOT_DISENCHANTING);
 
@@ -823,7 +823,7 @@ void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
     pGameObj->SetUInt32Value(GAMEOBJECT_LEVEL, m_caster->getLevel());
     int32 duration = GetSpellDuration(m_spellInfo);
     pGameObj->SetRespawnTime(duration > 0 ? duration / IN_MILLISECONDS : 0);
-    pGameObj->SetSpellId(m_spellInfo->Id);
+    pGameObj->SetSpellId(m_spellInfo->ID);
     m_caster->AddGameObject(pGameObj);
 
     map->Add(pGameObj);
@@ -861,14 +861,14 @@ void Spell::EffectResurrect(SpellEffectIndex /*eff_idx*/)
         return;
     }
 
-    switch (m_spellInfo->Id)
+    switch (m_spellInfo->ID)
     {
         case 8342:                                          // Defibrillate (Goblin Jumper Cables) has 33% chance on success
         case 22999:                                         // Defibrillate (Goblin Jumper Cables XL) has 50% chance on success
         {
             uint32 failChance = 0;
             uint32 failSpellId = 0;
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->ID)
             {
                 case 8342:  failChance = 67; failSpellId = 8338;  break;
                 case 22999: failChance = 50; failSpellId = 23055; break;
@@ -1279,7 +1279,7 @@ void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
     m_caster->MonsterMoveWithSpeed(x, y, z, 24.f, true, true);
 
     // not all charge effects used in negative spells
-    if (unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->Id))
+    if (unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->ID))
     {
         m_caster->Attack(unitTarget, true);
     }
@@ -1310,7 +1310,7 @@ void Spell::EffectCharge2(SpellEffectIndex /*eff_idx*/)
     m_caster->MonsterMoveWithSpeed(x, y, z, 24.f, true, true);
 
     // not all charge effects used in negative spells
-    if (unitTarget && unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->Id))
+    if (unitTarget && unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->ID))
     {
         m_caster->Attack(unitTarget, true);
     }
@@ -1343,7 +1343,7 @@ void Spell::EffectSendTaxi(SpellEffectIndex eff_idx)
         return;
     }
 
-    ((Player*)unitTarget)->ActivateTaxiPathTo(m_spellInfo->EffectMiscValue[eff_idx], m_spellInfo->Id);
+    ((Player*)unitTarget)->ActivateTaxiPathTo(m_spellInfo->EffectMiscValue[eff_idx], m_spellInfo->ID);
 }
 
 /**

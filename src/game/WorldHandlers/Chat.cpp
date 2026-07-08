@@ -1893,7 +1893,7 @@ void ChatHandler::LogCommand(char const* fullcmd)
 
 void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, LocaleConstant loc, FactionState const* repState /*= NULL*/, Player* target /*= NULL */)
 {
-    std::string name = factionEntry->name[loc];
+    std::string name = factionEntry->Name_lang[loc];
     // send faction in "id - [faction] rank reputation [visible] [at war] [own team] [unknown] [invisible] [inactive]" format
     // or              "id - [faction] [no reputation]" format
     std::ostringstream ss;
@@ -1955,7 +1955,7 @@ void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, Locale
  */
 void ChatHandler::ShowSpellListHelper(Player* target, SpellEntry const* spellInfo, LocaleConstant loc)
 {
-    uint32 id = spellInfo->Id;
+    uint32 id = spellInfo->ID;
 
     bool known = target && target->HasSpell(id);
     bool learn = (spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_LEARN_SPELL);
@@ -1974,11 +1974,11 @@ void ChatHandler::ShowSpellListHelper(Player* target, SpellEntry const* spellInf
     std::ostringstream ss;
     if (m_session)
     {
-        ss << id << " - |cffffffff|Hspell:" << id << "|h[" << spellInfo->SpellName[loc];
+        ss << id << " - |cffffffff|Hspell:" << id << "|h[" << spellInfo->Name_lang[loc];
     }
     else
     {
-        ss << id << " - " << spellInfo->SpellName[loc];
+        ss << id << " - " << spellInfo->Name_lang[loc];
     }
 
     // include rank in link name
@@ -2073,8 +2073,8 @@ bool ChatHandler::ShowPlayerListHelper(QueryResult* result, uint32* limit, bool 
             ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race);
             ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
 
-            char const* race_name = raceEntry ? raceEntry->name[GetSessionDbcLocale()] : "<?>";
-            char const* class_name = classEntry ? classEntry->name[GetSessionDbcLocale()] : "<?>";
+            char const* race_name = raceEntry ? raceEntry->Name_lang[GetSessionDbcLocale()] : "<?>";
+            char const* class_name = classEntry ? classEntry->Name_lang[GetSessionDbcLocale()] : "<?>";
 
             if (!m_session)
             {

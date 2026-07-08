@@ -732,7 +732,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         else                                                // have start node, to it
         {
             sLog.outError("Character %u have too short taxi destination list, teleport to original node.", GetGUIDLow());
-            SetLocationMapId(nodeEntry->map_id);
+            SetLocationMapId(nodeEntry->ContinentID);
             Relocate(nodeEntry->x, nodeEntry->y, nodeEntry->z, 0.0f);
         }
 
@@ -749,7 +749,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         // save source node as recall coord to prevent recall and fall from sky
         TaxiNodesEntry const* nodeEntry = sTaxiNodesStore.LookupEntry(node_id);
         MANGOS_ASSERT(nodeEntry);                           // checked in m_taxi.LoadTaxiDestinationsFromString
-        m_recallMap = nodeEntry->map_id;
+        m_recallMap = nodeEntry->ContinentID;
         m_recallX = nodeEntry->x;
         m_recallY = nodeEntry->y;
         m_recallZ = nodeEntry->z;
@@ -1115,18 +1115,18 @@ void Player::_LoadAuras(QueryResult* result, uint32 timediff)
             }
 
             // prevent wrong values of remaincharges
-            if (spellproto->procCharges == 0)
+            if (spellproto->ProcCharges == 0)
             {
                 remaincharges = 0;
             }
 
-            if (!spellproto->StackAmount)
+            if (!spellproto->CumulativeAura)
             {
                 stackcount = 1;
             }
-            else if (spellproto->StackAmount < stackcount)
+            else if (spellproto->CumulativeAura < stackcount)
             {
-                stackcount = spellproto->StackAmount;
+                stackcount = spellproto->CumulativeAura;
             }
             else if (!stackcount)
             {
@@ -1162,7 +1162,7 @@ void Player::_LoadAuras(QueryResult* result, uint32 timediff)
                 }
 
                 AddSpellAuraHolder(holder);
-                DETAIL_LOG("Added auras from spellid %u", spellproto->Id);
+                DETAIL_LOG("Added auras from spellid %u", spellproto->ID);
             }
             else
             {
