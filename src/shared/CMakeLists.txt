@@ -64,7 +64,6 @@ set(SRC_GRP_DATABASE
   Database/Database.cpp
   Database/Database.h
   Database/DatabaseEnv.h
-  Database/DatabaseImpl.h
   Database/DatabaseMysql.cpp
   Database/DatabaseMysql.h
   Database/Field.cpp

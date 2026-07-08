@@ -27,6 +27,7 @@
 #include "Player.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
+#include "Database/SqlOperations.h"       // dereferences SqlQueryHolder (holder->GetResult)
 #include "Log.h"
 #include "Opcodes.h"
 #include "SpellMgr.h"
@@ -65,7 +66,6 @@
 #include "ArenaTeam.h"
 #include "Chat.h"
 #include "revision_data.h"
-#include "Database/DatabaseImpl.h"
 #include "Spell.h"
 #include "ScriptMgr.h"
 #include "SocialMgr.h"

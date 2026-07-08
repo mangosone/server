@@ -41,7 +41,6 @@
 #include "Common.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
-#include "Database/DatabaseImpl.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Opcodes.h"
@@ -96,7 +95,11 @@ void WorldSession::SendNameQueryOpcode(Player* p)
  */
 void WorldSession::SendNameQueryOpcodeFromDB(ObjectGuid guid)
 {
-    CharacterDatabase.AsyncPQuery(&WorldSession::SendNameQueryOpcodeFromDBCallBack, GetAccountId(),
+    uint32 accountId = GetAccountId();
+    CharacterDatabase.AsyncPQuery([accountId](QueryResult* result)
+                                  {
+                                      WorldSession::SendNameQueryOpcodeFromDBCallBack(result, accountId);
+                                  },
                                   !sWorld.getConfig(CONFIG_BOOL_DECLINED_NAMES_USED) ?
                                   //   ------- Query Without Declined Names --------
                                   //       0       1       2       3         4

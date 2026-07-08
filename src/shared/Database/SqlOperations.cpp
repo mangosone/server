@@ -40,7 +40,6 @@
 #include "SqlOperations.h"
 #include "SqlDelayThread.h"
 #include "DatabaseEnv.h"
-#include "DatabaseImpl.h"
 
 /**
  * @def LOCK_DB_CONN

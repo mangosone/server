@@ -50,7 +50,6 @@
 #include "MassMailMgr.h"
 #include "Policies/Singleton.h"
 #include "Database/DatabaseEnv.h"
-#include "Database/DatabaseImpl.h"
 #include "SharedDefines.h"
 #include "World.h"
 #include "ObjectMgr.h"
@@ -136,7 +135,10 @@ struct MassMailerQueryHandler
  */
 void MassMailMgr::AddMassMailTask(MailDraft* mailProto, const MailSender &sender, char const* query)
 {
-    CharacterDatabase.AsyncPQuery(&massMailerQueryHandler, &MassMailerQueryHandler::HandleQueryCallback, mailProto, sender, query);
+    CharacterDatabase.AsyncPQuery([mailProto, sender](QueryResult* result)
+                                  {
+                                      massMailerQueryHandler.HandleQueryCallback(result, mailProto, sender);
+                                  }, query);
 }
 
 /**

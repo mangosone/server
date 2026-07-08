@@ -76,7 +76,6 @@
 #include "MoveMap.h"
 #include "GameEventMgr.h"
 #include "PoolManager.h"
-#include "Database/DatabaseImpl.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "MapPersistentStateMgr.h"
@@ -1959,7 +1958,10 @@ void World::UpdateResultQueue()
  */
 void World::UpdateRealmCharCount(uint32 accountId)
 {
-    CharacterDatabase.AsyncPQuery(this, &World::_UpdateRealmCharCount, accountId,
+    CharacterDatabase.AsyncPQuery([this, accountId](QueryResult* result)
+                                  {
+                                      _UpdateRealmCharCount(result, accountId);
+                                  },
                                   "SELECT COUNT(`guid`) FROM `characters` WHERE `account` = '%u'", accountId);
 }
 

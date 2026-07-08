@@ -1,0 +1,67 @@
+MaNGOS One - ChangeLog
+======================
+Short log of fixes made in this working session, most recent first.
+
+2026-07-08
+----------
+* [Build] Eluna guard: wrapped WorldObject::GetEluna() in WorldObjectSummon.cpp
+  in #ifdef ENABLE_ELUNA to match its guarded declaration, fixing a no-Eluna
+  (SCRIPT_LIB_ELUNA=0) build break (C2039).
+
+* [Core] Async DB callbacks: replaced the hand-unrolled template callback
+  machinery (per-arity MaNGOS::Callback/QueryCallback/SQueryCallback classes,
+  TYPENAMES_/PARAMS_ macros, and the Database::AsyncQuery/AsyncPQuery/
+  DelayQueryHolder template overloads split into DatabaseImpl.h) with plain
+  C++17 std::function-based methods. AsyncQuery/AsyncPQuery/DelayQueryHolder
+  are now ordinary non-template functions defined in Database.cpp, and callers
+  pass a lambda binding whatever state they need. Removed DatabaseImpl.h (and
+  the stray #include of it from 48 files); this also fixes the LNK2019/C2661
+  errors that occurred when a caller used AsyncPQuery without including the
+  template-body header. The IQueryCallback interface and SqlOperations layer
+  are unchanged.
+
+* [Build] GenRevision.cmake: fixed Eluna/SD3 submodule revision strings being
+  blank/garbled ("...:   ( branch)") when SCRIPT_LIB_ELUNA or SCRIPT_LIB_SD3
+  is disabled; now show a clear "not built / n/a / disabled" placeholder, and
+  the placeholder is cached so it doesn't force a needless regenerate of
+  revision_data.h on every reconfigure.
+
+* [Build] Fixed FreeBSD build failure on modern releases: ACE (dep/acelite)
+  never defined ACE_HAS_CPU_SET_T for FreeBSD and synthesized its own
+  `cpu_set_t`, conflicting with the one the platform now provides. Defined
+  ACE_HAS_CPU_SET_T/_WITH_CPU_SET_T globally for FreeBSD builds from the
+  top-level CMakeLists.txt, without touching dep/.
+
+* [Build] Fixed installed mangosd/realmd not finding shared libraries (e.g.
+  liblua54.so when Lua is built dynamically) at runtime on FreeBSD/Linux:
+  CMAKE_INSTALL_RPATH was never set, so installed binaries lost the
+  build-tree RPATH and had no way to locate sibling libs under
+  ${CMAKE_INSTALL_PREFIX}/lib. Now set to a relocatable, binary-relative
+  RPATH ($ORIGIN/../lib on Linux/FreeBSD, @loader_path/../lib on macOS).
+
+* [Build] Added cmake/FindReadline.cmake for proper Readline detection (used
+  by the Lua build for Eluna). Declares a GLOBAL IMPORTED target literally
+  named `readline` so dep/lualib/lua/CMakeLists.txt's existing bare-name
+  target_link_libraries(... readline) calls resolve to it automatically -
+  dep/ itself is untouched. Detection is guarded to Unix platforms only and
+  only runs when SCRIPT_LIB_ELUNA is enabled.
+
+* [Build] cmake/FindMySQL.cmake: replaced the hardcoded list of MariaDB
+  version strings used to build Windows registry search paths (which
+  silently failed to find any version not in the list) with a
+  file(GLOB) over the default MariaDB install directories, so any installed
+  version is detected without needing to enumerate version numbers.
+
+* [Core] Network engine: decoupled game/session logic from the network
+  (ACE reactor) thread in src/game/Server/WorldSocket*:
+  - WorldSocket::HandleAuthSession no longer runs synchronous, blocking
+    LoginDatabase queries (plus a stray 10ms sleep) on the network thread;
+    it now fires a single async account+ban-check query and finishes session
+    creation in a new HandleAuthSessionCallback, invoked on the world thread
+    via the existing Database::ProcessResultQueue()/AsyncPQuery mechanism.
+  - CMSG_PING and CMSG_KEEP_ALIVE are no longer special-cased in-place on the
+    network thread; they are now ordinary queued STATUS_AUTHED opcodes
+    handled by new WorldSession::HandlePingOpcode()/HandleKeepAliveOpcode()
+    on the world/map thread, removing a WorldSession field race and an
+    off-thread Eluna hook call. Ping-flood tracking state moved from
+    WorldSocket to WorldSession accordingly.

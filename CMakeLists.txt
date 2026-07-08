@@ -44,6 +44,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# =============================================================================
+# Platform compatibility
+# =============================================================================
+# Modern FreeBSD provides a native `cpu_set_t` (exposed via <pthread_np.h>/
+# <sched.h> once _WITH_CPU_SET_T is defined), but the vendored ACE
+# (dep/acelite) FreeBSD config predates this and never sets
+# ACE_HAS_CPU_SET_T, so ACE falls back to synthesizing its own `cpu_set_t`
+# typedef, which then conflicts with the system one and fails to build.
+# Define both macros globally (covering dep/acelite's own compilation, not
+# just src/) so ACE uses the platform's real type instead.
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  add_compile_definitions(_WITH_CPU_SET_T ACE_HAS_CPU_SET_T)
+endif()
+
 # IDE folder organization
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -120,6 +134,24 @@ else()
 endif()
 
 # =============================================================================
+# Runtime library search path (RPATH)
+# =============================================================================
+# CMake's default CMAKE_INSTALL_RPATH is empty, so an installed executable
+# (e.g. mangosd in ${BIN_DIR}) loses the working build-tree RPATH it had
+# before install and can no longer find shared libraries installed alongside
+# it under ${CMAKE_INSTALL_PREFIX}/lib (e.g. liblua54.so from dep/lualib
+# when built with LUA_STATIC=OFF), even though it's right there on disk.
+# Point it at the sibling lib/ directory, relative to the binary itself, so
+# the install tree stays relocatable.
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
+
+# =============================================================================
 # Dependencies
 # =============================================================================
 
@@ -139,6 +171,16 @@ find_package(MySQL REQUIRED)
 find_package(ZLIB QUIET)
 find_package(BZip2 QUIET)
 
+# dep/lualib (the Lua build used by Eluna) links against readline by its bare
+# library name and is not itself touched here; find_package(Readline) below
+# declares a GLOBAL IMPORTED target literally named `readline` (see
+# cmake/FindReadline.cmake) before that subdirectory is added, so its
+# existing bare-name references resolve to a properly-detected library
+# instead of an unqualified linker search. Readline has no Windows build and
+# is only needed when Eluna is being built.
+if(NOT WIN32 AND SCRIPT_LIB_ELUNA)
+  find_package(Readline REQUIRED)
+endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenRevision.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/EnsureVersion.cmake)
