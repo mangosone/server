@@ -149,7 +149,8 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
     _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), m_expansion(expansion), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
-    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
+    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid(),
+    m_lastPingTime(0), m_overSpeedPings(0)
 {
     if (sock)
     {
@@ -369,8 +370,11 @@ bool WorldSession::Update(PacketFilter& updater)
                     }
                     break;
                 case STATUS_AUTHED:
-                    // prevent cheating with skip queue wait
-                    if (m_inQueue)
+                    // prevent cheating with skip queue wait, except for the
+                    // ping/keep-alive opcodes: a queued client must still get
+                    // its pong/keep-alive answered or it will time out and
+                    // disconnect itself while waiting.
+                    if (m_inQueue && packet->GetOpcode() != CMSG_PING && packet->GetOpcode() != CMSG_KEEP_ALIVE)
                     {
                         LogUnexpectedOpcode(packet, "the player not pass queue yet");
                         break;
@@ -748,6 +752,76 @@ void WorldSession::KickPlayer()
     {
         m_Socket->CloseSocket();
     }
+}
+
+/**
+ * @brief Handles a client ping and replies with a pong.
+ *
+ * Formerly handled in-place on the network thread by WorldSocket; now runs
+ * here, on the world/map thread, like every other opcode.
+ */
+void WorldSession::HandlePingOpcode(WorldPacket& recv_data)
+{
+    uint32 ping;
+    uint32 latency;
+
+    recv_data >> ping;
+    recv_data >> latency;
+
+    time_t curTime = time(nullptr);
+    if (m_lastPingTime == 0)
+    {
+        m_lastPingTime = curTime; // for 1st ping
+    }
+    else
+    {
+        time_t diffTime = curTime - m_lastPingTime;
+        m_lastPingTime = curTime;
+
+        if (diffTime < 27)
+        {
+            ++m_overSpeedPings;
+
+            uint32 max_count = sWorld.getConfig(CONFIG_UINT32_MAX_OVERSPEED_PINGS);
+
+            if (max_count && m_overSpeedPings > max_count && GetSecurity() == SEC_PLAYER)
+            {
+                sLog.outError("WorldSession::HandlePingOpcode: Player kicked for overspeeded pings address = %s",
+                              GetRemoteAddress().c_str());
+                KickPlayer();
+                return;
+            }
+        }
+        else
+        {
+            m_overSpeedPings = 0;
+        }
+    }
+
+    SetLatency(latency);
+    SetClientTimeDelay(0); // recalculated on next movement packet
+
+    WorldPacket packet(SMSG_PONG, 4);
+    packet << ping;
+    SendPacket(&packet);
+}
+
+/**
+ * @brief Handles a client keep-alive.
+ *
+ * Formerly handled in-place on the network thread by WorldSocket (including
+ * the Eluna hook below); now runs here, on the world/map thread.
+ */
+void WorldSession::HandleKeepAliveOpcode(WorldPacket& recv_data)
+{
+    DEBUG_LOG("CMSG_KEEP_ALIVE ,size: %zu ", recv_data.size());
+
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = sWorld.GetEluna())
+    {
+        e->OnPacketReceive(this, recv_data);
+    }
+#endif /* ENABLE_ELUNA */
 }
 
 /// Cancel channeling handler

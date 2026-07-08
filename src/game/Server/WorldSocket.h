@@ -48,11 +48,14 @@
 
 #include "Common.h"
 #include "Auth/AuthCrypt.h"
+#include "Auth/Sha1.h"
+#include "WorldPacket.h"
 
 class ACE_Message_Block;
 class WorldPacket;
 class WorldSession;
 class WorldSocket;
+class QueryResult;
 
 typedef ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH> WorldHandler;
 typedef ACE_Acceptor< WorldSocket, ACE_SOCK_ACCEPTOR > WorldAcceptor;
@@ -157,11 +160,15 @@ class WorldSocket : protected WorldHandler
         /// @param new_pct received packet ,note that you need to delete it.
         int ProcessIncoming(WorldPacket* new_pct);
 
-        /// Called by ProcessIncoming() on CMSG_AUTH_SESSION.
+        /// Called by ProcessIncoming() on CMSG_AUTH_SESSION. Validates what it
+        /// can synchronously, then issues an async account lookup so the
+        /// network thread never blocks on a DB round-trip.
         int HandleAuthSession(WorldPacket& recvPacket);
 
-        /// Called by ProcessIncoming() on CMSG_PING.
-        int HandlePing(WorldPacket& recvPacket);
+        /// Async callback for the account lookup started by HandleAuthSession().
+        /// Runs on the world thread (via Database::ProcessResultQueue), not the
+        /// network thread. Takes ownership of (and must delete) \p result.
+        void HandleAuthSessionCallback(QueryResult* result);
 
         /// Try to write WorldPacket to m_OutBuffer ,return -1 if no space
         /// Need to be called with m_OutBufferLock lock held
@@ -183,12 +190,6 @@ class WorldSocket : protected WorldHandler
         void SetSession(WorldSession* session);
 
     private:
-        /// Time in which the last ping was received
-        ACE_Time_Value m_LastPingTime;
-
-        /// Keep track of over-speed pings ,to prevent ping flood.
-        uint32 m_OverSpeedPings;
-
         /// Address of the remote peer
         std::string m_Address;
 
@@ -229,6 +230,27 @@ class WorldSocket : protected WorldHandler
         PacketQueueT m_PacketQueue;
 
         const uint32 m_Seed;
+
+        /// Set once HandleAuthSession() issues the async account lookup, so a
+        /// second CMSG_AUTH_SESSION arriving before the first one's callback
+        /// runs is rejected instead of clobbering the fields below.
+        bool m_AuthPending;
+
+        /// Fields captured from CMSG_AUTH_SESSION, read back once the async
+        /// account lookup issued by HandleAuthSession() completes. Only used
+        /// while a login is in flight for this socket, so it needs no locking:
+        /// it is written once on the network thread before the query is
+        /// issued, then read once on the world thread when the callback runs.
+        uint32 m_AuthBuildNumber;
+        std::string m_AuthAccountName;
+        uint32 m_AuthClientSeed;
+        uint8 m_AuthDigest[SHA_DIGEST_LENGTH];
+
+        /// Remainder of the CMSG_AUTH_SESSION packet (the addon block), copied
+        /// because the original packet is freed once HandleAuthSession()
+        /// returns, but the addon list is only consumed once the async
+        /// account lookup completes.
+        WorldPacket m_AuthAddonData;
 };
 
 #endif  /* _WORLDSOCKET_H */

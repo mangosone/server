@@ -457,6 +457,48 @@ bool Database::DirectPExecute(const char* format, ...)
     return DirectExecute(szQuery);
 }
 
+bool Database::AsyncQuery(std::function<void(QueryResult*)> callback, const char* sql)
+{
+    if (!sql || !m_pResultQueue)
+    {
+        return false;
+    }
+
+    return m_threadBody->Delay(new SqlQuery(sql, new MaNGOS::QueryCallback(std::move(callback)), m_pResultQueue));
+}
+
+bool Database::AsyncPQuery(std::function<void(QueryResult*)> callback, const char* format, ...)
+{
+    if (!format)
+    {
+        return false;
+    }
+
+    va_list ap;
+    char szQuery[MAX_QUERY_LEN];
+    va_start(ap, format);
+    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    va_end(ap);
+
+    if (res == -1)
+    {
+        sLog.outError("SQL Query truncated (and not executed) for format: %s", format);
+        return false;
+    }
+
+    return AsyncQuery(std::move(callback), szQuery);
+}
+
+bool Database::DelayQueryHolder(std::function<void(QueryResult*, SqlQueryHolder*)> callback, SqlQueryHolder* holder)
+{
+    if (!holder || !m_pResultQueue)
+    {
+        return false;
+    }
+
+    return holder->Execute(new MaNGOS::QueryHolderCallback(std::move(callback), holder), m_threadBody, m_pResultQueue);
+}
+
 bool Database::BeginTransaction()
 {
     if (!m_pAsyncConn || !m_TransStorage)

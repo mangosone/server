@@ -128,3 +128,5 @@ msbuild.cmd
 
 # File generated during compile
 /dep/libmpq/compile
+/install/
+

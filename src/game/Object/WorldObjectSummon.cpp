@@ -803,6 +803,7 @@ void WorldObject::SetActiveObjectState(bool active)
     m_isActiveObject = active;
 }
 
+#ifdef ENABLE_ELUNA
 /**
  * @brief Get Eluna instance
  * @return Eluna instance pointer or nullptr
@@ -818,3 +819,4 @@ Eluna* WorldObject::GetEluna() const
 
     return nullptr;
 }
+#endif /* ENABLE_ELUNA */

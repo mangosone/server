@@ -58,7 +58,6 @@
 #include "Auth/md5.h"
 #include "ObjectAccessor.h"
 #include "Group.h"
-#include "Database/DatabaseImpl.h"
 #include "PlayerDump.h"
 #include "SocialMgr.h"
 #include "Util.h"
@@ -123,10 +122,13 @@ void WorldSession::HandleCharRenameOpcode(WorldPacket& recv_data)
 
     // make sure that the character belongs to the current account, that rename at login is enabled
     // and that there is no character with the desired new name
-    CharacterDatabase.AsyncPQuery(&WorldSession::HandleChangePlayerNameOpcodeCallBack,
-                                  GetAccountId(), newname,
+    uint32 accountId = GetAccountId();
+    CharacterDatabase.AsyncPQuery([accountId, newname](QueryResult* result)
+                                  {
+                                      WorldSession::HandleChangePlayerNameOpcodeCallBack(result, accountId, newname);
+                                  },
                                   "SELECT `guid`, `name` FROM `characters` WHERE `guid` = %u AND `account` = %u AND (`at_login` & %u) = %u AND NOT EXISTS (SELECT NULL FROM `characters` WHERE `name` = '%s')",
-                                  guid.GetCounter(), GetAccountId(), AT_LOGIN_RENAME, AT_LOGIN_RENAME, escaped_newname.c_str()
+                                  guid.GetCounter(), accountId, AT_LOGIN_RENAME, AT_LOGIN_RENAME, escaped_newname.c_str()
                                  );
 }
 

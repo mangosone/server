@@ -32,11 +32,13 @@
  * - TCP socket communication using ACE
  * - Packet encryption/decryption (SRP6)
  * - Packet fragmentation and reassembly
- * - Ping/pong keepalive mechanism
- * - Session creation and management
+ * - Session creation (account lookup is asynchronous; see
+ *   HandleAuthSession()/HandleAuthSessionCallback())
  *
  * The socket uses the SRP6 authentication protocol for secure
- * client-server communication.
+ * client-server communication. Ping/pong and keep-alive are handled by
+ * WorldSession (see WorldSession::HandlePingOpcode()/HandleKeepAliveOpcode()),
+ * not here, so nothing on this network-thread-owned class runs game logic.
  *
  * @see WorldSocket for the socket class
  * @see WorldSession for the player session
@@ -121,8 +123,6 @@ struct ClientPktHeader
  */
 WorldSocket::WorldSocket(void) :
     WorldHandler(),
-    m_LastPingTime(ACE_Time_Value::zero),
-    m_OverSpeedPings(0),
     m_SessionLock(),
     m_Session(0),
     m_RecvWPct(0),
@@ -131,7 +131,12 @@ WorldSocket::WorldSocket(void) :
     m_OutBufferLock(),
     m_OutBuffer(0),
     m_OutBufferSize(65536),
-    m_Seed(static_cast<uint32>(rand32()))
+    m_Seed(static_cast<uint32>(rand32())),
+    m_AuthPending(false),
+    m_AuthBuildNumber(0),
+    m_AuthClientSeed(0),
+    m_AuthDigest{},
+    m_AuthAddonData()
 {
     reference_counting_policy().value(ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
 }
@@ -696,10 +701,8 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     {
         switch (opcode)
         {
-            case CMSG_PING:
-                return HandlePing(*new_pct);
             case CMSG_AUTH_SESSION:
-                if (GetSession())
+                if (GetSession() || m_AuthPending)
                 {
                     sLog.outError("WorldSocket::ProcessIncoming: Player send CMSG_AUTH_SESSION again");
                     return -1;
@@ -716,19 +719,11 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
                 }
 #endif /* ENABLE_ELUNA */
                 return HandleAuthSession(*new_pct);
-            case CMSG_KEEP_ALIVE:
-                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: %zu ", new_pct->size());
-
-#ifdef ENABLE_ELUNA
-                if (Eluna* e = sWorld.GetEluna())
-                {
-                    // Snapshot the session under the lock, then release it before
-                    // calling into the hook so we never run script code while
-                    // holding the lock.
-                    e->OnPacketReceive(GetSession(), *new_pct);
-                }
-#endif /* ENABLE_ELUNA */
-                return 0;
+            // CMSG_PING and CMSG_KEEP_ALIVE are intentionally not special-cased
+            // here: they fall through to the default case below like every
+            // other opcode, so they are queued to the session and handled by
+            // WorldSession::Update() on the world/map thread instead of
+            // in-place on the network thread.
             default:
             {
                 // Hold the session lock across QueuePacket so the session
@@ -780,22 +775,19 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 }
 
 /**
- * @brief Authenticates a new client session and creates the world session.
+ * @brief Validates a CMSG_AUTH_SESSION packet synchronously, then issues an
+ * async account lookup so the network thread never blocks on a DB round-trip.
  *
  * @param recvPacket The authentication packet.
  * @return int Zero on success; otherwise -1.
  */
 int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 {
-    // NOTE: ATM the socket is singlethread, have this in mind ...
-    uint8 digest[SHA_DIGEST_LENGTH];
     uint32 clientSeed;
     uint32 unk2;
     uint32 BuiltNumberClient;
-    uint8 expansion = 0;
+    uint8 digest[SHA_DIGEST_LENGTH];
     std::string account;
-    BigNumber v, s, g, N, K;
-    const bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
 
     // Read the content of the packet
     recvPacket >> BuiltNumberClient;
@@ -826,22 +818,78 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     LoginDatabase.escape_string(safe_account);
     // No SQL injection, username escaped.
 
-    QueryResult* result =
-        LoginDatabase.PQuery("SELECT "
-                             "`id`, "                      // 0
-                             "`gmlevel`, "                 // 1
-                             "`sessionkey`, "              // 2
-                             "`last_ip`, "                 // 3
-                             "`locked`, "                  // 4
-                             "`v`, "                       // 5
-                             "`s`, "                       // 6
-                             "`expansion`, "               // 7
-                             "`mutetime`, "                // 8
-                             "`locale`, "                  // 9
-                             "`os` "                       // 10
-                             "FROM `account` "
-                             "WHERE `username` = '%s'",
-                             safe_account.c_str());
+    // Stash everything HandleAuthSessionCallback() will need once the async
+    // account lookup below completes, since recvPacket does not outlive this
+    // function and the socket is otherwise single-threaded during a login.
+    m_AuthPending = true;
+    m_AuthBuildNumber = BuiltNumberClient;
+    m_AuthAccountName = account;
+    m_AuthClientSeed = clientSeed;
+    memcpy(m_AuthDigest, digest, SHA_DIGEST_LENGTH);
+    m_AuthAddonData = recvPacket;
+
+    // Keep the socket alive until HandleAuthSessionCallback() runs; released there.
+    AddReference();
+
+    // Account lookup and ban check in a single round-trip: the account_banned
+    // check needs the account id, which this same query produces, so it is
+    // expressed as a correlated subquery instead of a second chained query.
+    LoginDatabase.AsyncPQuery([this](QueryResult* result)
+                              {
+                                  HandleAuthSessionCallback(result);
+                              },
+                              "SELECT "
+                              "`a`.`id`, "                  // 0
+                              "`a`.`gmlevel`, "              // 1
+                              "`a`.`sessionkey`, "           // 2
+                              "`a`.`last_ip`, "              // 3
+                              "`a`.`locked`, "               // 4
+                              "`a`.`v`, "                    // 5
+                              "`a`.`s`, "                    // 6
+                              "`a`.`expansion`, "            // 7
+                              "`a`.`mutetime`, "             // 8
+                              "`a`.`locale`, "               // 9
+                              "`a`.`os`, "                   // 10
+                              "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
+                              "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), " // 11
+                              "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) "
+                              "AND `ip` = '%s' LIMIT 1) "    // 12
+                              "FROM `account` AS `a` "
+                              "WHERE `a`.`username` = '%s'",
+                              GetRemoteAddress().c_str(), safe_account.c_str());
+
+    return 0;
+}
+
+/**
+ * @brief Async callback for the account lookup started by HandleAuthSession().
+ *
+ * Invoked from Database::ProcessResultQueue() (called each tick from
+ * World::Update()), so this runs on the world thread, never on the network
+ * thread. Finishes what HandleAuthSession() used to do synchronously:
+ * ban/lock checks, SHA verification, WorldSession creation and registration,
+ * Warden init, and sending the addon packet.
+ *
+ * @param result The query result; this function takes ownership of it.
+ */
+void WorldSocket::HandleAuthSessionCallback(QueryResult* result)
+{
+    // Matches the AddReference() taken in HandleAuthSession() before the
+    // async query was issued; released on every exit path from here.
+    struct ReferenceGuard
+    {
+        WorldSocket* socket;
+        ~ReferenceGuard() { socket->RemoveReference(); }
+    } refGuard{this};
+
+    ACE_Auto_Ptr<QueryResult> resultGuard(result);
+
+    m_AuthPending = false;
+
+    if (closing_)
+    {
+        return;
+    }
 
     // Stop if the account is not found
     if (!result)
@@ -850,13 +898,29 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         packet << uint8(AUTH_UNKNOWN_ACCOUNT);
         SendPacket(packet);
 
-        sLog.outError("WorldSocket::HandleAuthSession: Sent Auth Response (unknown account).");
-        return -1;
+        sLog.outError("WorldSocket::HandleAuthSessionCallback: Sent Auth Response (unknown account).");
+        CloseSocket();
+        return;
     }
+
+    const bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
+    BigNumber v, s, g, N, K;
 
     const Field* fields = result->Fetch();
 
-    expansion = ((sWorld.getConfig(CONFIG_UINT32_EXPANSION) > fields[7].GetUInt8()) ? fields[7].GetUInt8() : sWorld.getConfig(CONFIG_UINT32_EXPANSION));
+    // Account/IP ban check (evaluated as correlated subqueries in the lookup).
+    if (fields[11].GetUInt32() || fields[12].GetUInt32())
+    {
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
+        packet << uint8(AUTH_BANNED);
+        SendPacket(packet);
+
+        sLog.outError("WorldSocket::HandleAuthSessionCallback: Sent Auth Response (Account banned).");
+        CloseSocket();
+        return;
+    }
+
+    uint8 expansion = ((sWorld.getConfig(CONFIG_UINT32_EXPANSION) > fields[7].GetUInt8()) ? fields[7].GetUInt8() : sWorld.getConfig(CONFIG_UINT32_EXPANSION));
 
     N.SetHexStr("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7");
     g.SetDword(7);
@@ -867,7 +931,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     const char* sStr = s.AsHexStr();                        // Must be freed by OPENSSL_free()
     const char* vStr = v.AsHexStr();                        // Must be freed by OPENSSL_free()
 
-    DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) check s: %s v: %s",
+    DEBUG_LOG("WorldSocket::HandleAuthSessionCallback: (s,v) check s: %s v: %s",
               sStr,
               vStr);
 
@@ -883,9 +947,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
             packet << uint8(AUTH_FAILED);
             SendPacket(packet);
 
-            delete result;
-            BASIC_LOG("WorldSocket::HandleAuthSession: Sent Auth Response (Account IP differs).");
-            return -1;
+            BASIC_LOG("WorldSocket::HandleAuthSessionCallback: Sent Auth Response (Account IP differs).");
+            CloseSocket();
+            return;
         }
     }
 
@@ -905,27 +969,6 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     std::string os = fields[10].GetString();
 
-    delete result;
-
-    // Re-check account ban (same check as in realmd)
-    QueryResult* banresult =
-        LoginDatabase.PQuery("SELECT 1 FROM `account_banned` WHERE `id` = %u AND `active` = 1 AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`)"
-                             "UNION "
-                             "SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s'",
-                             id, GetRemoteAddress().c_str());
-
-    if (banresult) // if account banned
-    {
-        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
-        packet << uint8(AUTH_BANNED);
-        SendPacket(packet);
-
-        delete banresult;
-
-        sLog.outError("WorldSocket::HandleAuthSession: Sent Auth Response (Account banned).");
-        return -1;
-    }
-
     // Check locked state for server
     AccountTypes allowedAccountType = sWorld.GetPlayerSecurityLimit();
 
@@ -935,8 +978,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         packet << uint8(AUTH_UNAVAILABLE);
         SendPacket(packet);
 
-        BASIC_LOG("WorldSocket::HandleAuthSession: User tries to login but his security level is not enough");
-        return -1;
+        BASIC_LOG("WorldSocket::HandleAuthSessionCallback: User tries to login but his security level is not enough");
+        CloseSocket();
+        return;
     }
 
     // Warden: Must be done before WorldSession is created
@@ -946,8 +990,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         packet << uint8(AUTH_REJECT);
         SendPacket(packet);
 
-        BASIC_LOG("WorldSocket::HandleAuthSession: Client %s attempted to log in using invalid client OS (%s).", GetRemoteAddress().c_str(), os.c_str());
-        return -1;
+        BASIC_LOG("WorldSocket::HandleAuthSessionCallback: Client %s attempted to log in using invalid client OS (%s).", GetRemoteAddress().c_str(), os.c_str());
+        CloseSocket();
+        return;
     }
 
     // Check that Key and account name are the same on client and server
@@ -955,27 +1000,28 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     uint32 seed = m_Seed;
 
     Sha1Hash sha;
-    sha.UpdateData(account);
+    sha.UpdateData(m_AuthAccountName);
     sha.UpdateData((uint8*) & t, 4);
-    sha.UpdateData((uint8*) & clientSeed, 4);
+    sha.UpdateData((uint8*) & m_AuthClientSeed, 4);
     sha.UpdateData((uint8*) & seed, 4);
     sha.UpdateBigNumbers(&K, nullptr);
     sha.Finalize();
 
-    if (memcmp(sha.GetDigest(), digest, SHA_DIGEST_LENGTH))
+    if (memcmp(sha.GetDigest(), m_AuthDigest, SHA_DIGEST_LENGTH))
     {
         WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_FAILED);
         SendPacket(packet);
 
-        sLog.outError("WorldSocket::HandleAuthSession: Sent Auth Response (authentification failed).");
-        return -1;
+        sLog.outError("WorldSocket::HandleAuthSessionCallback: Sent Auth Response (authentification failed).");
+        CloseSocket();
+        return;
     }
 
     std::string address = GetRemoteAddress();
 
-    DEBUG_LOG("WorldSocket::HandleAuthSession: Client '%s' authenticated successfully from %s.",
-              account.c_str(),
+    DEBUG_LOG("WorldSocket::HandleAuthSessionCallback: Client '%s' authenticated successfully from %s.",
+              m_AuthAccountName.c_str(),
               address.c_str());
 
     // Update the last_ip in the database
@@ -983,11 +1029,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     static SqlStatementID updAccount;
 
     SqlStatement stmt = LoginDatabase.CreateStatement(updAccount, "UPDATE `account` SET `last_ip` = ? WHERE `username` = ?");
-    stmt.PExecute(address.c_str(), account.c_str());
+    stmt.PExecute(address.c_str(), m_AuthAccountName.c_str());
 
-    // NOTE ATM the socket is single-threaded, have this in mind ...
-    WorldSession* session = NULL;
-    ACE_NEW_RETURN(session, WorldSession(id, this, AccountTypes(security), expansion, mutetime, locale), -1);
+    WorldSession* session = new WorldSession(id, this, AccountTypes(security), expansion, mutetime, locale);
 
     // Publish the session under the lock so the network thread routes incoming
     // packets to it consistently.
@@ -997,104 +1041,20 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     session->LoadTutorialsData();
 
-    // In case needed sometime the second arg is in microseconds 1 000 000 = 1 sec
-    ACE_OS::sleep(ACE_Time_Value(0, 10000));
-
     // Warden: Initialize Warden system only if it is enabled by config
     if (wardenActive)
     {
-        session->InitWarden(uint16(BuiltNumberClient), &K, os);
+        session->InitWarden(uint16(m_AuthBuildNumber), &K, os);
     }
 
     sWorld.AddSession(session);
 
     // Create and send the Addon packet
     WorldPacket SendAddonPacked;
-    if (sAddOnHandler.BuildAddonPacket(&recvPacket, &SendAddonPacked))
+    if (sAddOnHandler.BuildAddonPacket(&m_AuthAddonData, &SendAddonPacked))
     {
         SendPacket(SendAddonPacked);
     }
-
-    return 0;
-}
-
-/**
- * @brief Handles a client ping and replies with a pong.
- *
- * @param recvPacket The ping packet.
- * @return int Zero on success; otherwise -1.
- */
-int WorldSocket::HandlePing(WorldPacket& recvPacket)
-{
-    uint32 ping;
-    uint32 latency;
-
-    // Get the ping packet content
-    recvPacket >> ping;
-    recvPacket >> latency;
-
-    if (m_LastPingTime == ACE_Time_Value::zero)
-    {
-        m_LastPingTime = ACE_OS::gettimeofday();             // for 1st ping
-    }
-    else
-    {
-        ACE_Time_Value cur_time = ACE_OS::gettimeofday();
-        ACE_Time_Value diff_time(cur_time);
-        diff_time -= m_LastPingTime;
-        m_LastPingTime = cur_time;
-
-        if (diff_time < ACE_Time_Value(27))
-        {
-            ++m_OverSpeedPings;
-
-            uint32 max_count = sWorld.getConfig(CONFIG_UINT32_MAX_OVERSPEED_PINGS);
-
-            if (max_count && m_OverSpeedPings > max_count)
-            {
-                // Read the session under the lock so it cannot be cleared while
-                // we inspect its security level.
-                ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
-                if (m_Session && m_Session->GetSecurity() == SEC_PLAYER)
-                {
-                    sLog.outError("WorldSocket::HandlePing: Player kicked for "
-                                  "overspeeded pings address = %s",
-                                  GetRemoteAddress().c_str());
-
-                    return -1;
-                }
-            }
-        }
-        else
-        {
-            m_OverSpeedPings = 0;
-        }
-    }
-
-    {
-        // Update the session's latency under the lock so it cannot be cleared
-        // (and destroyed) while we dereference it.
-        ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
-        if (m_Session)
-        {
-            m_Session->SetLatency(latency);
-            m_Session->SetClientTimeDelay(0); // recalculated on next movement packet
-        }
-        else
-        {
-            sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "
-                          "but is not authenticated or got recently kicked,"
-                          " address = %s",
-                          GetRemoteAddress().c_str());
-            return -1;
-        }
-    }
-
-    WorldPacket packet(SMSG_PONG, 4);
-    packet << ping;
-    return SendPacket(packet);
 }
 
 /**

@@ -934,6 +934,11 @@ class WorldSession
         void HandleSetGuildBankTabText(WorldPacket& recv_data);
 
         void HandleGetMirrorimageData(WorldPacket& recv_data);
+
+        // ping / keep-alive: processed here (on the world thread, via the
+        // normal opcode queue) rather than in-place on the network thread.
+        void HandlePingOpcode(WorldPacket& recv_data);
+        void HandleKeepAliveOpcode(WorldPacket& recv_data);
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
@@ -972,6 +977,12 @@ class WorldSession
         TutorialDataState m_tutorialState;
         int32 m_clientTimeDelay;
         ObjectGuid m_npcWatchLastGuid;
+
+        // Ping flood tracking, formerly on WorldSocket (network thread); now
+        // only ever touched from HandlePingOpcode() on the world/map thread.
+        time_t m_lastPingTime;
+        uint32 m_overSpeedPings;
+
         ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
 };
 #endif
