@@ -10,6 +10,7 @@
 
 #include "terrain/Geometry.hpp"
 
+#include <cstdint>
 #include <optional>
 
 namespace world::terrain {

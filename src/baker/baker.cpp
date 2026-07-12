@@ -393,7 +393,7 @@ int main(int argc, char* argv[])
         return 2;
     }
 
-    int dbcCount = 0, totalTerrain = 0, goModels = 0, goSkipped = 0;
+    int dbcCount = 0, totalTerrain = 0, goModels = 0;
 
     // --- dbc ---------------------------------------------------------------------
     if (opt.dbc)
@@ -439,6 +439,8 @@ int main(int argc, char* argv[])
     // --- gomodels ----------------------------------------------------------------
     if (opt.gomodels)
     {
+        // bakeGoModels reports the skipped count itself; we only need the bake total.
+        int goSkipped = 0;
         goModels = bakeGoModels(archive, gomodelsDir, goSkipped);
     }
 

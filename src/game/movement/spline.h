@@ -28,6 +28,7 @@
 #include "typedefs.h"
 #include "terrain/Geometry/Vector3.h"
 #include <limits>
+#include <vector>
 
 namespace Movement
 {

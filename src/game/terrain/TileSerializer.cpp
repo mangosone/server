@@ -87,7 +87,7 @@ bool writeTile(const TerrainTile& tile, const std::string& path) {
     uint8_t ht = tile.hasTerrain ? 1 : 0;
     uint8_t gw = tile.isGlobalWmo ? 1 : 0;
     ok = ok && wpod(f, ht) && wpod(f, gw) && wvec(f, tile.v9) && wvec(f, tile.v8);
-    
+
     ok = ok && std::fwrite(tile.holes.data(), sizeof(uint16_t), tile.holes.size(), f) ==
                    tile.holes.size();
     ok = ok && std::fwrite(tile.areaIds.data(), sizeof(uint16_t), tile.areaIds.size(), f) ==

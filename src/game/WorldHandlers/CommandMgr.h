@@ -20,6 +20,10 @@
 #ifndef COMMANDMGR_H
 #define COMMANDMGR_H
 
+#include "Common.h"
+
+#include <string>
+#include <vector>
 
 struct CommandHelpLocale
 {

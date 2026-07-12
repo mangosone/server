@@ -176,7 +176,7 @@ namespace world::terrain
             return std::string();
         return "World\\Maps\\" + name + "\\" + name + ".wdt";
     }
-    
+
     std::shared_ptr<TerrainTile> MpqTileSource::tryloadWdt(uint32_t mapId)
     {
         // 1. If the global tile is already built, return it (once per map).
@@ -264,7 +264,7 @@ namespace world::terrain
         return tile;
     }
 
-    
+
     std::shared_ptr<TerrainTile> MpqTileSource::tryloadAdt(uint32_t mapId, int tx, int ty)
     {
         const std::string path = adtPath(mapId, tx, ty);
@@ -325,11 +325,11 @@ namespace world::terrain
 
     std::shared_ptr<TerrainTile> MpqTileSource::load(uint32_t mapId, int tx, int ty)
     {
-        
+
         if (auto adtTile = tryloadAdt(mapId, tx, ty))
             return adtTile;
 
-      
+
         return tryloadWdt(mapId);
     }
 
