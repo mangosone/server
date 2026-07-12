@@ -23,7 +23,7 @@
  */
 
 #include "GameObject.h"
-#include "G3D/Quat.h"
+#include "terrain/Geometry/Quat.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
 #include "PoolManager.h"
@@ -45,7 +45,7 @@
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Util.h"
 #include "ScriptMgr.h"
-#include "vmap/GameObjectModel.h"
+#include "GameObjectModel.h"
 #include "CreatureAISelector.h"
 #include "SQLStorages.h"
 #include "GameObjectAI.h"
@@ -240,7 +240,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         r3 = cos(ang/2);
     }
 
-    G3D::Quat q(r0, r1, r2, r3);
+    Geometry::Quat q(r0, r1, r2, r3);
     q.unitize();
 
     float o = GetOrientationFromQuat(q);
@@ -1091,7 +1091,7 @@ const char* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
  *
  * @param q The quaternion to apply.
  */
-void GameObject::SetQuaternion(G3D::Quat const& q)
+void GameObject::SetQuaternion(Geometry::Quat const& q)
 {
     SetFloatValue(GAMEOBJECT_ROTATION + 0, q.x);
     SetFloatValue(GAMEOBJECT_ROTATION + 1, q.y);
@@ -1100,7 +1100,16 @@ void GameObject::SetQuaternion(G3D::Quat const& q)
     SetFloatValue(GAMEOBJECT_FACING, GetOrientationFromQuat(q));
     if (m_model)
     {
-        m_model->UpdateRotation(q);
+        // Re-pose the collision body; while in world this also re-files it into the
+        // map's tile buckets (a rotation can move its bounds across a tile edge).
+        if (IsInWorld())
+        {
+            GetMap()->UpdateGameObjectModel(*m_model);
+        }
+        else
+        {
+            m_model->UpdatePose();
+        }
     }
 }
 
@@ -1109,7 +1118,7 @@ void GameObject::SetQuaternion(G3D::Quat const& q)
  *
  * @param q Receives the quaternion components.
  */
-void GameObject::GetQuaternion(G3D::Quat& q) const
+void GameObject::GetQuaternion(Geometry::Quat& q) const
 {
     q.x = GetFloatValue(GAMEOBJECT_ROTATION + 0);
     q.y = GetFloatValue(GAMEOBJECT_ROTATION + 1);
@@ -1123,7 +1132,7 @@ void GameObject::GetQuaternion(G3D::Quat& q) const
  * @param q The quaternion to evaluate.
  * @return The normalized orientation angle.
  */
-float GameObject::GetOrientationFromQuat(G3D::Quat const& q)
+float GameObject::GetOrientationFromQuat(Geometry::Quat const& q)
 {
     double t1 = +2.0f * (q.w * q.z + q.x * q.y);
     double t2 = +1.0f - 2.0f * (q.y * q.y + q.z * q.z);

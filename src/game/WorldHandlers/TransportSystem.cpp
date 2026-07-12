@@ -35,6 +35,8 @@
 
 #include "TransportSystem.h"
 #include "Unit.h"
+#include "Creature.h"
+#include "GameTime.h"
 #include "MapManager.h"
 
 /* **************************************** TransportBase ****************************************/
@@ -80,12 +82,13 @@ void TransportBase::UpdateGlobalPositions()
     Position pos(m_owner->GetPositionX(), m_owner->GetPositionY(),
                  m_owner->GetPositionZ(), m_owner->GetOrientation());
 
-    // Calculate new direction multipliers
-    if (MapManager::NormalizeOrientation(pos.o - m_lastPosition.o) > 0.01f)
-    {
-        m_sinO = sin(pos.o);
-        m_cosO = cos(pos.o);
-    }
+    // Recomputed unconditionally: two trig calls, and the guard that used to stand here
+    // asked NormalizeOrientation(delta) > 0.01f, which is true for almost any delta
+    // (Normalize maps a small negative rotation to nearly 2*PI). It never saved anything
+    // and it would go badly wrong the moment a caller relied on it to be exact -- which
+    // the pose recovery, which Relocates the vessel to a client-observed yaw, now does.
+    m_sinO = sin(pos.o);
+    m_cosO = cos(pos.o);
 
     // Update global positions
     for (PassengerMap::const_iterator itr = m_passengers.begin(); itr != m_passengers.end(); ++itr)
@@ -97,25 +100,70 @@ void TransportBase::UpdateGlobalPositions()
     m_lastPosition = pos;
 }
 
-// Update the global position of a passenger
+/**
+ * @brief Refresh a passenger's WORLD position -- which is a cache, and only a cache.
+ *
+ * A passenger does not live in the world. It lives in the vessel, which is a little map
+ * of its own: the vessel owns the passenger list, the passenger update tick, the deck
+ * mesh they collide against and the one broadcast that tells observers about them. None
+ * of that is the world grid's business, and the crew are not citizens of it.
+ *
+ * So this is a plain Relocate: it stamps the world token that OFF-SHIP questions need
+ * ("how far is that deckhand from the pier I am standing on") and touches nothing else.
+ *
+ * It deliberately does NOT call Map::CreatureRelocation. That would re-file the crew
+ * into the map cell for a coordinate the server only ESTIMATES -- the client runs the
+ * vessel's Catmull path, the server does not -- and would hand the crew's visibility to
+ * a grid that is not the thing managing it. Both halves of that are wrong.
+ */
 void TransportBase::UpdateGlobalPositionOf(WorldObject* passenger, float lx, float ly, float lz, float lo) const
 {
     float gx, gy, gz, go;
     CalculateGlobalPositionOf(lx, ly, lz, lo, gx, gy, gz, go);
 
-    if (passenger->GetTypeId() == TYPEID_PLAYER || passenger->GetTypeId() == TYPEID_UNIT)
+    TransportInfo const* info = passenger->GetTransportInfo();
+
+    // The client parents a unit to a vessel from that unit's MOVEMENT INFO and nothing else:
+    // MovementInfo::Write emits the transport block only when MOVEFLAG_ONTRANSPORT is set.
+    // A server-driven passenger never sets it on its own -- only a player's own client does,
+    // in the packets it sends us -- so without this the crew go out as free units carrying a
+    // bare world position. The client then has no idea they belong to the ship: it plants
+    // them where that position says, the vessel sails on, and the deckhands are left standing
+    // on the open sea.
+    //
+    // The deck offset is the authoritative coordinate for these passengers (the world one is
+    // a derived cache -- see the comment above), so it is what gets stamped. This covers a
+    // boarded MINION too: a pet is a grid citizen for the server's bookkeeping, but to the
+    // client it is just as much on the deck as the crew are, and must ride with it.
+    if (passenger->isType(TYPEMASK_UNIT))
     {
-        if (passenger->GetTypeId() == TYPEID_PLAYER)
-        {
-            m_owner->GetMap()->PlayerRelocation((Player*)passenger, gx, gy, gz, go);
-        }
-        else
-        {
-            m_owner->GetMap()->CreatureRelocation((Creature*)passenger, gx, gy, gz, go);
-        }
+        Unit* boarded = static_cast<Unit*>(passenger);
+
+        boarded->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+        boarded->m_movementInfo.SetTransportData(m_owner->GetObjectGuid(), lx, ly, lz, lo,
+                                                 GameTime::GetGameTimeMS());
     }
-    // ToDo: Add gameobject relocation
-    // ToDo: Add passenger relocation for MO transports
+
+    // A MINION -- a pet, a guardian -- belongs to the world and is only standing on our
+    // floor. It is still in a grid cell, it is still found by grid searchers, it still
+    // fights things. So its world position has to keep being maintained THROUGH the grid:
+    // relocate it properly, or the ship sails out of its cell and its cell membership --
+    // and therefore its visibility, and Map::Remove's idea of where to find it -- goes
+    // stale and stays stale.
+    if (info && info->IsGridResident() && passenger->GetTypeId() == TYPEID_UNIT)
+    {
+        m_owner->GetMap()->CreatureRelocation(static_cast<Creature*>(passenger), gx, gy, gz, go);
+        return;
+    }
+
+    // CREW. Not in any grid, so this is a pure cache write: it stamps the world token that
+    // an off-ship distance check needs and touches nothing else. CreatureRelocation here
+    // would be actively wrong -- see the comment above the function.
+    //
+    // (A player aboard is not one of these passengers at all: it stays a normal grid
+    // citizen, the client is authoritative for where it stands, and it tells us both
+    // coordinate systems in every movement packet. We never move it from here.)
+    passenger->Relocate(gx, gy, gz, go);
 }
 
 // This rotates the vector (lx, ly) by transporter->orientation
@@ -125,11 +173,15 @@ void TransportBase::RotateLocalPosition(float lx, float ly, float& rx, float& ry
     ry = lx * m_sinO + ly * m_cosO;
 }
 
-// This rotates the vector (rx, ry) by -transporter->orientation
+// This rotates the vector (rx, ry) by -transporter->orientation.
+//
+// NOTE: this is the true inverse rotation, R(-o). The version that stood here before
+// negated BOTH terms, which yields -R(o) -- a rotation composed with a point reflection,
+// not an inverse. It had no callers, so nothing ever noticed; it does now.
 void TransportBase::NormalizeRotatedPosition(float rx, float ry, float& lx, float& ly) const
 {
-    lx = rx * -m_cosO - ry * -m_sinO;
-    ly = rx * -m_sinO + ry * -m_cosO;
+    lx = rx * m_cosO + ry * m_sinO;
+    ly = -rx * m_sinO + ry * m_cosO;
 }
 
 // Calculate a global position of local positions based on this transporter
@@ -143,9 +195,27 @@ void TransportBase::CalculateGlobalPositionOf(float lx, float ly, float lz, floa
     go = MapManager::NormalizeOrientation(lo + m_owner->GetOrientation());
 }
 
-void TransportBase::BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo)
+// Calculate a local position from a global one. The exact inverse of the above.
+void TransportBase::CalculateLocalPositionOf(float gx, float gy, float gz, float go, float& lx, float& ly, float& lz, float& lo) const
 {
-    TransportInfo* transportInfo = new TransportInfo(passenger, this, lx, ly, lz, lo);
+    NormalizeRotatedPosition(gx - m_owner->GetPositionX(), gy - m_owner->GetPositionY(), lx, ly);
+
+    lz = gz - m_owner->GetPositionZ();
+    lo = MapManager::NormalizeOrientation(go - m_owner->GetOrientation());
+}
+
+void TransportBase::UnBoardAllPassengers()
+{
+    while (!m_passengers.empty())
+    {
+        UnBoardPassenger(m_passengers.begin()->first);
+    }
+}
+
+void TransportBase::BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo,
+                                   bool gridResident)
+{
+    TransportInfo* transportInfo = new TransportInfo(passenger, this, lx, ly, lz, lo, gridResident);
 
     // Insert our new passenger
     m_passengers.insert(PassengerMap::value_type(passenger, transportInfo));
@@ -166,6 +236,16 @@ void TransportBase::UnBoardPassenger(WorldObject* passenger)
     // Set passengers transportInfo to NULL
     passenger->SetTransportInfo(NULL);
 
+    // And stop telling the client it is standing on us -- otherwise it stays welded to a deck
+    // it has stepped off, and every position we send it is read as a deck offset.
+    if (passenger->isType(TYPEMASK_UNIT))
+    {
+        Unit* leaving = static_cast<Unit*>(passenger);
+
+        leaving->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
+        leaving->m_movementInfo.ClearTransportData();
+    }
+
     // Delete transportInfo
     delete itr->second;
 
@@ -175,10 +255,12 @@ void TransportBase::UnBoardPassenger(WorldObject* passenger)
 
 /* **************************************** TransportInfo ****************************************/
 
-TransportInfo::TransportInfo(WorldObject* owner, TransportBase* transport, float lx, float ly, float lz, float lo) :
+TransportInfo::TransportInfo(WorldObject* owner, TransportBase* transport, float lx, float ly, float lz, float lo,
+                             bool gridResident) :
     m_owner(owner),
     m_transport(transport),
-    m_localPosition(lx, ly, lz, lo)
+    m_localPosition(lx, ly, lz, lo),
+    m_gridResident(gridResident)
 {
     MANGOS_ASSERT(owner && m_transport);
 }

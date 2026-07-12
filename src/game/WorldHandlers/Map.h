@@ -67,7 +67,7 @@
 #include "MapRefManager.h"
 #include "ScriptMgr.h"
 #include "CreatureLinkingMgr.h"
-#include "DynamicTree.h"
+#include "DynamicCollision.h"
 #ifdef ENABLE_ELUNA
 #include "LuaValue.h"
 #endif /* ENABLE_ELUNA */
@@ -334,8 +334,8 @@ class Map : public GridRefManager<NGridType>
         // DynObjects currently
         uint32 GenerateLocalLowGuid(HighGuid guidhigh);
 
-        // get corresponding TerrainData object for this particular map
-        const TerrainInfo* GetTerrain() const { return m_TerrainData; }
+        // get corresponding terrain object for this particular map
+        const FusedTerrain* GetTerrain() const { return m_TerrainData; }
 
         void CreateInstanceData(bool load);
         InstanceData* GetInstanceData() const { return i_data; }
@@ -351,10 +351,12 @@ class Map : public GridRefManager<NGridType>
         bool IsInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2) const;
         bool GetHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, float modifyDist) const;
 
-        // Object Model insertion/remove/test for dynamic vmaps use
-        void InsertGameObjectModel(const GameObjectModel& mdl);
-        void RemoveGameObjectModel(const GameObjectModel& mdl);
+        // Game-object collision body registration (see DynamicCollision)
+        void InsertGameObjectModel(GameObjectModel& mdl);
+        void RemoveGameObjectModel(GameObjectModel& mdl);
         bool ContainsGameObjectModel(const GameObjectModel& mdl) const;
+        // Re-file a body after its pose changed (rotation / teleport / respawn).
+        void UpdateGameObjectModel(GameObjectModel& mdl);
 
         // Get Holder for Creature Linking
         CreatureLinkingHolder* GetCreatureLinkingHolder() { return &m_creatureLinkingHolder; }
@@ -497,7 +499,7 @@ class Map : public GridRefManager<NGridType>
         NGridType* i_grids[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];
 
         // Shared geodata object with map coord info...
-        TerrainInfo* const m_TerrainData;
+        FusedTerrain* const m_TerrainData;
         bool m_bLoadedGrids[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];
 
         std::bitset<TOTAL_NUMBER_OF_CELLS_PER_MAP* TOTAL_NUMBER_OF_CELLS_PER_MAP> marked_cells;
@@ -524,8 +526,8 @@ class Map : public GridRefManager<NGridType>
         // Holder for information about linked mobs
         CreatureLinkingHolder m_creatureLinkingHolder;
 
-        // Dynamic Map tree object
-        DynamicMapTree m_dyn_tree;
+        // Game-object collision bodies for this map
+        DynamicCollision m_dynCollision;
 
         // WeatherSystem
         WeatherSystem* m_weatherSystem;

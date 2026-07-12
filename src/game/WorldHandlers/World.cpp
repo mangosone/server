@@ -72,8 +72,9 @@
 #include "Policies/Singleton.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "OutdoorPvP/OutdoorPvP.h"
-#include "VMapFactory.h"
 #include "MoveMap.h"
+#include "FusedTerrain.h"
+#include "GameObjectModel.h"
 #include "GameEventMgr.h"
 #include "PoolManager.h"
 #include "GridNotifiersImpl.h"
@@ -113,7 +114,6 @@
 
 INSTANTIATE_SINGLETON_1(World);
 
-extern void LoadGameObjectModelList();
 
 volatile bool World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
@@ -258,7 +258,6 @@ World::~World()
         delete session;
     }
 
-    VMAP::VMapFactory::clear();
     MMAP::MMapFactory::clear();
 }
 
@@ -375,12 +374,16 @@ void World::SetInitialWorldSettings()
     ///- Initialize config settings
     LoadConfigSettings();
 
-    ///- Initialize VMapManager function pointers (to untangle game/collision circular deps)
-    if (VMAP::VMapManager2* vmmgr2 = dynamic_cast<VMAP::VMapManager2*>(VMAP::VMapFactory::createOrGetVMapManager()))
-    {
-        //vmmgr2->GetLiquidFlagsPtr = &GetLiquidFlags;
-        vmmgr2->IsVMAPDisabledForPtr = &DisableMgr::IsVMAPDisabledFor;
-    }
+    ///- Point the fused-terrain engine at the baked .tile directory. Static terrain,
+    ///  liquid, area and WMO/M2 collision all come from here now (no maps/ or vmaps/
+    ///  tile loading, and the old "use vmaps" switch is a no-op).
+    FusedTerrain::SetTileDir(m_dataPath + "tiles");
+    sLog.outString("WORLD: Fused terrain tile directory is: %stiles", m_dataPath.c_str());
+
+    ///- Point game-object collision at the baked per-display models. Replaces the vmap
+    ///  model store (vmaps/*.vmo + the GAMEOBJECT_MODELS list file).
+    GameObjectModel::SetModelDir(m_dataPath + "gomodels");
+    sLog.outString("WORLD: Game-object collision model directory is: %sgomodels", m_dataPath.c_str());
 
     ///- Check the existence of the map files for all races start areas.
     if (!MapManager::ExistMapAndVMap(0, -6240.32f, 331.033f) ||                     // Dwarf/ Gnome
@@ -393,7 +396,7 @@ void World::SetInitialWorldSettings()
           (!MapManager::ExistMapAndVMap(530, 10349.6f, -6357.29f) ||            // BloodElf
           !MapManager::ExistMapAndVMap(530, -3961.64f, -13931.2f))))            // Draenei
     {
-        sLog.outError("Correct *.map files not found in path '%smaps' or *.vmtree/*.vmtile files in '%svmaps'. Please place *.map and vmap files in appropriate directories or correct the DataDir value in the mangosd.conf file.", m_dataPath.c_str(), m_dataPath.c_str());
+        sLog.outError("Correct fused terrain tiles (t_<map>_<x>_<y>.tile) not found in path '%stiles'. Please bake the client data with the terrain baker or correct the DataDir value in the mangosd.conf file.", m_dataPath.c_str());
         Log::WaitBeforeContinueIfNeed();
         exit(1);
     }
@@ -476,7 +479,6 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadGameobjectInfo();
 
     sLog.outString("Loading GameObject models...");
-    LoadGameObjectModelList();
     sLog.outString();
 
     sLog.outString("Loading Spell Chain Data...");
@@ -876,6 +878,9 @@ void World::SetInitialWorldSettings()
     sOutdoorPvPMgr.InitOutdoorPvP();
 
     // Not sure if this can be moved up in the sequence (with static data loading) as it uses MapManager
+    sLog.outString("Loading Transport Crew...");
+    sMapMgr.LoadTransportCrew();          // rosters first: LoadTransports spawns them
+
     sLog.outString("Loading Transports...");
     sMapMgr.LoadTransports();
 

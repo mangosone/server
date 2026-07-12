@@ -34,6 +34,9 @@
 #include "Player.h"
 #include "Unit.h"
 
+#include <list>
+#include <type_traits>
+
 namespace MaNGOS
 {
     struct VisibleNotifier
@@ -166,362 +169,189 @@ namespace MaNGOS
     };
 
     // SEARCHERS & LIST SEARCHERS & WORKERS
+    //
+    // A grid cell stores its objects in one GridRefManager per concrete type
+    // (Player, Creature, GameObject, DynamicObject, Corpse, Camera). Visiting a cell
+    // calls Visit() once per those containers, and a searcher has to decide, for each,
+    // whether it cares.
+    //
+    // That decision is not a matter of taste — it is exactly "would a T* satisfy
+    // somebody who asked for a Result*". A CreatureSearcher wants creatures; a
+    // UnitSearcher wants creatures AND players; a WorldObjectSearcher wants all of
+    // them; a GameObjectSearcher wants only game objects. So the whole matrix of
+    // per-type Visit overloads this file used to spell out by hand is one type trait,
+    // and the search itself is written once instead of forty times.
 
-    /* Model Searcher class:
-    template<class Check>
-    struct SomeSearcher
+    /// Is a stored `T` interesting to something looking for a `Result`?
+    template<class Result, class T>
+    inline constexpr bool visits_v = std::is_convertible_v<T*, Result*>;
+
+    /// The FIRST object the check accepts. Stops as soon as it has one — including
+    /// across cells, since the caller keeps passing the same searcher.
+    template<class Result, class Check>
+    struct FirstSearcher
     {
-        ResultType& i_result;
-        Check & i_check;
+        Result*& i_object;
+        Check&   i_check;
 
-        SomeSearcher(ResultType& result, Check & check)
-            : i_phaseMask(check.GetFocusObject().GetPhaseMask()), i_result(result), i_check(check) {}
+        FirstSearcher(Result*& result, Check& check) : i_object(result), i_check(check) {}
 
-        void Visit(CreatureMapType &m);
+        template<class T>
+        void Visit(GridRefManager<T>& m)
         {
-            ..some code fast return if result found
-
-            for(CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+            if constexpr (visits_v<Result, T>)
             {
-                if (!itr->getSource()->InSamePhase(i_phaseMask))
+                // Already found, possibly in an earlier cell or an earlier type.
+                if (i_object)
                 {
-                    continue;
+                    return;
                 }
 
-                if (!i_check(itr->getSource()))
+                for (auto& ref : m)
                 {
-                    continue;
+                    T* candidate = ref.getSource();
+                    if (i_check(candidate))
+                    {
+                        i_object = candidate;
+                        return;
+                    }
                 }
-
-                ..some code for update result and possible stop search
             }
         }
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED> &) {}
-    };
-    */
-
-    // WorldObject searchers & workers
-
-    template<class Check>
-    struct WorldObjectSearcher
-    {
-        WorldObject*& i_object;
-        Check& i_check;
-
-        WorldObjectSearcher(WorldObject*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(GameObjectMapType& m);
-        void Visit(PlayerMapType& m);
-        void Visit(CreatureMapType& m);
-        void Visit(CorpseMapType& m);
-        void Visit(DynamicObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
     };
 
-    template<class Check>
-    struct WorldObjectLastSearcher
+    /// The LAST object the check accepts. Unlike FirstSearcher this cannot stop early:
+    /// a check is allowed to tighten its own requirements as it goes (the nearest-so-far
+    /// checks shrink their radius on every hit), so the last acceptance is the best one.
+    template<class Result, class Check>
+    struct LastSearcher
     {
-        WorldObject*& i_object;
-        Check& i_check;
+        Result*& i_object;
+        Check&   i_check;
 
-        WorldObjectLastSearcher(WorldObject* & result, Check& check) : i_object(result), i_check(check) {}
+        LastSearcher(Result*& result, Check& check) : i_object(result), i_check(check) {}
 
-        void Visit(PlayerMapType& m);
-        void Visit(CreatureMapType& m);
-        void Visit(CorpseMapType& m);
-        void Visit(GameObjectMapType& m);
-        void Visit(DynamicObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    template<class Check>
-    struct WorldObjectListSearcher
-    {
-        std::list<WorldObject*>& i_objects;
-        Check& i_check;
-
-        WorldObjectListSearcher(std::list<WorldObject*>& objects, Check& check) : i_objects(objects), i_check(check) {}
-
-        void Visit(PlayerMapType& m);
-        void Visit(CreatureMapType& m);
-        void Visit(CorpseMapType& m);
-        void Visit(GameObjectMapType& m);
-        void Visit(DynamicObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    template<class Do>
-    struct WorldObjectWorker
-    {
-        Do const& i_do;
-
-        explicit WorldObjectWorker(Do const& _do) : i_do(_do) {}
-
-        void Visit(GameObjectMapType& m)
+        template<class T>
+        void Visit(GridRefManager<T>& m)
         {
-            for (GameObjectMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+            if constexpr (visits_v<Result, T>)
             {
-                i_do(itr->getSource());
+                for (auto& ref : m)
+                {
+                    T* candidate = ref.getSource();
+                    if (i_check(candidate))
+                    {
+                        i_object = candidate;
+                    }
+                }
             }
         }
-
-        void Visit(PlayerMapType& m)
-        {
-            for (PlayerMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-            {
-                i_do(itr->getSource());
-            }
-        }
-        void Visit(CreatureMapType& m)
-        {
-            for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-            {
-                i_do(itr->getSource());
-            }
-        }
-
-        void Visit(CorpseMapType& m)
-        {
-            for (CorpseMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-            {
-                i_do(itr->getSource());
-            }
-        }
-
-        void Visit(DynamicObjectMapType& m)
-        {
-            for (DynamicObjectMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-            {
-                i_do(itr->getSource());
-            }
-        }
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
     };
 
-    // Gameobject searchers
-
-    template<class Check>
-    struct GameObjectSearcher
+    /// Every object the check accepts.
+    template<class Result, class Check>
+    struct ListSearcher
     {
-        GameObject*& i_object;
-        Check& i_check;
+        std::list<Result*>& i_objects;
+        Check&              i_check;
 
-        GameObjectSearcher(GameObject*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(GameObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Last accepted by Check GO if any (Check can change requirements at each call)
-    template<class Check>
-    struct GameObjectLastSearcher
-    {
-        GameObject*& i_object;
-        Check& i_check;
-
-        GameObjectLastSearcher(GameObject*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(GameObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    template<class Check>
-    struct GameObjectListSearcher
-    {
-        std::list<GameObject*>& i_objects;
-        Check& i_check;
-
-        GameObjectListSearcher(std::list<GameObject*>& objects, Check& check) : i_objects(objects), i_check(check) {}
-
-        void Visit(GameObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Unit searchers
-
-    // First accepted by Check Unit if any
-    template<class Check>
-    struct UnitSearcher
-    {
-        Unit*& i_object;
-        Check& i_check;
-
-        UnitSearcher(Unit*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(CreatureMapType& m);
-        void Visit(PlayerMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Last accepted by Check Unit if any (Check can change requirements at each call)
-    template<class Check>
-    struct UnitLastSearcher
-    {
-        Unit*& i_object;
-        Check& i_check;
-
-        UnitLastSearcher(Unit*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(CreatureMapType& m);
-        void Visit(PlayerMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // All accepted by Check units if any
-    template<class Check>
-    struct UnitListSearcher
-    {
-        std::list<Unit*>& i_objects;
-        Check& i_check;
-
-        UnitListSearcher(std::list<Unit*>& objects, Check& check) : i_objects(objects), i_check(check) {}
-
-        void Visit(PlayerMapType& m);
-        void Visit(CreatureMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Creature searchers
-
-    template<class Check>
-    struct CreatureSearcher
-    {
-        Creature*& i_object;
-        Check& i_check;
-
-        CreatureSearcher(Creature*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(CreatureMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Last accepted by Check Creature if any (Check can change requirements at each call)
-    template<class Check>
-    struct CreatureLastSearcher
-    {
-        Creature*& i_object;
-        Check& i_check;
-
-        CreatureLastSearcher(Creature*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(CreatureMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    template<class Check>
-    struct CreatureListSearcher
-    {
-        std::list<Creature*>& i_objects;
-        Check& i_check;
-
-        CreatureListSearcher(std::list<Creature*>& objects, Check& check) : i_objects(objects), i_check(check) {}
-
-        void Visit(CreatureMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    template<class Do>
-    struct CreatureWorker
-    {
-        Do& i_do;
-
-        CreatureWorker(WorldObject const* searcher, Do& _do) : i_do(_do) {}
-
-        void Visit(CreatureMapType& m)
-        {
-            for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-            {
-                i_do(itr->getSource());
-            }
-        }
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Player searchers
-
-    template<class Check>
-    struct PlayerSearcher
-    {
-        Player*& i_object;
-        Check& i_check;
-
-        PlayerSearcher(Player*& result, Check& check) : i_object(result), i_check(check) {}
-
-        void Visit(PlayerMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    template<class Check>
-    struct PlayerListSearcher
-    {
-        std::list<Player*>& i_objects;
-        Check& i_check;
-
-        PlayerListSearcher(std::list<Player*>& objects, Check& check)
+        ListSearcher(std::list<Result*>& objects, Check& check)
             : i_objects(objects), i_check(check) {}
 
-        void Visit(PlayerMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
+        template<class T>
+        void Visit(GridRefManager<T>& m)
+        {
+            if constexpr (visits_v<Result, T>)
+            {
+                for (auto& ref : m)
+                {
+                    T* candidate = ref.getSource();
+                    if (i_check(candidate))
+                    {
+                        i_objects.push_back(candidate);
+                    }
+                }
+            }
+        }
     };
 
-    template<class Do>
-    struct PlayerWorker
+    /// Runs `Do` over every object of the interesting types. No check: the caller means
+    /// all of them.
+    template<class Result, class Do>
+    struct TypeWorker
     {
         Do& i_do;
 
-        explicit PlayerWorker(Do& _do) : i_do(_do) {}
+        explicit TypeWorker(Do& _do) : i_do(_do) {}
 
-        void Visit(PlayerMapType& m)
+        template<class T>
+        void Visit(GridRefManager<T>& m)
         {
-            for (PlayerMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+            if constexpr (visits_v<Result, T>)
             {
-                i_do(itr->getSource());
+                for (auto& ref : m)
+                {
+                    i_do(ref.getSource());
+                }
             }
         }
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
     };
 
+    // The names the rest of the server uses. They are aliases now rather than distinct
+    // classes, so every existing call site keeps working unchanged — and adding a
+    // searcher for a new type is one more line here, not another four Visit bodies.
+
+    template<class Check> using WorldObjectSearcher     = FirstSearcher<WorldObject, Check>;
+    template<class Check> using WorldObjectLastSearcher = LastSearcher<WorldObject, Check>;
+    template<class Check> using WorldObjectListSearcher = ListSearcher<WorldObject, Check>;
+    template<class Do>    using WorldObjectWorker       = TypeWorker<WorldObject, Do>;
+
+    template<class Check> using GameObjectSearcher     = FirstSearcher<GameObject, Check>;
+    template<class Check> using GameObjectLastSearcher = LastSearcher<GameObject, Check>;
+    template<class Check> using GameObjectListSearcher = ListSearcher<GameObject, Check>;
+
+    template<class Check> using UnitSearcher     = FirstSearcher<Unit, Check>;
+    template<class Check> using UnitLastSearcher = LastSearcher<Unit, Check>;
+    template<class Check> using UnitListSearcher = ListSearcher<Unit, Check>;
+
+    template<class Check> using CreatureSearcher     = FirstSearcher<Creature, Check>;
+    template<class Check> using CreatureLastSearcher = LastSearcher<Creature, Check>;
+    template<class Check> using CreatureListSearcher = ListSearcher<Creature, Check>;
+    template<class Do>    using CreatureWorker       = TypeWorker<Creature, Do>;
+
+    template<class Check> using PlayerSearcher     = FirstSearcher<Player, Check>;
+    template<class Check> using PlayerListSearcher = ListSearcher<Player, Check>;
+
+    /// Cameras are not WorldObjects, so they cannot go through TypeWorker: a camera is
+    /// a view onto the world that may sit somewhere other than its owner (a player
+    /// possessing a creature still sees from the creature). Range is therefore measured
+    /// from the camera's BODY, while the Do runs on the camera's OWNER — which is the
+    /// whole point of the class and why it stays hand-written.
     template<class Do>
     struct CameraDistWorker
     {
         WorldObject const* i_searcher;
-        float i_dist;
-        Do& i_do;
+        float              i_dist;
+        Do&                i_do;
 
-        CameraDistWorker(WorldObject const* searcher, float _dist, Do& _do)
-            : i_searcher(searcher), i_dist(_dist), i_do(_do) {}
+        CameraDistWorker(WorldObject const* searcher, float dist, Do& _do)
+            : i_searcher(searcher), i_dist(dist), i_do(_do) {}
 
         void Visit(CameraMapType& m)
         {
-            for (CameraMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+            for (auto& ref : m)
             {
-                Camera* camera = itr->getSource();
+                Camera* camera = ref.getSource();
                 if (camera->GetBody()->IsWithinDist(i_searcher, i_dist))
                 {
                     i_do(camera->GetOwner());
                 }
             }
         }
+
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
     };
+
 
     // CHECKS && DO classes
 

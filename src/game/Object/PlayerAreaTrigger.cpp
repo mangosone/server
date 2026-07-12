@@ -124,11 +124,9 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
             break;
         }
         case AREA_LOCKSTATUS_INSUFFICIENT_EXPANSION:
+            // miscRequirement here is the required expansion index (see GetAreaTriggerLockStatus),
+            // not an item id; the client shows the proper message from this transfer-abort reason.
             GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_INSUF_EXPAN_LVL, miscRequirement);
-            if (sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
-            {
-                GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MINREQUIRED_AND_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
-            }
             break;
         case AREA_LOCKSTATUS_NOT_ALLOWED:
         case AREA_LOCKSTATUS_RAID_LOCKED:

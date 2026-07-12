@@ -26,7 +26,7 @@
 #define MANGOSSERVER_MOVESPLINEINIT_ARGS_H
 
 #include "MoveSplineFlag.h"
-#include <G3D/Vector3.h>
+#include "terrain/Geometry/Vector3.h"
 
 class Unit;
 
@@ -77,8 +77,10 @@ namespace Movement
              * @brief Constructor for MoveSplineInitArgs.
              * @param path_capacity The initial capacity of the path vector.
              */
-            MoveSplineInitArgs(size_t path_capacity = 16) : path_Idx_offset(0),
-                velocity(0.f), splineId(0), facing(), flags()
+            /// Members are initialized in DECLARATION order regardless of the order
+            /// they are listed here, so the list is kept in that order to match.
+            MoveSplineInitArgs(size_t path_capacity = 16) :
+                facing(), flags(), path_Idx_offset(0), velocity(0.f), splineId(0)
             {
                 path.reserve(path_capacity);
             }

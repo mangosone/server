@@ -41,9 +41,12 @@ if(BUILD_REALMD)
     add_subdirectory(realmd)
 endif()
 
-# If we want the tools for map/vmap/mmap extraction
+# Offline data tooling. The legacy map/vmap/mmap extractors have been removed (the
+# Extractor_projects submodule is gone): the baker replaces them, producing fused
+# terrain+collision .tile files, the DBC dump and the per-display game-object collision
+# models.
 if(BUILD_TOOLS)
-    add_subdirectory(tools)
+    add_subdirectory(baker)
 endif()
 
 if (BUILD_MANGOSD OR BUILD_REALMD)

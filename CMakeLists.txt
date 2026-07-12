@@ -44,20 +44,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# =============================================================================
-# Platform compatibility
-# =============================================================================
-# Modern FreeBSD provides a native `cpu_set_t` (exposed via <pthread_np.h>/
-# <sched.h> once _WITH_CPU_SET_T is defined), but the vendored ACE
-# (dep/acelite) FreeBSD config predates this and never sets
-# ACE_HAS_CPU_SET_T, so ACE falls back to synthesizing its own `cpu_set_t`
-# typedef, which then conflicts with the system one and fails to build.
-# Define both macros globally (covering dep/acelite's own compilation, not
-# just src/) so ACE uses the platform's real type instead.
-if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  add_compile_definitions(_WITH_CPU_SET_T ACE_HAS_CPU_SET_T)
-endif()
-
 # IDE folder organization
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -136,13 +122,6 @@ endif()
 # =============================================================================
 # Runtime library search path (RPATH)
 # =============================================================================
-# CMake's default CMAKE_INSTALL_RPATH is empty, so an installed executable
-# (e.g. mangosd in ${BIN_DIR}) loses the working build-tree RPATH it had
-# before install and can no longer find shared libraries installed alongside
-# it under ${CMAKE_INSTALL_PREFIX}/lib (e.g. liblua54.so from dep/lualib
-# when built with LUA_STATIC=OFF), even though it's right there on disk.
-# Point it at the sibling lib/ directory, relative to the binary itself, so
-# the install tree stays relocatable.
 if(APPLE)
     set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -165,8 +144,43 @@ if(NOT WITHOUT_GIT)
 endif()
 
 find_package(Threads REQUIRED)
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED)
 find_package(MySQL REQUIRED)
+
+# =============================================================================
+# OpenSSL policy
+#
+# Every OpenSSL decision lives here, in two interface targets:
+#
+#   mangos_openssl        - what to link against and where the headers live.
+#                           Linked PUBLIC by anything exposing OpenSSL types in
+#                           its own headers (`shared`), so consumers inherit it.
+#
+#   mangos_openssl_strict - the API level we hold ourselves to. Together these
+#                           two definitions delete the *declarations* of
+#                           everything OpenSSL deprecated up to 3.0 -- the
+#                           low-level MD5_*, SHA1_*, HMAC_CTX and SSLeay_*
+#                           families. Reaching for the old API is then a
+#                           compile error rather than a warning nobody reads.
+#
+#                           Link it PRIVATE, always. It must not leak into
+#                           targets that still use the old API: the realmd
+#                           submodule (which reaches us through `shared`) and
+#                           the vendored code under dep/.
+# =============================================================================
+add_library(mangos_openssl INTERFACE)
+target_link_libraries(mangos_openssl
+    INTERFACE
+        OpenSSL::SSL
+        OpenSSL::Crypto
+)
+
+add_library(mangos_openssl_strict INTERFACE)
+target_compile_definitions(mangos_openssl_strict
+    INTERFACE
+        OPENSSL_API_COMPAT=0x30000000L
+        OPENSSL_NO_DEPRECATED
+)
 
 find_package(ZLIB QUIET)
 find_package(BZip2 QUIET)

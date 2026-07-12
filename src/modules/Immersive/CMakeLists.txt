@@ -48,7 +48,6 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/game/References
   ${CMAKE_SOURCE_DIR}/src/game/Server
   ${CMAKE_SOURCE_DIR}/src/game/Tools
-  ${CMAKE_SOURCE_DIR}/src/game/vmap
   ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers
   ${CMAKE_SOURCE_DIR}/src/shared
   ${CMAKE_SOURCE_DIR}/src/shared/Config

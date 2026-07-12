@@ -27,13 +27,10 @@
 
 #include "Common.h"
 #include "Platform/Define.h"
-#include "GameSystem/GridLoader.h"
 #include "GridDefines.h"
 #include "Cell.h"
 
 class ObjectWorldLoader;
-
-using GridLoaderType = GridLoader<Player, WorldTypeMapContainer, GridTypeMapContainer>;
 
 class ObjectGridLoader
 {
@@ -72,12 +69,11 @@ class ObjectGridUnloader
         void MoveToRespawnCell(uint32 cellX, uint32 cellY);
         void UnloadN()
         {
-            GridLoaderType loader;
             for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
             {
                 for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
                 {
-                    loader.Unload(i_grid(x, y), *this);
+                    Unload(i_grid(x, y));
                 }
             }
         }
@@ -96,12 +92,11 @@ class ObjectGridStoper
         void MoveToRespawnN();
         void StopN()
         {
-            GridLoaderType loader;
             for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
             {
                 for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
                 {
-                    loader.Stop(i_grid(x, y), *this);
+                    Stop(i_grid(x, y));
                 }
             }
         }

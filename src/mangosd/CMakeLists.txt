@@ -75,8 +75,8 @@ target_link_libraries(mangosd
         game
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
-        OpenSSL::Crypto
-        OpenSSL::SSL
+        mangos_openssl
+        mangos_openssl_strict
 )
 
 install(

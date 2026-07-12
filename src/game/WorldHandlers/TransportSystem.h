@@ -66,17 +66,40 @@ class TransportBase
 
         WorldObject* GetOwner() const { return m_owner; }
 
+        // Board/unboard a passenger at a LOCAL position. A boarded unit's local position
+        // is its authoritative one; the world position it also carries is a derived cache
+        // (see UpdateGlobalPositionOf) and must never be treated as the truth.
+        //
+        // `gridResident` says WHICH KIND of passenger this is, and the difference is real:
+        //
+        //   false -- CREW. It belongs to the vessel. It is in no grid cell, the vessel
+        //            ticks it and the vessel broadcasts it, and its world position is a
+        //            pure cache that nothing but an off-ship distance check ever reads.
+        //
+        //   true  -- A MINION (a pet, a guardian). It belongs to the WORLD and merely
+        //            stands on our floor: it fights, it is targeted by grid searchers, it
+        //            is its master's. It stays a grid citizen, so its world position must
+        //            keep being maintained THROUGH THE GRID -- otherwise its cell
+        //            membership goes stale the moment the ship sails out of it.
+        void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo,
+                            bool gridResident = false);
+        void UnBoardPassenger(WorldObject* passenger);
+        void UnBoardAllPassengers();
+
+        PassengerMap const& GetPassengers() const { return m_passengers; }
+
         // Helper functions to calculate positions
         void RotateLocalPosition(float lx, float ly, float& rx, float& ry) const;
         void NormalizeRotatedPosition(float rx, float ry, float& lx, float& ly) const;
 
         void CalculateGlobalPositionOf(float lx, float ly, float lz, float lo, float& gx, float& gy, float& gz, float& go) const;
 
-    protected:
-        // Helper functions to add/ remove a passenger from the list
-        void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo);
-        void UnBoardPassenger(WorldObject* passenger);
+        // The inverse of CalculateGlobalPositionOf: bring a WORLD point into this
+        // vessel's local system. Needed wherever world data (a script's coordinates, a
+        // shore-bound target's position) has to be read by something aboard.
+        void CalculateLocalPositionOf(float gx, float gy, float gz, float go, float& lx, float& ly, float& lz, float& lo) const;
 
+    protected:
         WorldObject* m_owner;                               ///< The transporting unit
         PassengerMap m_passengers;                          ///< List of passengers and their transport-information
 
@@ -95,14 +118,20 @@ class TransportBase
 class TransportInfo
 {
     public:
-        explicit TransportInfo(WorldObject* owner, TransportBase* transport, float lx, float ly, float lz, float lo);
+        explicit TransportInfo(WorldObject* owner, TransportBase* transport, float lx, float ly, float lz, float lo,
+                               bool gridResident = false);
 
         // Set local positions
         void SetLocalPosition(float lx, float ly, float lz, float lo);
 
         // Accessors
         WorldObject* GetTransport() const { return m_transport->GetOwner(); }
+        TransportBase* GetTransportBase() const { return m_transport; }
         ObjectGuid GetTransportGuid() const { return m_transport->GetOwner()->GetObjectGuid(); }
+
+        /// True for a passenger that is still a citizen of the world grid (a pet), false
+        /// for one that belongs to the vessel alone (crew). See BoardPassenger.
+        bool IsGridResident() const { return m_gridResident; }
 
         // Get local position
         float GetLocalOrientation() const { return m_localPosition.o; }
@@ -121,6 +150,7 @@ class TransportInfo
         WorldObject* m_owner;                               ///< Passenger
         TransportBase* m_transport;                         ///< Transporter
         Position m_localPosition;
+        bool m_gridResident;                                ///< Pet (world's) vs crew (vessel's)
 };
 
 #endif

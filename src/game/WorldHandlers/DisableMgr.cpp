@@ -254,28 +254,28 @@ void LoadDisables()
                 switch (mapEntry->InstanceType)
                 {
                     case MAP_COMMON:
-                        if (flags & VMAP::VMAP_DISABLE_AREAFLAG)
+                        if (flags & VMAP_DISABLE_AREAFLAG)
                             sLog.outDebug("Areaflag disabled for world map %u.", entry);
-                        if (flags & VMAP::VMAP_DISABLE_LIQUIDSTATUS)
+                        if (flags & VMAP_DISABLE_LIQUIDSTATUS)
                             sLog.outDebug("Liquid status disabled for world map %u.", entry);
                         break;
                     case MAP_INSTANCE:
                     case MAP_RAID:
-                        if (flags & VMAP::VMAP_DISABLE_HEIGHT)
+                        if (flags & VMAP_DISABLE_HEIGHT)
                             sLog.outDebug("Height disabled for instance map %u.", entry);
-                        if (flags & VMAP::VMAP_DISABLE_LOS)
+                        if (flags & VMAP_DISABLE_LOS)
                             sLog.outDebug("LoS disabled for instance map %u.", entry);
                         break;
                     case MAP_BATTLEGROUND:
-                        if (flags & VMAP::VMAP_DISABLE_HEIGHT)
+                        if (flags & VMAP_DISABLE_HEIGHT)
                             sLog.outDebug("Height disabled for battleground map %u.", entry);
-                        if (flags & VMAP::VMAP_DISABLE_LOS)
+                        if (flags & VMAP_DISABLE_LOS)
                             sLog.outDebug("LoS disabled for battleground map %u.", entry);
                         break;
                     //case MAP_ARENA: [-ZERO]
-                    //    if (flags & VMAP::VMAP_DISABLE_HEIGHT)
+                    //    if (flags & VMAP_DISABLE_HEIGHT)
                     //        TC_LOG_INFO("misc", "Height disabled for arena map %u.", entry);
-                    //    if (flags & VMAP::VMAP_DISABLE_LOS)
+                    //    if (flags & VMAP_DISABLE_LOS)
                     //        TC_LOG_INFO("misc", "LoS disabled for arena map %u.", entry);
                     //    break;
                     default:
@@ -509,6 +509,61 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
 bool IsVMAPDisabledFor(uint32 entry, uint8 flags)
 {
     return IsDisabledFor(DISABLE_TYPE_VMAP, entry, NULL, flags);
+}
+
+namespace
+{
+    // Spell ids the `vmap.ignoreSpellIds` config exempts from the LoS check.
+    std::set<uint32> s_losIgnoredSpells;
+}
+
+/**
+ * @brief Parses the config list of spells exempted from the line-of-sight check.
+ *
+ * @param spellIdList Comma/space separated spell ids ("" disables the exemption).
+ */
+void LoadLoSIgnoredSpells(const char* spellIdList)
+{
+    s_losIgnoredSpells.clear();
+    if (!spellIdList)
+    {
+        return;
+    }
+
+    uint32 id = 0;
+    bool haveDigits = false;
+    for (const char* p = spellIdList; ; ++p)
+    {
+        if (*p >= '0' && *p <= '9')
+        {
+            id = id * 10 + uint32(*p - '0');
+            haveDigits = true;
+            continue;
+        }
+
+        if (haveDigits && id)
+        {
+            s_losIgnoredSpells.insert(id);
+        }
+        id = 0;
+        haveDigits = false;
+
+        if (!*p)
+        {
+            break;
+        }
+    }
+}
+
+/**
+ * @brief Whether a spell must still pass the line-of-sight check.
+ *
+ * @param spellId The spell identifier.
+ * @return false when the spell is exempted by config; otherwise true.
+ */
+bool IsSpellLoSChecked(uint32 spellId)
+{
+    return s_losIgnoredSpells.find(spellId) == s_losIgnoredSpells.end();
 }
 
 /**

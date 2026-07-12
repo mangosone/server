@@ -45,7 +45,7 @@ class QueryResult
          * @param fieldCount Number of fields per row
          */
         QueryResult(uint64 rowCount, uint32 fieldCount)
-            : mFieldCount(fieldCount), mRowCount(rowCount), mCurrentRow{} {}
+            : mCurrentRow{}, mFieldCount(fieldCount), mRowCount(rowCount) {}
 
         /**
          * @brief Virtual destructor

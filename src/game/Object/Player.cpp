@@ -1755,8 +1755,22 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         }
     }
 
-    // reset movement flags at teleport, because player will continue move with these flags after teleport
-    m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
+    // Reset movement flags at teleport, because the player would otherwise carry them into the
+    // new position and keep moving under them.
+    //
+    // With ONE exception, and it is the flag that says where the player is STANDING rather
+    // than how it is moving. If it is still aboard a vessel -- a map-seam teleport carries its
+    // passengers across, TELE_TO_NOT_LEAVE_TRANSPORT -- then MOVEFLAG_ONTRANSPORT and the deck
+    // offset beside it are the only honest coordinates in the whole exchange. The vessel's
+    // world position is an estimate the server invents (it does not run the client's
+    // Catmull-Rom curve; see Transports.h), so a world coordinate derived from it is a lie,
+    // and a player placed at one lands in the sea beside the ship.
+    //
+    // Clearing the flag here made every packet that followed describe someone who was not on a
+    // boat, leaving the client with a deck offset and nothing to measure it from. Keep it, hand
+    // the client the offset, and let it put the player on the deck itself -- it is the only
+    // party that actually knows where that deck is.
+    m_movementInfo.SetMovementFlags(m_transport ? MOVEFLAG_ONTRANSPORT : MOVEFLAG_NONE);
     DisableSpline();
 
     if ((GetMapId() == mapid) && (!m_transport))            // TODO the !m_transport might have unexpected effects when teleporting from transport to other place on same map

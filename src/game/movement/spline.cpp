@@ -24,7 +24,8 @@
 
 #include "spline.h"
 #include <sstream>
-#include <G3D/Matrix4.h>
+#include "terrain/Geometry/Matrix4.h"
+#include "terrain/Geometry/Vector4.h"
 
 namespace Movement
 {
@@ -67,7 +68,7 @@ namespace Movement
 
 ///////////
 
-    using G3D::Matrix4;
+    using Geometry::Matrix4;
     // Catmull-Rom spline coefficients
     static const Matrix4 s_catmullRomCoeffs(
         -0.5f, 1.5f, -1.5f, 0.5f,

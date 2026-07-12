@@ -790,6 +790,19 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
                     }
                 }
             }
+
+            // THE VESSEL'S TRUE POSE, FOR FREE.
+            //
+            // The server never runs the Catmull-Rom curve the client interpolates the
+            // ship along, so its own idea of where the ship is is a waypoint-snapped
+            // estimate. But this packet carries BOTH coordinate systems -- the player's
+            // world position AND their deck offset, orientations included -- which is
+            // over-determined for a yaw-and-translation frame. So we simply solve for the
+            // ship. Every player aboard, every packet, hands us the real answer.
+            if (plMover->m_transport)
+            {
+                plMover->m_transport->ObservePose(movementInfo);
+            }
         }
         else if (plMover->m_transport)               // if we were on a transport, leave
         {

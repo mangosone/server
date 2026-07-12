@@ -40,6 +40,7 @@
 #include "Log.h"
 #include "LootMgr.h"
 #include "MapManager.h"
+#include "TransportSystem.h"
 #include "CreatureAI.h"
 #include "CreatureAISelector.h"
 #include "InstanceData.h"
@@ -206,7 +207,7 @@ Creature::Creature(CreatureSubtype subtype) : Unit(),
     m_AlreadyCallAssistance(false), m_AlreadySearchedAssistance(false),
     m_AI_locked(false), m_IsDeadByDefault(false), m_temporaryFactionFlags(TEMPFACTION_NONE),
     m_meleeDamageSchoolMask(SPELL_SCHOOL_MASK_NORMAL), m_originalEntry(0),
-    m_creatureInfo(NULL), m_PlayerDamageReq(0)
+    m_PlayerDamageReq(0), m_creatureInfo(NULL)
 {
     /* Loot data */
     hasBeenLootedOnce = false;
@@ -294,6 +295,18 @@ void Creature::AddToWorld()
  */
 void Creature::RemoveFromWorld()
 {
+    // A creature standing on a deck is a PASSENGER of that vessel, and the vessel holds a
+    // raw pointer to it. A pet that dies or is dismissed is deleted right after this call,
+    // so leaving it boarded would leave the ship dereferencing freed memory on its very
+    // next tick. Step off the boat before leaving the world.
+    //
+    // (Crew are unboarded explicitly by the vessel before it removes them, so by the time
+    // they arrive here they are already ashore and this is a no-op.)
+    if (TransportInfo* transportInfo = GetTransportInfo())
+    {
+        transportInfo->GetTransportBase()->UnBoardPassenger(this);
+    }
+
 #ifdef ENABLE_ELUNA
     if (IsInWorld())
     {
@@ -381,9 +394,7 @@ void Creature::RemoveCorpse(bool inPlace)
         m_respawnTime = time(NULL) + respawnDelay;
     }
 
-    float x, y, z, o;
-    GetRespawnCoord(x, y, z, &o);
-    GetMap()->CreatureRelocation(this, x, y, z, o);
+    RelocateToRespawnPoint();
 
     // forced recreate creature object at clients
     UnitVisibility currentVis = GetVisibility();
@@ -2417,7 +2428,7 @@ void Creature::CallForHelp(float fRadius)
     }
 
     MaNGOS::CallOfHelpCreatureInRangeDo u_do(this, getVictim(), fRadius);
-    MaNGOS::CreatureWorker<MaNGOS::CallOfHelpCreatureInRangeDo> worker(this, u_do);
+    MaNGOS::CreatureWorker<MaNGOS::CallOfHelpCreatureInRangeDo> worker(u_do);
     Cell::VisitGridObjects(this, worker, fRadius);
 }
 
@@ -2960,6 +2971,32 @@ time_t Creature::GetRespawnTimeEx() const
  * @param ori Optional orientation output.
  * @param dist Optional respawn radius output.
  */
+/**
+ * @brief Put the creature back where it belongs.
+ *
+ * The respawn coord is not always a place on the map. A crew member's home is a DECK
+ * OFFSET -- it was set from `creature_transport` and it was never world data -- so sending
+ * it through CreatureRelocation would read the offset as a map coordinate and file the
+ * creature into the grid cell a few yards from the map origin. Exactly the trap that
+ * Unit::UpdateSplineMovement sets, and it is sprung by any crew member that simply dies.
+ *
+ * So the one operation "go home" is resolved once, here, in whichever world the creature
+ * actually lives in.
+ */
+void Creature::RelocateToRespawnPoint()
+{
+    float x, y, z, o;
+    GetRespawnCoord(x, y, z, &o);
+
+    if (TransportInfo* transportInfo = GetTransportInfo())
+    {
+        transportInfo->SetLocalPosition(x, y, z, o);
+        return;
+    }
+
+    GetMap()->CreatureRelocation(this, x, y, z, o);
+}
+
 void Creature::GetRespawnCoord(float& x, float& y, float& z, float* ori, float* dist) const
 {
     x = m_respawnPos.x;

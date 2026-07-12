@@ -20,7 +20,7 @@
 #ifndef TRINITY_DISABLEMGR_H
 #define TRINITY_DISABLEMGR_H
 
-#include "VMapManager2.h"
+#include "Platform/Define.h"
 
 class Unit;
 
@@ -59,6 +59,16 @@ enum SpawnDisableTypes
     SPAWN_DISABLE_CHECK_GUID    = 0x1
 };
 
+// Per-map collision disable flags carried by a DISABLE_TYPE_VMAP `disables` row.
+// Formerly VMAP::VMapManager2::DisableTypes; kept here now that vmap is gone.
+enum VMapDisableTypes
+{
+    VMAP_DISABLE_AREAFLAG     = 0x1,
+    VMAP_DISABLE_HEIGHT       = 0x2,
+    VMAP_DISABLE_LOS          = 0x4,
+    VMAP_DISABLE_LIQUIDSTATUS = 0x8
+};
+
 namespace DisableMgr
 {
     void LoadDisables();
@@ -66,6 +76,12 @@ namespace DisableMgr
     void CheckQuestDisables();
     bool IsVMAPDisabledFor(uint32 entry, uint8 flags);
     bool IsPathfindingEnabled(uint32 mapId);
+
+    // Spells exempted from the line-of-sight check by config (`vmap.ignoreSpellIds`,
+    // a comma-separated id list). The config-driven twin of a `disables` row with
+    // DISABLE_TYPE_SPELL + SPELL_DISABLE_LOS. Previously VMAP::VMapFactory's job.
+    void LoadLoSIgnoredSpells(const char* spellIdList);
+    bool IsSpellLoSChecked(uint32 spellId);
 }
 
 #endif //TRINITY_DISABLEMGR_H

@@ -99,7 +99,7 @@ bool SayAction::Execute(Event event)
 
     if (bot->GetMap())
     {
-        const TerrainInfo * terrain = bot->GetMap()->GetTerrain();
+        const FusedTerrain * terrain = bot->GetMap()->GetTerrain();
         if (terrain)
         {
             uint32 areaId = terrain->GetAreaId(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());

@@ -34,7 +34,7 @@
  */
 
 #include "Chat.h"
-#include "G3D/Quat.h"
+#include "terrain/Geometry/Quat.h"
 #include "MapManager.h"
 #include "GameEventMgr.h"
 #include "ObjectMgr.h"
@@ -140,7 +140,7 @@ bool ChatHandler::HandleGameObjectTurnCommand(char* args)
     // ok, let's rotate the GO around Z axis
     // we first get the original rotation quaternion
     // then we'll create a rotation quat describing the rotation around Z
-    G3D::Quat original_rot;
+    Geometry::Quat original_rot;
     obj->GetQuaternion(original_rot);
 
     // the rotation amount around Z-axis
@@ -148,7 +148,7 @@ bool ChatHandler::HandleGameObjectTurnCommand(char* args)
 
     // multiplying 2 quaternions gives the final rotation
     // quaternion multiplication is not commutative!
-    G3D::Quat final_rot = G3D::Quat(0.0f, 0.0f, sin(deltaO / 2), cos(deltaO / 2)) * original_rot;
+    Geometry::Quat final_rot = Geometry::Quat(0.0f, 0.0f, sin(deltaO / 2), cos(deltaO / 2)) * original_rot;
 
     // quaternion multiplication gives a non-unit quat
     final_rot.unitize();

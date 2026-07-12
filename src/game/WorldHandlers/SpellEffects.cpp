@@ -53,7 +53,7 @@
 #include "Util.h"
 #include "TemporarySummon.h"
 #include "ScriptMgr.h"
-#include "G3D/Vector3.h"
+#include "terrain/Geometry/Vector3.h"
 #include <random>
 
 #ifdef ENABLE_ELUNA

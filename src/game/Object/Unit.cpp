@@ -53,6 +53,7 @@
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
 #include "GameTime.h"
+#include "TransportSystem.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include "ElunaConfig.h"
@@ -6292,7 +6293,7 @@ void Unit::ScheduleAINotify(uint32 delay)
  */
 void Unit::OnRelocated()
 {
-    // switch to use G3D::Vector3 is good idea, maybe
+    // switch to use Geometry::Vector3 is good idea, maybe
     float dx = m_last_notified_position.x - GetPositionX();
     float dy = m_last_notified_position.y - GetPositionY();
     float dz = m_last_notified_position.z - GetPositionZ();
@@ -6340,7 +6341,26 @@ void Unit::UpdateSplineMovement(uint32 t_diff)
         m_movesplineTimer.Reset(POSITION_UPDATE_DELAY);
         Movement::Location loc = movespline->ComputePosition();
 
-        if (GetTypeId() == TYPEID_PLAYER)
+        // A boarded unit's spline lives in the VESSEL's frame, not the map's:
+        // MoveSplineInit::Launch seeded path[0] from the deck offset, and every point the
+        // MotionDriver fed it came out of the transport frame. So what ComputePosition
+        // hands back here is a DECK OFFSET -- three floats that carry no clue as to which
+        // world they belong in.
+        //
+        // Passing it to CreatureRelocation would read that offset as a map coordinate and
+        // teleport the crew to the point numerically equal to it: for any real ship, a
+        // spot a few yards from the map origin, kilometres away, in an unloaded grid. The
+        // packet would still be correct -- the client would happily keep drawing the
+        // deckhand walking the deck -- so the desync stays invisible until something
+        // server-side asks where he is.
+        //
+        // SetLocalPosition is the only sink that knows the difference: it keeps the offset
+        // as the truth and refreshes the world cache from the vessel's pose.
+        if (TransportInfo* transportInfo = GetTransportInfo())
+        {
+            transportInfo->SetLocalPosition(loc.x, loc.y, loc.z, loc.orientation);
+        }
+        else if (GetTypeId() == TYPEID_PLAYER)
         {
             ((Player*)this)->SetPosition(loc.x, loc.y, loc.z, loc.orientation);
         }

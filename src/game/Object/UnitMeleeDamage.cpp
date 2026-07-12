@@ -53,7 +53,6 @@
 #include "MapPersistentStateMgr.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "VMapFactory.h"
 #include "CreatureLinkingMgr.h"
 #include "GameTime.h"
 #ifdef ENABLE_ELUNA

@@ -25,12 +25,16 @@
 #ifndef MANGOS_NGRID_H
 #define MANGOS_NGRID_H
 
-#include "GameSystem/Grid.h"
+#include "Platform/Define.h"
+#include "Policies/ThreadingModel.h"
+#include "GameSystem/TypeContainer.h"
+#include "GameSystem/TypeContainerVisitor.h"
 #include "GameSystem/GridReference.h"
 #include "Timer.h"
 
 #include <bitset>
 #include <cassert>
+#include <set>
 
 /**
  * @brief NGrid is nothing more than a wrapper of the Grid with an NxN cells
@@ -157,10 +161,92 @@ class NGrid
     public:
 
         /**
-         * @brief
+         * @brief A single logical cell of the grid: the per-cell object store.
          *
+         * Holds the grid-resident objects (GameObjects/Creatures/DynObjects/bones),
+         * the world-resident objects (Players/pets/Cameras/resurrectable corpses),
+         * and the set of active objects that keep the cell loaded. This was formerly
+         * the standalone Grid<> template; it is folded in here because NGrid owns the
+         * only instances (i_cells) and no other type ever constructs one.
          */
-        using GridType = Grid<ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES>;
+        class GridCell
+        {
+            public:
+
+                /**
+                 * @brief An object of interest enters the cell.
+                 */
+                template<class SPECIFIC_OBJECT>
+                bool AddWorldObject(SPECIFIC_OBJECT* obj)
+                {
+                    return i_worldContainer.template insert<SPECIFIC_OBJECT>(obj);
+                }
+
+                /**
+                 * @brief An object of interest exits the cell.
+                 */
+                template<class SPECIFIC_OBJECT>
+                bool RemoveWorldObject(SPECIFIC_OBJECT* obj)
+                {
+                    return i_worldContainer.template remove<SPECIFIC_OBJECT>(obj);
+                }
+
+                /**
+                 * @brief Inserts a grid-container object into the cell.
+                 */
+                template<class SPECIFIC_OBJECT>
+                bool AddGridObject(SPECIFIC_OBJECT* obj)
+                {
+                    if (obj->IsActiveObject())
+                    {
+                        m_activeGridObjects.insert(obj);
+                    }
+
+                    return i_gridContainer.template insert<SPECIFIC_OBJECT>(obj);
+                }
+
+                /**
+                 * @brief Removes a grid-container object from the cell.
+                 */
+                template<class SPECIFIC_OBJECT>
+                bool RemoveGridObject(SPECIFIC_OBJECT* obj)
+                {
+                    if (obj->IsActiveObject())
+                    {
+                        m_activeGridObjects.erase(obj);
+                    }
+
+                    return i_gridContainer.template remove<SPECIFIC_OBJECT>(obj);
+                }
+
+                template<class T>
+                void Visit(TypeContainerVisitor<T, GRID_OBJECT_TYPES>& visitor)
+                {
+                    visitor.Visit(i_gridContainer);
+                }
+
+                template<class T>
+                void Visit(TypeContainerVisitor<T, WORLD_OBJECT_TYPES>& visitor)
+                {
+                    visitor.Visit(i_worldContainer);
+                }
+
+                size_t ActiveObjectsInGrid() const
+                {
+                    return m_activeGridObjects.size() + i_worldContainer.template count<ACTIVE_OBJECT>(nullptr);
+                }
+
+            private:
+
+                GRID_OBJECT_TYPES  i_gridContainer;
+                WORLD_OBJECT_TYPES i_worldContainer;
+                std::set<void*>    m_activeGridObjects;
+        };
+
+        /**
+         * @brief Backwards-compatible alias for the per-cell store type.
+         */
+        using GridType = GridCell;
 
         /**
          * @brief

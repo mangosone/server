@@ -880,6 +880,11 @@ class Creature : public Unit
         void SetRespawnCoord(CreatureCreatePos const& pos) { m_respawnPos = pos.m_pos; }
         void SetRespawnCoord(float x, float y, float z, float ori) { m_respawnPos.x = x; m_respawnPos.y = y; m_respawnPos.z = z; m_respawnPos.o = ori; }
         void GetRespawnCoord(float& x, float& y, float& z, float* ori = NULL, float* dist = NULL) const;
+
+        /// Go home -- in whichever world this creature lives in. For a crew member the
+        /// respawn coord is a deck offset, not a map coordinate, and must not be handed to
+        /// the grid.
+        void RelocateToRespawnPoint();
         void ResetRespawnCoord();
 
         void SetDeadByDefault(bool death_state) { m_IsDeadByDefault = death_state; }

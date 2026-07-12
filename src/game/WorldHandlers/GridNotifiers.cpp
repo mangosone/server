@@ -47,6 +47,7 @@
 #include "WorldSession.h"
 #include "UpdateData.h"
 #include "Map.h"
+#include "MapManager.h"
 #include "Transports.h"
 #include "ObjectAccessor.h"
 #include "BattleGround/BattleGroundMgr.h"
@@ -77,7 +78,7 @@ void VisibleNotifier::Notify()
     // but exist one case when this possible and object not out of range: transports
     if (Transport* transport = player.GetTransport())
     {
-        for (Transport::PlayerSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
+        for (Transport::PlayerSet::const_iterator itr = transport->GetPlayerPassengers().begin(); itr != transport->GetPlayerPassengers().end(); ++itr)
         {
             if (i_clientGUIDs.find((*itr)->GetObjectGuid()) != i_clientGUIDs.end())
             {
@@ -86,6 +87,22 @@ void VisibleNotifier::Notify()
                 player.UpdateVisibilityOf(&player, *itr, i_data, i_visibleNow);
                 i_clientGUIDs.erase((*itr)->GetObjectGuid());
             }
+        }
+    }
+
+    // A vessel and its crew are in NO grid cell -- the ship is their cell (see Transports.h).
+    // So the visit above cannot have re-found them, they are all still sitting in the leftovers
+    // below, and the sweep would destroy every ship this client can see -- for good, since the
+    // vessel's observer set still says the client knows about it and so never re-sends it.
+    // Each vessel is asked to vouch for its own; what it claims is not out of range.
+    MapManager::TransportMap const& tmap = sMapMgr.m_TransportsByMap;
+    MapManager::TransportMap::const_iterator vessels = tmap.find(player.GetMapId());
+
+    if (vessels != tmap.end())
+    {
+        for (Transport* vessel : vessels->second)
+        {
+            vessel->RetainAtClient(&player, i_clientGUIDs);
         }
     }
 

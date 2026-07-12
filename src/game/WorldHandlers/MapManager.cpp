@@ -71,17 +71,37 @@ MapManager::MapManager()
 
 MapManager::~MapManager()
 {
+    // Vessels BEFORE maps -- see the comment in UnloadAll(). Ordinarily UnloadAll has already
+    // done this and the set is empty; this is the path where it never ran.
+    DestroyTransports();
+
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
     {
         delete iter->second;
     }
 
+    DeleteStateMachine();
+}
+
+/**
+ * @brief Destroy every vessel, and with it every crew member aboard.
+ *
+ * This MUST run while the maps are still alive. A transport owns its crew outright (nothing
+ * else does -- they are in no grid cell, so no Map::UnloadAll will ever reach them), and
+ * ~Transport tears each one down through Creature::RemoveFromWorld, which reaches into the
+ * map's object store to unregister it. Delete the maps first and that store is freed memory.
+ *
+ * Idempotent: the set is emptied, so the destructor calling this again is a no-op.
+ */
+void MapManager::DestroyTransports()
+{
     for (TransportSet::iterator i = m_Transports.begin(); i != m_Transports.end(); ++i)
     {
         delete *i;
     }
 
-    DeleteStateMachine();
+    m_Transports.clear();
+    m_TransportsByMap.clear();
 }
 
 void
@@ -350,7 +370,8 @@ bool MapManager::ExistMapAndVMap(uint32 mapid, float x, float y)
     int gx = 63 - p.x_coord;
     int gy = 63 - p.y_coord;
 
-    return GridMap::ExistMap(mapid, gx, gy) && GridMap::ExistVMap(mapid, gx, gy);
+    // Terrain + collision are one fused tile now, so a single existence check.
+    return FusedTerrain::HasTile(mapid, gx, gy);
 }
 
 /**
@@ -371,6 +392,12 @@ bool MapManager::IsValidMAP(uint32 mapid)
  */
 void MapManager::UnloadAll()
 {
+    // The vessels first, while their maps are still standing: a crew member is registered in
+    // its map's object store and unregisters itself from there as it is destroyed. Nothing
+    // else will ever free them -- a transport is in no grid cell, so Map::UnloadAll cannot
+    // see it, and its crew are in no cell either.
+    DestroyTransports();
+
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
     {
         iter->second->UnloadAll(true);

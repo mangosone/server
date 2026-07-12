@@ -78,8 +78,6 @@ OpenSSLCipherContext& OpenSSLCipherContext::operator=(OpenSSLCipherContext&& oth
     return *this;
 }
 
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-
 /**
  * Loads the named OpenSSL provider into the specified library context.
  */
@@ -178,5 +176,3 @@ OpenSSLProviderManager::~OpenSSLProviderManager()
         sLog.outString("OpenSSL 3.x providers unloaded");
     }
 }
-
-#endif // OPENSSL_VERSION_MAJOR >= 3

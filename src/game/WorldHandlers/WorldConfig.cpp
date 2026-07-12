@@ -74,7 +74,6 @@
 #include "BattleGround/BattleGroundMgr.h"
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "TemporarySummon.h"
-#include "VMapFactory.h"
 #include "MoveMap.h"
 #include "GameEventMgr.h"
 #include "PoolManager.h"
@@ -256,12 +255,30 @@ void World::LoadConfigSettings(bool reload)
     std::string forceLoadGridOnMaps = sConfig.GetStringDefault("LoadAllGridsOnMaps", "");
     if (!forceLoadGridOnMaps.empty())
     {
-        unsigned int pos = 0;
-        unsigned int id;
-        VMAP::VMapFactory::chompAndTrim(forceLoadGridOnMaps);
-        while (VMAP::VMapFactory::getNextId(forceLoadGridOnMaps, pos, id))
+        // Comma/space separated map ids. Map 0 is valid (Eastern Kingdoms), so a run of
+        // digits counts even when it parses to zero.
+        uint32 id = 0;
+        bool haveDigits = false;
+        for (const char* p = forceLoadGridOnMaps.c_str(); ; ++p)
         {
-            m_configForceLoadMapIds.insert(id);
+            if (*p >= '0' && *p <= '9')
+            {
+                id = id * 10 + uint32(*p - '0');
+                haveDigits = true;
+                continue;
+            }
+
+            if (haveDigits)
+            {
+                m_configForceLoadMapIds.insert(id);
+            }
+            id = 0;
+            haveDigits = false;
+
+            if (!*p)
+            {
+                break;
+            }
         }
     }
 
@@ -692,22 +709,16 @@ void World::LoadConfigSettings(bool reload)
         sLog.outString("Using DataDir %s", m_dataPath.c_str());
     }
 
+    // Static collision is always on: terrain, liquid, area and the WMO/M2 geometry all
+    // come from one fused .tile, so `vmap.enableLOS` / `vmap.enableHeight` no longer
+    // exist -- there is nothing to switch off. Only the indoor check and the LoS spell
+    // exemptions remain meaningful.
     setConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK, "vmap.enableIndoorCheck", true);
-    bool enableLOS = sConfig.GetBoolDefault("vmap.enableLOS", false);
-    bool enableHeight = sConfig.GetBoolDefault("vmap.enableHeight", false);
     std::string ignoreSpellIds = sConfig.GetStringDefault("vmap.ignoreSpellIds", "");
+    DisableMgr::LoadLoSIgnoredSpells(ignoreSpellIds.c_str());
 
-    if (!enableHeight)
-    {
-        sLog.outError("VMAP height use disabled! Creatures movements and other things will be in broken state.");
-    }
-
-    VMAP::VMapFactory::createOrGetVMapManager()->setEnableLineOfSightCalc(enableLOS);
-    VMAP::VMapFactory::createOrGetVMapManager()->setEnableHeightCalc(enableHeight);
-    VMAP::VMapFactory::preventSpellsFromBeingTestedForLoS(ignoreSpellIds.c_str());
-    sLog.outString("WORLD: VMap support included. LineOfSight:%i, getHeight:%i, indoorCheck:%i",
-        enableLOS, enableHeight, getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
-    sLog.outString("WORLD: VMap data directory is: %svmaps", m_dataPath.c_str());
+    sLog.outString("WORLD: Collision served from fused tiles. indoorCheck:%i",
+        getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
 
     setConfig(CONFIG_BOOL_MMAP_ENABLED, "mmap.enabled", true);
     std::string ignoreMapIds = sConfig.GetStringDefault("mmap.ignoreMapIds", "");

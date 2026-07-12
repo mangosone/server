@@ -655,7 +655,7 @@ class CreatureEventAI : public CreatureAI
         void GetAIInformation(ChatHandler& reader) override;
 
         void JustRespawned() override;
-        void Reset();
+        void Reset() override;
         void JustReachedHome() override;
         void EnterCombat(Unit* enemy) override;
         void EnterEvadeMode() override;
