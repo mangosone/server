@@ -2,6 +2,9 @@
 
 #include "terrain/AdtParser.hpp" // for AdtPlacement
 
+#include <cstdint>
+#include <cstring>
+
 namespace world::terrain::internal
 {
 

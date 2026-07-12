@@ -307,6 +307,7 @@ void MapManager::LoadTransportCrew()
 
 Transport::Transport()
     : GameObject(), TransportBase(this),
+      m_curr(), m_next(),
       m_pathTime(0), m_timer(0), m_hullRadius(0.0f), m_poseAge(POSE_TRUST_MS),
       m_visibilityTimer(0), m_nextNodeTime(0), m_period(0)
 {

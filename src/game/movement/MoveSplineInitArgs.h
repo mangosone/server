@@ -28,6 +28,8 @@
 #include "MoveSplineFlag.h"
 #include "terrain/Geometry/Vector3.h"
 
+#include <vector>
+
 class Unit;
 
 namespace Movement

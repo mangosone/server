@@ -25,6 +25,8 @@
 #include "Common/Common.h"
 #include "Log/Log.h"
 
+#include <cstdint>
+
 /**
  * @brief
  *

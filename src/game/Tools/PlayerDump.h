@@ -26,6 +26,7 @@
 #define MANGOS_H_PLAYER_DUMP
 
 #include <set>
+#include <string>
 
 /**
  * @brief Dump table type enumeration

@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <tlhelp32.h>
 #include <stdio.h>
+#include <string.h>
 #include <tchar.h>
 #include <algorithm>
 #define _NO_CVCONST_H

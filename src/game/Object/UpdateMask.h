@@ -27,6 +27,8 @@
 
 #include "Errors.h"
 
+#include <cstring>
+
 class UpdateMask
 {
     public:
