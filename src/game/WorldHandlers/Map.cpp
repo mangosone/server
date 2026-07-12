@@ -57,13 +57,15 @@
 #include "MapRefManager.h"
 #include "DBCEnums.h"
 #include "MapPersistentStateMgr.h"
-#include "VMapFactory.h"
 #include "MoveMap.h"
 #include "Chat.h"
 #include "Weather.h"
 #include "Transports.h"
 #include "ObjectGridLoader.h"
 #include "LivingWorldCellEnvelope.h"
+
+#include <algorithm>
+#include <cmath>
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -153,7 +155,7 @@ void Map::LoadMapAndVMap(int gx, int gy)
         return;
     }
 
-    if (m_TerrainData->Load(gx, gy))
+    if (m_TerrainData->LoadGrid(gx, gy))
     {
         m_bLoadedGrids[gx][gy] = true;
     }
@@ -920,7 +922,7 @@ bool Map::loaded(const GridPair& p) const
  */
 void Map::Update(const uint32& t_diff)
 {
-    m_dyn_tree.update(t_diff);
+    m_dynCollision.Update(t_diff);
 
     /// update worldsessions for existing players
     for (m_mapRefIter = m_mapRefManager.begin(); m_mapRefIter != m_mapRefManager.end(); ++m_mapRefIter)
@@ -1489,6 +1491,18 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
  */
 bool Map::CreatureRespawnRelocation(Creature* c)
 {
+    // A crew member has no grid cell to be moved between, and its respawn coord is a deck
+    // offset rather than a map coordinate -- ComputeCellPair on it would name the cell next
+    // to the map origin. Its vessel puts it back on its mark.
+    if (c->GetTransportInfo())
+    {
+        c->CombatStop();
+        c->GetMotionMaster()->Clear();
+        c->RelocateToRespawnPoint();
+        c->GetMotionMaster()->Initialize();
+        return true;
+    }
+
     float resp_x, resp_y, resp_z, resp_o;
     c->GetRespawnCoord(resp_x, resp_y, resp_z, &resp_o);
 
@@ -1739,7 +1753,7 @@ bool Map::UnloadGrid(const uint32& x, const uint32& y, bool pForce)
     if (m_bLoadedGrids[gx][gy])
     {
         m_bLoadedGrids[gx][gy] = false;
-        m_TerrainData->Unload(gx, gy);
+        m_TerrainData->UnloadGrid(gx, gy);
     }
 
     DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Unloading grid[%u,%u] for map %u finished", x, y, i_id);
@@ -1852,7 +1866,7 @@ void Map::SendInitSelf(Player* player)
     // build other passengers at transport also (they always visible and marked as visible and will not send at visibility update at add to map
     if (Transport* transport = player->GetTransport())
     {
-        for (Transport::PlayerSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
+        for (Transport::PlayerSet::const_iterator itr = transport->GetPlayerPassengers().begin(); itr != transport->GetPlayerPassengers().end(); ++itr)
         {
             if (player != (*itr) && player->HaveAtClient(*itr))
             {
@@ -1872,9 +1886,21 @@ void Map::SendInitSelf(Player* player)
  *
  * @param player The player receiving transport initialization data.
  */
+/**
+ * @brief Advertise the map's transports -- and their crews -- to a player who just arrived.
+ *
+ * This used to hand every transport on the map to every player who entered it, once, and
+ * then never reconsider: a transport is in no grid cell, so the grid's visibility pass has
+ * never had anything to say about it, and a ship on the far side of a continent stayed at
+ * your client for as long as you were on the map.
+ *
+ * Now it advertises only the ones actually near you, and each vessel keeps its own observer
+ * set from then on (Transport::UpdateVisibility) -- adding you when you sail into range,
+ * dropping you when you leave. The crew ride in the vessel's packet, because the vessel is
+ * the only thing that knows they exist.
+ */
 void Map::SendInitTransports(Player* player)
 {
-    // Hack to send out transports
     MapManager::TransportMap& tmap = sMapMgr.m_TransportsByMap;
 
     // no transports at map
@@ -1891,12 +1917,33 @@ void Map::SendInitTransports(Player* player)
 
     for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
     {
-        // send data for current transport in other place
-        if ((*i) != player->GetTransport() && (*i)->GetMapId() == i_id)
+        Transport* transport = *i;
+
+        if (transport->GetMapId() != i_id)
         {
-            hasTransport = true;
-            (*i)->BuildCreateUpdateBlockForPlayer(&transData, player);
+            continue;
         }
+
+        // A player logging in ON a transport is sent the vessel itself by the login path,
+        // so we do not re-send it -- but its CREW have no grid cell and no other announcer,
+        // so they would otherwise be invisible to the one player standing among them.
+        const bool aboard = (transport == player->GetTransport());
+
+        if (!aboard && !transport->IsWithinDist(player, transport->GetBroadcastRadius(), false))
+        {
+            continue;
+        }
+
+        hasTransport = true;
+
+        if (!aboard)
+        {
+            transport->BuildCreateUpdateBlockForPlayer(&transData, player);
+            player->m_clientGUIDs.insert(transport->GetObjectGuid());
+        }
+
+        transport->AppendCrewCreateBlocks(transData, player);
+        transport->AddObserver(player);
     }
 
     WorldPacket packet;
@@ -1911,7 +1958,6 @@ void Map::SendInitTransports(Player* player)
  */
 void Map::SendRemoveTransports(Player* player)
 {
-    // Hack to send out transports
     MapManager::TransportMap& tmap = sMapMgr.m_TransportsByMap;
 
     // no transports at map
@@ -1927,10 +1973,23 @@ void Map::SendRemoveTransports(Player* player)
     // except used transport
     for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
     {
-        if ((*i) != player->GetTransport() && (*i)->GetMapId() != i_id)
+        Transport* transport = *i;
+
+        if (transport == player->GetTransport() || transport->GetMapId() == i_id)
         {
-            (*i)->BuildOutOfRangeUpdateBlock(&transData);
+            continue;
         }
+
+        transport->BuildOutOfRangeUpdateBlock(&transData);
+
+        // The crew leave with their ship. They are in no grid, so the player's ordinary
+        // visibility pass will never notice they are gone -- this is the only chance.
+        for (Creature* crew : transport->GetCrew())
+        {
+            crew->BuildOutOfRangeUpdateBlock(&transData);
+        }
+
+        transport->RemoveObserver(player);
     }
 
     WorldPacket packet;
@@ -3248,8 +3307,53 @@ void Map::PlayDirectSoundToMap(uint32 soundId, uint32 zoneId /*=0*/) const
  */
 bool Map::IsInLineOfSight(float srcX, float srcY, float srcZ, float destX, float destY, float destZ) const
 {
-    return VMAP::VMapFactory::createOrGetVMapManager()->isInLineOfSight(GetId(), srcX, srcY, srcZ, destX, destY, destZ)
-           && m_dyn_tree.isInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ);
+    // Static world (fused terrain + WMO/M2 BVH) first, then the game-object bodies.
+    // No pull-back is involved here, so short-circuiting on the static answer is exact.
+    return m_TerrainData->IsInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ)
+           && m_dynCollision.IsInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ);
+}
+
+namespace
+{
+    /**
+     * @brief Resolve a hit fraction along src->dest into a world point.
+     *
+     * The point is nudged by modifyDist along the segment direction: negative pulls it
+     * back toward src (the usual "stop short of the wall" case), positive pushes it past
+     * the hit. A pull-back longer than the hit is far collapses to src rather than
+     * overshooting behind it. This is the contract the old vmap getObjectHitPos had.
+     */
+    void ResolveHitPoint(float srcX, float srcY, float srcZ,
+                         float destX, float destY, float destZ,
+                         float frac, float modifyDist,
+                         float& rx, float& ry, float& rz)
+    {
+        const float sx = destX - srcX;
+        const float sy = destY - srcY;
+        const float sz = destZ - srcZ;
+        const float len = std::sqrt(sx * sx + sy * sy + sz * sz);
+
+        rx = srcX + sx * frac;
+        ry = srcY + sy * frac;
+        rz = srcZ + sz * frac;
+
+        if (len <= 1e-4f)
+        {
+            return;
+        }
+
+        if (modifyDist < 0.0f && frac * len <= -modifyDist)
+        {
+            rx = srcX;
+            ry = srcY;
+            rz = srcZ;
+            return;
+        }
+
+        rx += (sx / len) * modifyDist;
+        ry += (sy / len) * modifyDist;
+        rz += (sz / len) * modifyDist;
+    }
 }
 
 /**
@@ -3258,91 +3362,43 @@ bool Map::IsInLineOfSight(float srcX, float srcY, float srcZ, float destX, float
  */
 bool Map::GetHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, float modifyDist) const
 {
-    // at first check all static objects
-    float tempX, tempY, tempZ = 0.0f;
-    bool result0 = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(GetId(), srcX, srcY, srcZ, destX, destY, destZ, tempX, tempY, tempZ, modifyDist);
-    if (result0)
+    // ONE segment, put to both worlds, nearest fraction wins, pulled back exactly once.
+    //
+    // This used to run the static pass, overwrite dest with its (already pulled-back)
+    // hit, and only then sweep the game objects against that shortened segment. So a
+    // body standing in the last modifyDist of the ray -- a door in its own doorway --
+    // was never tested, and the caller got the wall behind it instead.
+    const float staticFrac = m_TerrainData->NearestHitFraction(srcX, srcY, srcZ, destX, destY, destZ);
+    const float dynFrac = m_dynCollision.NearestHitFraction(srcX, srcY, srcZ, destX, destY, destZ);
+    const float frac = std::min(staticFrac, dynFrac);
+
+    if (frac > 1.0f)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Map::GetHitPosition vmaps corrects gained with static objects! new dest coords are X:%f Y:%f Z:%f", destX, destY, destZ);
-        destX = tempX;
-        destY = tempY;
-        destZ = tempZ;
+        return false;   // nothing blocks; dest stays where the caller put it
     }
-    // at second all dynamic objects, if static check has an hit, then we can calculate only to this closer point
-    bool result1 = m_dyn_tree.getObjectHitPos(srcX, srcY, srcZ, destX, destY, destZ, tempX, tempY, tempZ, modifyDist);
-    if (result1)
-    {
-        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Map::GetHitPosition vmaps corrects gained with dynamic objects! new dest coords are X:%f Y:%f Z:%f", destX, destY, destZ);
-        destX = tempX;
-        destY = tempY;
-        destZ = tempZ;
-    }
-    return result0 || result1;
+
+    ResolveHitPoint(srcX, srcY, srcZ, destX, destY, destZ, frac, modifyDist,
+                    destX, destY, destZ);
+
+    DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING,
+                     "Map::GetHitPosition: blocked by %s geometry, dest pulled to X:%f Y:%f Z:%f",
+                     dynFrac < staticFrac ? "dynamic" : "static", destX, destY, destZ);
+    return true;
 }
 
 // Find an height within a reasonable range of provided Z. This method may fail so we have to handle that case.
 bool Map::GetHeightInRange(float x, float y, float& z, float maxSearchDist /*= 4.0f*/) const
 {
-    float height, vmapHeight, mapHeight;
-    vmapHeight = VMAP_INVALID_HEIGHT_VALUE;
-    mapHeight = INVALID_HEIGHT_VALUE;
-
-    VMAP::IVMapManager* vmgr = VMAP::VMapFactory::createOrGetVMapManager();
-    if (!vmgr->isLineOfSightCalcEnabled())
+    // Fused static floor (terrain + WMO/M2) nearest at/under z. Reject if the only
+    // surface we find sits outside the requested band around z.
+    float staticHeight = m_TerrainData->GetHeightStatic(x, y, z, true, maxSearchDist);
+    if (staticHeight <= INVALID_HEIGHT || fabs(z - staticHeight) >= maxSearchDist)
     {
-        vmgr = NULL;
+        return false;
     }
 
-    if (vmgr)
-    {
-        // pure vmap search
-        vmapHeight = vmgr->getHeight(i_id, x, y, z + 2.0f, maxSearchDist + 2.0f);
-    }
-
-    // find raw height from .map file on X,Y coordinates
-    if (GridMap* gmap = const_cast<TerrainInfo*>(m_TerrainData)->GetGrid(x, y)) // TODO:: find a way to remove that const_cast
-    {
-        mapHeight = gmap->getHeight(x, y);
-    }
-
-    float diffMaps = fabs(fabs(z) - fabs(mapHeight));
-    float diffVmaps = fabs(fabs(z) - fabs(vmapHeight));
-    if (diffVmaps < maxSearchDist)
-    {
-        if (diffMaps < maxSearchDist)
-        {
-            // well we simply have to take the highest as normally there we cannot be on top of cavern is maxSearchDist is not too big
-            if (vmapHeight > mapHeight)
-            {
-                height = vmapHeight;
-            }
-            else
-            {
-                height = mapHeight;
-            }
-
-            //sLog.outString("vmap %5.4f, map %5.4f, height %5.4f", vmapHeight, mapHeight, height);
-        }
-        else
-        {
-            //sLog.outString("vmap %5.4f", vmapHeight);
-            height = vmapHeight;
-        }
-    }
-    else
-    {
-        if (diffMaps < maxSearchDist)
-        {
-            //sLog.outString("map %5.4f", mapHeight);
-            height = mapHeight;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    z = std::max<float>(height, m_dyn_tree.getHeight(x, y, height + 1.0f, maxSearchDist));
+    // Layer the dynamic GO tree on top, same as the old path.
+    z = std::max<float>(staticHeight, m_dynCollision.GetHeight(x, y, staticHeight + 1.0f, maxSearchDist));
     return true;
 }
 
@@ -3360,38 +3416,48 @@ float Map::GetHeight(float x, float y, float z) const
 
     // Get Dynamic Height around static Height (if valid)
     float dynSearchHeight = 2.0f + (z < staticHeight ? staticHeight : z);
-    return std::max<float>(staticHeight, m_dyn_tree.getHeight(x, y, dynSearchHeight, dynSearchHeight - staticHeight));
+    return std::max<float>(staticHeight, m_dynCollision.GetHeight(x, y, dynSearchHeight, dynSearchHeight - staticHeight));
 }
 
 /**
- * @brief Inserts a game object collision model into the dynamic tree.
+ * @brief Registers a game object collision body on this map.
  *
- * @param mdl The model to insert.
+ * @param mdl The body to insert.
  */
-void Map::InsertGameObjectModel(const GameObjectModel& mdl)
+void Map::InsertGameObjectModel(GameObjectModel& mdl)
 {
-    m_dyn_tree.insert(mdl);
+    m_dynCollision.Insert(mdl);
 }
 
 /**
- * @brief Removes a game object collision model from the dynamic tree.
+ * @brief Unregisters a game object collision body from this map.
  *
- * @param mdl The model to remove.
+ * @param mdl The body to remove.
  */
-void Map::RemoveGameObjectModel(const GameObjectModel& mdl)
+void Map::RemoveGameObjectModel(GameObjectModel& mdl)
 {
-    m_dyn_tree.remove(mdl);
+    m_dynCollision.Remove(mdl);
 }
 
 /**
- * @brief Checks whether a game object collision model is present in the dynamic tree.
+ * @brief Checks whether a game object collision body is registered on this map.
  *
- * @param mdl The model to test.
- * @return true if the model is currently tracked; otherwise false.
+ * @param mdl The body to test.
+ * @return true if the body is currently tracked; otherwise false.
  */
 bool Map::ContainsGameObjectModel(const GameObjectModel& mdl) const
 {
-    return m_dyn_tree.contains(mdl);
+    return m_dynCollision.Contains(mdl);
+}
+
+/**
+ * @brief Re-files a game object collision body after its pose changed.
+ *
+ * @param mdl The body whose owner moved or rotated.
+ */
+void Map::UpdateGameObjectModel(GameObjectModel& mdl)
+{
+    m_dynCollision.Refresh(mdl);
 }
 
 // This will generate a random point to all directions in water for the provided point in radius range.

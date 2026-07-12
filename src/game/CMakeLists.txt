@@ -65,9 +65,34 @@ source_group("Time" FILES ${SRC_GRP_TIME})
 file(GLOB SRC_GRP_TOOL Tools/*.cpp Tools/*.h)
 source_group("Tool" FILES ${SRC_GRP_TOOL})
 
-#VMap group
-file(GLOB SRC_GRP_VMAPS vmap/*.cpp vmap/*.h)
-source_group("vmaps" FILES ${SRC_GRP_VMAPS})
+# Terrain collision engine (compute core only).
+set(SRC_GRP_TERRAIN
+    terrain/CollisionModel.cpp
+    terrain/WmoModel.cpp
+    terrain/Accelerators.cpp
+    terrain/TileSerializer.cpp
+    terrain/Geometry.hpp
+    terrain/ICollisionModel.hpp
+    terrain/CollisionModel.hpp
+    terrain/WmoModel.hpp
+    terrain/Accelerators.hpp
+    terrain/Terrain.hpp
+    terrain/TileSerializer.hpp
+)
+source_group("terrain" FILES ${SRC_GRP_TERRAIN})
+
+# Header-only geometry types (Vector2/3/4, Matrix4, Quat + scalar math). These replace
+# the former g3dlite dependency for the game core; see src/game/terrain/Geometry.
+set(SRC_GRP_GEOMETRY
+    terrain/Geometry/GeometryMath.h
+    terrain/Geometry/Vector2.h
+    terrain/Geometry/Vector3.h
+    terrain/Geometry/Vector4.h
+    terrain/Geometry/Matrix4.h
+    terrain/Geometry/Quat.h
+    terrain/Geometry/Shapes.h
+)
+source_group("terrain\\Geometry" FILES ${SRC_GRP_GEOMETRY})
 
 #Warden group
 file(GLOB SRC_GRP_WARDEN Warden/*.cpp Warden/*.h)
@@ -186,40 +211,6 @@ endif()
 
 configure_file(AuctionHouseBot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist)
 
-if(BUILD_TOOLS)
-add_library(vmap2 STATIC
-    vmap/BIH.cpp
-    vmap/VMapManager2.cpp
-    vmap/MapTree.cpp
-    vmap/TileAssembler.cpp
-    vmap/WorldModel.cpp
-    vmap/ModelInstance.cpp
-    vmap/BIH.h
-    vmap/VMapManager2.h
-    vmap/MapTree.h
-    vmap/TileAssembler.h
-    vmap/WorldModel.h
-    vmap/ModelInstance.h
-)
-
-target_include_directories(vmap2
-    PUBLIC
-        vmap
-        WorldHandlers
-)
-
-target_compile_definitions(vmap2
-    PUBLIC
-        MMAP_GENERATOR
-        NO_CORE_FUNCS
-)
-target_link_libraries(vmap2
-    PUBLIC
-        shared
-        g3dlite
-        RecastNavigation::Detour
-)
-endif()
 
 add_library(game STATIC
     ${SRC_GRP_AHBOT}
@@ -234,7 +225,8 @@ add_library(game STATIC
     ${SRC_GRP_SERVER}
     ${SRC_GRP_TIME}
     ${SRC_GRP_TOOL}
-    ${SRC_GRP_VMAPS}
+    ${SRC_GRP_TERRAIN}
+    ${SRC_GRP_GEOMETRY}
     ${SRC_GRP_WARDEN}
     ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
@@ -256,7 +248,6 @@ target_include_directories(game
         Server
         Time
         Tools
-        vmap
         Warden
         Warden/Modules
         WorldHandlers
@@ -285,9 +276,10 @@ target_link_libraries(game
         shared
         RecastNavigation::Detour
         ZLIB::ZLIB
-        g3dlite
         $<$<BOOL:${SCRIPT_LIB_SD3}>:mangosscript>
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:lualib>
+    PRIVATE
+        mangos_openssl_strict
 )
 
 # Generate precompiled header

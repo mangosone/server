@@ -143,6 +143,13 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
 
         void LoadTransports();
 
+        /// Crew rosters from `creature_transport`, in deck-local coordinates. Must run
+        /// BEFORE LoadTransports, which spawns each vessel's crew as it creates it.
+        void LoadTransportCrew();
+
+        /// Destroy every vessel and its crew. Must run while the maps are still alive.
+        void DestroyTransports();
+
         typedef std::set<Transport*> TransportSet;
         TransportSet m_Transports;
 

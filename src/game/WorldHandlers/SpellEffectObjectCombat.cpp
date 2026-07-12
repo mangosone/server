@@ -56,7 +56,6 @@
 #include "BattleGround/BattleGroundWS.h"
 #include "Language.h"
 #include "SocialMgr.h"
-#include "VMapFactory.h"
 #include "Util.h"
 #include "TemporarySummon.h"
 #include "ScriptMgr.h"
@@ -65,7 +64,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "G3D/Vector3.h"
+#include "terrain/Geometry/Vector3.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -952,7 +951,7 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
     float dist = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
     const float IN_OR_UNDER_LIQUID_RANGE = 0.8f;                // range to make player under liquid or on liquid surface from liquid level
 
-    G3D::Vector3 prevPos, nextPos;
+    Geometry::Vector3 prevPos, nextPos;
     float orientation = unitTarget->GetOrientation();
 
     prevPos.x = unitTarget->GetPositionX();

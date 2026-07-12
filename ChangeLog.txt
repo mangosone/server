@@ -2,6 +2,139 @@ MaNGOS One - ChangeLog
 ======================
 Short log of fixes made in this working session, most recent first.
 
+2026-07-12
+----------
+* [Core] Grids: removed the ancient GridMap stack. The .map file reader and its
+  four chunk headers (GridMapFileHeader / Area / Height / Liquid), the GridMap
+  class itself, TerrainInfo and its hand-rolled Referencable<> refcount are all
+  gone - GridMap.cpp fell from 1776 lines to 478, GridMap.h from 334 to 88. All
+  that survives of the header is TerrainManager, which now hands out FusedTerrain
+  instead. Height, liquid, area, indoor and line-of-sight are answered from one
+  fused .tile, so there is no longer a separate terrain grid to keep in step with
+  the collision data.
+
+* [Core] G3D: the game core no longer links g3dlite at all. Vector2/3/4, Matrix4,
+  Quat, Aabb, Mat3, Transform, Tri and the ray/triangle test now live in one
+  server-wide module (src/game/terrain/Geometry, namespace Geometry), so a
+  position is the SAME TYPE in the movement code, the collision engine and the
+  offline baker and never needs converting as it crosses between them. dep/g3dlite
+  remains on disk but nothing under src/ references it.
+
+* [Core] Collision engine: src/game/vmap is deleted (~7,800 lines) and replaced by
+  src/game/terrain (~2,500) plus the offline baker in src/baker (~5,000). Static
+  narrowphase is a BVH WE BUILD - binned-SAH, constructed offline by the baker,
+  stored in the .tile and raycast in model-local space through ICollisionModel, so
+  nothing is built at load and nothing is ever rebuilt at runtime.
+
+  This SUPERSEDES the design recorded on 2026-07-10, which traversed Blizzard's own
+  authored per-group MOBN/MOBR BSP (WmoBspModel, now gone). Keeping the authored
+  tree sounded principled, but it was measured (mangos-accelbench) and it is the
+  wrong structure for the job:
+    - its nodes carry split planes and no bounding box, so a traversal cannot tell
+      that a ray misses a group - it just descends. A WMO is many groups (Black
+      Temple: 49), every one of which was walked for every ray. Bolting a per-group
+      AABB gate on recovered 13.7x by itself.
+    - it indexes EVERY face, render-only ones included, and only ~40% of a WMO's
+      faces are collidable - so it carried ~2.5x the geometry collision needs and
+      re-tested the MOPY filter at each leaf face it touched.
+  A binned-SAH BVH over the collidable faces ALONE beats even the AABB-gated BSP by
+  a further ~2.7x, and lets the other ~60% of the triangles be dropped from the
+  .tile entirely. (A kd-tree measured faster still, ~5.9x, but duplicates straddling
+  faces into both children at 6x the memory - not a trade a server holding many maps
+  resident can make.) Tile format is now v9: a WMO is one soup of collidable
+  triangles plus its baked BVH, carrying neither the BSP nor the render-only faces.
+  M2 collision hulls ship no BSP at all and use the same BVH (CollisionModel).
+
+  DynamicCollision partitions game objects on mobility rather than space (frozen
+  bodies swept as a flat AABB list in the same 64x64 tile grid; movers in one small
+  vector), so a door opening no longer costs a tree rebuild.
+
+* [Core] Movement: rewritten on an INTENT model. A movement generator is now
+  policy and answers exactly one question per tick - Intent(owner, status, diff)
+  returns Hold, Move(point) or Done - and is structurally incapable of getting the
+  wire wrong: it may not touch PathFinder, MoveSplineInit or the spline. All
+  mechanism moved into one MotionDriver, which owns reading the live leg, deciding
+  whether a fresh one is needed, routing it, resolving its final facing, picking
+  walk/run and calling Launch - once, for everybody. The Player/Creature CRTP
+  (TargetedMovementGeneratorMedium<T,D> and its templated Chase/Follow) is gone;
+  everything speaks Unit. Facing is no longer a separate action but the end of a
+  leg, so a chase now ARRIVES already turned at its victim. New:
+  MovementIntent.h, IntentMovementGenerator.h, MotionDriver.{h,cpp}.
+
+* [Core] Transports: an MO transport is now a LITTLE MAP rather than a body in the
+  world - which is what finally makes an NPC crew possible. The server never runs
+  the Catmull-Rom curve the client interpolates the vessel along, so its transport
+  position is a tracking token, not a pose; every core that has tried to put a crew
+  on a deck has come unstuck by posing the hull into world space and colliding
+  against a ship that is not there. So the vessel owns what a Map owns: its
+  passenger list, its passengers' update tick, its own visibility pass, and ONE
+  baked deck mesh queried UNTRANSFORMED, in the space it was baked in.
+  - Motion::IMotionFrame gained TransportFrame: a boarded unit's position, its
+    target's position, its ground and its leg are all deck-local. The deck router
+    samples the straight line and drops each sample onto the mesh, so a leg follows
+    a ramp instead of shearing through it and a deckhand cannot walk off the bow.
+  - The vessel's TRUE pose is recovered for free from any player aboard: the client
+    sends BOTH coordinate systems in every movement packet, so yaw = pos.o - t_pos.o
+    and org = pos - R(yaw)*t_pos. Exact while anyone is aboard; the waypoint token
+    only takes over when nobody is looking.
+  - Crew (new `creature_transport` table: deck offsets + MovementType +
+    wander_distance) have NO grid cell and are never CreatureRelocated. The ship is
+    their cell: their GridReference links into a container the vessel owns, and
+    grid searches near the hull visit it - so AoE hits them and they see each other.
+  - Pets, guardians, mini-pets and totems board with their master, but as GRID
+    RESIDENTS: they belong to the world and merely stand on our floor, so they keep
+    their cell and a real relocation. Previously a pet was simply left on the pier -
+    it tried to path to its master over open ocean, where there is no navmesh.
+  - Same-vessel line of sight is raycast deck-locally, because the hull is not in
+    world collision at all and a world ray passes clean through every bulkhead.
+  - Broadcast is no longer blasted to every player on the map, once, forever: each
+    vessel keeps its own observer set from the cells around it, sized by the hull's
+    real extent from the baked mesh.
+  - Fixed three latent frame-mismatch traps that teleported a boarded creature to
+    the map origin: Unit::UpdateSplineMovement (the spline holds deck offsets),
+    Creature::RemoveCorpse and Map::CreatureRespawnRelocation (a crew member's
+    respawn coord is a deck offset). Also fixed TransportBase::NormalizeRotatedPosition,
+    which computed -R(o) instead of R(-o) and had never had a caller.
+
+* [Core] GM tools: new `.trans npc add <entry> [movement_type] [wander_distance]`
+  authors a crew member on the vessel you are standing on, taking the deck offset
+  straight from your own client (MovementInfo::t_pos - authoritative by
+  construction) and re-resolving Z against the deck mesh. `.gps` now reports the
+  transport frame: the vessel pose and whether it is recovered or merely estimated,
+  the local coords labelled BY SOURCE (client-sent and exact, vs server-derived),
+  and what the baked mesh says is under you - floor height, how far above it you
+  are, and the deck's slope along your facing.
+
+2026-07-10
+----------
+* [Core] Collision/terrain engine: replaced the legacy GridMap (.map) + VMAP
+  (.vmtree/.vmtile/BIH/IVMapManager) stack with FusedTerrain, which answers
+  height, liquid, area, indoor and line-of-sight from a single fused .tile.
+  Static collision now traverses Blizzard's own authored structures - the WMO
+  per-group MOBN/MOBR BSP and the M2 hull BVH - instead of a rebuilt tree.
+  TerrainInfo is gone; FusedTerrain absorbed its API and MaNGOS calls it
+  directly. src/game/vmap/ deleted and its includes stripped from 43 files.
+
+* [Core] Dynamic collision: replaced DynamicMapTree (a BIH rebuilt on every
+  game-object move) with DynamicCollision, a mobility-partitioned overlay.
+  Frozen bodies are filed into the same 64x64 tile grid FusedTerrain uses and
+  swept as a flat, cache-coherent AABB list; movers live in one small vector
+  re-posed per tick. No tree, no rebuild. GameObjectModel replaces the vmap
+  model store, loading gomodels/go_<displayId>.tile.
+
+* [Build] Fixed the FreeBSD ACE build break: <sys/param.h> defines a macro
+  `atop(x)`, and ACE declares ACE_OS::atop() in ace/OS_NS_stdlib.h. ACE reaches
+  <sys/param.h> first (Basic_Types.h, os_include/os_limits.h), so the macro
+  rewrote the declaration and dep/acelite failed to compile before any MangosOne
+  source was parsed. dep/acelite/ace/config.h - the integrator's config selector,
+  and the earliest ACE header any TU sees - now includes <sys/param.h> and
+  undefines the macro on FreeBSD, ahead of config-freebsd.h. A command-line -U
+  cannot do this: it only unsets macros the compiler or command line defined.
+
+* [Build] BUILD_TOOLS=1 now builds mangos-baker (plus the mangos-tiletest and
+  mangos-height-check probes). The legacy map/vmap/mmap extractors under
+  src/tools are no longer part of the build;
+
 2026-07-08
 ----------
 * [Build] Eluna guard: wrapped WorldObject::GetEluna() in WorldObjectSummon.cpp

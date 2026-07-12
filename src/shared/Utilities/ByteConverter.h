@@ -34,8 +34,31 @@
  * This is essential for network protocol handling in World of Warcraft.
  */
 
-#include "Platform/Define.h"
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+
+// Byte order. The `shared` library is compiled with -DMANGOS_ENDIAN=<0|1> (see
+// TEST_BIG_ENDIAN in src/shared/CMakeLists.txt), and Platform/Define.h derives the same
+// macro from ACE. Neither is available to standalone tools that compile this header
+// without linking `shared` (mangos-baker), so derive it from the compiler's own byte-order
+// macro when nobody else has. This must never be left undefined: `MANGOS_ENDIAN ==
+// MANGOS_BIGENDIAN` with both macros absent expands to `0 == 0`, which would silently
+// byte-swap every field on a little-endian host.
+#ifndef MANGOS_LITTLEENDIAN
+#  define MANGOS_LITTLEENDIAN 0
+#endif
+#ifndef MANGOS_BIGENDIAN
+#  define MANGOS_BIGENDIAN    1
+#endif
+#ifndef MANGOS_ENDIAN
+#  if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+      (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#    define MANGOS_ENDIAN MANGOS_BIGENDIAN
+#  else
+#    define MANGOS_ENDIAN MANGOS_LITTLEENDIAN
+#  endif
+#endif
 
 namespace ByteConverter
 {
@@ -100,24 +123,28 @@ template<typename T> void EndianConvert(T*);
  */
 template<typename T> void EndianConvertReverse(T*);
 
-/**
- * @brief No-op for uint8 (single byte)
- */
-inline void EndianConvert(uint8&) {}
-
-/**
- * @brief No-op for int8 (single byte)
- */
-inline void EndianConvert(int8&)  {}
+// Single-byte overloads. Spelled with the fixed-width types rather than MaNGOS's uint8 /
+// int8, which are ACE typedefs for the very same types -- this header must stay free of
+// Platform/Define.h so the DBC loader can be compiled into ACE-less tools.
 
 /**
  * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvertReverse(uint8&) {}
+inline void EndianConvert(std::uint8_t&) {}
 
 /**
  * @brief No-op for int8 (single byte)
  */
-inline void EndianConvertReverse(int8&) {}
+inline void EndianConvert(std::int8_t&)  {}
+
+/**
+ * @brief No-op for uint8 (single byte)
+ */
+inline void EndianConvertReverse(std::uint8_t&) {}
+
+/**
+ * @brief No-op for int8 (single byte)
+ */
+inline void EndianConvertReverse(std::int8_t&) {}
 
 #endif

@@ -44,10 +44,8 @@
 
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-#  include <openssl/provider.h>
-#  include "Auth/OpenSSLProvider.h"
-#endif
+#include <openssl/provider.h>
+#include "Auth/OpenSSLProvider.h"
 #include <ace/Version.h>
 #include <ace/Get_Opt.h>
 
@@ -448,9 +446,8 @@ int main(int argc, char** argv)
     print_banner();
     sLog.outString("Using configuration file %s.", cfg_file);
 
-    DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
+    DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, OpenSSL_version(OPENSSL_VERSION));
 
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
     // RAII provider management - automatically handles cleanup
     OpenSSLProviderManager providerManager;
 
@@ -459,13 +456,6 @@ int main(int argc, char** argv)
         Log::WaitBeforeContinueIfNeed();
         return 0;
     }
-#else
-    if (SSLeay() < 0x10100000L || SSLeay() > 0x10200000L)
-    {
-        DETAIL_LOG("WARNING: OpenSSL version may be out of date or unsupported. Logins to server may not work!");
-        DETAIL_LOG("WARNING: Minimal required version [OpenSSL 1.1.x] and Maximum supported version [OpenSSL 1.2]");
-    }
-#endif
 
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
 

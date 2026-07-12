@@ -86,7 +86,6 @@ class OpenSSLCipherContext
         EVP_CIPHER_CTX* m_ctx;    /**< OpenSSL cipher context */
 };
 
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
 #include <openssl/provider.h>
 
 /**
@@ -185,7 +184,5 @@ class OpenSSLProviderManager
         OpenSSLProvider m_defaultProvider;    /**< Default provider */
         bool m_initialized;                    /**< Initialization status */
 };
-
-#endif // OPENSSL_VERSION_MAJOR >= 3
 
 #endif // _AUTH_OPENSSL_PROVIDER_H

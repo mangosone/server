@@ -25,45 +25,6 @@
 #ifndef MANGOSSERVER_COMMON_H
 #define MANGOSSERVER_COMMON_H
 
-// config.h needs to be included 1st
-#ifdef HAVE_CONFIG_H
-#ifdef PACKAGE
-#undef PACKAGE
-#endif // PACKAGE
-
-#ifdef PACKAGE_BUGREPORT
-#undef PACKAGE_BUGREPORT
-#endif // PACKAGE_BUGREPORT
-
-#ifdef PACKAGE_NAME
-#undef PACKAGE_NAME
-#endif // PACKAGE_NAME
-
-#ifdef PACKAGE_STRING
-#undef PACKAGE_STRING
-#endif // PACKAGE_STRING
-
-#ifdef PACKAGE_TARNAME
-#undef PACKAGE_TARNAME
-#endif // PACKAGE_TARNAME
-
-#ifdef PACKAGE_VERSION
-#undef PACKAGE_VERSION
-#endif // PACKAGE_VERSION
-
-#ifdef VERSION
-#undef VERSION
-#endif // VERSION
-
-#undef PACKAGE
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef VERSION
-#endif // HAVE_CONFIG_H
-
 #include "Platform/Define.h"
 
 #if COMPILER == COMPILER_MICROSOFT
@@ -86,10 +47,7 @@
 #include <assert.h>
 #include "ServerDefines.h"
 
-#if defined(__sun__)
-#include <ieeefp.h> // finite() on Solaris
-#endif
-
+#include <cmath>
 #include <set>
 #include <list>
 #include <string>
@@ -109,17 +67,6 @@
 #include <ace/RW_Thread_Mutex.h>
 #include <ace/Thread_Mutex.h>
 #include <ace/OS_NS_arpa_inet.h>
-
-// Old ACE versions (pre-ACE-5.5.4) not have this type (add for allow use at Unix side external old ACE versions)
-#if PLATFORM != PLATFORM_WINDOWS
-#  ifndef ACE_OFF_T
-/**
- * @brief
- *
- */
-typedef off_t ACE_OFF_T;
-#  endif
-#endif
 
 #if PLATFORM == PLATFORM_WINDOWS
 #  if !defined (FD_SETSIZE)
@@ -142,9 +89,6 @@ typedef off_t ACE_OFF_T;
 
 #  define I32FMT "%08I32X"
 #  define I64FMT "%016I64X"
-#
-#  define vsnprintf _vsnprintf
-#  define finite(X) _finite(X)
 
 #else
 
@@ -181,7 +125,7 @@ typedef off_t ACE_OFF_T;
  * @param f
  * @return float
  */
-inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
+inline float finiteAlways(float f) { return std::isfinite(f) ? f : 0.0f; }
 
 #define atol(a) strtoul( a, NULL, 10)
 

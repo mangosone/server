@@ -81,7 +81,7 @@ void FleeManager::calculatePossibleDestinations(list<FleePoint*> &points)
             }
 
             Map* map = bot->GetMap();
-            const TerrainInfo* terrain = map->GetTerrain();
+            const FusedTerrain* terrain = map->GetTerrain();
             if (terrain && terrain->IsInWater(x, y, z))
             {
                 continue;

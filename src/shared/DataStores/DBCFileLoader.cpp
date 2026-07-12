@@ -26,73 +26,111 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <vector>
+
 #include "DBCFileLoader.h"
+
+/// WDBC header: magic, then recordCount, fieldCount, recordSize, stringSize.
+static const size_t DBC_HEADER_SIZE = 20;
+static const uint32_t DBC_MAGIC_WDBC = 0x43424457;
 
 DBCFileLoader::DBCFileLoader()
 {
-    data = NULL;
-    fieldsOffset = NULL;
+    recordSize = 0;
+    recordCount = 0;
+    fieldCount = 0;
+    stringSize = 0;
+    data = nullptr;
+    stringTable = nullptr;
+    fieldsOffset = nullptr;
 }
 
 bool DBCFileLoader::Load(const char* filename, const char* fmt)
 {
-    uint32 header;
-    delete[] data;
-
     FILE* f = fopen(filename, "rb");
     if (!f)
     {
         return false;
     }
 
-    if (fread(&header, 4, 1, f) != 1)                       // Number of records
+    if (fseek(f, 0, SEEK_END) != 0)
     {
         fclose(f);
         return false;
     }
 
+    const long fileSize = ftell(f);
+    if (fileSize < 0 || fseek(f, 0, SEEK_SET) != 0)
+    {
+        fclose(f);
+        return false;
+    }
+
+    std::vector<unsigned char> image(static_cast<size_t>(fileSize));
+    // An empty DBC cannot carry even a header, so the short-read check below rejects it.
+    if (!image.empty() && fread(image.data(), image.size(), 1, f) != 1)
+    {
+        fclose(f);
+        return false;
+    }
+
+    fclose(f);
+    return LoadFromMemory(image.data(), image.size(), fmt);
+}
+
+bool DBCFileLoader::LoadFromMemory(const void* bytes, size_t size, const char* fmt)
+{
+    // Loading twice must not leak the previous image.
+    delete[] data;
+    data = nullptr;
+    stringTable = nullptr;
+    delete[] fieldsOffset;
+    fieldsOffset = nullptr;
+
+    if (!bytes || size < DBC_HEADER_SIZE)
+    {
+        return false;
+    }
+
+    const unsigned char* image = static_cast<const unsigned char*>(bytes);
+
+    uint32_t header;
+    memcpy(&header, image, 4);
     EndianConvert(header);
-    if (header != 0x43424457)                               //'WDBC'
+    if (header != DBC_MAGIC_WDBC)
     {
-        fclose(f);
         return false;
     }
 
-    if (fread(&recordCount, 4, 1, f) != 1)                  // Number of records
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&recordCount, image + 4, 4);
     EndianConvert(recordCount);
-
-    if (fread(&fieldCount, 4, 1, f) != 1)                   // Number of fields
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&fieldCount, image + 8, 4);
     EndianConvert(fieldCount);
-
-    if (fread(&recordSize, 4, 1, f) != 1)                   // Size of a record
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&recordSize, image + 12, 4);
     EndianConvert(recordSize);
-
-    if (fread(&stringSize, 4, 1, f) != 1)                   // String size
-    {
-        fclose(f);
-        return false;
-    }
-
+    memcpy(&stringSize, image + 16, 4);
     EndianConvert(stringSize);
 
-    fieldsOffset = new uint32[fieldCount];
+    // A zero field count would make fieldsOffset[0] a write past a zero-length array, and
+    // the record/string arithmetic below must not wrap. Reject rather than trust the file.
+    if (fieldCount == 0 || strlen(fmt) < fieldCount)
+    {
+        return false;
+    }
+    if (recordCount != 0 && recordSize > (SIZE_MAX - stringSize) / recordCount)
+    {
+        return false;
+    }
+
+    const size_t payloadSize = size_t(recordSize) * recordCount + stringSize;
+    if (payloadSize > size - DBC_HEADER_SIZE)               // truncated file
+    {
+        return false;
+    }
+
+    fieldsOffset = new uint32_t[fieldCount];
     fieldsOffset[0] = 0;
-    for (uint32 i = 1; i < fieldCount; ++i)
+    for (uint32_t i = 1; i < fieldCount; ++i)
     {
         fieldsOffset[i] = fieldsOffset[i - 1];
         if (fmt[i - 1] == 'b' || fmt[i - 1] == 'X')         // byte fields
@@ -105,16 +143,10 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
         }
     }
 
-    data = new unsigned char[recordSize * recordCount + stringSize];
-    stringTable = data + recordSize * recordCount;
+    data = new unsigned char[payloadSize];
+    stringTable = data + size_t(recordSize) * recordCount;
+    memcpy(data, image + DBC_HEADER_SIZE, payloadSize);
 
-    if (fread(data, recordSize * recordCount + stringSize, 1, f) != 1)
-    {
-        fclose(f);
-        return false;
-    }
-
-    fclose(f);
     return true;
 }
 
@@ -130,11 +162,11 @@ DBCFileLoader::Record DBCFileLoader::getRecord(size_t id)
     return Record(*this, data + id * recordSize);
 }
 
-uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
+uint32_t DBCFileLoader::GetFormatRecordSize(const char* format, int32_t* index_pos)
 {
-    uint32 recordsize = 0;
-    int32 i = -1;
-    for (uint32 x = 0; format[x]; ++ x)
+    uint32_t recordsize = 0;
+    int32_t i = -1;
+    for (uint32_t x = 0; format[x]; ++ x)
     {
         switch (format[x])
         {
@@ -142,7 +174,7 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
                 recordsize += sizeof(float);
                 break;
             case DBC_FF_INT:
-                recordsize += sizeof(uint32);
+                recordsize += sizeof(uint32_t);
                 break;
             case DBC_FF_STRING:
                 recordsize += sizeof(char*);
@@ -152,10 +184,10 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
                 break;
             case DBC_FF_IND:
                 i = x;
-                recordsize += sizeof(uint32);
+                recordsize += sizeof(uint32_t);
                 break;
             case DBC_FF_BYTE:
-                recordsize += sizeof(uint8);
+                recordsize += sizeof(uint8_t);
                 break;
             case DBC_FF_LOGIC:
                 assert(false && "Attempted to load DBC files that do not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
@@ -177,7 +209,7 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
     return recordsize;
 }
 
-char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**& indexTable)
+char* DBCFileLoader::AutoProduceData(const char* format, uint32_t& records, char**& indexTable)
 {
     /**
      * format STRING, NA, FLOAT,NA,INT <=>
@@ -193,20 +225,20 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
     typedef char* ptr;
     if (strlen(format) != fieldCount)
     {
-        return NULL;
+        return nullptr;
     }
 
     // get struct size and index pos
-    int32 i;
-    uint32 recordsize = GetFormatRecordSize(format, &i);
+    int32_t i;
+    uint32_t recordsize = GetFormatRecordSize(format, &i);
 
     if (i >= 0)
     {
-        uint32 maxi = 0;
+        uint32_t maxi = 0;
         // find max index
-        for (uint32 y = 0; y < recordCount; ++y)
+        for (uint32_t y = 0; y < recordCount; ++y)
         {
-            uint32 ind = getRecord(y).getUInt(i);
+            uint32_t ind = getRecord(y).getUInt(i);
             if (ind > maxi)
             {
                 maxi = ind;
@@ -226,9 +258,9 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
 
     char* dataTable = new char[recordCount * recordsize];
 
-    uint32 offset = 0;
+    uint32_t offset = 0;
 
-    for (uint32 y = 0; y < recordCount; ++y)
+    for (uint32_t y = 0; y < recordCount; ++y)
     {
         if (i >= 0)
         {
@@ -239,7 +271,7 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
             indexTable[y] = &dataTable[offset];
         }
 
-        for (uint32 x = 0; x < fieldCount; ++x)
+        for (uint32_t x = 0; x < fieldCount; ++x)
         {
             switch (format[x])
             {
@@ -249,15 +281,15 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
                     break;
                 case DBC_FF_IND:
                 case DBC_FF_INT:
-                    *((uint32*)(&dataTable[offset])) = getRecord(y).getUInt(x);
-                    offset += sizeof(uint32);
+                    *((uint32_t*)(&dataTable[offset])) = getRecord(y).getUInt(x);
+                    offset += sizeof(uint32_t);
                     break;
                 case DBC_FF_BYTE:
-                    *((uint8*)(&dataTable[offset])) = getRecord(y).getUInt8(x);
-                    offset += sizeof(uint8);
+                    *((uint8_t*)(&dataTable[offset])) = getRecord(y).getUInt8(x);
+                    offset += sizeof(uint8_t);
                     break;
                 case DBC_FF_STRING:
-                    *((char**)(&dataTable[offset])) = NULL; // will replace non-empty or "" strings in AutoProduceStrings
+                    *((char**)(&dataTable[offset])) = nullptr; // will replace non-empty or "" strings in AutoProduceStrings
                     offset += sizeof(char*);
                     break;
                 case DBC_FF_LOGIC:
@@ -281,17 +313,17 @@ char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
 {
     if (strlen(format) != fieldCount)
     {
-        return NULL;
+        return nullptr;
     }
 
     char* stringPool = new char[stringSize];
     memcpy(stringPool, stringTable, stringSize);
 
-    uint32 offset = 0;
+    uint32_t offset = 0;
 
-    for (uint32 y = 0; y < recordCount; ++y)
+    for (uint32_t y = 0; y < recordCount; ++y)
     {
-        for (uint32 x = 0; x < fieldCount; ++x)
+        for (uint32_t x = 0; x < fieldCount; ++x)
         {
             switch (format[x])
             {
@@ -300,10 +332,10 @@ char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
                     break;
                 case DBC_FF_IND:
                 case DBC_FF_INT:
-                    offset += sizeof(uint32);
+                    offset += sizeof(uint32_t);
                     break;
                 case DBC_FF_BYTE:
-                    offset += sizeof(uint8);
+                    offset += sizeof(uint8_t);
                     break;
                 case DBC_FF_STRING:
                 {

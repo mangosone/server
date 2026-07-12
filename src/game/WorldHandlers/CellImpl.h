@@ -28,6 +28,7 @@
 #include "Common.h"
 #include "Cell.h"
 #include "Map.h"
+#include "TransportCrewSearch.h"
 #include <cmath>
 
 inline Cell::Cell(CellPair const& p)
@@ -194,6 +195,12 @@ inline void Cell::VisitGridObjects(const WorldObject* center_obj, T& visitor, fl
     }
     TypeContainerVisitor<T, GridTypeMapContainer > gnotifier(visitor);
     cell.Visit(p, gnotifier, *center_obj->GetMap(), *center_obj, radius);
+
+    // A vessel's crew are in no cell -- the ship is their cell. Visit it too, or an AoE on
+    // the deck passes through them and two deckhands never see each other.
+    MaNGOS::VisitTransportCrew(center_obj->GetMap(),
+                               center_obj->GetPositionX(), center_obj->GetPositionY(),
+                               radius, visitor);
 }
 
 template<class T>
@@ -222,6 +229,10 @@ inline void Cell::VisitAllObjects(const WorldObject* center_obj, T& visitor, flo
     TypeContainerVisitor<T, WorldTypeMapContainer > wnotifier(visitor);
     cell.Visit(p, gnotifier, *center_obj->GetMap(), *center_obj, radius);
     cell.Visit(p, wnotifier, *center_obj->GetMap(), *center_obj, radius);
+
+    MaNGOS::VisitTransportCrew(center_obj->GetMap(),
+                               center_obj->GetPositionX(), center_obj->GetPositionY(),
+                               radius, visitor);
 }
 
 template<class T>
@@ -235,6 +246,8 @@ inline void Cell::VisitGridObjects(float x, float y, Map* map, T& visitor, float
     }
     TypeContainerVisitor<T, GridTypeMapContainer > gnotifier(visitor);
     cell.Visit(p, gnotifier, *map, x, y, radius);
+
+    MaNGOS::VisitTransportCrew(map, x, y, radius, visitor);
 }
 
 template<class T>
@@ -263,6 +276,8 @@ inline void Cell::VisitAllObjects(float x, float y, Map* map, T& visitor, float 
     TypeContainerVisitor<T, WorldTypeMapContainer > wnotifier(visitor);
     cell.Visit(p, gnotifier, *map, x, y, radius);
     cell.Visit(p, wnotifier, *map, x, y, radius);
+
+    MaNGOS::VisitTransportCrew(map, x, y, radius, visitor);
 }
 
 #endif

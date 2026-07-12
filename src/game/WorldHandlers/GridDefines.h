@@ -76,8 +76,8 @@ typedef GridRefManager<DynamicObject>   DynamicObjectMapType;
 typedef GridRefManager<GameObject>      GameObjectMapType;
 typedef GridRefManager<Player>          PlayerMapType;
 
-typedef Grid<Player, WorldTypeMapContainer, GridTypeMapContainer> GridType;
 typedef NGrid<MAX_NUMBER_OF_CELLS, Player, WorldTypeMapContainer, GridTypeMapContainer> NGridType;
+typedef NGridType::GridCell GridType;
 
 /**
  * @brief A structure representing a pair of coordinates.
@@ -238,7 +238,7 @@ namespace MaNGOS
      */
     inline bool IsValidMapCoord(float c)
     {
-        return finite(c) && (std::fabs(c) <= MAP_HALFSIZE - 0.5);
+        return std::isfinite(c) && (std::fabs(c) <= MAP_HALFSIZE - 0.5);
     }
 
     /**
@@ -265,7 +265,7 @@ namespace MaNGOS
      */
     inline bool IsValidMapCoord(float x, float y, float z)
     {
-        return IsValidMapCoord(x, y) && finite(z);
+        return IsValidMapCoord(x, y) && std::isfinite(z);
     }
 
     /**
@@ -280,7 +280,7 @@ namespace MaNGOS
      */
     inline bool IsValidMapCoord(float x, float y, float z, float o)
     {
-        return IsValidMapCoord(x, y, z) && finite(o);
+        return IsValidMapCoord(x, y, z) && std::isfinite(o);
     }
 }
 #endif

@@ -1469,11 +1469,11 @@ void CreatureEventAI::Reset()
                 }
                 break;
             }
-            // default:
-            // TODO: enable below code line / verify this is correct to enable events previously disabled (ex. aggro yell), instead of enable this in void Aggro()
-            //i->Enabled = true;
-            //i->Time = 0;
-            // break;
+            default:
+                // TODO: enable below code lines / verify this is correct to enable events previously disabled (ex. aggro yell), instead of enable this in void Aggro()
+                //i->Enabled = true;
+                //i->Time = 0;
+                break;
         }
     }
 }

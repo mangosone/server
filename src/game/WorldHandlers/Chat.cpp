@@ -451,6 +451,23 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
+    // .trans npc add <entry> [<movement_type>] [<wander_distance>]
+    //
+    // Authoring crew for a vessel. The GM's own client is already sending the deck offset it
+    // is standing at, so the command reads it back rather than trying to derive it -- which
+    // is the only way to get these numbers that cannot be wrong.
+    static ChatCommand transNpcCommandTable[] =
+    {
+        { "add",            SEC_ADMINISTRATOR,  false, &ChatHandler::HandleTransNpcAddCommand,         "", NULL },
+        { NULL,             0,                  false, NULL,                                           "", NULL }
+    };
+
+    static ChatCommand transCommandTable[] =
+    {
+        { "npc",            SEC_ADMINISTRATOR,  false, NULL,                                           "", transNpcCommandTable },
+        { NULL,             0,                  false, NULL,                                           "", NULL }
+    };
+
     static ChatCommand npcCommandTable[] =
     {
         { "add",            SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcAddCommand,              "", NULL },
@@ -787,6 +804,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "lookup",         SEC_MODERATOR,      true,  NULL,                                           "", lookupCommandTable   },
         { "modify",         SEC_MODERATOR,      false, NULL,                                           "", modifyCommandTable   },
         { "npc",            SEC_MODERATOR,      false, NULL,                                           "", npcCommandTable      },
+        { "trans",          SEC_ADMINISTRATOR,  false, NULL,                                           "", transCommandTable    },
         { "pool",           SEC_GAMEMASTER,     true,  NULL,                                           "", poolCommandTable     },
         { "pdump",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", pdumpCommandTable    },
         { "quest",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", questCommandTable    },

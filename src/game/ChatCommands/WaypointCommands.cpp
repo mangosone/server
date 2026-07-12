@@ -223,7 +223,7 @@ bool ChatHandler::HandleWpAddCommand(char* args)
         {
             if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
             {
-                if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+                if (WaypointMovementGenerator const* wpMMGen = dynamic_cast<WaypointMovementGenerator const*>(wpOwner->GetMotionMaster()->GetCurrent()))
                 {
                     wpMMGen->GetPathInformation(wpPathId, wpDestination);
                 }
@@ -420,7 +420,7 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
     {
         if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
         {
-            if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+            if (WaypointMovementGenerator const* wpMMGen = dynamic_cast<WaypointMovementGenerator const*>(wpOwner->GetMotionMaster()->GetCurrent()))
             {
                 wpMMGen->GetPathInformation(wpPathId, wpSource);
             }
@@ -673,7 +673,7 @@ bool ChatHandler::HandleWpShowCommand(char* args)
     {
         if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
         {
-            if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+            if (WaypointMovementGenerator const* wpMMGen = dynamic_cast<WaypointMovementGenerator const*>(wpOwner->GetMotionMaster()->GetCurrent()))
             {
                 wpMMGen->GetPathInformation(wpPathId, wpOrigin);
                 wpPath = sWaypointMgr.GetPathFromOrigin(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpPathId, wpOrigin);
@@ -890,7 +890,7 @@ bool ChatHandler::HandleWpExportCommand(char* args)
         if (wpOrigin == PATH_NO_PATH)
         {
             if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
-                if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+                if (WaypointMovementGenerator const* wpMMGen = dynamic_cast<WaypointMovementGenerator const*>(wpOwner->GetMotionMaster()->GetCurrent()))
                 {
                     wpMMGen->GetPathInformation(wpPathId, wpOrigin);
                 }

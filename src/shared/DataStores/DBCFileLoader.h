@@ -25,9 +25,15 @@
 #ifndef DBC_FILE_LOADER_H
 #define DBC_FILE_LOADER_H
 
-#include "Platform/Define.h"
+// This header deliberately does NOT include Platform/Define.h: it is compiled both into
+// the server (where uint32 & co. are ACE typedefs) and into standalone offline tools that
+// must not link ACE (mangos-baker). The fixed-width <cstdint> types below are the exact
+// same types the ACE typedefs resolve to, so every existing call site keeps compiling.
 #include "Utilities/ByteConverter.h"
+
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 /**
  * @brief Field format enumeration for DBC file parsing
@@ -78,6 +84,20 @@ class DBCFileLoader
         bool Load(const char* filename, const char* fmt);
 
         /**
+         * @brief Load a DBC from an in-memory WDBC image
+         *
+         * The bytes are copied, so the caller may release @p bytes on return. This is
+         * what the offline baker uses: it reads DBCs straight out of the client MPQs and
+         * never writes them to disk first.
+         *
+         * @param bytes Start of the WDBC image
+         * @param size Size of the image, in bytes
+         * @param fmt Format string describing field types
+         * @return True on success, false if the image is malformed or truncated
+         */
+        bool LoadFromMemory(const void* bytes, size_t size, const char* fmt);
+
+        /**
          * @brief Represents a single record in the DBC file
          *
          * Record provides access to individual fields within a DBC record,
@@ -103,10 +123,10 @@ class DBCFileLoader
                  * @param field Field index
                  * @return Unsigned 32-bit integer value
                  */
-                uint32 getUInt(size_t field) const
+                uint32_t getUInt(size_t field) const
                 {
                     assert(field < file.fieldCount);
-                    uint32 val = *reinterpret_cast<uint32*>(offset + file.GetOffset(field));
+                    uint32_t val = *reinterpret_cast<uint32_t*>(offset + file.GetOffset(field));
                     EndianConvert(val);
                     return val;
                 }
@@ -115,10 +135,10 @@ class DBCFileLoader
                  * @param field Field index
                  * @return Unsigned 8-bit integer value
                  */
-                uint8 getUInt8(size_t field) const
+                uint8_t getUInt8(size_t field) const
                 {
                     assert(field < file.fieldCount);
-                    return *reinterpret_cast<uint8*>(offset + file.GetOffset(field));
+                    return *reinterpret_cast<uint8_t*>(offset + file.GetOffset(field));
                 }
 
                 /**
@@ -158,23 +178,23 @@ class DBCFileLoader
          * @brief Get number of records in the file
          * @return Record count
          */
-        uint32 GetNumRows() const { return recordCount;}
+        uint32_t GetNumRows() const { return recordCount;}
         /**
          * @brief Get number of fields per record
          * @return Field count
          */
-        uint32 GetCols() const { return fieldCount; }
+        uint32_t GetCols() const { return fieldCount; }
         /**
          * @brief Get offset of a field within a record
          * @param id Field index
          * @return Byte offset from record start
          */
-        uint32 GetOffset(size_t id) const { return (fieldsOffset != NULL && id < fieldCount) ? fieldsOffset[id] : 0; }
+        uint32_t GetOffset(size_t id) const { return (fieldsOffset != nullptr && id < fieldCount) ? fieldsOffset[id] : 0; }
         /**
          * @brief Check if file is loaded
          * @return True if loaded, false otherwise
          */
-        bool IsLoaded() const {return (data != NULL);}
+        bool IsLoaded() const {return (data != nullptr);}
         /**
          * @brief Automatically produce data array from DBC file
          * @param fmt Format string for conversion
@@ -182,7 +202,7 @@ class DBCFileLoader
          * @param indexTable Output index table
          * @return Allocated data array
          */
-        char* AutoProduceData(const char* fmt, uint32& count, char**& indexTable);
+        char* AutoProduceData(const char* fmt, uint32_t& count, char**& indexTable);
         /**
          * @brief Automatically produce string table from DBC file
          * @param fmt Format string for conversion
@@ -197,14 +217,14 @@ class DBCFileLoader
          * @param index_pos
          * @return uint32 the total amount of memory required for all the data types
          */
-        static uint32 GetFormatRecordSize(const char* format, int32* index_pos = NULL);
+        static uint32_t GetFormatRecordSize(const char* format, int32_t* index_pos = nullptr);
     private:
 
-        uint32 recordSize; /**< Size of each record in bytes */
-        uint32 recordCount; /**< Number of records in file */
-        uint32 fieldCount; /**< Number of fields per record */
-        uint32 stringSize; /**< Size of string table in bytes */
-        uint32* fieldsOffset; /**< Array of field offsets */
+        uint32_t recordSize; /**< Size of each record in bytes */
+        uint32_t recordCount; /**< Number of records in file */
+        uint32_t fieldCount; /**< Number of fields per record */
+        uint32_t stringSize; /**< Size of string table in bytes */
+        uint32_t* fieldsOffset; /**< Array of field offsets */
         unsigned char* data; /**< Raw record data */
         unsigned char* stringTable; /**< String table data */
 };

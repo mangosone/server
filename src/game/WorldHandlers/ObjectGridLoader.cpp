@@ -383,8 +383,7 @@ void ObjectGridLoader::LoadCell(uint32 cellX, uint32 cellY)
     i_cell.data.Part.cell_x = cellX;
     i_cell.data.Part.cell_y = cellY;
 
-    GridLoaderType loader;
-    loader.Load(i_grid(cellX, cellY), *this);
+    Load(i_grid(cellX, cellY));
 }
 
 /**

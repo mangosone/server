@@ -33,8 +33,6 @@ set(SRC_GRP_AUTH
   Auth/Sha1.cpp
   Auth/Sha1.h
   Auth/WardenKeyGeneration.h
-  Auth/md5.c
-  Auth/md5.h
 )
 source_group("Auth" FILES ${SRC_GRP_AUTH})
 
@@ -90,8 +88,6 @@ set(SRC_GRP_DYNAMIC
 source_group("Dynamic" FILES ${SRC_GRP_DYNAMIC})
 
 set(SRC_GRP_GAMESYSTEM
-  GameSystem/Grid.h
-  GameSystem/GridLoader.h
   GameSystem/GridRefManager.h
   GameSystem/GridReference.h
   GameSystem/NGrid.h
@@ -242,7 +238,8 @@ target_link_libraries(shared
         utf8
         MySQL::MySQL
         ${CMAKE_DL_LIBS}
-        OpenSSL::Crypto
-        OpenSSL::SSL
+        mangos_openssl
         $<$<BOOL:${WIN32}>:dbghelp>
+    PRIVATE
+        mangos_openssl_strict
 )

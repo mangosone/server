@@ -53,12 +53,13 @@
 #include "MapPersistentStateMgr.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "VMapFactory.h"
 #include "MovementGenerator.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
 #include "GameTime.h"
+#include "TransportSystem.h"
+#include "Transports.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -68,6 +69,33 @@
 #ifdef ENABLE_ELUNA
 #include "ElunaEventMgr.h"
 #endif /* ENABLE_ELUNA */
+
+namespace
+{
+    /// The vessel an object is standing on, whichever of the two ways it is aboard.
+    ///
+    /// A crew member or a boarded pet is a TransportBase passenger and carries a
+    /// TransportInfo. A PLAYER is not one: it rides Player::m_transport, because its own
+    /// client is authoritative for where it stands and tells us so in every packet.
+    Transport const* BoardedVessel(WorldObject const* obj)
+    {
+        if (TransportInfo const* info = obj->GetTransportInfo())
+        {
+            WorldObject const* vessel = info->GetTransport();
+
+            return vessel->GetTypeId() == TYPEID_GAMEOBJECT
+                       ? static_cast<Transport const*>(vessel)
+                       : NULL;
+        }
+
+        if (obj->GetTypeId() == TYPEID_PLAYER)
+        {
+            return static_cast<Player const*>(obj)->GetTransport();
+        }
+
+        return NULL;
+    }
+}
 
 /**
  * @brief Checks whether the unit is visible to or detectable by another unit.
@@ -92,13 +120,32 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
         return true;
     }
 
-    // player visible for other player if not logout and at same transport
-    // including case when player is out of world
-    bool at_same_transport =
-        GetTypeId() == TYPEID_PLAYER &&  u->GetTypeId() == TYPEID_PLAYER &&
-        !((Player*)this)->GetSession()->PlayerLogout() && !((Player*)u)->GetSession()->PlayerLogout() &&
-        !((Player*)this)->GetSession()->PlayerLoading() && !((Player*)u)->GetSession()->PlayerLoading() &&
-        ((Player*)this)->GetTransport() && ((Player*)this)->GetTransport() == ((Player*)u)->GetTransport();
+    // Aboard the same vessel -- visible to each other, and out of reach of the distance gate
+    // below. This used to be a PLAYER-to-PLAYER test, and widening it is what makes a crew
+    // visible at all.
+    //
+    // A server-driven passenger (crew, boarded pet) has no measured world position: the one
+    // it carries is a CACHE composed from the vessel's pose, which the server only estimates
+    // (see TransportBase::UpdateGlobalPositionOf and the class comment in Transports.h).
+    // Measuring a deck-mate against that cache fails the gate below -- and a failed gate is
+    // not merely "not shown": Player::UpdateVisibilityOf answers it by sending an
+    // out-of-range block, so every deckhand was created and then immediately DESTROYED at the
+    // client, over and over.
+    //
+    // Two things standing on the same deck are within sight of each other by construction,
+    // and that deck is the only frame in which the question even has a meaning. So they skip
+    // the gate, exactly as two players aboard always did.
+    Transport const* myVessel = BoardedVessel(this);
+    bool at_same_transport = myVessel && myVessel == BoardedVessel(u);
+
+    // ...but a player still must not be shown to its deck-mates while it is logging out or
+    // still loading in. That was the point of the old test's session guards; keep them.
+    if (at_same_transport && GetTypeId() == TYPEID_PLAYER && u->GetTypeId() == TYPEID_PLAYER)
+    {
+        at_same_transport =
+            !((Player*)this)->GetSession()->PlayerLogout() && !((Player*)u)->GetSession()->PlayerLogout() &&
+            !((Player*)this)->GetSession()->PlayerLoading() && !((Player*)u)->GetSession()->PlayerLoading();
+    }
 
     // not in world
     if (!at_same_transport && (!IsInWorld() || !u->IsInWorld()))

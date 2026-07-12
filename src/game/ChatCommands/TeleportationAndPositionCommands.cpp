@@ -38,10 +38,9 @@
 #include "World.h"
 #include "MapManager.h"
 #include "CellImpl.h"
-
-#ifdef _DEBUG_VMAPS
-#include "VMapFactory.h"
-#endif
+#include "Player.h"
+#include "TransportSystem.h"
+#include "Transports.h"
  /*
      All commands related to Teleportation
  */
@@ -589,6 +588,121 @@ bool ChatHandler::HandleRecallCommand(char* args)
 }
 
 /**
+ * @brief The transport half of .gps: where you are in the VESSEL'S world, not the map's.
+ *
+ * Which of these numbers you may TRUST depends entirely on who produced them, and the
+ * answer is not the same for a player as for a crew member:
+ *
+ *   A PLAYER aboard is CLIENT-DRIVEN, and its client sends BOTH coordinate systems in every
+ *   movement packet -- the world position AND the deck offset, orientations included. Both
+ *   are exact. Neither is derived from anything. (That over-determination is exactly what
+ *   lets Transport::ObservePose solve for the ship: yaw = pos.o - t_pos.o.)
+ *
+ *   A CREW MEMBER or a boarded pet is SERVER-DRIVEN. Its deck offset is the truth; its
+ *   world position is COMPOSED from that offset and the vessel pose, and is therefore only
+ *   as good as the pose. Which is exact while anybody is aboard -- and a waypoint-snapped
+ *   guess when nobody is, at which point nobody is looking.
+ *
+ * The third number, DECK, is what the baked mesh says is under the offset, raycast in the
+ * mesh's own space with no world transform applied at all. If it disagrees with the
+ * offset's own Z by more than a few inches you are not standing on the deck: you are
+ * hovering over it, or inside it.
+ */
+void ChatHandler::ReportTransportPosition(WorldObject* obj)
+{
+    Transport* vessel = NULL;
+    float lx = 0.0f, ly = 0.0f, lz = 0.0f, lo = 0.0f;
+    char const* localSource = "";
+    char const* worldSource = "";
+
+    // Two ways to be aboard, and they have genuinely different sources of truth.
+    if (TransportInfo* info = obj->GetTransportInfo())
+    {
+        WorldObject* owner = info->GetTransport();
+        if (owner->GetTypeId() == TYPEID_GAMEOBJECT)
+        {
+            vessel = static_cast<Transport*>(owner);
+            info->GetLocalPosition(lx, ly, lz, lo);
+
+            localSource = "SERVER, TransportInfo -- THE TRUTH (what the motion stack moves it by)";
+            worldSource = "DERIVED from the offset + vessel pose -- a cache, for off-ship range checks only";
+        }
+    }
+    else if (obj->GetTypeId() == TYPEID_PLAYER)
+    {
+        Player* player = static_cast<Player*>(obj);
+        if ((vessel = player->GetTransport()) != NULL)
+        {
+            lx = player->GetTransOffsetX();
+            ly = player->GetTransOffsetY();
+            lz = player->GetTransOffsetZ();
+            lo = player->GetTransOffsetO();
+
+            localSource = "CLIENT, MovementInfo::t_pos -- EXACT";
+            worldSource = "CLIENT, MovementInfo::pos -- EXACT (the client sends both; neither is derived)";
+        }
+    }
+
+    if (!vessel)
+    {
+        return;                                         // not aboard anything; nothing to say
+    }
+
+    PSendSysMessage("--- TRANSPORT %u (%s) ---", vessel->GetEntry(), vessel->GetName());
+
+    PSendSysMessage("Vessel pose: X:%.3f Y:%.3f Z:%.3f O:%.3f  [%s]",
+                    vessel->GetPositionX(), vessel->GetPositionY(),
+                    vessel->GetPositionZ(), vessel->GetOrientation(),
+                    vessel->HasFreshPose()
+                        ? "RECOVERED from a player aboard -- exact"
+                        : "waypoint token -- an ESTIMATE; nobody is aboard to tell us better");
+
+    PSendSysMessage("World coords above: %s", worldSource);
+    PSendSysMessage("Local coords (%s):", localSource);
+    PSendSysMessage("  X:%.3f Y:%.3f Z:%.3f O:%.3f", lx, ly, lz, lo);
+
+    if (!vessel->HasDeck())
+    {
+        SendSysMessage("Deck mesh: NONE BAKED for this display. Crew cannot stand on it.");
+        return;
+    }
+
+    // The deck, raycast in the mesh's OWN space. No world transform is applied, because
+    // there is no trustworthy world transform to apply -- that is the whole design.
+    const auto deckZ = vessel->DeckHeightAt(lx, ly, lz, 3.0f, 10.0f);
+
+    if (!deckZ)
+    {
+        PSendSysMessage("Deck mesh: NO FLOOR under local (%.3f, %.3f). You are over the side.",
+                        lx, ly);
+        return;
+    }
+
+    PSendSysMessage("Deck mesh (raycast local, untransformed): Z:%.3f  (you are %+.3f above it)",
+                    *deckZ, lz - *deckZ);
+
+    // The deck's slope under the feet, by sampling the mesh a short way out along the
+    // facing. This is the orientation a creature planted here would actually stand at.
+    const float PROBE = 1.0f;
+    const auto aheadZ = vessel->DeckHeightAt(lx + PROBE * cos(lo), ly + PROBE * sin(lo),
+                                             *deckZ, 3.0f, 10.0f);
+
+    if (aheadZ)
+    {
+        const float pitch = atan2(*aheadZ - *deckZ, PROBE);
+        PSendSysMessage("Deck slope along facing O:%.3f -> pitch %.3f rad (%.1f deg)",
+                        lo, pitch, pitch * 180.0f / M_PI_F);
+    }
+    else
+    {
+        PSendSysMessage("Deck slope: edge of the deck %.1f yd ahead along O:%.3f", PROBE, lo);
+    }
+
+    SendSysMessage("Author crew from the LOCAL coords. They are the only ones that stay "
+                   "true as the vessel moves.");
+}
+
+/**
  * @brief Handler for HandleGPSCommand command.
  *
  * @param args Command arguments.
@@ -650,10 +764,11 @@ bool ChatHandler::HandleGPSCommand(char* args)
     int gx = 63 - p.x_coord;
     int gy = 63 - p.y_coord;
 
-    uint32 have_map = GridMap::ExistMap(obj->GetMapId(), gx, gy) ? 1 : 0;
-    uint32 have_vmap = GridMap::ExistVMap(obj->GetMapId(), gx, gy) ? 1 : 0;
+    // Terrain and collision now share one fused .tile, so a single existence check.
+    uint32 have_map = FusedTerrain::HasTile(obj->GetMapId(), gx, gy) ? 1 : 0;
+    uint32 have_vmap = have_map;
 
-    TerrainInfo const* terrain = obj->GetTerrain();
+    FusedTerrain const* terrain = obj->GetTerrain();
 
     if (have_vmap)
     {
@@ -679,6 +794,8 @@ bool ChatHandler::HandleGPSCommand(char* args)
                     cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
                     zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
+    ReportTransportPosition(obj);
+
     DEBUG_LOG("Player %s GPS call for %s '%s' (%s: %u):",
               m_session ? GetNameLink().c_str() : GetMangosString(LANG_CONSOLE_COMMAND),
               (obj->GetTypeId() == TYPEID_PLAYER ? "player" : "creature"), obj->GetName(),
@@ -699,17 +816,8 @@ bool ChatHandler::HandleGPSCommand(char* args)
         PSendSysMessage(LANG_LIQUID_STATUS, liquid_status.level, liquid_status.depth_level, liquid_status.type_flags, res);
     }
 
-    // Additional vmap debugging help
-#ifdef _DEBUG_VMAPS
-    PSendSysMessage("Static terrain height (maps only): %f", obj->GetTerrain()->GetHeightStatic(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), false));
-
-    if (VMAP::IVMapManager* vmgr = VMAP::VMapFactory::createOrGetVMapManager())
-    {
-        PSendSysMessage("Vmap Terrain Height %f", vmgr->getHeight(obj->GetMapId(), obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ() + 2.0f, 10000.0f));
-    }
-
-    PSendSysMessage("Static map height (maps and vmaps): %f", obj->GetTerrain()->GetHeightStatic(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ()));
-#endif
+    // Fused static floor (terrain + WMO/M2 collision, one query)
+    PSendSysMessage("Static floor Z: %f", obj->GetTerrain()->GetHeightStatic(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ()));
 
     return true;
 }
@@ -978,7 +1086,7 @@ bool ChatHandler::HandleGoXYCommand(char* args)
     float z = 0.0f;
     if (MapManager::IsValidMapCoord(mapid, x, y))
     {
-        if (TerrainInfo const* terrain = sTerrainMgr.LoadTerrain(mapid))
+        if (FusedTerrain const* terrain = sTerrainMgr.LoadTerrain(mapid))
         {
             float ground = terrain->GetWaterOrGroundLevel(x, y, MAX_HEIGHT);
             if (ground > INVALID_HEIGHT)
@@ -1841,6 +1949,23 @@ bool ChatHandler::HandleTeleCommand(char* args)
     if (!tele)
     {
         SendSysMessage(LANG_COMMAND_TELE_NOTFOUND);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // The destination may belong to an expansion (e.g. Outland requires TBC).
+    // Enforce the account's expansion level, mirroring the world-entry check.
+    MapEntry const* mapEntry = sMapStore.LookupEntry(tele->mapId);
+    if (!mapEntry)
+    {
+        SendSysMessage(LANG_COMMAND_TELE_NOTFOUND);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (m_session->Expansion() < mapEntry->Expansion())
+    {
+        PSendSysMessage(LANG_TELE_INSUFFICIENT_EXPANSION, tele->name.c_str());
         SetSentErrorMessage(true);
         return false;
     }

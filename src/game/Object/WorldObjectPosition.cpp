@@ -51,6 +51,8 @@
 #include "Player.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
+#include "TransportSystem.h"
+#include "Transports.h"
 #include "UpdateData.h"
 #include "UpdateMask.h"
 #include "Util.h"
@@ -58,7 +60,6 @@
 #include "Transports.h"
 #include "TargetedMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
-#include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -390,12 +391,90 @@ bool WorldObject::_IsWithinDist(WorldObject const* obj, float dist2compare, bool
  * Checks if this object has line of sight to the target object
  * within the same map.
  */
+namespace
+{
+    /// The vessel an object is standing on, whichever of the two ways it is aboard.
+    Transport const* GetBoardedTransport(WorldObject const* obj)
+    {
+        // Crew and pets ride as TransportBase passengers and carry a TransportInfo.
+        if (TransportInfo const* info = obj->GetTransportInfo())
+        {
+            WorldObject const* vessel = info->GetTransport();
+            return vessel->GetTypeId() == TYPEID_GAMEOBJECT
+                       ? static_cast<Transport const*>(vessel)
+                       : NULL;
+        }
+
+        // A PLAYER does not. It rides on Player::m_transport, and its own client sends the
+        // deck offset in every movement packet -- which beats anything we could derive,
+        // since the client is authoritative for where it is standing.
+        if (obj->GetTypeId() == TYPEID_PLAYER)
+        {
+            return static_cast<Player const*>(obj)->GetTransport();
+        }
+
+        return NULL;
+    }
+
+    /// That object's deck offset, from whichever of the two sources holds it.
+    bool GetDeckPosition(WorldObject const* obj, Geometry::Vector3& out)
+    {
+        if (TransportInfo const* info = obj->GetTransportInfo())
+        {
+            out = Geometry::Vector3(info->GetLocalPositionX(),
+                                    info->GetLocalPositionY(),
+                                    info->GetLocalPositionZ());
+            return true;
+        }
+
+        if (obj->GetTypeId() == TYPEID_PLAYER)
+        {
+            Position const* t = static_cast<Player const*>(obj)->m_movementInfo.GetTransportPos();
+            out = Geometry::Vector3(t->x, t->y, t->z);
+            return true;
+        }
+
+        return false;
+    }
+}
+
 bool WorldObject::IsWithinLOSInMap(const WorldObject* obj) const
 {
     if (!IsInMap(obj))
     {
         return false;
     }
+
+    // Two things aboard the SAME vessel see each other across the DECK, not across the map.
+    //
+    // The reason is not that their world coordinates are wrong -- for two players they are
+    // exact, straight from their clients. It is that THE SHIP IS NOT IN WORLD COLLISION AT
+    // ALL. Its hull is never posed into world space and never enters DynamicCollision (see
+    // Transports.h: the server does not know the vessel's true pose, so it cannot honestly
+    // place the hull anywhere). A world-space ray between two people on a deck is therefore
+    // tested against terrain and scenery that is nowhere near the ship, and passes clean
+    // through every bulkhead and mast between them as if they were not there.
+    //
+    // The deck is the only geometry that can block them, and the deck answers only in its
+    // own coordinates.
+    Transport const* vessel = GetBoardedTransport(this);
+
+    if (vessel && vessel->HasDeck() && GetBoardedTransport(obj) == vessel)
+    {
+        Geometry::Vector3 from, to;
+
+        if (GetDeckPosition(this, from) && GetDeckPosition(obj, to))
+        {
+            // Eye height, in the deck's frame -- the same 2.0f lift the world path applies,
+            // and for the same reason: a ray drawn between two pairs of feet is blocked by
+            // the floor they are both standing on.
+            from.z += 2.0f;
+            to.z += 2.0f;
+
+            return !vessel->IsDeckBlocked(from, to);
+        }
+    }
+
     float ox, oy, oz;
     obj->GetPosition(ox, oy, oz);
     return(IsWithinLOS(ox, oy, oz));

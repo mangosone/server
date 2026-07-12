@@ -623,7 +623,7 @@ enum CapturePointSliderValue
 class Unit;
 class GameObjectModel;
 
-namespace G3D
+namespace Geometry
 {
     class Quat;
 };
@@ -659,9 +659,9 @@ class GameObject : public WorldObject
         bool HasStaticDBSpawnData() const;                  // listed in `gameobject` table and have fixed in DB guid
 
         // rotation methods
-        void GetQuaternion(G3D::Quat& q) const;
-        void SetQuaternion(G3D::Quat const& q);
-        float GetOrientationFromQuat(G3D::Quat const& q);
+        void GetQuaternion(Geometry::Quat& q) const;
+        void SetQuaternion(Geometry::Quat const& q);
+        float GetOrientationFromQuat(Geometry::Quat const& q);
 
         // overwrite WorldObject function for proper name localization
         const char* GetNameForLocaleIdx(int32 locale_idx) const override;

@@ -360,7 +360,7 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recv_data*/)
             if (corpseMapEntry->IsDungeon() && corpseMapEntry->CorpseMapID >= 0)
             {
                 // if corpse map have entrance
-                if (TerrainInfo const* entranceMap = sTerrainMgr.LoadTerrain(corpseMapEntry->CorpseMapID))
+                if (FusedTerrain const* entranceMap = sTerrainMgr.LoadTerrain(corpseMapEntry->CorpseMapID))
                 {
                     mapid = corpseMapEntry->CorpseMapID;
                     x = corpseMapEntry->Corpse_0;

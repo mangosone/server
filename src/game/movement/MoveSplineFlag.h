@@ -107,11 +107,12 @@ namespace Movement
              * @param f The flag value.
              */
             MoveSplineFlag(uint32 f) { raw() = f; }
-            /**
-             * @brief Copy constructor for MoveSplineFlag.
-             * @param f The MoveSplineFlag to copy.
-             */
-            MoveSplineFlag(const MoveSplineFlag& f) { raw() = f.raw(); }
+            /// Copy is a plain bit copy of the 32 packed flag bits, which is exactly
+            /// what the compiler generates. Writing it by hand would make it
+            /// USER-PROVIDED, and that alone deprecates the implicit copy assignment
+            /// (which the code does rely on: `args.flags = MoveSplineFlag::Done`).
+            MoveSplineFlag(const MoveSplineFlag& f) = default;
+            MoveSplineFlag& operator=(const MoveSplineFlag& f) = default;
 
             // Constant interface
 

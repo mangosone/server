@@ -967,6 +967,7 @@ Faction Template: %u. */
     //                                    10000-10999
 
     // Use for custom patches             11000-11999
+    LANG_TELE_INSUFFICIENT_EXPANSION                         = 11000,    /* Location '%s' requires an expansion your account does not have. */
 
     // NOT RESERVED IDS                   12000-1999999999
     // `db_script_string` table index     2000000000-2000999999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)

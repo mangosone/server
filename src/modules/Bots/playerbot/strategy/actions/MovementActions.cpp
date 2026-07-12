@@ -259,7 +259,7 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
 
     if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
     {
-        Unit *currentTarget = static_cast<ChaseMovementGenerator<Player> const*>(bot->GetMotionMaster()->GetCurrent())->GetTarget();
+        Unit *currentTarget = static_cast<ChaseMovementGenerator const*>(bot->GetMotionMaster()->GetCurrent())->GetTarget();
         if (currentTarget && currentTarget->GetObjectGuid() == target->GetObjectGuid()) return false;
     }
 
@@ -387,7 +387,7 @@ bool MoveRandomAction::Execute(Event event)
         y += urand(0, distance) - distance / 2;
         bot->UpdateGroundPositionZ(x, y, z);
 
-        const TerrainInfo* terrain = map->GetTerrain();
+        const FusedTerrain* terrain = map->GetTerrain();
         if (terrain->IsUnderWater(x, y, z) ||
             terrain->IsInWater(x, y, z))
             continue;

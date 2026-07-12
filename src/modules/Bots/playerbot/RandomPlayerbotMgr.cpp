@@ -367,7 +367,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        const TerrainInfo * terrain = map->GetTerrain();
+        const FusedTerrain * terrain = map->GetTerrain();
         if (!terrain->IsOutdoors(x, y, z) ||
             +terrain->IsUnderWater(x, y, z) ||
             +terrain->IsInWater(x, y, z))
@@ -648,7 +648,7 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     Map* map = sMapMgr.FindMap(mapId);
     if (!map)
         return false;
-    TerrainInfo const* terrain = map->GetTerrain();
+    FusedTerrain const* terrain = map->GetTerrain();
     if (!terrain)
         return false;
 
