@@ -684,17 +684,6 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     }
 
     ObjectGuid guid = player->GetObjectGuid();
-    Player* plr = sObjectMgr.GetPlayer(guid);
-    bool speakInLocalDef = true;    // By Default everyone could chat in local defense in tbc onwards
-    bool speakInWorldDef = false;
-    if (plr)
-    {
-        if (plr->isGameMaster())
-        {
-            speakInWorldDef = true;
-        }
-
-    }
 
     if (!IsOn(guid))
     {

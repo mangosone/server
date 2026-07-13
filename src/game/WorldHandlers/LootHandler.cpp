@@ -168,6 +168,8 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
                 }
                 break;
             }
+            default:                                        // FREE_FOR_ALL, ROUND_ROBIN: no extra restriction
+                break;
         }
     }
 

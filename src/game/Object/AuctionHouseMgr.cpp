@@ -47,7 +47,6 @@
  * \file
  */
 
-INSTANTIATE_SINGLETON_1(AuctionHouseMgr);
 
 /**
  * @brief Initializes the auction house manager.
@@ -1306,8 +1305,6 @@ void AuctionEntry::AuctionBidWinning(Player* newbidder)
  */
 bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
 {
-    Player* auction_owner = owner ? sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, owner)) : NULL;
-
     // bid can't be greater buyout
     if (buyout && newbid > buyout)
     {

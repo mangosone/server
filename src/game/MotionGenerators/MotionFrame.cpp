@@ -66,7 +66,7 @@ namespace Motion
                     }
 
                     // A failed route still leaves a straight-line shortcut in the
-                    // points, which some movement kinds want and others refuse — so
+                    // points, which some movement kinds want and others refuse -- so
                     // report it (Failed) rather than deciding here.
                     return m_path.getPath().size() >= 2;
                 }
@@ -204,18 +204,18 @@ namespace Motion
          * question is answered by the vessel's baked mesh IN THE SPACE IT WAS BAKED IN.
          *
          * No world transform is ever applied to that mesh, and this is not an
-         * optimisation — it is the only correct thing to do. The server does not know
+         * optimisation -- it is the only correct thing to do. The server does not know
          * where the ship is: the client interpolates it along a Catmull-Rom curve that
          * the server never reproduces. Posing the hull into world coordinates and firing
-         * rays at it — which is what every other core does, and why none of them can keep
-         * a crew on a deck — computes collisions against a ship that is not there.
+         * rays at it -- which is what every other core does, and why none of them can keep
+         * a crew on a deck -- computes collisions against a ship that is not there.
          */
 
         /// The step, in yards, between the samples a deck leg is built from.
         constexpr float DECK_STEP = 2.0f;
 
-        /// Each sample is sought from this far above the last one — so a low step or a
-        /// ramp is found underfoot — and no further than this below it, so a hatch does
+        /// Each sample is sought from this far above the last one -- so a low step or a
+        /// ramp is found underfoot -- and no further than this below it, so a hatch does
         /// not silently drop the leg onto the deck two levels down.
         constexpr float DECK_SEARCH_UP = 2.0f;
         constexpr float DECK_SEARCH_DOWN = 6.0f;
@@ -256,42 +256,18 @@ namespace Motion
         /**
          * @brief The deck offset of an object aboard `vessel`, if it is aboard at all.
          *
-         * There are TWO ways to be on a ship, and a pet following its master needs the
-         * second one:
-         *
-         *   * A crew member or a pet is a TransportBase passenger, and carries a
-         *     TransportInfo. Its offset is the truth we maintain.
-         *
-         *   * A PLAYER is not. A player rides on Player::m_transport plus the deck offset
-         *     its own client sends in every movement packet -- which is better than
-         *     anything we could compute, because the client is authoritative for where it
-         *     is standing. So we read the number it gave us.
-         *
-         * Missing the second case would send a pet chasing its master's WORLD position,
-         * converted into the deck frame via an estimated pose -- when the exact answer was
-         * sitting in the packet all along.
+         * Both ways of being on a ship have to be read -- a passenger's TransportInfo and a
+         * player's own client-sent offset -- and Transport::LocalPositionOf is where that
+         * rule lives. A pet following its master needs the player case: without it the
+         * chase would aim at the master's WORLD position brought into the deck frame
+         * through a vessel pose we are only estimating, when the exact answer was sitting
+         * in the master's movement packet all along.
          */
         std::optional<Vector3> LocalPositionAboard(Transport const& vessel, WorldObject const& obj)
         {
-            if (TransportInfo const* info = obj.GetTransportInfo())
+            if (const auto local = vessel.LocalPositionOf(obj))
             {
-                if (info->GetTransport() == &vessel)
-                {
-                    return LocalPositionOf(*info);
-                }
-
-                return std::nullopt;    // aboard a DIFFERENT vessel
-            }
-
-            if (obj.GetTypeId() == TYPEID_PLAYER)
-            {
-                Player const& player = static_cast<Player const&>(obj);
-
-                if (player.GetTransport() == &vessel)
-                {
-                    Position const* t = player.m_movementInfo.GetTransportPos();
-                    return Vector3(t->x, t->y, t->z);
-                }
+                return Vector3(local->x, local->y, local->z);
             }
 
             return std::nullopt;
@@ -299,24 +275,9 @@ namespace Motion
 
         std::optional<float> LocalOrientationAboard(Transport const& vessel, WorldObject const& obj)
         {
-            if (TransportInfo const* info = obj.GetTransportInfo())
+            if (const auto local = vessel.LocalPositionOf(obj))
             {
-                if (info->GetTransport() == &vessel)
-                {
-                    return info->GetLocalOrientation();
-                }
-
-                return std::nullopt;
-            }
-
-            if (obj.GetTypeId() == TYPEID_PLAYER)
-            {
-                Player const& player = static_cast<Player const&>(obj);
-
-                if (player.GetTransport() == &vessel)
-                {
-                    return player.m_movementInfo.GetTransportPos()->o;
-                }
+                return local->o;
             }
 
             return std::nullopt;
@@ -345,7 +306,7 @@ namespace Motion
         /**
          * @brief The deck's router.
          *
-         * There is no navmesh on a ship, so a deck leg is the straight line to the goal —
+         * There is no navmesh on a ship, so a deck leg is the straight line to the goal --
          * but SAMPLED, with every sample dropped onto the deck, and cut short at the first
          * one that has no deck under it or that cannot be reached from the sample before.
          *
@@ -374,7 +335,7 @@ namespace Motion
                     m_points.push_back(start);
 
                     // No baked mesh: there is no deck to walk on, and we must NOT quietly
-                    // fall back to the world terrain under the hull — that is the sea
+                    // fall back to the world terrain under the hull -- that is the sea
                     // floor. All we can honestly offer is the straight line, reported as
                     // Failed, exactly as a world route with no navmesh is. The movement
                     // kinds that refuse a shortcut then refuse this too.
@@ -416,9 +377,30 @@ namespace Motion
 
                     if (forceDestination && !complete)
                     {
-                        // A pet heeling its master is allowed to cheat to the exact spot.
-                        m_points.push_back(goal);
-                        complete = true;
+                        // A pet heeling its master may cheat past the ship's SCENERY -- a
+                        // crate, a companionway, whatever its master strolled straight
+                        // through. It may not cheat through the SHIP. The spot it lands on
+                        // still has to be a spot on the deck, so the cheat skips the
+                        // obstruction test and only that; the floor is not negotiable.
+                        //
+                        // Taking the goal raw -- which is what the world frame safely does,
+                        // because a world goal was dropped onto the terrain by GetNearPoint
+                        // long before it reached any router -- would walk the pet into a
+                        // bulkhead and leave it standing inside the hull, where no client
+                        // can draw it. On a deck the sampling above IS the ground
+                        // resolution, and NearPoint hands back goals it could not resolve
+                        // (see the note there) precisely because it trusts the router to
+                        // refuse them.
+                        //
+                        // No deck under the goal at all -- the master is leaning over the
+                        // rail and the heel spot is out over the water -- and the leg simply
+                        // stays short: the pet crowds up against the rail, as close as the
+                        // deck allows. That is what it does on retail, and it beats swimming.
+                        if (const auto onDeck = DeckDrop(*vessel, goal))
+                        {
+                            m_points.push_back(*onDeck);
+                            complete = true;
+                        }
                     }
 
                     if (m_points.size() < 2)
@@ -501,7 +483,7 @@ namespace Motion
 
                     // A fellow passenger's deck offset is exact and needs no conversion. It
                     // is also the only reading that stays right while the vessel moves under
-                    // both of them — which is precisely why chase and follow work on a
+                    // both of them -- which is precisely why chase and follow work on a
                     // rolling deck with no changes of their own, and why a pet keeps up with
                     // its master instead of swimming after the boat.
                     if (vessel)
@@ -514,7 +496,7 @@ namespace Motion
 
                     // Someone ashore, or on another vessel. Read where they are in the
                     // world and bring that into our frame. The leg to them will be cut off
-                    // at the deck's edge by the router — which is the right answer: a mob
+                    // at the deck's edge by the router -- which is the right answer: a mob
                     // may not walk off a ship to reach you.
                     Vector3 p;
                     obj.GetPosition(p.x, p.y, p.z);
@@ -542,8 +524,8 @@ namespace Motion
                                   float /*searcherBounding*/, float distance2d,
                                   float absAngle) const override
                 {
-                    // absAngle is a FRAME angle — the generators derive it from
-                    // ObjectOrientation or from frame positions — so the offset is applied
+                    // absAngle is a FRAME angle -- the generators derive it from
+                    // ObjectOrientation or from frame positions -- so the offset is applied
                     // in the deck's own 2D system and no yaw correction belongs here.
                     const Vector3 t = ObjectPosition(mover, target);
                     const Vector3 guess(t.x + distance2d * std::cos(absAngle),

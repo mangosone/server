@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,63 +25,36 @@
 #ifndef LOCKEDQUEUE_H
 #define LOCKEDQUEUE_H
 
-#include <ace/Guard_T.h>
-#include <ace/Thread_Mutex.h>
 #include <deque>
-#include <assert.h>
-#include "Utilities/Errors.h"
+#include <mutex>
 
-namespace ACE_Based
+namespace MaNGOS
 {
-    template < class T, class LockType, typename StorageType = std::deque<T> >
-
     /**
-     * @brief
+     * @brief A simple thread-safe FIFO queue.
      *
+     * @tparam T           Element type.
+     * @tparam StorageType Underlying container (deque by default).
      */
+    template <class T, typename StorageType = std::deque<T> >
     class LockedQueue
     {
-        LockType _lock; /**< Lock access to the queue. */
-        StorageType _queue; /**< Storage backing the queue. */
-
         public:
 
-            /**
-             * @brief Create a LockedQueue.
-             *
-             */
-            LockedQueue() : _lock(), _queue()
-            {
-            }
+            LockedQueue() = default;
+            virtual ~LockedQueue() = default;
 
-            /**
-             * @brief Destroy a LockedQueue.
-             *
-             */
-            virtual ~LockedQueue()
-            {
-            }
-
-            /**
-             * @brief Adds an item to the queue.
-             *
-             * @param item
-             */
+            /// Append an item to the back of the queue.
             void add(const T& item)
             {
-                ACE_GUARD (LockType, g, this->_lock);
+                std::lock_guard<std::mutex> guard(_lock);
                 _queue.push_back(item);
             }
 
-            /**
-             * @brief Gets the next result in the queue, if any.
-             *
-             * @param result
-             * @return bool
-             */
+            /// Pop the front item into @p result. Returns false if the queue is empty.
             bool next(T& result)
             {
-                ACE_GUARD_RETURN(LockType, g, this->_lock, false);
+                std::lock_guard<std::mutex> guard(_lock);
 
                 if (_queue.empty())
                 {
@@ -94,18 +67,16 @@ namespace ACE_Based
                 return true;
             }
 
-            template<class Checker>
-
             /**
-             * @brief
+             * @brief Pop the front item only if @p check accepts it.
              *
-             * @param result
-             * @param check
-             * @return bool
+             * Returns false — leaving the item queued — if the queue is empty or the
+             * checker rejects it.
              */
+            template<class Checker>
             bool next(T& result, Checker& check)
             {
-                ACE_GUARD_RETURN(LockType, g, this->_lock, false);
+                std::lock_guard<std::mutex> guard(_lock);
 
                 if (_queue.empty())
                 {
@@ -122,16 +93,16 @@ namespace ACE_Based
                 return true;
             }
 
-            /**
-             * @brief Checks if we're empty or not with locks held
-             *
-             * @return bool
-             */
             bool empty()
             {
-                ACE_GUARD_RETURN (LockType, g, this->_lock, false);
+                std::lock_guard<std::mutex> guard(_lock);
                 return _queue.empty();
             }
+
+        private:
+
+            std::mutex  _lock;   ///< Serialises access to the queue
+            StorageType _queue;  ///< Storage backing the queue
     };
 }
 #endif

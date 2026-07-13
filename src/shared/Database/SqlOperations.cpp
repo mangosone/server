@@ -41,15 +41,21 @@
 #include "SqlDelayThread.h"
 #include "DatabaseEnv.h"
 
+/// ---- BASE ----
+
 /**
- * @def LOCK_DB_CONN
- * @brief RAII lock macro for database connections
- * @param conn The SqlConnection to lock
+ * @brief Run an operation, holding the connection's lock for its duration.
  *
- * Creates a SqlConnection::Lock guard that ensures thread-safe
- * access to the database connection during operation execution.
+ * The one place a connection lock is taken for an operation. Everything below
+ * implements ExecuteLocked() and assumes the lock is already held, which is what
+ * lets SqlTransaction hold it once across all of its statements instead of each
+ * statement re-locking the same connection.
  */
-#define LOCK_DB_CONN(conn) SqlConnection::Lock guard(conn)
+bool SqlOperation::Execute(SqlConnection* conn)
+{
+    SqlConnection::Lock guard(conn);
+    return ExecuteLocked(conn);
+}
 
 /// ---- ASYNC STATEMENTS / TRANSACTIONS ----
 
@@ -62,10 +68,9 @@
  * The connection is locked during execution to ensure thread safety.
  * This is the simplest form of SQL operation with no parameters or results.
  */
-bool SqlPlainRequest::Execute(SqlConnection* conn)
+bool SqlPlainRequest::ExecuteLocked(SqlConnection* conn)
 {
     /// just do it
-    LOCK_DB_CONN(conn);
     return conn->Execute(m_sql);
 }
 
@@ -99,14 +104,13 @@ SqlTransaction::~SqlTransaction()
  *
  * @note Empty transactions return true without doing anything.
  */
-bool SqlTransaction::Execute(SqlConnection* conn)
+bool SqlTransaction::ExecuteLocked(SqlConnection* conn)
 {
     if (m_queue.empty())
     {
         return true;
     }
 
-    LOCK_DB_CONN(conn);
 
     conn->BeginTransaction();
 
@@ -115,7 +119,7 @@ bool SqlTransaction::Execute(SqlConnection* conn)
     {
         SqlOperation* pStmt = m_queue[i];
 
-        if (!pStmt->Execute(conn))
+        if (!pStmt->ExecuteLocked(conn))
         {
             conn->RollbackTransaction();
             return false;
@@ -157,9 +161,8 @@ SqlPreparedRequest::~SqlPreparedRequest()
  * given connection. Prepared statements are more efficient than plain
  * SQL for repeated execution with different parameters.
  */
-bool SqlPreparedRequest::Execute(SqlConnection* conn)
+bool SqlPreparedRequest::ExecuteLocked(SqlConnection* conn)
 {
-    LOCK_DB_CONN(conn);
     return conn->ExecuteStmt(m_nIndex, *m_param);
 }
 
@@ -176,14 +179,13 @@ bool SqlPreparedRequest::Execute(SqlConnection* conn)
  *
  * @note The callback and result queue must be valid for this to succeed.
  */
-bool SqlQuery::Execute(SqlConnection* conn)
+bool SqlQuery::ExecuteLocked(SqlConnection* conn)
 {
     if (!m_callback || !m_queue)
     {
         return false;
     }
 
-    LOCK_DB_CONN(conn);
     /// execute the query and store the result in the callback
     m_callback->SetResult(conn->Query(m_sql));
     /// add the callback to the sql result queue of the thread it originated from
@@ -404,14 +406,13 @@ void SqlQueryHolder::SetSize(size_t size)
  *
  * @note This is called internally by SqlDelayThread, not directly by users.
  */
-bool SqlQueryHolderEx::Execute(SqlConnection* conn)
+bool SqlQueryHolderEx::ExecuteLocked(SqlConnection* conn)
 {
     if (!m_holder || !m_callback || !m_queue)
     {
         return false;
     }
 
-    LOCK_DB_CONN(conn);
     /// we can do this, we are friends
     std::vector<SqlQueryHolder::SqlResultPair>& queries = m_holder->m_queries;
     for (size_t i = 0; i < queries.size(); ++i)

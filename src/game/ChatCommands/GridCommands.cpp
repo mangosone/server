@@ -229,7 +229,7 @@ bool ChatHandler::HandleGridInfoCommand(char* args)
  * LivingWorld anchors enabled by the current AnchorPolicyMask) -- not every
  * possible DB anchor. Used to measure how sparse anchor-held grids are. Read-only.
  */
-bool ChatHandler::HandleGridAnchorsCommand(char* args)
+bool ChatHandler::HandleGridAnchorsCommand(char* /*args*/)
 {
     Player* player = m_session ? m_session->GetPlayer() : NULL;
     if (!player)

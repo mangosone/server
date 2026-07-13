@@ -35,14 +35,11 @@
 #include "Policies/Singleton.h"
 #include "Utilities/UnorderedMapSet.h"
 #include "FusedTerrain.h"
-
-#include <ace/Thread_Mutex.h>
-
 // class for sharing and managing FusedTerrain objects, one per map id
-class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex> >
+class TerrainManager : public MaNGOS::Singleton<TerrainManager>
 {
         typedef UNORDERED_MAP<uint32, FusedTerrain*> TerrainDataMap;
-        friend class MaNGOS::OperatorNew<TerrainManager>;
+        friend class MaNGOS::Singleton<TerrainManager>;
 
     public:
         FusedTerrain* LoadTerrain(const uint32 mapId);
@@ -80,7 +77,7 @@ class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLev
         TerrainManager(const TerrainManager&);
         TerrainManager& operator=(const TerrainManager&);
 
-        typedef ACE_Thread_Mutex LOCK_TYPE;
+        typedef std::mutex LOCK_TYPE;
         LOCK_TYPE m_mutex;
         TerrainDataMap i_TerrainMap;
 };

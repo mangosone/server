@@ -32,8 +32,6 @@
 #include "Pet.h"
 #include "Log.h"
 
-INSTANTIATE_SINGLETON_1(CreatureAIRegistry);
-INSTANTIATE_SINGLETON_1(MovementGeneratorRegistry);
 
 namespace FactorySelector
 {

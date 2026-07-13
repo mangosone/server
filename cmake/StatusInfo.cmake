@@ -44,5 +44,12 @@ if(BUILD_TOOLS)
 else()
     message("Build tools           : No")
 endif()
+
+if(BUILD_TESTS)
+    message("Build tests           : Yes")
+else()
+    message("Build tests           : No (default)")
+endif()
+
 message("")
 message("===================================================")

@@ -111,7 +111,7 @@ void WorldSession::HandleGuildCreateOpcode(WorldPacket& recvPacket)
  * @param player The invited player.
  * @param alreadyInGuild Unused legacy flag for prior guild membership checks.
  */
-void WorldSession::SendGuildInvite(Player* player, bool alreadyInGuild /*= false*/)
+void WorldSession::SendGuildInvite(Player* player, bool /*alreadyInGuild*/ /*= false*/)
 {
     Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId());
     player->SetGuildIdInvited(GetPlayer()->GetGuildId());

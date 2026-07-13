@@ -90,6 +90,7 @@ uint32 mTimeStamp()
 
 #else
 #include <time.h>
+#include <sys/time.h>   // gettimeofday(), struct timeval (was reached via ACE before)
 
 uint32 mTimeStamp()
 {

@@ -64,7 +64,7 @@ bool ChatHandler::HandleStableCommand(char* /*args*/)
 
 /**********************************************************************
     CommandTable : resetCommandTable
-/***********************************************************************/
+***********************************************************************/
 static bool HandleResetStatsOrLevelHelper(Player* player)
 {
     ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(player->getClass());

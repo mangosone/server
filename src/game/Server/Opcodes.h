@@ -1176,7 +1176,8 @@ inline const char* LookupOpcodeName(uint16 id)
     {
         return "Received unknown opcode, it's more than max!";
     }
-    return opcodeTable[id].name;
+    // An entry that was never registered has a NULL name; never hand that to a "%s"
+    return opcodeTable[id].name ? opcodeTable[id].name : "UNKNOWN";
 }
 #endif
 

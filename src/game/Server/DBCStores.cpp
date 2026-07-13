@@ -904,7 +904,7 @@ ChatChannelsEntry const* GetChannelEntryFor(uint32 channel_id)
     return NULL;
 }
 
-static ChatChannelsEntry worldCh = { 26, 4, "world" };
+static ChatChannelsEntry worldCh = { 26, 4, { "world" } };
 
 /**
  * @brief Finds a chat channel entry by display name.

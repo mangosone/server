@@ -1,0 +1,92 @@
+/**
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
+
+/// \addtogroup mangosd
+/// @{
+/// \file
+
+#ifndef MANGOS_H_MASTER
+#define MANGOS_H_MASTER
+
+#include "Common.h"
+#include "RASession.h"
+
+#include <thread>
+
+/**
+ * @brief Brings the world daemon up, runs it, and takes it back down.
+ *
+ * Owns everything with a lifetime: the databases, the listening sockets, and the
+ * auxiliary threads (freeze detector, console, remote access, SOAP). The world
+ * heartbeat itself runs on the caller's thread — Run() only returns once the world has
+ * stopped and everything else has been joined.
+ *
+ * This replaces four ACE_Task_Base subclasses (WorldThread, RAThread, CliThread,
+ * AntiFreezeThread) and the global ACE_Thread_Manager::wait() that used to reap them.
+ */
+class Master
+{
+    public:
+
+        Master() = default;
+
+        Master(const Master&) = delete;
+        Master& operator=(const Master&) = delete;
+
+        /**
+         * @brief Run the server to completion.
+         * @return The process exit code.
+         */
+        int Run();
+
+    private:
+
+        /// Open the three databases and check their schema versions.
+        bool StartDatabases();
+
+        /// Flush and close the databases (in the reverse order they were opened).
+        void StopDatabases();
+
+        /// Reset the online flags left behind by an unclean shutdown.
+        void ClearOnlineAccounts();
+
+        /// The world heartbeat. Runs on the calling thread and returns once stopped.
+        void WorldLoop();
+
+        /// Watchdog: aborts the process if the world loop stops advancing.
+        void FreezeDetector(uint32 maxStuckMs);
+
+        /// Console reader: turns stdin lines into queued CLI commands.
+        void CliLoop(bool beep);
+
+        /// Unblock a console reader that is parked in fgets().
+        void StopCli();
+
+        std::thread m_freezeThread;
+        std::thread m_cliThread;
+        RaServer    m_raServer;
+};
+
+#endif
+/// @}

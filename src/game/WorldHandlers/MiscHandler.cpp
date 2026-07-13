@@ -836,7 +836,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         }
 
         // need find areatrigger to inner dungeon for landing point
-        if (at->target_mapId != corpseMapId)
+        if (at->target_mapId != uint32(corpseMapId))
         {
             if (AreaTrigger const* corpseAt = sObjectMgr.GetMapEntranceTrigger(corpseMapId))
             {

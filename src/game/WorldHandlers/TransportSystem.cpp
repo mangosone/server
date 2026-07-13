@@ -39,6 +39,9 @@
 #include "GameTime.h"
 #include "MapManager.h"
 
+#include <utility>
+#include <vector>
+
 /* **************************************** TransportBase ****************************************/
 
 TransportBase::TransportBase(WorldObject* owner) :
@@ -90,11 +93,38 @@ void TransportBase::UpdateGlobalPositions()
     m_sinO = sin(pos.o);
     m_cosO = cos(pos.o);
 
-    // Update global positions
+    // Over a SNAPSHOT, and this is not defensive habit -- the live map cannot survive the walk.
+    //
+    // Refreshing a GRID-RESIDENT passenger (a pet) goes out through Map::CreatureRelocation,
+    // and the grid is entitled to REFUSE it: the deck may have carried it into a cell that will
+    // not take it. When that happens the minion steps off the boat and unboards itself
+    // (Map::CreatureRespawnRelocation) -- erasing, re-entrantly, the very element this loop is
+    // standing on. Iterating m_passengers directly would then walk a dead iterator.
+    //
+    // Crew never do this: their refresh is a plain Relocate that touches no grid at all. But
+    // they share the loop, so the loop has to be safe for the passenger that does.
+    std::vector<std::pair<WorldObject*, Position> > refresh;
+    refresh.reserve(m_passengers.size());
+
     for (PassengerMap::const_iterator itr = m_passengers.begin(); itr != m_passengers.end(); ++itr)
     {
-        UpdateGlobalPositionOf(itr->first, itr->second->GetLocalPositionX(), itr->second->GetLocalPositionY(),
-                               itr->second->GetLocalPositionZ(), itr->second->GetLocalOrientation());
+        refresh.push_back(std::make_pair(itr->first,
+                                         Position(itr->second->GetLocalPositionX(),
+                                                  itr->second->GetLocalPositionY(),
+                                                  itr->second->GetLocalPositionZ(),
+                                                  itr->second->GetLocalOrientation())));
+    }
+
+    for (std::pair<WorldObject*, Position> const& entry : refresh)
+    {
+        // An earlier iteration's relocation may have put this one ashore.
+        if (m_passengers.find(entry.first) == m_passengers.end())
+        {
+            continue;
+        }
+
+        UpdateGlobalPositionOf(entry.first, entry.second.x, entry.second.y,
+                               entry.second.z, entry.second.o);
     }
 
     m_lastPosition = pos;
@@ -121,8 +151,6 @@ void TransportBase::UpdateGlobalPositionOf(WorldObject* passenger, float lx, flo
     float gx, gy, gz, go;
     CalculateGlobalPositionOf(lx, ly, lz, lo, gx, gy, gz, go);
 
-    TransportInfo const* info = passenger->GetTransportInfo();
-
     // The client parents a unit to a vessel from that unit's MOVEMENT INFO and nothing else:
     // MovementInfo::Write emits the transport block only when MOVEFLAG_ONTRANSPORT is set.
     // A server-driven passenger never sets it on its own -- only a player's own client does,
@@ -133,8 +161,8 @@ void TransportBase::UpdateGlobalPositionOf(WorldObject* passenger, float lx, flo
     //
     // The deck offset is the authoritative coordinate for these passengers (the world one is
     // a derived cache -- see the comment above), so it is what gets stamped. This covers a
-    // boarded MINION too: a pet is a grid citizen for the server's bookkeeping, but to the
-    // client it is just as much on the deck as the crew are, and must ride with it.
+    // boarded MINION exactly as it covers the crew: to the client a pet is just as much on
+    // the deck as a deckhand, and must ride with the ship.
     if (passenger->isType(TYPEMASK_UNIT))
     {
         Unit* boarded = static_cast<Unit*>(passenger);
@@ -144,25 +172,24 @@ void TransportBase::UpdateGlobalPositionOf(WorldObject* passenger, float lx, flo
                                                  GameTime::GetGameTimeMS());
     }
 
-    // A MINION -- a pet, a guardian -- belongs to the world and is only standing on our
-    // floor. It is still in a grid cell, it is still found by grid searchers, it still
-    // fights things. So its world position has to keep being maintained THROUGH the grid:
-    // relocate it properly, or the ship sails out of its cell and its cell membership --
-    // and therefore its visibility, and Map::Remove's idea of where to find it -- goes
-    // stale and stays stale.
-    if (info && info->IsGridResident() && passenger->GetTypeId() == TYPEID_UNIT)
-    {
-        m_owner->GetMap()->CreatureRelocation(static_cast<Creature*>(passenger), gx, gy, gz, go);
-        return;
-    }
-
-    // CREW. Not in any grid, so this is a pure cache write: it stamps the world token that
-    // an off-ship distance check needs and touches nothing else. CreatureRelocation here
-    // would be actively wrong -- see the comment above the function.
+    // A CREW member and a boarded MINION are treated identically here, and that is the
+    // whole point of the ship-local model: neither is in a world grid cell, so this is a
+    // pure cache write. It stamps the world token that an off-ship distance check needs --
+    // and that the pet subsystem's eventual remove-list pass needs to find the creature in
+    // a loaded cell (the token tracks the ship, i.e. where the master is standing, which is
+    // always loaded) -- and touches nothing else.
     //
-    // (A player aboard is not one of these passengers at all: it stays a normal grid
-    // citizen, the client is authoritative for where it stands, and it tells us both
-    // coordinate systems in every movement packet. We never move it from here.)
+    // It deliberately does NOT call Map::CreatureRelocation. A boarded creature is not a
+    // citizen of the world grid; it is a passenger of the vessel's own container, and
+    // relocating it through the world grid was exactly the "composed world position" that
+    // made a moving ship churn the pet's cell membership and blink it out of sight.
+    //
+    // (A player aboard is not one of these passengers. The player's own client is the sole
+    // authority for where the player stands; the server relays that when the player moves,
+    // and while the player is STILL there is nothing to relay -- the client keeps drawing it
+    // on the deck through the transport parent, needing no help from us. Either way we never
+    // server-relocate the player from here. The player stays a grid citizen only so it can
+    // SEE and interact with the world; being seen is the ship's job, like any passenger.)
     passenger->Relocate(gx, gy, gz, go);
 }
 
@@ -213,9 +240,9 @@ void TransportBase::UnBoardAllPassengers()
 }
 
 void TransportBase::BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo,
-                                   bool gridResident)
+                                   bool minion)
 {
-    TransportInfo* transportInfo = new TransportInfo(passenger, this, lx, ly, lz, lo, gridResident);
+    TransportInfo* transportInfo = new TransportInfo(passenger, this, lx, ly, lz, lo, minion);
 
     // Insert our new passenger
     m_passengers.insert(PassengerMap::value_type(passenger, transportInfo));
@@ -256,11 +283,11 @@ void TransportBase::UnBoardPassenger(WorldObject* passenger)
 /* **************************************** TransportInfo ****************************************/
 
 TransportInfo::TransportInfo(WorldObject* owner, TransportBase* transport, float lx, float ly, float lz, float lo,
-                             bool gridResident) :
+                             bool minion) :
     m_owner(owner),
     m_transport(transport),
     m_localPosition(lx, ly, lz, lo),
-    m_gridResident(gridResident)
+    m_minion(minion)
 {
     MANGOS_ASSERT(owner && m_transport);
 }

@@ -32,7 +32,6 @@
 #include "World.h"
 #include "Util.h"
 
-INSTANTIATE_SINGLETON_1(SocialMgr);
 
 /**
  * @brief Creates an empty social list for a player.

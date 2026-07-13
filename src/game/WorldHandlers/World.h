@@ -505,7 +505,7 @@ typedef UNORDERED_MAP<uint32, WorldSession*> SessionMap;
 class World
 {
     public:
-        static ACE_Atomic_Op<ACE_Thread_Mutex, uint32> m_worldLoopCounter;
+        static std::atomic<uint32> m_worldLoopCounter;
 
         World();
         ~World();
@@ -548,7 +548,8 @@ class World
         void SetMotd(const std::string& motd) { m_motd = motd; }
         /// Get the current Message of the Day
         const char* GetMotd() const { return m_motd.c_str(); }
-        void showFooter();
+        /// Draw the world-initialization completion panel.
+        void showFooter(uint32 startupMs);
 
         LocaleConstant GetDefaultDbcLocale() const { return m_defaultDbcLocale; }
 
@@ -803,7 +804,7 @@ class World
         static uint32 m_visibility_observer_sweep_interval;
 
         // CLI command holder to be thread safe
-        ACE_Based::LockedQueue<CliCommandHolder*, ACE_Thread_Mutex> cliCmdQueue;
+        MaNGOS::LockedQueue<CliCommandHolder*> cliCmdQueue;
 
         // next daily quests reset time
         time_t m_NextDailyQuestReset;
@@ -813,7 +814,7 @@ class World
 
         // sessions that are added async
         void AddSession_(WorldSession* s);
-        ACE_Based::LockedQueue<WorldSession*, ACE_Thread_Mutex> addSessQueue;
+        MaNGOS::LockedQueue<WorldSession*> addSessQueue;
 
         // used versions
         std::string m_DBVersion;

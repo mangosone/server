@@ -34,7 +34,6 @@
 #include "SpellMgr.h"
 #include "World.h"
 
-INSTANTIATE_SINGLETON_1(CreatureEventAIMgr);
 
 // -------------------
 /**

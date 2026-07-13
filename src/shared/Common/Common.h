@@ -63,62 +63,50 @@
 #include "LockedQueue/LockedQueue.h"
 #include "Threading/Threading.h"
 
-#include <ace/Basic_Types.h>
-#include <ace/Guard_T.h>
-#include <ace/RW_Thread_Mutex.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/OS_NS_arpa_inet.h>
+#include <cinttypes>
+#include <mutex>
+#include <shared_mutex>
 
+// The POSIX block below is deliberately explicit. These headers used to arrive by
+// accident: the ACE headers this file once included (Basic_Types.h, Thread_Mutex.h,
+// OS_NS_arpa_inet.h, ...) dragged most of the system API in behind them, and much of the
+// tree quietly depended on that. With ACE gone, anything Common.h does not name is not
+// declared — so name it.
 #if PLATFORM == PLATFORM_WINDOWS
 #  if !defined (FD_SETSIZE)
 #    define FD_SETSIZE 4096
 #  endif
-#  include <ace/config-all.h>
+#  include <winsock2.h>
 #  include <ws2tcpip.h>
 #else
 #  include <sys/types.h>
 #  include <sys/ioctl.h>
 #  include <sys/socket.h>
+#  include <sys/stat.h>
+#  include <sys/time.h>
 #  include <netinet/in.h>
+#  include <arpa/inet.h>
 #  include <unistd.h>
 #  include <netdb.h>
+#  include <strings.h>   // strcasecmp/strncasecmp, for the stricmp/strnicmp aliases below
 #endif
 
 #if COMPILER == COMPILER_MICROSOFT
-
 #  include <float.h>
-
-#  define I32FMT "%08I32X"
-#  define I64FMT "%016I64X"
-
 #else
-
 #  define stricmp strcasecmp
 #  define strnicmp strncasecmp
-
-#  define I32FMT "%08X"
-#  if ACE_SIZEOF_LONG == 8
-#    define I64FMT "%016lX"
-#  else
-#    define I64FMT "%016llX"
-#  endif /* ACE_SIZEOF_LONG == 8 */
-
 #endif
 
-#if defined(__APPLE__)
-#  ifdef I64FMT
-#    undef I64FMT
-#  endif
-#  define I64FMT "%016llX"
-#  define UI64FMTD "%llu"
-#else
-#  define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
-#endif
+// 64-bit printf specifiers and literals. <cinttypes> gives us these portably, so the
+// per-compiler ladder these used to need (and the ACE macros behind it) is gone.
+#define I32FMT   "%08" PRIX32
+#define I64FMT   "%016" PRIX64
+#define UI64FMTD "%" PRIu64
+#define SI64FMTD "%" PRId64
 
-#define UI64LIT(N) ACE_UINT64_LITERAL(N)
-
-#define SI64FMTD ACE_INT64_FORMAT_SPECIFIER
-#define SI64LIT(N) ACE_INT64_LITERAL(N)
+#define UI64LIT(N) UINT64_C(N)
+#define SI64LIT(N) INT64_C(N)
 
 /**
  * @brief

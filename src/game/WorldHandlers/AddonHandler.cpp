@@ -50,7 +50,6 @@
 #include "Log.h"
 #include "Policies/Singleton.h"
 
-INSTANTIATE_SINGLETON_1(AddonHandler);
 
 /**
  * @brief Construct AddonHandler singleton

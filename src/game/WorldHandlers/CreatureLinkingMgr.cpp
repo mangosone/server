@@ -50,7 +50,6 @@
 #include "Creature.h"
 #include "CreatureAI.h"
 
-INSTANTIATE_SINGLETON_1(CreatureLinkingMgr);
 
 #define INVALID_MAP_ID      0xFFFFFFFF
 

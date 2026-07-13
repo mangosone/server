@@ -1491,16 +1491,35 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
  */
 bool Map::CreatureRespawnRelocation(Creature* c)
 {
-    // A crew member has no grid cell to be moved between, and its respawn coord is a deck
-    // offset rather than a map coordinate -- ComputeCellPair on it would name the cell next
-    // to the map origin. Its vessel puts it back on its mark.
-    if (c->GetTransportInfo())
+    if (TransportInfo* transportInfo = c->GetTransportInfo())
     {
-        c->CombatStop();
-        c->GetMotionMaster()->Clear();
-        c->RelocateToRespawnPoint();
-        c->GetMotionMaster()->Initialize();
-        return true;
+        // CREW. It has no grid cell to be moved between, and its respawn coord is a deck
+        // offset rather than a map coordinate -- ComputeCellPair on it would name the cell
+        // next to the map origin. Its vessel puts it back on its mark.
+        if (!transportInfo->IsMinion())
+        {
+            c->CombatStop();
+            c->GetMotionMaster()->Clear();
+            c->RelocateToRespawnPoint();
+            c->GetMotionMaster()->Initialize();
+            return true;
+        }
+
+        // A MINION -- a pet, a guardian -- is a citizen of the WORLD that is merely standing
+        // on the vessel's floor, and we are only here because THE GRID REFUSED IT: the deck
+        // has carried it into a cell that will not take it.
+        //
+        // It must not take the crew path above, and the reason is not subtle. Its respawn
+        // coord is WORLD data (it was summoned somewhere on the map), not a deck offset. So
+        // RelocateToRespawnPoint would hand a map coordinate to SetLocalPosition, which would
+        // read it as an offset, compose it with the vessel's pose into a point further out to
+        // sea still, be refused by the grid again -- and arrive straight back here. That is an
+        // unbounded recursion, and it diverges rather than settling: it overflows the stack.
+        //
+        // So the minion simply steps off the boat. Off the deck it is an ordinary creature the
+        // grid has refused, and the ordinary path below is exactly right for it. (Its master's
+        // vessel will offer it the deck again on its next tick -- see Transport::UpdateMinions.)
+        transportInfo->GetTransportBase()->UnBoardPassenger(c);
     }
 
     float resp_x, resp_y, resp_z, resp_o;

@@ -50,8 +50,6 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include <ace/Recursive_Thread_Mutex.h>
-#include "Policies/ThreadingModel.h"
 #include "UpdateData.h"
 #include "GridDefines.h"
 #include "Object.h"
@@ -82,9 +80,9 @@ class Map;
 ///
 /// @note This is a thread-safe singleton, should not be instantiated directly
 /// @see sObjectAccessor for the singleton accessor macro
-class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Recursive_Thread_Mutex> >
+class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor>
 {
-        friend class MaNGOS::OperatorNew<ObjectAccessor>;
+        friend class MaNGOS::Singleton<ObjectAccessor>;
 
         ObjectAccessor();
         ~ObjectAccessor();
@@ -104,7 +102,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         ///
         /// @tparam T The object type to store (Player, Corpse, etc.)
         ///
-        /// @note Uses ACE_RW_Thread_Mutex for read/write locking
+        /// @note Uses std::shared_mutex for read/write locking
         /// @see Insert() for adding objects
         /// @see Remove() for removing objects
         /// @see Find() for looking up objects
@@ -114,17 +112,17 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             /// @brief Underlying hash map type (ObjectGuid -> Object pointer)
             using MapType = std::unordered_map<ObjectGuid, T*>;
             /// @brief Lock type for synchronization
-            using LockType = ACE_RW_Thread_Mutex;
+            using LockType = std::shared_mutex;
 
             /// @brief Constructor initializes empty map
-            HashMapHolder() : i_lock(nullptr), m_objectMap() {}
+            HashMapHolder() : m_objectMap() {}
 
             /// @brief Insert an object into the map with write lock.
             ///
             /// @param o Pointer to object to insert
             void Insert(T* o)
             {
-                ACE_WRITE_GUARD(LockType, guard, i_lock)
+                std::unique_lock<LockType> guard(i_lock);
                 m_objectMap[o->GetObjectGuid()] = o;
             }
 
@@ -133,7 +131,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             /// @param o Pointer to object to remove
             void Remove(T* o)
             {
-                ACE_WRITE_GUARD(LockType, guard, i_lock)
+                std::unique_lock<LockType> guard(i_lock);
                 m_objectMap.erase(o->GetObjectGuid());
             }
 
@@ -143,7 +141,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             /// @return Pointer to object if found, nullptr otherwise
             T* Find(ObjectGuid guid)
             {
-                ACE_READ_GUARD_RETURN (LockType, guard, i_lock, nullptr)
+                std::shared_lock<LockType> guard(i_lock);
                 auto itr = m_objectMap.find(guid);
                 return (itr != m_objectMap.end()) ? itr->second : nullptr;
             }
@@ -168,7 +166,11 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         };
 
         using Player2CorpsesMapType = std::unordered_map<ObjectGuid, Corpse*>;
-        using LockType = ACE_Recursive_Thread_Mutex;
+        /// Guards the player<->corpse map. Plain, not recursive: the four functions that
+        /// take it (Add/Remove/GetCorpseForPlayerGUID/AddCorpsesToGrid) never call one
+        /// another, and the callers that chain them (ConvertCorpseForPlayer,
+        /// RemoveOldCorpses) do so without holding it.
+        using LockType = std::mutex;
 
     public:
 
@@ -321,7 +323,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         template<typename F>
         void DoForAllPlayers(F&& f)
         {
-            ACE_READ_GUARD(HashMapHolder<Player>::LockType, g, i_playerMap.GetLock())
+            std::shared_lock<HashMapHolder<Player>::LockType> g(i_playerMap.GetLock());
             for (auto& iter : i_playerMap.GetContainer())
             {
                 if (iter.second != nullptr)

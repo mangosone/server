@@ -63,8 +63,9 @@ WorldUpdateTime sWorldUpdateTime;
  * Initializes all metrics to zero. The data table is sized by the template
  * parameter (default 100 entries for historical tracking).
  */
-UpdateTime::UpdateTime() : _averageUpdateTime(0), _totalUpdateTime(0), _updateTimeTableIndex(0), _maxUpdateTime(0),
-    _maxUpdateTimeOfLastTable(0), _maxUpdateTimeOfCurrentTable(0), _updateTimeDataTable() { }
+UpdateTime::UpdateTime() : _updateTimeDataTable(), _averageUpdateTime(0), _totalUpdateTime(0),
+    _updateTimeTableIndex(0), _maxUpdateTime(0), _maxUpdateTimeOfLastTable(0),
+    _maxUpdateTimeOfCurrentTable(0) { }
 
 /**
  * @brief Get simple average update time

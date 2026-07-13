@@ -22,38 +22,38 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef _M_DELAY_EXECUTOR_H
-#define _M_DELAY_EXECUTOR_H
+#pragma once
+#include "net/reactor/Poller.hpp"
 
-#include <ace/Task.h>
-#include <ace/Activation_Queue.h>
-#include <ace/Method_Request.h>
+// epoll(7) is Linux-specific.
+#if defined(__linux__)
+#define MANGOS_HAVE_EPOLL 1
+#endif
 
-class DelayExecutor : protected ACE_Task_Base
-{
-    public:
+#ifdef MANGOS_HAVE_EPOLL
 
-        DelayExecutor();
-        virtual ~DelayExecutor();
+namespace net {
 
-        static DelayExecutor* instance();
+class EpollPoller final : public Poller {
+public:
+    ~EpollPoller() override { shutdown(); }
 
-        int execute(ACE_Method_Request* new_req);
+    bool init() override;
+    bool add(int fd, uint32_t interest, void* udata) override;
+    bool mod(int fd, uint32_t interest, void* udata) override;
+    bool del(int fd) override;
+    int  wait(PollerEvent* out, int maxEvents) override;
+    void wake() override;
+    void shutdown() override;
+    const char* name() const override { return "epoll"; }
 
-        int _activate(int num_threads = 1);
+private:
+    int m_epfd    = -1;
+    int m_eventfd = -1; // cross-thread wakeup source, registered in the epoll set
 
-        int deactivate();
-
-        bool activated();
-
-        virtual int svc();
-
-    private:
-
-        ACE_Activation_Queue queue_;
-        bool activated_;
-
-        void activated(bool s);
+    static uint32_t toEpoll(uint32_t interest);
 };
 
-#endif // _M_DELAY_EXECUTOR_H
+} // namespace net
+
+#endif // MANGOS_HAVE_EPOLL

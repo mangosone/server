@@ -66,7 +66,6 @@
 
 #include "Policies/Singleton.h"
 
-INSTANTIATE_SINGLETON_1(BattleGroundMgr);
 
 /*********************************************************/
 /***            BATTLEGROUND QUEUE SYSTEM              ***/
@@ -223,7 +222,7 @@ void BattleGroundMgr::Update(uint32 diff)
         std::vector<uint64> scheduled;
         {
             // create mutex
-            // ACE_Guard<ACE_Thread_Mutex> guard(SchedulerLock);
+            // std::lock_guard<std::mutex> guard(SchedulerLock);
             // copy vector and clear the other
             scheduled = std::vector<uint64>(m_QueueUpdateScheduler);
             m_QueueUpdateScheduler.clear();

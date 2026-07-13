@@ -1751,7 +1751,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, S
         return;
     }
 
-    if (!this || !pVictim)
+    if (!pVictim)
     {
         return;
     }
@@ -1843,7 +1843,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage* damageInfo, bool durabilityLoss)
 
     Unit* pVictim = damageInfo->target;
 
-    if (!this || !pVictim)
+    if (!pVictim)
     {
         return;
     }
@@ -2233,7 +2233,7 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
  */
 void Unit::InterruptSpell(CurrentSpellTypes spellType, bool withDelayed)
 {
-    MANGOS_ASSERT(spellType < CURRENT_MAX_SPELL);
+    MANGOS_ASSERT(uint32(spellType) < CURRENT_MAX_SPELL);
 
     if (m_currentSpells[spellType] && (withDelayed || m_currentSpells[spellType]->getState() != SPELL_STATE_DELAYED))
     {
@@ -3336,7 +3336,7 @@ Unit* Unit::_GetTotem(TotemSlot slot) const
  */
 Totem* Unit::GetTotem(TotemSlot slot) const
 {
-    if (slot >= MAX_TOTEM_SLOT || !IsInWorld() || !m_TotemSlot[slot])
+    if (uint32(slot) >= MAX_TOTEM_SLOT || !IsInWorld() || !m_TotemSlot[slot])
     {
         return NULL;
     }
@@ -4360,7 +4360,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
     return value;
 }
 
-int32 Unit::CalculateAuraDuration(SpellEntry const* spellProto, uint32 effectMask, int32 duration, Unit const* caster)
+int32 Unit::CalculateAuraDuration(SpellEntry const* spellProto, uint32 effectMask, int32 duration, Unit const* /*caster*/)
 {
     if (duration <= 0)
     {

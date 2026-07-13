@@ -330,4 +330,3 @@ void Immersive::SendMessage(Player *player, string message)
     chat.PSendSysMessage(message.c_str());
 }
 
-INSTANTIATE_SINGLETON_1( immersive::Immersive );

@@ -28,7 +28,6 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include <ace/Recursive_Thread_Mutex.h>
 #include "Map.h"
 #include "GridStates.h"
 #include "MapUpdater.h"
@@ -57,9 +56,9 @@ struct MapID
     uint32 nInstanceId;
 };
 
-class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex> >
+class MapManager : public MaNGOS::Singleton<MapManager>
 {
-        friend class MaNGOS::OperatorNew<MapManager>;
+        friend class MaNGOS::Singleton<MapManager>;
 
     public:
         typedef std::map<MapID, Map* > MapMapType;
@@ -197,6 +196,17 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         void InitStateMachine();
         void DeleteStateMachine();
 
+        /**
+         * @brief Look up a loaded map with m_lock ALREADY held.
+         *
+         * The map-creation path runs entirely under m_lock and needs to check for an
+         * existing map as it goes (CreateMap, and CreateInstance beneath it). Calling
+         * the public FindMap() from there would re-lock m_lock — which is the only
+         * reason that mutex used to be recursive. Routing the internal callers through
+         * this instead removes the re-entrancy, so a plain mutex suffices.
+         */
+        Map* FindMap_unlocked(uint32 mapid, uint32 instanceId = 0) const;
+
         Map* CreateInstance(uint32 id, Player* player);
         DungeonMap* CreateDungeonMap(uint32 id, uint32 InstanceId, Difficulty difficulty, DungeonPersistentState* save = NULL);
         BattleGroundMap* CreateBattleGroundMap(uint32 id, uint32 InstanceId, BattleGround* bg);
@@ -207,7 +217,8 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         MapUpdater m_updater;
         uint32 i_MaxInstanceId;
 
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
+        /// Plain, not recursive — see FindMap_unlocked().
+        typedef std::mutex LOCK_TYPE;
         mutable LOCK_TYPE m_lock;
 };
 

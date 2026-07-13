@@ -581,6 +581,7 @@ class Creature : public Unit
 
         void AddToWorld() override;
         void RemoveFromWorld() override;
+        void CleanupsBeforeDelete() override;
 
         bool Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, Team team = TEAM_NONE, const CreatureData* data = NULL, GameEventCreatureData const* eventData = NULL);
         bool LoadCreatureAddon(bool reload);
@@ -610,9 +611,9 @@ class Creature : public Unit
         bool IsGuard() const { return GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_GUARD; }
 
         bool CanWalk() const { return GetCreatureInfo()->InhabitType & INHABIT_GROUND; }
-        bool CanSwim() const { return GetCreatureInfo()->InhabitType & INHABIT_WATER; }
+        bool CanSwim() const override { return GetCreatureInfo()->InhabitType & INHABIT_WATER; }
         bool IsSwimming() const { return (m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_SWIMMING))); }
-        bool CanFly() const { return (GetCreatureInfo()->InhabitType & INHABIT_AIR) || (GetByteValue(UNIT_FIELD_BYTES_1, 3) & UNIT_BYTE1_FLAG_FLY_ANIM) || m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_LEVITATING | MOVEFLAG_CAN_FLY)); }
+        bool CanFly() const override { return (GetCreatureInfo()->InhabitType & INHABIT_AIR) || (GetByteValue(UNIT_FIELD_BYTES_1, 3) & UNIT_BYTE1_FLAG_FLY_ANIM) || m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_LEVITATING | MOVEFLAG_CAN_FLY)); }
         bool IsFlying() const { return (m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_FLYING | MOVEFLAG_LEVITATING))); }
         bool IsTrainerOf(Player* player, bool msg) const;
         bool CanInteractWithBattleMaster(Player* player, bool msg) const;
@@ -881,9 +882,10 @@ class Creature : public Unit
         void SetRespawnCoord(float x, float y, float z, float ori) { m_respawnPos.x = x; m_respawnPos.y = y; m_respawnPos.z = z; m_respawnPos.o = ori; }
         void GetRespawnCoord(float& x, float& y, float& z, float* ori = NULL, float* dist = NULL) const;
 
-        /// Go home -- in whichever world this creature lives in. For a crew member the
-        /// respawn coord is a deck offset, not a map coordinate, and must not be handed to
-        /// the grid.
+        /// Go home -- in whichever world this creature lives in. For a CREW member the respawn
+        /// coord is a deck offset, not a map coordinate, and must not be handed to the grid. A
+        /// boarded MINION is the opposite case: its home is a place on the map, so going home
+        /// means going ashore, and it leaves the vessel on the way.
         void RelocateToRespawnPoint();
         void ResetRespawnCoord();
 

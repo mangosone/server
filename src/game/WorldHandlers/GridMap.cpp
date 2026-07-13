@@ -348,9 +348,6 @@ void FusedTerrain::UnloadGrid(int gx, int gy)
 // TerrainManager -- one shared FusedTerrain per map id
 //////////////////////////////////////////////////////////////////////////
 
-#define CLASS_LOCK MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>
-INSTANTIATE_SINGLETON_2(TerrainManager, CLASS_LOCK);
-INSTANTIATE_CLASS_MUTEX(TerrainManager, ACE_Thread_Mutex);
 
 TerrainManager::TerrainManager() : m_mutex()
 {
@@ -369,7 +366,7 @@ TerrainManager::~TerrainManager()
  */
 FusedTerrain* TerrainManager::LoadTerrain(const uint32 mapId)
 {
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_mutex, NULL)
+    std::lock_guard<LOCK_TYPE> _guard(m_mutex);
 
     TerrainDataMap::const_iterator iter = i_TerrainMap.find(mapId);
     if (iter == i_TerrainMap.end())
@@ -392,7 +389,7 @@ void TerrainManager::UnloadTerrain(const uint32 mapId)
         return;
     }
 
-    ACE_GUARD(LOCK_TYPE, _guard, m_mutex)
+    std::lock_guard<LOCK_TYPE> _guard(m_mutex);
 
     TerrainDataMap::iterator iter = i_TerrainMap.find(mapId);
     if (iter != i_TerrainMap.end())
@@ -416,7 +413,7 @@ void TerrainManager::UnloadTerrain(const uint32 mapId)
  */
 void TerrainManager::Update(const uint32 diff)
 {
-    ACE_GUARD(LOCK_TYPE, _guard, m_mutex)
+    std::lock_guard<LOCK_TYPE> _guard(m_mutex);
 
     for (TerrainDataMap::iterator it = i_TerrainMap.begin(); it != i_TerrainMap.end(); ++it)
     {

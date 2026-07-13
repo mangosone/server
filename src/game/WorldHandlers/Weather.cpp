@@ -48,7 +48,7 @@ Weather::Weather(uint32 zone, WeatherZoneChances const* weatherChances) :
     m_isPermanentWeather(false)
 {
     m_timer.SetInterval(sWorld.getConfig(CONFIG_UINT32_INTERVAL_CHANGEWEATHER));
-    DETAIL_FILTER_LOG(LOG_FILTER_WEATHER, "WORLD: Starting weather system for zone %u (change every %u minutes).", m_zone, (m_timer.GetInterval() / (MINUTE * IN_MILLISECONDS)));
+    DETAIL_FILTER_LOG(LOG_FILTER_WEATHER, "WORLD: Starting weather system for zone %u (change every %u minutes).", m_zone, uint32(m_timer.GetInterval() / (MINUTE * IN_MILLISECONDS)));
 }
 
 /// Launch a weather update

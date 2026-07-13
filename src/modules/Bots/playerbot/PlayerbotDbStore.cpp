@@ -9,7 +9,6 @@
 #include "LootObjectStack.h"
 #include "strategy/values/Formations.h"
 #include "strategy/values/PositionValue.h"
-INSTANTIATE_SINGLETON_1(PlayerbotDbStore);
 
 using namespace std;
 using namespace ai;

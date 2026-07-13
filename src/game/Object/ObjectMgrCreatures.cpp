@@ -1027,7 +1027,6 @@ void ObjectMgr::LoadCreatureModelRace()
  */
 void ObjectMgr::LoadCreatures()
 {
-    uint32 count = 0;
     //                                                0                       1   2    3
     QueryResult* result = WorldDatabase.Query("SELECT `creature`.`guid`, `creature`.`id`, `map`, `modelid`,"
                           //   4             5           6           7           8            9              10         11
@@ -1229,8 +1228,6 @@ void ObjectMgr::LoadCreatures()
                 }
             }
         }
-
-        ++count;
     }
     while (result->NextRow());
 

@@ -37,6 +37,8 @@
 #include "Item.h"
 
 struct ItemPrototype;
+#include <memory>
+
 struct AuctionEntry;
 struct AuctionHouseEntry;
 struct DeclinedName;
@@ -249,7 +251,7 @@ class WorldSession
          * @param mute_time Mute time
          * @param locale Locale
          */
-        WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale);
 
         /**
          * @brief Destructor
@@ -953,7 +955,9 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
-        WorldSocket* m_Socket;
+        /// Shared with the transport: the socket may outlive its connection, which is
+        /// what lets a tick in progress finish safely (its sends simply become no-ops).
+        std::shared_ptr<WorldSocket> m_Socket;
         std::string m_Address;
 
         AccountTypes _security;
@@ -983,7 +987,7 @@ class WorldSession
         time_t m_lastPingTime;
         uint32 m_overSpeedPings;
 
-        ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
+        MaNGOS::LockedQueue<WorldPacket*> _recvQueue;
 };
 #endif
 /// @}

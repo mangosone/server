@@ -1,76 +1,65 @@
 #include "immersivepch.h"
 #include "ImmersiveServer.h"
 #include "ImmersiveConfig.h"
+
+#include "net/Server.hpp"
+
 #include <cstdlib>
 #include <iostream>
-
-INSTANTIATE_SINGLETON_1(ImmersiveServer);
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
 
 using namespace std;
 
-#ifdef ENABLE_PLAYERBOTS
-bool ReadLine(ACE_SOCK_Stream& client_stream, string* buffer, string* line);
-#else
-bool ReadLine(ACE_SOCK_Stream& client_stream, string* buffer, string* line)
+namespace
 {
-    // Do the real reading from fd until buffer has '\n'.
-    string::iterator pos;
-    while ((pos = find(buffer->begin(), buffer->end(), '\n')) == buffer->end())
+    /**
+     * @brief One connection to the immersive command server.
+     *
+     * Line-oriented: each line is a command, answered with a single line. The shared
+     * networking engine owns the socket and the threads (this used to be a blocking
+     * ACE_SOCK_Acceptor loop on its own ACE task), so all that is left here is the
+     * protocol.
+     */
+    class ImmersiveCommandSession : public net::ISession
     {
-        char buf[33];
-        size_t n = client_stream.recv_n(buf, 1, 0);
-        if (n == -1)
-        {
-            return false;
-        }
+        public:
 
-        buf[n] = 0;
-        *buffer += buf;
-    }
+            void setSender(net::Sender sender) override { m_sender = std::move(sender); }
 
-    *line = string(buffer->begin(), pos);
-    *buffer = string(pos + 1, buffer->end());
-    return true;
-}
-#endif
-
-class ImmersiveServerThread: public ACE_Task <ACE_MT_SYNCH>
-{
-public:
-    int svc(void) {
-        int serverPort = sImmersiveConfig.serverPort;
-        if (!serverPort)
-        {
-            return 0;
-        }
-
-        ostringstream s; s << "Starting Immersive Server on port " << serverPort;
-        sLog.outString(s.str().c_str());
-
-        ACE_INET_Addr server(serverPort);
-        ACE_SOCK_Acceptor client_responder(server);
-
-        while (true)
-        {
-            ACE_SOCK_Stream client_stream;
-            ACE_Time_Value timeout(5);
-            ACE_INET_Addr client;
-            if (-1 != client_responder.accept(client_stream, &client, &timeout))
+            std::vector<uint8_t> onData(const uint8_t* data, size_t len) override
             {
-                string buffer, request;
-                while (ReadLine(client_stream, &buffer, &request))
-                {
-                    string response = sImmersiveServer.HandleCommand(request);
-                    client_stream.send_n(response.c_str(), response.size(), 0);
-                    request = "";
-                }
-                client_stream.close();
-            }
-        }
+                m_buffer.append(reinterpret_cast<const char*>(data), len);
 
-        return 0;
-    }
-};
+                std::string::size_type eol;
+                while ((eol = m_buffer.find('\n')) != std::string::npos)
+                {
+                    const std::string request = m_buffer.substr(0, eol);
+                    m_buffer.erase(0, eol + 1);
+
+                    const std::string response = sImmersiveServer.HandleCommand(request);
+                    if (m_sender)
+                    {
+                        m_sender(reinterpret_cast<const uint8_t*>(response.data()), response.size());
+                    }
+                }
+
+                return {};
+            }
+
+            bool closed() const override { return false; }
+
+        private:
+
+            net::Sender m_sender;
+            std::string m_buffer;   ///< bytes not yet forming a complete line
+    };
+
+    /// Owns the listening socket for the lifetime of the process.
+    net::Server s_server;
+}
 
 string ImmersiveServer::HandleCommand(string request)
 {
@@ -83,7 +72,7 @@ string ImmersiveServer::HandleCommand(string request)
 
     string command = string(request.begin(), pos);
     uint64 account = atoi(string(pos + 1, request.end()).c_str());
-    Player *player = NULL;
+    Player* player = NULL;
 
     QueryResult* result = CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account = '%u'", account);
     if (result)
@@ -97,7 +86,11 @@ string ImmersiveServer::HandleCommand(string request)
             {
                 player = NULL;
                 continue;
-            } else break;
+            }
+            else
+            {
+                break;
+            }
         }
         while (result->NextRow());
         delete result;
@@ -107,7 +100,7 @@ string ImmersiveServer::HandleCommand(string request)
 #ifdef ENABLE_PLAYERBOTS
             || player->GetPlayerbotAI()
 #endif
-            )
+       )
     {
         ostringstream out; out << "No online players for account " << account << "\n";
         return out.str();
@@ -116,13 +109,21 @@ string ImmersiveServer::HandleCommand(string request)
     ostringstream out;
     if (command == "state")
     {
-        if (player->GetDeathState() != ALIVE) out << "dead";
+        if (player->GetDeathState() != ALIVE)
         {
-            else if (player->IsInCombat()) out << "combat";
+            out << "dead";
         }
-        else if (player->GetRestType() == REST_TYPE_IN_TAVERN) out << "rest";
+        else if (player->IsInCombat())
         {
-            else out << "default";
+            out << "combat";
+        }
+        else if (player->GetRestType() == REST_TYPE_IN_TAVERN)
+        {
+            out << "rest";
+        }
+        else
+        {
+            out << "default";
         }
 
         uint32 area = player->GetAreaId();
@@ -146,6 +147,18 @@ string ImmersiveServer::HandleCommand(string request)
 
 void ImmersiveServer::Start()
 {
-    ImmersiveServerThread *thread = new ImmersiveServerThread();
-    thread->activate();
+    const int serverPort = sImmersiveConfig.serverPort;
+    if (!serverPort)
+    {
+        return;
+    }
+
+    ostringstream s;
+    s << "Starting Immersive Server on port " << serverPort;
+    sLog.outString(s.str().c_str());
+
+    s_server.start(uint16_t(serverPort), []() -> std::shared_ptr<net::ISession>
+    {
+        return std::make_shared<ImmersiveCommandSession>();
+    });
 }

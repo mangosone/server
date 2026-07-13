@@ -394,12 +394,6 @@ void Pet::SavePetToDB(PetSaveMode mode)
         _SaveSpellCooldowns();
         _SaveAuras();
 
-        uint32 loyalty = 1;
-        if (getPetType() != HUNTER_PET)
-        {
-            loyalty = GetLoyaltyLevel();
-        }
-
         uint32 ownerLow = GetOwnerGuid().GetCounter();
         // remove current data
         static SqlStatementID delPet ;

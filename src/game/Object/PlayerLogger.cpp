@@ -35,7 +35,7 @@
  *
  * @param guid The GUID of the player whose events are tracked.
  */
-PlayerLogger::PlayerLogger(ObjectGuid const & guid) : logActiveMask(0), playerGuid(guid.GetCounter())
+PlayerLogger::PlayerLogger(ObjectGuid const & guid) : playerGuid(guid.GetCounter()), logActiveMask(0)
 {
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
     {

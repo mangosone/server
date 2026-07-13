@@ -114,7 +114,6 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
     }
 
     uint32 charterid = 0;
-    uint32 cost = 0;
     uint32 type = 0;
     if (pCreature->IsTabardDesigner())
     {
@@ -126,7 +125,6 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         }
 
         charterid = GUILD_CHARTER;
-        cost = GUILD_CHARTER_COST;
         type = 9;
     }
     else
@@ -142,17 +140,14 @@ void WorldSession::HandlePetitionBuyOpcode(WorldPacket& recv_data)
         {
             case 1:
                 charterid = ARENA_TEAM_CHARTER_2v2;
-                cost = ARENA_TEAM_CHARTER_2v2_COST;
                 type = 2;                                   // 2v2
                 break;
             case 2:
                 charterid = ARENA_TEAM_CHARTER_3v3;
-                cost = ARENA_TEAM_CHARTER_3v3_COST;
                 type = 3;                                   // 3v3
                 break;
             case 3:
                 charterid = ARENA_TEAM_CHARTER_5v5;
-                cost = ARENA_TEAM_CHARTER_5v5_COST;
                 type = 5;                                   // 5v5
                 break;
             default:
@@ -355,21 +350,17 @@ void WorldSession::SendPetitionQueryOpcode(ObjectGuid petitionguid)
     ObjectGuid ownerGuid;
     uint32 type;
     std::string name = "NO_NAME_FOR_GUID";
-    uint8 signs = 0;
 
     QueryResult* result = CharacterDatabase.PQuery(
-                              "SELECT `ownerguid`, `name`, "
-                              "  (SELECT COUNT(`playerguid`) FROM `petition_sign` WHERE `petition_sign`.`petitionguid` = '%u') AS `signs`, "
-                              "  `type` "
-                              "FROM `petition` WHERE `petitionguid` = '%u'", petitionLowGuid, petitionLowGuid);
+                              "SELECT `ownerguid`, `name`, `type` "
+                              "FROM `petition` WHERE `petitionguid` = '%u'", petitionLowGuid);
 
     if (result)
     {
         Field* fields = result->Fetch();
         ownerGuid = ObjectGuid(HIGHGUID_PLAYER, fields[0].GetUInt32());
         name      = fields[1].GetCppString();
-        signs     = fields[2].GetUInt8();
-        type      = fields[3].GetUInt32();
+        type      = fields[2].GetUInt32();
         delete result;
     }
     else

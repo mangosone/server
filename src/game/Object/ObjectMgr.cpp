@@ -59,7 +59,6 @@
 #include <limits>
 #include <set>
 
-INSTANTIATE_SINGLETON_1(ObjectMgr);
 
 // Temporary startup accumulator for LivingWorld observability (written during LoadActiveEntities(NULL) only)
 static ObjectMgr::LivingWorldStartupStats s_livingWorldStats;
@@ -633,7 +632,7 @@ void ObjectMgr::LoadPetCreateSpells()
             continue;
         }
 
-        if (CreatureSpellDataEntry const* petSpellEntry = cInfo->PetSpellDataId ? sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId) : NULL)
+        if (cInfo->PetSpellDataId && sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId))
         {
             sLog.outErrorDb("Creature id %u listed in `petcreateinfo_spell` have set `PetSpellDataId` field and will use its instead, skip.", creature_id);
             continue;
@@ -3004,7 +3003,7 @@ ObjectMgr::LivingWorldStartupStats ObjectMgr::LoadActiveEntities(Map* _map)
         s_livingWorldStartupPass = true;
 
         uint32 continents[] = {0, 1, 369, 530};
-        for (int i = 0; i < countof(continents); ++i)
+        for (size_t i = 0; i < countof(continents); ++i)
         {
             _map = sMapMgr.FindMap(continents[i]);
             if (!_map)

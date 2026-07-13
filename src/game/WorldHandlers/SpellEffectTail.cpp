@@ -606,7 +606,7 @@ void Spell::EffectPlayMusic(SpellEffectIndex eff_idx)
  *
  * @param eff_idx The bind effect index.
  */
-void Spell::EffectBind(SpellEffectIndex eff_idx)
+void Spell::EffectBind(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
     {

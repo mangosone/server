@@ -54,7 +54,6 @@
 #include "World.h"
 #include "ObjectMgr.h"
 
-INSTANTIATE_SINGLETON_1(MassMailMgr);
 
 /**
  * @brief Add mass mail task filtered by race mask
@@ -138,7 +137,7 @@ void MassMailMgr::AddMassMailTask(MailDraft* mailProto, const MailSender &sender
     CharacterDatabase.AsyncPQuery([mailProto, sender](QueryResult* result)
                                   {
                                       massMailerQueryHandler.HandleQueryCallback(result, mailProto, sender);
-                                  }, query);
+                                  }, "%s", query);
 }
 
 /**

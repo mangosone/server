@@ -48,7 +48,6 @@
 #include "ProgressBar.h"
 #include "World.h"
 
-INSTANTIATE_SINGLETON_1(GuildMgr);
 
 /**
  * @brief Construct GuildMgr singleton

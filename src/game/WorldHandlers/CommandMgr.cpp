@@ -45,7 +45,6 @@
 
 class ChatCommand; // Forward declaration
 
-INSTANTIATE_SINGLETON_1(CommandMgr);
 
 /**
  * @brief Construct CommandMgr singleton

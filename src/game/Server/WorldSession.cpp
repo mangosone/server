@@ -45,7 +45,7 @@
  * @see Opcodes.cpp for opcode registration
  */
 
-#include "WorldSocket.h"                                    // must be first to make ACE happy with ACE includes in it
+#include "WorldSocket.h"
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
@@ -144,18 +144,18 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
+WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
     LookingForGroup_auto_join(false), LookingForGroup_auto_add(false), m_muteTime(mute_time),
-    _player(NULL), m_Socket(sock), _security(sec), _accountId(id), _warden(NULL), _build(0), m_expansion(expansion), _logoutTime(0),
+    _player(NULL), m_Socket(std::move(sock)), _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
-    m_latency(0), m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid(),
+    m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0), m_npcWatchLastGuid(),
     m_lastPingTime(0), m_overSpeedPings(0)
 {
     if (sock)
     {
         m_Address = sock->GetRemoteAddress();
-        sock->AddReference();
+
     }
 }
 
@@ -172,8 +172,7 @@ WorldSession::~WorldSession()
     if (m_Socket)
     {
         m_Socket->CloseSocket();
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket.reset();
     }
 
     // Warden
@@ -438,8 +437,7 @@ bool WorldSession::Update(PacketFilter& updater)
     ///- Cleanup socket pointer if need
     if (m_Socket && m_Socket->IsClosed())
     {
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket.reset();
     }
 
     // Warden
@@ -1086,6 +1084,16 @@ void WorldSession::SendTransferAborted(uint32 mapid, uint8 reason, uint8 arg)
  */
 void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* packet)
 {
+    // An opcode missing from the table is all-zero, which reads back as STATUS_AUTHED
+    // (0) with a NULL handler - a status Update() dispatches unconditionally. Drop the
+    // packet instead of calling through the NULL pointer.
+    if (!opHandle.handler)
+    {
+        sLog.outError("SESSION: opcode 0x%.4X has no registered handler, packet dropped",
+                      packet->GetOpcode());
+        return;
+    }
+
 #ifdef ENABLE_ELUNA
     if (Eluna* e = sWorld.GetEluna())
     {

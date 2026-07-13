@@ -52,7 +52,6 @@
 #include "World.h"
 #include "Policies/Singleton.h"
 
-INSTANTIATE_SINGLETON_1(PoolManager);
 
 ////////////////////////////////////////////////////////////
 // template class SpawnedPoolData

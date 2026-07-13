@@ -1,3 +1,4 @@
+#include <thread>
 #include "../botpch.h"
 #include "Category.h"
 #include "ItemBag.h"
@@ -111,15 +112,6 @@ ObjectGuid AhBot::GetAHBplayerGUID()
     return ObjectGuid(sAhBotConfig.guid);
 }
 
-class AhbotThread: public ACE_Task <ACE_MT_SYNCH>
-{
-private:
-    AhBot* bot;
-public:
-    AhbotThread(AhBot* bot) : bot(bot) {}
-    int svc(void) { bot->ForceUpdate(); return 0; }
-};
-
 void AhBot::Update()
 {
     time_t now = time(0);
@@ -136,8 +128,10 @@ void AhBot::Update()
 
     nextAICheckTime = time(0) + sAhBotConfig.updateInterval;
 
-    AhbotThread *thread = new AhbotThread(this);
-    thread->activate();
+    // Run the update off the world thread. Detached, exactly like the ACE task this
+    // replaces: nothing joins it, and `updating` is what keeps a second one from
+    // starting while the first is still going.
+    std::thread([this] { ForceUpdate(); }).detach();
 }
 
 void AhBot::ForceUpdate()
@@ -1323,4 +1317,3 @@ void AhBot::PurgeMailedItems()
         "DELETE FROM mail WHERE receiver = '%u'", guid);
 }
 
-INSTANTIATE_SINGLETON_1( ahbot::AhBot );

@@ -22,62 +22,35 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_OBJECTLIFETIME_H
-#define MANGOS_OBJECTLIFETIME_H
+// The single place that maps an OS to its reactor backend. Adding a new platform
+// (poll, /dev/poll, event ports, ...) means: write the Poller subclass, then add
+// one branch here. The rest of the server never changes.
+#ifndef _WIN32
 
-#include <stdexcept>
-#include "Platform/Define.h"
+#include "net/reactor/Poller.hpp"
 
-/**
- * @brief
- *
- */
-typedef void (* Destroyer)(void);
+#include <memory>
 
-namespace MaNGOS
-{
-    /**
-     * @brief
-     *
-     * @param (func)()
-     */
-    void  at_exit(void (*func)());
+#if defined(__linux__)
+#include "net/reactor/EpollPoller.hpp"
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+      defined(__OpenBSD__) || defined(__DragonFly__)
+#include "net/reactor/KqueuePoller.hpp"
+#endif
 
-    template<class T>
-    /**
-     * @brief
-     *
-     */
-    class ObjectLifeTime
-    {
-        public:
+namespace net {
 
-            /**
-             * @brief
-             *
-             * @param (destroyer)()
-             */
-            static void ScheduleCall(void (*destroyer)())
-            {
-                at_exit(destroyer);
-            }
-
-            /**
-             * @brief
-             *
-             */
-            DECLSPEC_NORETURN static void OnDeadReference() ATTR_NORETURN;
-    };
-
-    template <class T>
-    /**
-     * @brief We don't handle Dead Reference for now
-     *
-     */
-    void ObjectLifeTime<T>::OnDeadReference()           // We don't handle Dead Reference for now
-    {
-        throw std::runtime_error("Dead Reference");
-    }
+std::unique_ptr<Poller> makePoller() {
+#if defined(__linux__)
+    return std::make_unique<EpollPoller>();
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+      defined(__OpenBSD__) || defined(__DragonFly__)
+    return std::make_unique<KqueuePoller>();
+#else
+    return nullptr; // no reactor backend for this platform
+#endif
 }
 
-#endif
+} // namespace net
+
+#endif // !_WIN32

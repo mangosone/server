@@ -31,7 +31,7 @@ cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0063 NEW)
 # CMP0042 = MACOSX_RPATH (macOS only) — optional
 if(APPLE)
-  cmake_policy(SET CMP0042 NEW)
+    cmake_policy(SET CMP0042 NEW)
 endif()
 
 # =============================================================================
@@ -54,7 +54,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Define available cmake options below
 option(BUILD_MANGOSD        "Build the main server"                         ON)
 option(BUILD_REALMD         "Build the login server"                        ON)
-option(BUILD_TOOLS          "Build the map/vmap/mmap extractors"            ON)
+option(BUILD_TOOLS          "Build the assets extractor (baker)"            ON)
+option(BUILD_TESTS          "Build collision-related utilities"             OFF)
 option(USE_STORMLIB         "Use StormLib for reading MPQs"                 ON)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
 option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
@@ -72,7 +73,8 @@ message(
     CMAKE_INSTALL_PREFIX    Path where the server should be installed to
     BUILD_MANGOSD           Build the main server
     BUILD_REALMD            Build the login server
-    BUILD_TOOLS             Build the map/vmap/mmap extractors
+    BUILD_TOOLS             Build the assets extractor (baker)
+    BUILD_TESTS             Build collision-related utilities
     USE_STORMLIB            Use StormLib for reading MPQs
     SOAP                    Enable remote access via SOAP
     PCH                     Enable use of precompiled headers
@@ -208,9 +210,34 @@ endif()
 # =============================================================================
 # Subdirectories
 # =============================================================================
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dep/CMakeLists.txt")
-  add_subdirectory(dep)
+if (NOT TARGET "ZLIB::ZLIB")
+    add_subdirectory(dep/zlib)
 endif()
+
+if (NOT TARGET "BZip2::BZip2")
+    add_subdirectory(dep/bzip2)
+endif()
+
+
+add_subdirectory(dep/utf8cpp)
+
+if(BUILD_MANGOSD)
+    if(SCRIPT_LIB_ELUNA)
+        add_subdirectory(dep/lualib)
+    endif()
+    if(SOAP)
+        add_subdirectory(dep/gsoap)
+    endif()
+endif()
+
+if(BUILD_MANGOSD OR BUILD_TOOLS)
+    add_subdirectory(dep/recastnavigation)
+endif()
+
+if(BUILD_TOOLS)
+    add_subdirectory(dep/StormLib)
+endif()
+
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt")
   add_subdirectory(src)

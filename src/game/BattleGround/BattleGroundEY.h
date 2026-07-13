@@ -279,6 +279,10 @@ class BattleGroundEY : public BattleGround
         void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
         void EventPlayerDroppedFlag(Player* source) override;
 
+        // EY captures are node-based, so the private overload below would
+        // otherwise hide this inherited one
+        using BattleGround::EventPlayerCapturedFlag;
+
         Team GetPrematureWinner() override;
 
     private:

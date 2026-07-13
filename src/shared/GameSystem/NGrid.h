@@ -26,7 +26,6 @@
 #define MANGOS_NGRID_H
 
 #include "Platform/Define.h"
-#include "Policies/ThreadingModel.h"
 #include "GameSystem/TypeContainer.h"
 #include "GameSystem/TypeContainerVisitor.h"
 #include "GameSystem/GridReference.h"

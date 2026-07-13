@@ -58,7 +58,6 @@
 #include "LuaEngine.h"
 #endif
 
-INSTANTIATE_SINGLETON_1(GameEventMgr);
 
 /**
  * @brief Checks whether a specific game event is active at the given time.

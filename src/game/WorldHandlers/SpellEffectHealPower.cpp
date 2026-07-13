@@ -454,7 +454,7 @@ void Spell::EffectHealthLeech(SpellEffectIndex eff_idx)
  * @param eff_idx The effect index creating the item.
  * @param itemtype The item entry to create.
  */
-void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
+void Spell::DoCreateItem(SpellEffectIndex /*eff_idx*/, uint32 itemtype)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
     {

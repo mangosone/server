@@ -38,18 +38,10 @@
  *
  * Logs the error message including the operation (read/write),
  * position in buffer, buffer size, and attempted value size.
- * Includes stack trace if ACE stack trace is available.
  */
 void ByteBufferException::PrintPosError() const
 {
-    char const* traceStr;
-
-#ifdef HAVE_ACE_STACK_TRACE_H
-    ACE_Stack_Trace trace;
-    traceStr = trace.c_str();
-#else
-    traceStr = NULL;
-#endif
+    char const* traceStr = NULL;
 
     sLog.outError(
             "Attempted to %s in ByteBuffer (pos: %zu size: %zu) "

@@ -379,7 +379,7 @@ typedef std::list<PlayerCreateInfoAction> PlayerCreateInfoActions;
 struct PlayerInfo
 {
     // existence checked by displayId != 0             // existence checked by displayId != 0
-    PlayerInfo() : displayId_m(0), displayId_f(0), levelInfo(NULL), areaId(0), mapId(0), orientation(0.0f), positionX(0.0f), positionY(0.0f), positionZ(0.0f) {}
+    PlayerInfo() : mapId(0), areaId(0), positionX(0.0f), positionY(0.0f), positionZ(0.0f), orientation(0.0f), displayId_m(0), displayId_f(0), levelInfo(NULL) {}
 
     uint32 mapId;             // Map ID
     uint32 areaId;            // Area ID
@@ -1446,7 +1446,7 @@ class Player : public Unit
         void RemoveMiniPet();
 
         // Get the player's mini pet
-        Pet* GetMiniPet() const;
+        Pet* GetMiniPet() const override;
 
         // Set the player's mini pet (used only in Pet::Unsummon/Spell::DoSummon)
         void _SetMiniPet(Pet* pet)
@@ -3628,10 +3628,10 @@ class Player : public Unit
         bool isMovingOrTurning() const { return m_movementInfo.HasMovementFlag(movementOrTurningFlagsMask); }
 
         // Check if the player can swim
-        bool CanSwim() const { return true; }
+        bool CanSwim() const override { return true; }
 
         // Check if the player can fly
-        bool CanFly() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_CAN_FLY); }
+        bool CanFly() const override { return m_movementInfo.HasMovementFlag(MOVEFLAG_CAN_FLY); }
 
         // Check if the player is flying
         bool IsFlying() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING); }

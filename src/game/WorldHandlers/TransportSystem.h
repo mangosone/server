@@ -70,20 +70,24 @@ class TransportBase
         // is its authoritative one; the world position it also carries is a derived cache
         // (see UpdateGlobalPositionOf) and must never be treated as the truth.
         //
-        // `gridResident` says WHICH KIND of passenger this is, and the difference is real:
+        // `minion` records WHICH KIND of passenger this is. Both kinds are the same to the
+        // vessel -- it ticks them, broadcasts them and collides them, and both are in the
+        // vessel's own container rather than any world grid cell (the ship IS their grid).
+        // The flag exists only for the ONE thing that differs: lifecycle ownership.
         //
-        //   false -- CREW. It belongs to the vessel. It is in no grid cell, the vessel
-        //            ticks it and the vessel broadcasts it, and its world position is a
-        //            pure cache that nothing but an off-ship distance check ever reads.
+        //   false -- CREW. Ship-owned. Spawned from `creature_transport`, lives and dies
+        //            with the vessel.
         //
-        //   true  -- A MINION (a pet, a guardian). It belongs to the WORLD and merely
-        //            stands on our floor: it fights, it is targeted by grid searchers, it
-        //            is its master's. It stays a grid citizen, so its world position must
-        //            keep being maintained THROUGH THE GRID -- otherwise its cell
-        //            membership goes stale the moment the ship sails out of it.
+        //   true  -- A MINION (a pet, a guardian, a totem). PLAYER-owned. It rides while its
+        //            master is aboard and goes ashore with him; its summon/dismiss/death is
+        //            the pet subsystem's business, not ours. The flag lets the vessel tell
+        //            the two apart when it reconciles who should still be aboard.
         void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo,
-                            bool gridResident = false);
-        void UnBoardPassenger(WorldObject* passenger);
+                            bool minion = false);
+        // Virtual so the MO-transport override can unlink a boarded creature from the
+        // vessel's container as it leaves -- see Transport::UnBoardPassenger. This is what
+        // makes death/dismiss/logout detach cleanly, since they all route through here.
+        virtual void UnBoardPassenger(WorldObject* passenger);
         void UnBoardAllPassengers();
 
         PassengerMap const& GetPassengers() const { return m_passengers; }
@@ -119,7 +123,7 @@ class TransportInfo
 {
     public:
         explicit TransportInfo(WorldObject* owner, TransportBase* transport, float lx, float ly, float lz, float lo,
-                               bool gridResident = false);
+                               bool minion = false);
 
         // Set local positions
         void SetLocalPosition(float lx, float ly, float lz, float lo);
@@ -129,9 +133,10 @@ class TransportInfo
         TransportBase* GetTransportBase() const { return m_transport; }
         ObjectGuid GetTransportGuid() const { return m_transport->GetOwner()->GetObjectGuid(); }
 
-        /// True for a passenger that is still a citizen of the world grid (a pet), false
-        /// for one that belongs to the vessel alone (crew). See BoardPassenger.
-        bool IsGridResident() const { return m_gridResident; }
+        /// True for a PLAYER-owned minion (pet/guardian/totem), false for ship-owned crew.
+        /// Both ride the vessel identically; this only distinguishes lifecycle. See
+        /// BoardPassenger.
+        bool IsMinion() const { return m_minion; }
 
         // Get local position
         float GetLocalOrientation() const { return m_localPosition.o; }
@@ -150,7 +155,7 @@ class TransportInfo
         WorldObject* m_owner;                               ///< Passenger
         TransportBase* m_transport;                         ///< Transporter
         Position m_localPosition;
-        bool m_gridResident;                                ///< Pet (world's) vs crew (vessel's)
+        bool m_minion;                                      ///< Player-owned minion vs ship-owned crew
 };
 
 #endif

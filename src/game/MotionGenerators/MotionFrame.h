@@ -36,20 +36,20 @@ class Unit;
 class WorldObject;
 
 /**
- * @brief The COORDINATE FRAME a movement leg lives in — the seam that makes the
+ * @brief The COORDINATE FRAME a movement leg lives in -- the seam that makes the
  *        spline and the path calculus terrain-agnostic.
  *
- * Every terrain-dependent question the movement stack asks — route me, where is my
- * target, give me a reachable point nearby, drop this guess onto the ground — is
+ * Every terrain-dependent question the movement stack asks -- route me, where is my
+ * target, give me a reachable point nearby, drop this guess onto the ground -- is
  * answered by the frame, not by a direct call into Map or PathFinder. That is the
  * whole point: nothing above this interface knows, or may know, whether the unit is
  * walking on world terrain or on the deck of a moving ship.
  *
- *   * WorldFrame     — world coordinates. Routing through the Detour navmesh, heights
+ *   * WorldFrame     -- world coordinates. Routing through the Detour navmesh, heights
  *                      from the terrain. Behaves exactly as the movement code did
  *                      before the seam existed.
  *
- *   * TransportFrame — a vessel's LOCAL system. A boarded unit's position, its target's
+ *   * TransportFrame -- a vessel's LOCAL system. A boarded unit's position, its target's
  *                      position and the leg it walks are all LOCAL coordinates the
  *                      client composes with the live vessel pose; the floor comes from
  *                      the deck mesh rather than the world, so a passenger can never
@@ -62,7 +62,7 @@ class WorldObject;
  * driver enforces it by dropping its router whenever the frame under it changes.
  *
  * The other half of that invariant is FromWorld/ToWorld. Every anchor a generator
- * captures — a respawn coord, a DB waypoint, a script's MovePoint — is WORLD data,
+ * captures -- a respawn coord, a DB waypoint, a script's MovePoint -- is WORLD data,
  * because world data is the only kind the database and the script API speak. Read as
  * a deck offset it would send the unit somewhere absurd, so it must come through
  * FromWorld. Under WorldFrame both calls are the identity, which is why the
@@ -84,7 +84,7 @@ namespace Motion
      * @brief The 2D bearing from one FRAME point to another, normalised to [0, 2*PI)
      *        exactly as WorldObject::GetAngle normalises.
      *
-     * Generators need this because GetAngle itself reads world positions — and a boarded
+     * Generators need this because GetAngle itself reads world positions -- and a boarded
      * unit's world position is only a cache, derived from a vessel pose the server is
      * merely estimating. A chase bearing computed from it would aim at where the deck is
      * not. Distances survive the change of frame (a rigid transform preserves them, which
@@ -112,7 +112,7 @@ namespace Motion
              * @param forceDestination Arrive exactly at `goal` even when it is not
              *        cleanly routable (a pet heeling its master may cheat).
              * @param lengthLimit Cap the path length in yards (0 = default).
-             * @return True when usable geometry came out — which INCLUDES the
+             * @return True when usable geometry came out -- which INCLUDES the
              *         straight-line fallback used when routing failed (see Failed).
              *         False only when nothing at all could be produced.
              */
@@ -127,13 +127,13 @@ namespace Motion
              *        whatever is in the way.
              *
              * Whether that is acceptable is the CALLER's decision, and the movement
-             * kinds genuinely disagree — hence MOVE_REQUIRE_PATH on the intent rather
+             * kinds genuinely disagree -- hence MOVE_REQUIRE_PATH on the intent rather
              * than the router quietly picking one behaviour for everybody.
              */
             virtual bool Failed() const = 0;
 
             /**
-             * @brief The last Calculate produced a REAL route, not a straight line —
+             * @brief The last Calculate produced a REAL route, not a straight line --
              *        a different question from Failed, because a map with no routing
              *        data answers every query with a straight line that did not "fail".
              *
@@ -168,7 +168,7 @@ namespace Motion
              * @brief Bring a WORLD-space point into this frame.
              *
              * Spawn coordinates, DB waypoints and every script that says "walk to
-             * (x,y,z)" speak world space and always will — so an anchor a generator
+             * (x,y,z)" speak world space and always will -- so an anchor a generator
              * captures from them has to be converted before it can be used as a goal.
              * The identity under WorldFrame.
              */
@@ -178,7 +178,7 @@ namespace Motion
             /// to talk to the map (grid placement, a spell's destination, a summon).
             virtual Vector3 ToWorld(Unit const& mover, Vector3 const& local) const = 0;
 
-            /// Another object's position, in the MOVER's frame — this is what lets
+            /// Another object's position, in the MOVER's frame -- this is what lets
             /// chase and follow track a target without caring which frame either of
             /// them stands in, and why there is no need for deck-local twins of them.
             virtual Vector3 ObjectPosition(Unit const& mover, WorldObject const& obj) const = 0;
@@ -216,7 +216,7 @@ namespace Motion
      * @brief The frame `mover` is currently moving in.
      *
      * Always the world frame today. When TransportFrame lands, a boarded unit resolves
-     * to its vessel's frame HERE and nothing above this call has to change — that is
+     * to its vessel's frame HERE and nothing above this call has to change -- that is
      * the payoff of routing every terrain question through IMotionFrame.
      */
     IMotionFrame const& FrameFor(Unit const& mover);
