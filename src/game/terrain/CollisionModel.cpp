@@ -1,6 +1,11 @@
 #include "terrain/CollisionModel.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace world::terrain
 {

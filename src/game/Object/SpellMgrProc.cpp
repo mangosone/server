@@ -36,6 +36,7 @@
 #include "Chat.h"
 #include "Spell.h"
 #include "World.h"
+#include <set>
 
 template <typename EntryType, typename WorkerType, typename StorageType>
 struct SpellRankHelper

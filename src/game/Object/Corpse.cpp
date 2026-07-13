@@ -29,6 +29,8 @@
 #include "Database/DatabaseEnv.h"
 #include "World.h"
 #include "ObjectMgr.h"
+#include <ctime>
+#include <sstream>
 
 /**
  * @brief Creates a corpse object of the specified type.

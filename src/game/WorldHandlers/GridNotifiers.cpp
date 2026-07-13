@@ -52,6 +52,7 @@
 #include "ObjectAccessor.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "CreatureAI.h"
+#include <set>
 
 using namespace MaNGOS;
 

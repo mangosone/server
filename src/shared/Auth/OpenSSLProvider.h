@@ -87,6 +87,7 @@ class OpenSSLCipherContext
 };
 
 #include <openssl/provider.h>
+#include <string>
 
 /**
  * @brief RAII wrapper for OpenSSL 3.x OSSL_PROVIDER

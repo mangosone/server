@@ -28,6 +28,7 @@
 #include "Common/Common.h"
 #include <openssl/evp.h>
 #include <openssl/sha.h>       // SHA_DIGEST_LENGTH
+#include <string>
 
 class BigNumber;
 

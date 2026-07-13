@@ -34,6 +34,7 @@
 
 #include "Chat.h"
 #include "ObjectMgr.h"
+#include <cstdio>
 
 /**
  * @brief Helper function to display trigger target information.

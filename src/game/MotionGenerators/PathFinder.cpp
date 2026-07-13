@@ -30,6 +30,10 @@
 #include "PathFinder.h"
 #include "Log.h"
 
+#include <cfloat>
+#include <cmath>
+#include <cstring>
+
 ////////////////// PathFinder //////////////////
 
 /**

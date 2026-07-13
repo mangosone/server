@@ -32,6 +32,7 @@
 #include "ObjectGuid.h"
 #include "UpdateFields.h"
 #include "Formulas.h"
+#include <ctime>
 
 void HonorMgr::UpdateKills()
 {

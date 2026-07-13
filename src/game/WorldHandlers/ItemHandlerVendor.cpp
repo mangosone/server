@@ -54,6 +54,7 @@
 #include "Item.h"
 #include "UpdateData.h"
 #include "Chat.h"
+#include <cmath>
 
 /**
  * @brief Sells an item stack to a vendor.

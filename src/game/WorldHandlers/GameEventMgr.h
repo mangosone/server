@@ -28,6 +28,13 @@
 #include "Common.h"
 #include "SharedDefines.h"
 #include "Platform/Define.h"
+#include <ctime>
+#include <list>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #define max_ge_check_delay 86400                            // 1 day in seconds
 

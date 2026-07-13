@@ -12,8 +12,8 @@ this repo. Humans: also read [`doc/CodingStandard.md`](doc/CodingStandard.md).
   `Rel##_##_###_*.sql` migrations that chain via `db_version`.
 - Clone/update **recursively**: `dep`, `src/realmd`, `src/modules/{SD3,Eluna}`, `src/tools/Extractor_projects`
   and `win` are submodules. Never shallow-update a submodule to a non-tip pinned SHA.
-- Less-obvious locations: out-of-process services in `src/ipc/` + `src/ah-service/`; scripting in
-  `src/modules/` (Eluna = Lua, SD3 = C++, Bots = playerbots).
+- Less-obvious locations: scripting lives in `src/modules/` — Eluna (Lua) and SD3 (C++) are submodules;
+  Bots (playerbots) is in-tree. The AuctionHouseBot is in `src/game/AuctionHouseBot/`.
 
 ## Build & test
 
@@ -22,20 +22,30 @@ this repo. Humans: also read [`doc/CodingStandard.md`](doc/CodingStandard.md).
 
 ```sh
 git clone --recursive https://github.com/mangosone/server.git && cd server
-sudo apt-get install -y git cmake make build-essential \
-  libssl-dev libbz2-dev default-libmysqlclient-dev libace-dev libreadline-dev   # Debian/Ubuntu deps
+sudo apt-get install -y git cmake make build-essential ccache \
+  libssl-dev libbz2-dev default-libmysqlclient-dev libreadline-dev   # Debian/Ubuntu deps
 mkdir -p _build _install && cd _build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../_install \
-  -DBUILD_TOOLS=1 -DBUILD_MANGOSD=1 -DBUILD_REALMD=1 -DSOAP=1 \
-  -DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD3_GATE=1 -DPLAYERBOTS=1 \
-  -DUSE_STORMLIB=1 -DBUILD_AH_SERVICE=1 -DPCH=0
+  -DBUILD_TOOLS=0 -DBUILD_MANGOSD=1 -DBUILD_REALMD=1 -DSOAP=1 \
+  -DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD3=1 -DPLAYERBOTS=1 \
+  -DUSE_STORMLIB=1 -DPCH=0
 make -j"$(nproc)" && make install -j"$(nproc)"
 ```
 
-Windows: use the EasyBuild helper in `win/`. **A PR MUST keep CI green:** the Linux build compiles with
-**both** GCC and Clang, Windows builds on AppVeyor, and Codacy/CodeFactor gate quality. If you touch
-`src/ipc/` or `src/ah-service/`, keep `ah-service --selftest` passing (it must print `intent codec selftest OK`
-and `ipc selftest OK`).
+Every `-D` above is a real option (see the `option(...)` block in `CMakeLists.txt`). CMake **silently ignores
+an unknown `-D`** — it only mutters "Manually-specified variables were not used" at the end — so a misspelt
+flag looks like it works while configuring nothing. Check the name against `CMakeLists.txt` before adding one.
+
+`BUILD_TOOLS=0`: the asset extractors are not used, and the Movemap generator is the last thing in the tree
+that wanted ACE — which is why `libace-dev` is no longer in the dependency list either.
+
+Windows: use the EasyBuild helper in `win/`. **A PR MUST keep CI green.** CI is GitHub Actions
+(`.github/workflows/`): `core_linux_build.yml` builds with **both GCC and Clang**, `core_windows_build.yml`
+builds with MSVC, `core_codestyle.yml` checks the style rules below, and `docker_build.yml` builds the images.
+
+The GCC/Clang split matters more than it looks: the two standard libraries do not leak the same headers, so
+a missing `#include` can pass on one and fail on the other. **Include what you use** — if a file names
+`std::vector`, it includes `<vector>` itself rather than inheriting it from some header four levels up.
 
 ## Code style
 
@@ -56,9 +66,12 @@ Source of truth: [`doc/CodingStandard.md`](doc/CodingStandard.md). Non-default r
 
 ## Architecture note
 
-The **in-process AuctionHouseBot is the default**; the out-of-process AH service is additive and default-off
-(`AH.Service.Enabled`). `mangosd` is the **sole authority** over game state — worker/service "intents" are
-re-validated server-side before they are applied.
+`mangosd` is the **sole authority** over game state. The world runs as a single heartbeat loop on the main
+thread (`Master::WorldLoop`); everything else — the console, remote access, SOAP, the freeze watchdog, the
+DB delay threads — is auxiliary and must not mutate world state directly. Anything arriving from another
+thread is queued to the world thread (see `World::QueueCliCommand`) rather than applied where it landed.
+
+The AuctionHouseBot (`src/game/AuctionHouseBot/`) runs **in-process**.
 
 ## Logging
 
@@ -76,8 +89,9 @@ Recommended runtime mode: `LogLevel=1` (quiet console) + `LogFileLevel=3` (buffe
 
 ## Review focus (for `@claude`)
 
-Prioritise: **(1)** correctness/safety in `src/game/` handlers and anything touching live world/DB state or
-the `mangosd`↔worker trust boundary; **(2)** coding-standard conformance above; **(3)** build/CI impact (GCC
-*and* Clang, Windows, the AH self-test); **(4)** DB-migration correctness (use the `mangosone/database`
-pattern). Keep feedback concrete and minimal-diff; flag correctness/standard issues, not style preferences
-the standard doesn't cover.
+Prioritise: **(1)** correctness/safety in `src/game/` handlers and anything touching live world or DB state,
+especially cross-thread state (the shutdown signal, the CLI command queue, the DB delay threads);
+**(2)** coding-standard conformance above; **(3)** build/CI impact — GCC *and* Clang *and* MSVC, including
+missing `#include`s that only one standard library exposes; **(4)** DB-migration correctness (use the
+`mangosone/database` pattern). Keep feedback concrete and minimal-diff; flag correctness/standard issues, not
+style preferences the standard doesn't cover.

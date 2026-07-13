@@ -27,6 +27,9 @@
 
 #include "Common/Common.h"
 #include <mysql.h>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 
 /**
  * @brief Wrapper for database field values

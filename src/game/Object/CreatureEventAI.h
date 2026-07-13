@@ -29,6 +29,8 @@
 #include "Creature.h"
 #include "CreatureAI.h"
 #include "Unit.h"
+#include <list>
+#include <vector>
 
 class Player;
 class WorldObject;

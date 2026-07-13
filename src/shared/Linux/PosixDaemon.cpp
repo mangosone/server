@@ -24,9 +24,20 @@
 
 #include "Config/Config.h"
 #include "PosixDaemon.h"
+
+// These used to arrive by accident, pulled in transitively by the ACE headers. With ACE
+// gone nothing includes them for us, so declare exactly what this file uses:
+#include <csignal>      // signal(), kill(), SIGUSR1/SIGINT/SIGTERM/SIGALRM
+#include <cstdint>      // uint32_t
+#include <cstdlib>      // exit(), EXIT_SUCCESS, EXIT_FAILURE
+#include <sys/stat.h>   // umask()
+#include <sys/types.h>  // pid_t
+#include <unistd.h>     // getpid(), fork(), setsid(), chdir(), alarm(), pause()
+
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 pid_t parent_pid = 0, sid = 0;
 

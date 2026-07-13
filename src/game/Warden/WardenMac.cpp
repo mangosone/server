@@ -53,6 +53,8 @@
 #include "WardenMac.h"
 #include "WardenModuleMac.h"
 #include "GameTime.h"
+#include <cstring>
+#include <string>
 
 /**
  * @brief WardenMac constructor

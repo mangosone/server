@@ -37,6 +37,7 @@
 #include "ObjectMgr.h"
 #include "GuildMgr.h"
 #include "Guild.h"
+#include <string>
 
 /** \brief GM command level 3 - Create a guild.
   *

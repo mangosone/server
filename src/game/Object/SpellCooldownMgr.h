@@ -27,6 +27,7 @@
 
 #include "Common.h"
 #include <map>
+#include <ctime>
 
 class Player;
 class Spell;

@@ -34,9 +34,9 @@
  * This is essential for network protocol handling in World of Warcraft.
  */
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 // Byte order. The `shared` library is compiled with -DMANGOS_ENDIAN=<0|1> (see
 // TEST_BIG_ENDIAN in src/shared/CMakeLists.txt), and Platform/Define.h derives the same

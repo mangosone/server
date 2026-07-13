@@ -29,6 +29,8 @@
 #include "QuestDef.h"
 #include "NPCHandler.h"
 #include "ObjectGuid.h"
+#include <string>
+#include <vector>
 
 class WorldSession;
 

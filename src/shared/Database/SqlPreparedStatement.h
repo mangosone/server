@@ -27,9 +27,10 @@
 
 #include "Common/Common.h"
 #include "Utilities/Errors.h"
-#include <ace/TSS_T.h>
 #include <vector>
 #include <stdexcept>
+#include <sstream>
+#include <string>
 
 class Database;
 class SqlConnection;

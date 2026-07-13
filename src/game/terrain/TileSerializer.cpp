@@ -6,6 +6,11 @@
 #include <cstdio>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace world::terrain {
 

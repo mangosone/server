@@ -70,6 +70,9 @@
 #endif /* CLASSIC */
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <algorithm>
+#include <mutex>
+#include <set>
 #endif /* ENABLE_ELUNA */
 
 // /////////////////////////////////////////////////////////
@@ -211,9 +214,8 @@ void ScriptMgr::LoadScriptBinding()
 bool ScriptMgr::ReloadScriptBinding()
 {
 #ifdef _DEBUG
-    m_bindMutex.acquire_write();
+    std::unique_lock<std::shared_mutex> guard(m_bindMutex);
     LoadScriptBinding();
-    m_bindMutex.release();
     return true;
 #else
     return false;
@@ -291,7 +293,10 @@ uint32 ScriptMgr::GetScriptId(const char* name) const
 uint32 ScriptMgr::GetBoundScriptId(ScriptedObjectType entity, int32 entry)
 {
 #ifdef _DEBUG
-    m_bindMutex.acquire_read();
+    // Only debug builds can reload the bindings at runtime (ReloadScriptBinding), so
+    // only they need readers to lock. The guard covers the whole lookup and releases on
+    // every exit path -- the manual acquire/release pair it replaces did not.
+    std::shared_lock<std::shared_mutex> guard(m_bindMutex);
 #endif /* _DEBUG */
     uint32 id = 0;
     if (entity < SCRIPTED_MAX_TYPE)
@@ -304,9 +309,7 @@ uint32 ScriptMgr::GetBoundScriptId(ScriptedObjectType entity, int32 entry)
     }
     else
         sLog.outErrorScriptLib("asking a script for non-existing entity type %u!", entity);
-#ifdef _DEBUG
-    m_bindMutex.release();
-#endif /* _DEBUG */
+
     return id;
 }
 

@@ -49,13 +49,19 @@
 #include "Database/DatabaseEnv.h"
 #include "WardenCheckMgr.h"
 #include "Warden.h"
+#include <algorithm>
+#include <cstring>
+#include <list>
+#include <mutex>
+#include <string>
+#include <utility>
 
 /**
  * @brief WardenCheckMgr constructor
  *
  * Initializes the check manager with empty stores.
  */
-WardenCheckMgr::WardenCheckMgr() : m_lock(0), CheckStore(), CheckResultStore() { }
+WardenCheckMgr::WardenCheckMgr() : CheckStore(), CheckResultStore() { }
 
 /**
  * @brief WardenCheckMgr destructor
@@ -213,7 +219,7 @@ void WardenCheckMgr::LoadWardenOverrides()
 
     uint32 count = 0;
 
-    ACE_WRITE_GUARD(LOCK, g, m_lock)
+    std::unique_lock<LOCK> g(m_lock);
 
     do
     {
@@ -259,7 +265,7 @@ WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 id)
 {
     WardenCheck* result = NULL;
 
-    ACE_READ_GUARD_RETURN(LOCK, g, m_lock, result)
+    std::shared_lock<LOCK> g(m_lock);
     for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
     {
         if (it->second->CheckId == id)
@@ -282,7 +288,7 @@ WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 build, uint16 id)
 {
     WardenCheckResult* result = NULL;
 
-    ACE_READ_GUARD_RETURN(LOCK, g, m_lock, result)
+    std::shared_lock<LOCK> g(m_lock);
     for (CheckResultMap::iterator it = CheckResultStore.lower_bound(build); it != CheckResultStore.upper_bound(build); ++it)
     {
         if (it->second->Id == id)
@@ -305,7 +311,7 @@ void WardenCheckMgr::GetWardenCheckIds(bool isMemCheck, uint16 build, std::list<
 {
     idl.clear(); //just to be sure
 
-    ACE_READ_GUARD(LOCK, g, m_lock)
+    std::shared_lock<LOCK> g(m_lock);
     for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
     {
         if (isMemCheck)

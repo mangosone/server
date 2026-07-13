@@ -41,6 +41,10 @@
 #include "Common.h"
 #include "Policies/Singleton.h"
 #include "DBCStructure.h"
+#include <ctime>
+#include <map>
+#include <string>
+#include <utility>
 
 /** \addtogroup auctionhouse
  * @{

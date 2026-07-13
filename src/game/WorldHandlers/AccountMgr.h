@@ -26,6 +26,7 @@
 #define MANGOS_H_ACCMGR
 
 #include "Common.h"
+#include <string>
 
 /**
  * @brief Account operation result enumeration

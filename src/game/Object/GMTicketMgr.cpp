@@ -31,8 +31,10 @@
 #include "ProgressBar.h"
 #include "Policies/Singleton.h"
 #include "Player.h"
+#include <cstring>
+#include <ctime>
+#include <string>
 
-INSTANTIATE_SINGLETON_1(GMTicketMgr);
 
 /**
  * @brief Stores GM survey answers from a received packet.

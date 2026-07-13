@@ -48,6 +48,9 @@
 #include "Threading/Threading.h"
 #include "DatabaseEnv.h"
 #include "Utilities/Timer.h"
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 /**
  * @var DatabaseMysql::db_count
@@ -106,13 +109,13 @@ DatabaseMysql::DatabaseMysql()
         if (mysql_library_init(-1, NULL, NULL))
         {
             sLog.outError("Could not initialize MySQL client library\n");
-            ACE_OS::exit();
+            exit(1);
         }
         if (!mysql_thread_safe())
         {
             sLog.outError("FATAL ERROR: Used MySQL library isn't thread-safe.");
             Log::WaitBeforeContinueIfNeed();
-            ACE_OS::exit();
+            exit(1);
         }
     }
 }

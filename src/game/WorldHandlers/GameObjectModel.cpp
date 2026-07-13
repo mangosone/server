@@ -30,6 +30,10 @@
 #include <cmath>
 #include <mutex>
 #include <unordered_map>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
 
 using world::terrain::Aabb;
 using world::terrain::ICollisionModel;

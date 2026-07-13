@@ -29,6 +29,8 @@
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "OutdoorPvPMgr.h"
+#include <list>
+#include <map>
 
 // forward declaration
 class WorldPacket;

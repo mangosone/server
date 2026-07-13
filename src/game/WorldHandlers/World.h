@@ -37,6 +37,11 @@
 #include "SharedDefines.h"
 #include <set>
 #include <list>
+#include <atomic>
+#include <cstring>
+#include <ctime>
+#include <string>
+#include <vector>
 
 #ifdef ENABLE_ELUNA
 #include "Player.h"
@@ -505,7 +510,7 @@ typedef UNORDERED_MAP<uint32, WorldSession*> SessionMap;
 class World
 {
     public:
-        static ACE_Atomic_Op<ACE_Thread_Mutex, uint32> m_worldLoopCounter;
+        static std::atomic<uint32> m_worldLoopCounter;
 
         World();
         ~World();
@@ -548,7 +553,8 @@ class World
         void SetMotd(const std::string& motd) { m_motd = motd; }
         /// Get the current Message of the Day
         const char* GetMotd() const { return m_motd.c_str(); }
-        void showFooter();
+        /// Draw the world-initialization completion panel.
+        void showFooter(uint32 startupMs);
 
         LocaleConstant GetDefaultDbcLocale() const { return m_defaultDbcLocale; }
 
@@ -599,15 +605,53 @@ class World
         void ShutdownServ(uint32 time, uint32 options, uint8 exitcode);
         void ShutdownCancel();
         void ShutdownMsg(bool show = false, Player* player = NULL);
+        /**
+         * @brief Why the server is stopping, once it is.
+         *
+         * Reading this is only meaningful after IsStopped() has returned true: the acquire
+         * there synchronises with the release in StopNow(), which is what guarantees the
+         * code you read is the one the stopping thread published. Before any stop, this is
+         * SHUTDOWN_EXIT_CODE (0), the same default the old plain uint8 had.
+         */
         static uint8 GetExitCode()
         {
-            return m_ExitCode;
+            return uint8(m_shutdownState.load(std::memory_order_acquire) & EXIT_CODE_MASK);
         }
 
-        static void StopNow(uint8 exitcode) { m_stopEvent = true; m_ExitCode = exitcode; }
+        /**
+         * @brief Ask the server to stop, and say why. Safe from any thread, and from a
+         *        signal handler.
+         *
+         * The stop flag and the exit code live in ONE atomic on purpose. As two variables
+         * they could not be published race-free: the writer has to store them in some
+         * order, and a reader is free to land in between — which is exactly what used to
+         * happen. Ctrl-C would set the flag, the world loop would see it, unwind, and read
+         * the exit code before RESTART_EXIT_CODE had landed, so the process exited 0
+         * ("clean shutdown") and the supervisor never restarted it. One atomic, one publish,
+         * no window.
+         *
+         * First reason wins. A GUID overflow that stops the world with ERROR_EXIT_CODE must
+         * not be quietly overwritten into a routine SHUTDOWN by whatever asks to stop next;
+         * the first thing that went wrong is the thing worth reporting. (The old code was
+         * last-writer-wins, so it lost the error.)
+         *
+         * Signal-handler safety comes for free: a lock-free atomic is the only object a
+         * handler may legally touch. The old version wrote a plain uint8 from the handler,
+         * which was undefined behaviour outright.
+         */
+        static void StopNow(uint8 exitcode)
+        {
+            uint32 running = 0;
+            m_shutdownState.compare_exchange_strong(running,
+                                                    STOP_BIT | uint32(exitcode),
+                                                    std::memory_order_release,
+                                                    std::memory_order_relaxed);
+        }
+
+        /// Has a stop been requested? Checked by every loop in the daemon.
         static bool IsStopped()
         {
-            return m_stopEvent;
+            return (m_shutdownState.load(std::memory_order_acquire) & STOP_BIT) != 0;
         }
 
         void Update(uint32 diff);
@@ -746,6 +790,20 @@ class World
             bool sent;
         };
 
+        /**
+         * @brief Cooperative abort point for the startup load.
+         *
+         * The load takes minutes on a cold cache, and signals are hooked before it starts,
+         * so a Ctrl-C landing in the middle of it is the common case rather than an exotic
+         * one. Nothing used to look at the stop flag until the world loop was reached, so
+         * the whole load was paid for and *then* thrown away. Called between load phases:
+         * returns true if a stop has been requested, in which case the caller returns at
+         * once and the daemon unwinds without ever standing the world up.
+         *
+         * @param phase Human-readable name of the phase that was about to run.
+         */
+        bool StartupAborted(const char* phase);
+
         void LoadScheduledExitConfig();
         void CheckScheduledExit();
         void StartScheduledExit();
@@ -753,8 +811,34 @@ class World
         void SendScheduledExitWarnings();
         void SendScheduledExitWarning(ScheduledExitWarning& warning);
 
-        static volatile bool m_stopEvent;
-        static uint8 m_ExitCode;
+        /**
+         * @brief The committed stop signal: "are we stopping" and "why", in one word.
+         *
+         * 0 means running. Otherwise STOP_BIT is set and the low byte is the exit code.
+         * One-shot and cross-thread — written by StopNow() (world thread, console thread,
+         * RA/SOAP, or a signal handler), read by every loop in the daemon.
+         *
+         * This is deliberately NOT the same thing as the *planned* shutdown below. A stop
+         * that has been committed cannot be taken back; a plan can (.server shutdown cancel).
+         * Conflating the two into a `volatile bool` plus a bare uint8 is what made the old
+         * shutdown racy — and `volatile` never bought any of the thread-safety it looked
+         * like it was buying: it is not atomic and orders nothing against normal loads.
+         */
+        static std::atomic<uint32> m_shutdownState;
+
+        static constexpr uint32 STOP_BIT       = 0x100u;
+        static constexpr uint32 EXIT_CODE_MASK = 0x0FFu;
+
+        /**
+         * @brief The exit code a *planned* shutdown will commit with when its timer expires.
+         *
+         * World thread only — ShutdownServ() stages it, ShutdownCancel() resets it, and
+         * Update() commits it via StopNow(). It needs no synchronisation precisely because
+         * it never leaves that thread, which is the whole point of keeping it separate from
+         * m_shutdownState.
+         */
+        uint8 m_plannedExitCode;
+
         uint32 m_ShutdownTimer;
         uint32 m_ShutdownMask;
 
@@ -803,7 +887,7 @@ class World
         static uint32 m_visibility_observer_sweep_interval;
 
         // CLI command holder to be thread safe
-        ACE_Based::LockedQueue<CliCommandHolder*, ACE_Thread_Mutex> cliCmdQueue;
+        MaNGOS::LockedQueue<CliCommandHolder*> cliCmdQueue;
 
         // next daily quests reset time
         time_t m_NextDailyQuestReset;
@@ -813,7 +897,7 @@ class World
 
         // sessions that are added async
         void AddSession_(WorldSession* s);
-        ACE_Based::LockedQueue<WorldSession*, ACE_Thread_Mutex> addSessQueue;
+        MaNGOS::LockedQueue<WorldSession*> addSessQueue;
 
         // used versions
         std::string m_DBVersion;

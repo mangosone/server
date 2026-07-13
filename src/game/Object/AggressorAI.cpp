@@ -54,7 +54,7 @@ int AggressorAI::Permissible(const Creature* creature)
  *
  * @param c The creature controlled by this AI.
  */
-AggressorAI::AggressorAI(Creature* c) : CreatureAI(c), i_state(STATE_NORMAL), i_tracker(TIME_INTERVAL_LOOK)
+AggressorAI::AggressorAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK)
 {
 }
 

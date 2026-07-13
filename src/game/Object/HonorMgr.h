@@ -26,6 +26,7 @@
 #define MANGOS_H_HONORMGR
 
 #include "Common.h"
+#include <ctime>
 
 class Player;
 class Unit;

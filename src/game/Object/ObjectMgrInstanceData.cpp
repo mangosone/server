@@ -57,6 +57,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <ctime>
 
 /**
  * @brief Gets instance template data by map id.
@@ -258,7 +259,7 @@ void ObjectMgr::LoadGroups()
 
             uint32 leaderGuidLow = fields[0].GetUInt32();
             uint32 mapId = fields[1].GetUInt32();
-            Difficulty diff = (Difficulty)fields[4].GetUInt8();
+            uint8 diff = fields[4].GetUInt8();
             uint32 groupId = fields[7].GetUInt32();
 
             if (!group || group->GetId() != groupId)
@@ -285,7 +286,7 @@ void ObjectMgr::LoadGroups()
                 diff = REGULAR_DIFFICULTY;
             }
 
-            DungeonPersistentState* state = (DungeonPersistentState*)sMapPersistentStateMgr.AddPersistentState(mapEntry, fields[2].GetUInt32(), diff, (time_t)fields[5].GetUInt64(), (fields[6].GetUInt32() == 0), true);
+            DungeonPersistentState* state = (DungeonPersistentState*)sMapPersistentStateMgr.AddPersistentState(mapEntry, fields[2].GetUInt32(), Difficulty(diff), (time_t)fields[5].GetUInt64(), (fields[6].GetUInt32() == 0), true);
             group->BindToInstance(state, fields[3].GetBool(), true);
         }
         while (result->NextRow());

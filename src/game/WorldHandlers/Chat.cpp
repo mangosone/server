@@ -63,6 +63,11 @@
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstdio>
+#include <cstring>
+#include <map>
+#include <sstream>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 // Supported shift-links (client generated and server side)

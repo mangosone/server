@@ -39,6 +39,9 @@
 #include "GameEventMgr.h"
 #include "World.h"
 #include "SQLStorages.h"
+#include <cstdio>
+#include <sstream>
+#include <string>
 
 /**
  * @brief Handler for LookupPlayerSearchCommand command.

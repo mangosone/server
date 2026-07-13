@@ -70,6 +70,10 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "MapManager.h"
+#include <ctime>
+#include <list>
+#include <map>
+#include <set>
 
 #define NULL_AURA_SLOT 0xFF
 

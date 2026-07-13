@@ -26,6 +26,8 @@
 #define MANGOS_H_ITEMPROTOTYPE
 
 #include "Common.h"
+#include <string>
+#include <vector>
 
 enum ItemModType
 {

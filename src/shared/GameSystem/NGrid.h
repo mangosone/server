@@ -26,7 +26,6 @@
 #define MANGOS_NGRID_H
 
 #include "Platform/Define.h"
-#include "Policies/ThreadingModel.h"
 #include "GameSystem/TypeContainer.h"
 #include "GameSystem/TypeContainerVisitor.h"
 #include "GameSystem/GridReference.h"
@@ -35,6 +34,7 @@
 #include <bitset>
 #include <cassert>
 #include <set>
+#include <ctime>
 
 /**
  * @brief NGrid is nothing more than a wrapper of the Grid with an NxN cells

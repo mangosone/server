@@ -54,6 +54,8 @@
 #include "terrain/Geometry/Quat.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cmath>
+#include <ctime>
 #endif /* ENABLE_ELUNA */
 
 /**

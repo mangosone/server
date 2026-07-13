@@ -37,6 +37,8 @@
 #include "Utilities/UnorderedMapSet.h"
 
 #include <map>
+#include <set>
+#include <utility>
 
 class Player;
 class Spell;

@@ -43,6 +43,7 @@
 
 #include "ObjectMgr.h"                                      // for normalizePlayerName
 #include "ChannelMgr.h"
+#include <string>
 
 /**
  * @brief Handles a client's request to join a chat channel.

@@ -3,76 +3,82 @@
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotFactory.h"
 #include "PlayerbotCommandServer.h"
+
+#include "net/Server.hpp"
+
 #include <cstdlib>
 #include <iostream>
-
-INSTANTIATE_SINGLETON_1(PlayerbotCommandServer);
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
 
 using namespace std;
 
-bool ReadLine(ACE_SOCK_Stream& client_stream, string* buffer, string* line)
+namespace
 {
-    // Do the real reading from fd until buffer has '\n'.
-    string::iterator pos;
-    while ((pos = find(buffer->begin(), buffer->end(), '\n')) == buffer->end())
+    /**
+     * @brief One connection to the playerbot command server.
+     *
+     * Line-oriented: each line is a command, answered with a single line. The shared
+     * networking engine owns the socket and the threads (this used to be a blocking
+     * ACE_SOCK_Acceptor loop on its own ACE task), so all that is left here is the
+     * protocol — split the stream into lines, answer each one.
+     */
+    class PlayerbotCommandSession : public net::ISession
     {
-        char buf[33];
-        size_t n = client_stream.recv_n(buf, 1, 0);
-        if (n == -1)
-        {
-            return false;
-        }
+        public:
 
-        buf[n] = 0;
-        *buffer += buf;
-    }
+            void setSender(net::Sender sender) override { m_sender = std::move(sender); }
 
-    *line = string(buffer->begin(), pos);
-    *buffer = string(pos + 1, buffer->end());
-    return true;
-}
-
-class PlayerbotCommandServerThread: public ACE_Task <ACE_MT_SYNCH>
-{
-public:
-    int svc(void) {
-        if (!sPlayerbotAIConfig.commandServerPort) {
-        {
-            return 0;
-        }
-        }
-
-        ostringstream s; s << "Starting Playerbot Command Server on port " << sPlayerbotAIConfig.commandServerPort;
-        sLog.outString(s.str().c_str());
-
-        ACE_INET_Addr server(sPlayerbotAIConfig.commandServerPort);
-        ACE_SOCK_Acceptor client_responder(server);
-
-        while (true)
-        {
-            ACE_SOCK_Stream client_stream;
-            ACE_Time_Value timeout(5);
-            ACE_INET_Addr client;
-            if (-1 != client_responder.accept(client_stream, &client, &timeout))
+            std::vector<uint8_t> onData(const uint8_t* data, size_t len) override
             {
-                string buffer, request;
-                while (ReadLine(client_stream, &buffer, &request))
+                m_buffer.append(reinterpret_cast<const char*>(data), len);
+
+                // A read may carry a partial line, several lines, or both; anything left
+                // over stays buffered for the next one.
+                std::string::size_type eol;
+                while ((eol = m_buffer.find('\n')) != std::string::npos)
                 {
-                    string response = sRandomPlayerbotMgr.HandleRemoteCommand(request) + "\n";
-                    client_stream.send_n(response.c_str(), response.size(), 0);
-                    request = "";
+                    const std::string request = m_buffer.substr(0, eol);
+                    m_buffer.erase(0, eol + 1);
+
+                    const std::string response = sRandomPlayerbotMgr.HandleRemoteCommand(request) + "\n";
+                    if (m_sender)
+                    {
+                        m_sender(reinterpret_cast<const uint8_t*>(response.data()), response.size());
+                    }
                 }
-                client_stream.close();
+
+                return {};
             }
-        }
 
-        return 0;
-    }
-};
+            bool closed() const override { return false; }
 
+        private:
+
+            net::Sender m_sender;
+            std::string m_buffer;   ///< bytes not yet forming a complete line
+    };
+
+    /// Owns the listening socket for the lifetime of the process.
+    net::Server s_server;
+}
 
 void PlayerbotCommandServer::Start()
 {
-    PlayerbotCommandServerThread *thread = new PlayerbotCommandServerThread();
-    thread->activate();
+    const uint32 port = sPlayerbotAIConfig.commandServerPort;
+    if (!port)
+    {
+        return;
+    }
+
+    ostringstream s;
+    s << "Starting Playerbot Command Server on port " << port;
+    sLog.outString(s.str().c_str());
+
+    s_server.start(uint16_t(port), []() -> std::shared_ptr<net::ISession>
+    {
+        return std::make_shared<PlayerbotCommandSession>();
+    });
 }

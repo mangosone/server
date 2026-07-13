@@ -63,6 +63,7 @@
 #include "LootMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
 #endif /* ENABLE_ELUNA */
 
 /**

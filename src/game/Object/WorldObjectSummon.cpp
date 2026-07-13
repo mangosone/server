@@ -75,6 +75,7 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_ELUNA
 #include "ElunaEventMgr.h"
+#include <cmath>
 #endif /* ENABLE_ELUNA */
 
 /**

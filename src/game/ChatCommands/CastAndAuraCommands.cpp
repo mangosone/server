@@ -36,6 +36,7 @@
 #include "Language.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
+#include <string>
 
 /**********************************************************************
     CommandTable : castCommandTable

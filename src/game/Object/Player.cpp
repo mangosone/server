@@ -78,6 +78,11 @@
 #endif
 
 #include <cmath>
+#include <cassert>
+#include <cstring>
+#include <ctime>
+#include <sstream>
+#include <string>
 
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
 
@@ -2263,8 +2268,7 @@ void Player::SetGameMaster(bool on)
 
         if (Pet* pet = GetPet())
         {
-            if (m_ExtraFlags |= PLAYER_EXTRA_GM_ON)
-                pet->setFaction(35);
+            pet->setFaction(35);
             pet->GetHostileRefManager().setOnlineOfflineState(false);
         }
     }

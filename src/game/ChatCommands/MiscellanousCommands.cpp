@@ -37,6 +37,7 @@
 #include "World.h"
 #include "BattleGroundMgr.h"
 #include "PlayerDump.h"
+#include <string>
 
 /**
  * @brief Handler for HandleHelpCommand command.

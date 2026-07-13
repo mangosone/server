@@ -61,6 +61,9 @@
 #ifdef ENABLE_PLAYERBOTS
 #include "playerbot.h"
 #include "RandomPlayerbotMgr.h"
+#include <cstring>
+#include <ctime>
+#include <string>
 #endif
 
 /**

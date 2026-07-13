@@ -30,8 +30,8 @@ set(TOOLS_DIR "tools")
 #
 # DBCs are read with the SERVER's reader: src/shared/DataStores/DBCFileLoader.cpp compiled
 # in directly, driven by the format strings in src/game/Server/DBCfmt.h. It cannot be
-# linked from the `shared` library instead, because `shared` exports ACE (and MySQL, and
-# OpenSSL) as PUBLIC dependencies. Compiling the one .cpp is why DBCFileLoader.h and
+# linked from the `shared` library instead, because `shared` exports MySQL and
+# OpenSSL as PUBLIC dependencies. Compiling the one .cpp is why DBCFileLoader.h and
 # Utilities/ByteConverter.h were made free of Platform/Define.h -- keep them that way.
 # src/baker/stores is now only the two thin MPQ-backed stores over that reader.
 #
@@ -96,6 +96,21 @@ target_link_libraries(mangos-baker
         Threads::Threads
 )
 
+install(
+    TARGETS mangos-baker
+    DESTINATION ${BIN_DIR}/${TOOLS_DIR}
+)
+
+if(WIN32 AND MSVC)
+    install(
+        FILES
+        $<TARGET_PDB_FILE:mangos-baker>
+        DESTINATION ${BIN_DIR}/${TOOLS_DIR}
+        OPTIONAL
+    )
+endif()
+
+if(BUILD_TESTS)
 # Offline probes for baked .tile files. They drive the RUNTIME query path (FusedTerrain
 # + the shared terrain engine), NOT the baker's extraction half, so a query here is
 # exactly what mangosd computes. No StormLib: they read the baked tiles, they do not
@@ -131,19 +146,25 @@ foreach(_probe mangos-tiletest mangos-height-check mangos-accelbench mangos-losb
 endforeach()
 
 install(
-    TARGETS mangos-baker mangos-tiletest mangos-height-check mangos-accelbench
-            mangos-losbench mangos-bvhdebug
+    TARGETS mangos-tiletest
+            mangos-height-check
+            mangos-accelbench
+            mangos-losbench
+            mangos-bvhdebug
     DESTINATION ${BIN_DIR}/${TOOLS_DIR}
 )
 
 if(WIN32 AND MSVC)
     install(
         FILES
-            $<TARGET_PDB_FILE:mangos-baker>
             $<TARGET_PDB_FILE:mangos-tiletest>
             $<TARGET_PDB_FILE:mangos-height-check>
             $<TARGET_PDB_FILE:mangos-accelbench>
+            $<TARGET_PDB_FILE:mangos-losbench>
+            $<TARGET_PDB_FILE:mangos-bvhdebug>
         DESTINATION ${BIN_DIR}/${TOOLS_DIR}
         OPTIONAL
     )
+endif()
+
 endif()

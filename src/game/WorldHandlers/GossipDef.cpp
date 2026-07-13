@@ -50,6 +50,7 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Formulas.h"
+#include <string>
 
 // Constructor for GossipMenu, initializes the session and reserves space for menu items
 GossipMenu::GossipMenu(WorldSession* session) : m_session(session)

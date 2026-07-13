@@ -35,6 +35,7 @@
 #include "CreatureAI.h"
 #include "Unit.h"
 #include "Util.h"
+#include <ctime>
 
 /**
  * @brief Loads saved pet spell cooldowns from the database.

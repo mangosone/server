@@ -56,6 +56,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <string>
 
 /**
  * @brief Loads the list of reserved player names.

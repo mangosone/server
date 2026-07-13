@@ -76,6 +76,7 @@
 #include "CellImpl.h"
 #include "Language.h"
 #include "MapManager.h"
+#include <cmath>
 
 /**
  * @brief Applies special proc-trigger spell setup for specific aura spells.
@@ -89,8 +90,6 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
     {
         return;
     }
-
-    Unit* target = GetTarget();
 
     switch (GetId())
     {
@@ -200,9 +199,6 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
     }
 
     Unit* target = GetTarget();
-
-    // For prevent double apply bonuses
-    bool loading = (target->GetTypeId() == TYPEID_PLAYER && ((Player*)target)->GetSession()->PlayerLoading());
 
     SpellEntry const* spell = GetSpellProto();
     switch (spell->SpellClassSet)

@@ -72,6 +72,8 @@
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
@@ -836,7 +838,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         }
 
         // need find areatrigger to inner dungeon for landing point
-        if (at->target_mapId != corpseMapId)
+        if (at->target_mapId != uint32(corpseMapId))
         {
             if (AreaTrigger const* corpseAt = sObjectMgr.GetMapEntranceTrigger(corpseMapId))
             {

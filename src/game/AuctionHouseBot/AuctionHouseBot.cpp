@@ -37,6 +37,14 @@
  */
 
 #include "Policies/Singleton.h"
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#include <limits>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
 /**
  * @brief Structure to track auction evaluation state for buyer
@@ -82,10 +90,10 @@ typedef std::map<uint32, BuyerAuctionEval > CheckEntryMap;
 struct AHB_Buyer_Config
 {
     public:
-        AHB_Buyer_Config() : m_houseType(AUCTION_HOUSE_NEUTRAL),
+        AHB_Buyer_Config() : FactionChance(0),
             BuyerEnabled(false),
             BuyerPriceRatio(0),
-            FactionChance(0) {}
+            m_houseType(AUCTION_HOUSE_NEUTRAL) {}
 
         /**
          * @brief Initialize configuration for a specific auction house
@@ -168,7 +176,7 @@ struct SellerItemInfo
 class AHB_Seller_Config
 {
     public:
-        AHB_Seller_Config() : m_houseType(AUCTION_HOUSE_NEUTRAL), LastMissedItem(0), m_minTime(0), m_maxTime(0)
+        AHB_Seller_Config() : LastMissedItem(0), m_houseType(AUCTION_HOUSE_NEUTRAL), m_minTime(0), m_maxTime(0)
         {}
 
         ~AHB_Seller_Config() {}
@@ -578,8 +586,6 @@ class AuctionBotSeller : public AuctionBotAgent
         void LoadItemsQuantity(AHB_Seller_Config& config);
 };
 
-INSTANTIATE_SINGLETON_1(AuctionHouseBot);
-INSTANTIATE_SINGLETON_1(AuctionBotConfig);
 
 //== AuctionBotConfig functions ============================
 
@@ -588,9 +594,9 @@ INSTANTIATE_SINGLETON_1(AuctionBotConfig);
  */
 AuctionBotConfig::AuctionBotConfig()
     : m_configFileName(AUCTIONHOUSEBOT_CONFIG_LOCATION),
-    m_BotId(0), // Initialize m_BotId
-    m_ItemsPerCycleBoost(0), // Initialize m_ItemsPerCycleBoost
-    m_ItemsPerCycleNormal(0) // Initialize m_ItemsPerCycleNormal
+    m_ItemsPerCycleBoost(0),
+    m_ItemsPerCycleNormal(0),
+    m_BotId(0)
 {
     // Initialize m_configBoolValues array to false
     std::fill(std::begin(m_configBoolValues), std::end(m_configBoolValues), false);

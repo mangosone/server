@@ -75,6 +75,8 @@
 #include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 /**

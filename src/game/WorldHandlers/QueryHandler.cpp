@@ -51,6 +51,8 @@
 #include "Player.h"
 #include "NPCHandler.h"
 #include "SQLStorages.h"
+#include <ctime>
+#include <string>
 
 /**
  * @brief Sends an in-memory name query response for a player.

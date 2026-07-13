@@ -23,6 +23,11 @@
  */
 
 #include "DatabaseEnv.h"
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 /**
  * @brief Constructor to reserve memory for parameters.

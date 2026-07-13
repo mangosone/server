@@ -49,8 +49,8 @@
 #include "Opcodes.h"
 #include "Log.h"
 #include "Policies/Singleton.h"
+#include <string>
 
-INSTANTIATE_SINGLETON_1(AddonHandler);
 
 /**
  * @brief Construct AddonHandler singleton

@@ -60,6 +60,8 @@
 #include "DisableMgr.h"
 #include "Formulas.h"
 #include "ItemEnchantmentMgr.h"
+#include <set>
+#include <string>
 
 /**
  * @brief Loads localized item names and descriptions.

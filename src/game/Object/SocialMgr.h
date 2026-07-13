@@ -27,6 +27,8 @@
 
 #include "Database/DatabaseEnv.h"
 #include "ObjectGuid.h"
+#include <map>
+#include <string>
 
 class SocialMgr;
 class PlayerSocial;

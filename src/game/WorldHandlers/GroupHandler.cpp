@@ -53,6 +53,7 @@
 #include "Group.h"
 #include "SocialMgr.h"
 #include "Util.h"
+#include <string>
 
 /* differences from off:
     -you can uninvite yourself - is is useful

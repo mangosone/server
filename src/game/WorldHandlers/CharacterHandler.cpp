@@ -71,6 +71,9 @@
 #ifdef ENABLE_PLAYERBOTS
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"
+#include <ctime>
+#include <memory>
+#include <string>
 #endif
 
 // config option SkipCinematics supported values

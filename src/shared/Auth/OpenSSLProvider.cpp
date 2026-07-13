@@ -29,6 +29,7 @@
 
 #include "OpenSSLProvider.h"
 #include "Log/Log.h"
+#include <utility>
 
 /**
  * Creates a new OpenSSL cipher context wrapper.

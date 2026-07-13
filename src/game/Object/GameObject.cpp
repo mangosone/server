@@ -53,6 +53,9 @@
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cmath>
+#include <ctime>
+#include <sstream>
 #endif /* ENABLE_ELUNA */
 
 
@@ -62,8 +65,8 @@
 GameObject::GameObject() : WorldObject(),
     loot(this),
     m_model(NULL),
-    m_displayInfo(NULL),
     m_goInfo(NULL),
+    m_displayInfo(NULL),
     m_AI_locked(false)
 {
     m_objectType |= TYPEMASK_GAMEOBJECT;
@@ -90,8 +93,6 @@ GameObject::GameObject() : WorldObject(),
     m_reStockTimer = 0;
     m_rearmTimer = 0;
     m_despawnTimer = 0;
-
-    m_AI_locked;
 }
 
 /**
@@ -1274,8 +1275,6 @@ void GameObject::RollIfMineralVein()
     if (goinfo->chest.minSuccessOpens != 0 && goinfo->chest.maxSuccessOpens > goinfo->chest.minSuccessOpens) //in this case it is a mineral vein
     {
         uint32 entrynew = RollMineralVein(GetRealEntry());
-
-        uint32 guid = GetObjectGuid();
 
         GameObjectInfo const* goinfonew = ObjectMgr::GetGameObjectInfo(entrynew);
         m_goInfo = goinfonew;

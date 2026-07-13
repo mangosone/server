@@ -57,6 +57,9 @@
 #include "WardenModuleWin.h"
 #include "WardenCheckMgr.h"
 #include "GameTime.h"
+#include <cstring>
+#include <list>
+#include <sstream>
 
 /**
  * @brief WardenWin constructor

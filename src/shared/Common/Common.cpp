@@ -23,6 +23,7 @@
  */
 
 #include "Common.h"
+#include <string>
 
 char const* localeNames[MAX_LOCALE] =
 {

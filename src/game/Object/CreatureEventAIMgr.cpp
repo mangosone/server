@@ -33,8 +33,10 @@
 #include "GridDefines.h"
 #include "SpellMgr.h"
 #include "World.h"
+#include <cstring>
+#include <set>
+#include <utility>
 
-INSTANTIATE_SINGLETON_1(CreatureEventAIMgr);
 
 // -------------------
 /**

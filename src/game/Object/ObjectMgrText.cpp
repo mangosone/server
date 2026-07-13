@@ -57,6 +57,8 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <set>
+#include <sstream>
 
 /**
  * @brief Loads page text records and validates page chains.

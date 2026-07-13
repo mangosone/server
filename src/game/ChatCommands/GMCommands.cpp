@@ -37,6 +37,9 @@
 #include "World.h"
 #include "Weather.h"
 #include "SpellMgr.h"
+#include <list>
+#include <string>
+#include <utility>
 
 /**
  * @brief Handler for HandlePInfoCommand command.

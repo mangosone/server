@@ -32,6 +32,7 @@
  */
 
 #include "TypeContainer.h"
+#include <utility>
 
 template<class VISITOR, class CONTAINER>
     class TypeContainerVisitor

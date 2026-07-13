@@ -26,6 +26,7 @@
 #define MANGOS_FORMULAS_H
 
 #include "World.h"
+#include <cmath>
 
 namespace MaNGOS
 {

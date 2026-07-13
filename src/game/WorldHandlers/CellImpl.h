@@ -29,7 +29,6 @@
 #include "Cell.h"
 #include "Map.h"
 #include "TransportCrewSearch.h"
-#include <cmath>
 
 inline Cell::Cell(CellPair const& p)
 {

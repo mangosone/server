@@ -29,6 +29,7 @@
 #include "Creature.h"
 #include "GameObject.h"
 #include "Player.h"
+#include <list>
 
 OutdoorPvPHP::OutdoorPvPHP() : OutdoorPvP(),
     m_towersAlliance(0),

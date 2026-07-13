@@ -29,6 +29,8 @@
 #include "Database/DatabaseEnv.h"
 
 #include <vector>
+#include <cstring>
+#include <string>
 
 class Player;
 

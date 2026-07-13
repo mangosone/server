@@ -60,6 +60,8 @@
 #include "DisableMgr.h"
 #include "Formulas.h"
 #include "ItemEnchantmentMgr.h"
+#include <map>
+#include <string>
 
 /**
  * @brief Loads quest templates and validates quest-related database references.

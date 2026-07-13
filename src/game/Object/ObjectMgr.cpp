@@ -56,10 +56,18 @@
 #include "DisableMgr.h"
 
 #include "ItemEnchantmentMgr.h"
+#include <cstdlib>    // std::abort, on guid-space exhaustion
 #include <limits>
 #include <set>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
-INSTANTIATE_SINGLETON_1(ObjectMgr);
 
 // Temporary startup accumulator for LivingWorld observability (written during LoadActiveEntities(NULL) only)
 static ObjectMgr::LivingWorldStartupStats s_livingWorldStats;
@@ -189,6 +197,19 @@ T IdGenerator<T>::Generate()
     {
         sLog.outError("%s guid overflow!! Can't continue, shutting down server. ", m_name);
         World::StopNow(ERROR_EXIT_CODE);
+
+        // StopNow() is only honoured at the next world-loop check, which can still be many
+        // Generate() calls away inside the current tick — the warning above fires one id
+        // short of the limit, and that headroom is all we get. Once it is spent there is
+        // nothing safe left to return: wrapping issues a *duplicate* guid, and a duplicate
+        // guid is silent, persistent corruption the moment it reaches the database. Dying
+        // here is strictly better than saving a corrupt world, so refuse rather than wrap.
+        if (m_nextGuid >= std::numeric_limits<T>::max())
+        {
+            sLog.outError("%s guid space is exhausted; refusing to issue a duplicate guid.", m_name);
+            sLog.Flush();
+            std::abort();
+        }
     }
     return m_nextGuid++;
 }
@@ -633,7 +654,7 @@ void ObjectMgr::LoadPetCreateSpells()
             continue;
         }
 
-        if (CreatureSpellDataEntry const* petSpellEntry = cInfo->PetSpellDataId ? sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId) : NULL)
+        if (cInfo->PetSpellDataId && sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId))
         {
             sLog.outErrorDb("Creature id %u listed in `petcreateinfo_spell` have set `PetSpellDataId` field and will use its instead, skip.", creature_id);
             continue;
@@ -3004,7 +3025,7 @@ ObjectMgr::LivingWorldStartupStats ObjectMgr::LoadActiveEntities(Map* _map)
         s_livingWorldStartupPass = true;
 
         uint32 continents[] = {0, 1, 369, 530};
-        for (int i = 0; i < countof(continents); ++i)
+        for (size_t i = 0; i < countof(continents); ++i)
         {
             _map = sMapMgr.FindMap(continents[i]);
             if (!_map)

@@ -29,6 +29,7 @@
 #include "Channel.h"
 
 #include <map>
+#include <string>
 
 class ChannelMgr
 {

@@ -26,6 +26,7 @@
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "UpdateData.h"
+#include <cstring>
 
 /**
  * @brief Creates an empty bag item instance.

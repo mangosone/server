@@ -23,6 +23,7 @@
  */
 
 #include "EventProcessor.h"
+#include <utility>
 
 /**
  * @brief Construct a new Event Processor::Event Processor object

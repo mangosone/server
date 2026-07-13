@@ -17,6 +17,7 @@
 #include <dbghelp.h>
 #include "WheatyExceptionReport.h"
 #include "GitRevision.h"
+#include <cstdarg>
 #define CrashFolder _T("Crashes")
 #pragma comment(linker, "/defaultlib:dbghelp.lib")
 

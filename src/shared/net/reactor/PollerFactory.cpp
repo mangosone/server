@@ -22,25 +22,35 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef ANTIFREEZE_THREAD
-#define ANTIFREEZE_THREAD
+// The single place that maps an OS to its reactor backend. Adding a new platform
+// (poll, /dev/poll, event ports, ...) means: write the Poller subclass, then add
+// one branch here. The rest of the server never changes.
+#ifndef _WIN32
 
-#include "ace/Task.h"
-#include "Common.h"
+#include "net/reactor/Poller.hpp"
 
-class AntiFreezeThread : public ACE_Task_Base
-{
-    public:
-        explicit AntiFreezeThread(uint32 delay);
-        int open(void*) override;
-        int svc() override;
+#include <memory>
 
-    private:
-        uint32 m_loops;
-        uint32 m_lastchange;
-        uint32 w_loops;
-        uint32 w_lastchange;
-        uint32 delaytime_;
-};
-
+#if defined(__linux__)
+#include "net/reactor/EpollPoller.hpp"
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+      defined(__OpenBSD__) || defined(__DragonFly__)
+#include "net/reactor/KqueuePoller.hpp"
 #endif
+
+namespace net {
+
+std::unique_ptr<Poller> makePoller() {
+#if defined(__linux__)
+    return std::make_unique<EpollPoller>();
+#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+      defined(__OpenBSD__) || defined(__DragonFly__)
+    return std::make_unique<KqueuePoller>();
+#else
+    return nullptr; // no reactor backend for this platform
+#endif
+}
+
+} // namespace net
+
+#endif // !_WIN32

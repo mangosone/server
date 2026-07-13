@@ -36,6 +36,8 @@
 
 #include "World.h"
 #include "ObjectMgr.h"
+#include <ctime>
+#include <string>
 
 /**
  * @brief Handler for HandleAnnounceCommand command.

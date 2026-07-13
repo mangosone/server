@@ -28,6 +28,7 @@
 #include "Common.h"
 #include "OutdoorPvP.h"
 #include "Language.h"
+#include <list>
 
 /**
  * @brief Eastern Plaguelands outdoor PvP constants

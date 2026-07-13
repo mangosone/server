@@ -84,12 +84,12 @@ class TargetedMovementGenerator : public IntentMovementGenerator,
 
         /// The target is gone in a way only this kind can detect (a creature that killed
         /// its own pet is no longer chasing anything).
-        virtual bool LostTarget(Unit& owner) const { return false; }
+        virtual bool LostTarget(Unit& /*owner*/) const { return false; }
 
         /// The unit is now as close as it asked to be. Fires once per approach.
-        virtual void ReachTarget(Unit& owner) {}
+        virtual void ReachTarget(Unit& /*owner*/) {}
 
-        virtual bool EnableWalking(Unit& owner) const { return false; }
+        virtual bool EnableWalking(Unit& /*owner*/) const { return false; }
 
         /// How often the standing spot is re-derived. Deriving it is the expensive half
         /// (it snaps to the ground), so it is throttled — and a follower looks twice as

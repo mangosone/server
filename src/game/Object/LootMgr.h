@@ -30,6 +30,9 @@
 #include "Utilities/LinkedReference/RefManager.h"
 
 #include <vector>
+#include <cmath>
+#include <map>
+#include <set>
 
 class Player;
 class LootStore;

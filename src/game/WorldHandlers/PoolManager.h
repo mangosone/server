@@ -29,6 +29,12 @@
 #include "Platform/Define.h"
 #include "Creature.h"
 #include "GameObject.h"
+#include <cmath>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 class MapPersistentState;
 struct MapEntry;

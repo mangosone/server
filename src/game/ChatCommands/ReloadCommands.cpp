@@ -152,7 +152,7 @@ bool ChatHandler::HandleReloadAllLootCommand(char* /*args*/)
  * @param args Command arguments.
  * @returns True if the command executed successfully, false otherwise.
  */
-bool ChatHandler::HandleReloadAllNpcCommand(char* args)
+bool ChatHandler::HandleReloadAllNpcCommand(char* /*args*/)
 {
     HandleReloadNpcTrainerCommand((char*)"a");
     HandleReloadNpcVendorCommand((char*)"a");
@@ -648,7 +648,7 @@ bool ChatHandler::HandleReloadMangosStringCommand(char* /*args*/)
  * @param args Command arguments.
  * @returns True if the command executed successfully, false otherwise.
  */
-bool ChatHandler::HandleReloadNpcGossipCommand(char* args)
+bool ChatHandler::HandleReloadNpcGossipCommand(char* /*args*/)
 {
     sLog.outString("Re-Loading 'gossip_menus' Table!");
     sObjectMgr.LoadGossipMenus();

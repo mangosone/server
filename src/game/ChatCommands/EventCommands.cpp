@@ -36,6 +36,8 @@
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "GameEventMgr.h"
+#include <ctime>
+#include <string>
 
 /**
  * @brief Handler for HandleEventListCommand command.

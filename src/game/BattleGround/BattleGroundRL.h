@@ -25,7 +25,8 @@
 #ifndef MANGOS_H_BATTLEGROUNDRL
 #define MANGOS_H_BATTLEGROUNDRL
 
-class BattleGround;
+// Derives from BattleGround / BattleGroundScore: needs the definitions, not a declaration.
+#include "BattleGround.h"
 
 class BattleGroundRLScore : public BattleGroundScore
 {

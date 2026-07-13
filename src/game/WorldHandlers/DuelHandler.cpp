@@ -43,6 +43,7 @@
 #include "WorldSession.h"
 #include "Log.h"
 #include "Player.h"
+#include <ctime>
 
 /**
  * @brief Handle duel acceptance from the challenged player

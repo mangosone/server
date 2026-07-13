@@ -31,9 +31,8 @@
 #include "ScriptMgr.h"
 #include "Pet.h"
 #include "Log.h"
+#include <string>
 
-INSTANTIATE_SINGLETON_1(CreatureAIRegistry);
-INSTANTIATE_SINGLETON_1(MovementGeneratorRegistry);
 
 namespace FactorySelector
 {

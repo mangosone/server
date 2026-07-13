@@ -27,6 +27,8 @@
 
 #include "Utilities/LinkedReference/RefManager.h"
 
+class Map;
+class Player;
 class MapReference;
 
 /**

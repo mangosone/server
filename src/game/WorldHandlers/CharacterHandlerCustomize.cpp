@@ -74,6 +74,7 @@
 #endif /* ENABLE_PLAYERBOTS */
 #ifdef ENABLE_PLAYERBOTS
 #include "PlayerbotAIConfig.h"
+#include <string>
 #endif /* ENABLE_PLAYERBOTS */
 
 /**

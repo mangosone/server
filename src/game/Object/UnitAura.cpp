@@ -554,6 +554,8 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
                 case TRACK_AURA_TYPE_SINGLE_TARGET:         // Register spell holder single target
                     scTargets[aurSpellInfo] = GetObjectGuid();
                     break;
+                default:
+                    break;
             }
         }
     }

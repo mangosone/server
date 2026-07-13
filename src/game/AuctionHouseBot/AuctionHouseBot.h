@@ -29,6 +29,8 @@
 #include "AuctionHouseMgr.h"
 #include "SharedDefines.h"
 #include "Item.h"
+#include <ctime>
+#include <string>
 
 /**
  * @file AuctionHouseBot.h

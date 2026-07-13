@@ -27,6 +27,9 @@
 
 #include "Common.h"
 #include "Utilities/UnorderedMapSet.h"
+#include <map>
+#include <set>
+#include <string>
 
 enum WaypointPathOrigin
 {

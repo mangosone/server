@@ -121,6 +121,18 @@ class Transport : public GameObject, public TransportBase
         CreatureMapType& GetCrewMap() { return m_crewMap; }
         bool HasCrew() const { return !m_crew.empty(); }
 
+        /// True when the vessel is carrying ANYTHING a grid search should find on its deck --
+        /// crew or a boarded minion. Both live in m_crewMap, and both are passengers, so the
+        /// passenger list is the honest test. Drives GatherCrewContainersNear: a vessel with
+        /// only a player's pet aboard (no NPC crew) must still be searched.
+        bool HasBoardedCreatures() const { return !GetPassengers().empty(); }
+
+        /// Override so a boarded creature is unlinked from the vessel's container (m_crewMap)
+        /// as it leaves -- by ANY route. Death, dismiss and logout all reach here through
+        /// Creature::RemoveFromWorld, so this one hook keeps the container from ever holding
+        /// a freed pointer, the same guarantee UnBoardCreature gives the crew.
+        void UnBoardPassenger(WorldObject* passenger) override;
+
         /**
          * @brief Keep every player passenger's MINIONS aboard with them -- pet, mini-pet,
          *        guardians, totems.
@@ -142,8 +154,61 @@ class Transport : public GameObject, public TransportBase
          */
         void UpdateMinions();
 
-        /// Board one minion, if it is over the deck. See UpdateMinions.
+        /**
+         * @brief Get one minion aboard -- by BOARDING it if it is standing over the deck,
+         *        and by HAULING it aboard if it is not.
+         *
+         * The haul is not a shortcut, it is the only way aboard, and retail does exactly
+         * the same thing. A pet ashore follows its master in the WORLD frame, so once the
+         * master is on the deck the pet's goal is the master's world position -- a point
+         * over open water. There is no navmesh there, the route fails, and a follow leg
+         * (MOVE_REQUIRE_PATH) is refused outright: no leg is laid and the pet stops dead.
+         *
+         * It can therefore never WALK onto a deck, and a rule that only boards what is
+         * already standing on one would leave every pet in the game on the pier forever.
+         * So the pet runs to the margin under its own power, and when it can get no
+         * further we pick it up and put it at its master's heel. That is what the player
+         * sees on retail, and it is what they see here.
+         */
         void BoardMinion(Unit* minion);
+
+        /**
+         * @brief The deck offset of anything standing on this vessel. Nothing when it is
+         *        not aboard this one.
+         *
+         * There are TWO ways to be on a ship and both have to be read here:
+         *
+         *   * a CREW member or a boarded MINION carries a TransportInfo, and the offset we
+         *     maintain in it is the truth;
+         *
+         *   * a PLAYER carries none. It rides on Player::m_transport plus the deck offset
+         *     its own client sends in every movement packet -- which is better than
+         *     anything we could compute, the client being authoritative for where it
+         *     stands. So we read the number it gave us.
+         *
+         * Missing the second case would place a pet by converting its master's WORLD
+         * position through a vessel pose we are only ESTIMATING, when the exact answer was
+         * sitting in the packet all along.
+         */
+        std::optional<Position> LocalPositionOf(WorldObject const& obj) const;
+
+        /// The vessel `obj` is standing on -- as a passenger (its TransportInfo) or as a
+        /// player (its Player::m_transport) -- or NULL when it is standing on none. The
+        /// two-ways-to-be-aboard rule of LocalPositionOf, asked as a yes/no.
+        static Transport* VesselOf(WorldObject const& obj);
+
+        /**
+         * @brief A spot on the deck `distance2d` yards from `master` at its own facing plus
+         *        `angle`, in DECK coordinates.
+         *
+         * Where a summoned or hauled minion is put. The requested bearing is tried first
+         * and then swept around the master, because a deck is small and cluttered and the
+         * one spot the caller asked for is very often out over the rail.
+         *
+         * @return Nothing when `master` is not aboard this vessel, or it has no deck.
+         */
+        std::optional<Position> DeckSpotNear(WorldObject const& master, float distance2d,
+                                             float angle) const;
 
         /**
          * @brief RECOVER THE VESSEL'S TRUE POSE FROM A PLAYER STANDING ON IT.
@@ -275,12 +340,53 @@ class Transport : public GameObject, public TransportBase
     private:
         void TeleportTransport(uint32 newMapid, float x, float y, float z);
 
+        /**
+         * @brief A SAME-MAP seam: the vessel jumps along its own path, and NOBODY is teleported.
+         *
+         * A teleport waypoint that does not change map is not a map transfer, and treating it
+         * as one is what drowned the passengers. The old path fell into Player::TeleportTo's
+         * FAR branch (its near branch excludes anyone on a transport), which composes a WORLD
+         * position -- waypoint + deck offset -- and ports the player to it. The waypoint's z is
+         * the ship's PATH z, i.e. the waterline, so the player was being placed at sea level
+         * instead of on the deck.
+         *
+         * There is nothing to compute. The passengers' only real coordinates are their deck
+         * offsets, and those do not change when the hull moves. The client already interpolates
+         * the vessel along the taxi path -- teleport nodes included -- and already parents its
+         * passengers to the hull, so it carries them across on its own. We send no placement at
+         * all; we only move our own bookkeeping (the players' grid cells) to follow the hull.
+         */
+        void JumpWithinMap(float x, float y, float z);
+
         /// Carry the crew across a map seam with the ship. They stay boarded; only their map
         /// registration moves.
         void MoveCrewToMap(Map* newMap);
         void UpdateForMap(Map const* map);
         void DoEventIfAny(WayPointMap::value_type const& node, bool departure);
         void MoveToNextWayPoint();                          // move m_next/m_cur to next points
+
+        /// Put a minion into the vessel's frame at a deck-local spot, and tell the client
+        /// it is standing on us. The one place a minion is ever boarded.
+        void BoardMinionAt(Unit* minion, float lx, float ly, float lz, float lo);
+
+        /// Pick a minion up off the shore and set it down at its master's heel. See
+        /// BoardMinion for why this is the only way a pet ever gets aboard.
+        void HaulMinionAboard(Unit* minion);
+
+        /// The mirror of the haul: step a minion off the deck and back into the world's
+        /// frame, at its master's heel ashore.
+        void PutMinionAshore(Unit* minion);
+
+        /// The exact inverse of the boarding relink: unlink the minion from the vessel's
+        /// container (it is already unboarded when we get here) and re-file it into the WORLD
+        /// grid at (x,y,z) -- a clean RemoveFromWorld + Map::Add, which restores its cell, its
+        /// ordinary world-grid visibility and its grid-driven tick.
+        void ReturnMinionToWorld(Unit* minion, float x, float y, float z, float o);
+
+        /// Let go of every minion aboard, WITHOUT touching the crew. Used at the map seam:
+        /// a minion is a citizen of the map we are leaving, and the vessel must not carry
+        /// one across. See TeleportTransport.
+        void UnBoardAllMinions();
 
         /// The vessel's own update tick over its crew -- this is the ObjectUpdater that
         /// the grid would have run, had the crew been in a grid.

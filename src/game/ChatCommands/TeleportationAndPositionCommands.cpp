@@ -41,6 +41,9 @@
 #include "Player.h"
 #include "TransportSystem.h"
 #include "Transports.h"
+#include <cmath>
+#include <cstring>
+#include <string>
  /*
      All commands related to Teleportation
  */

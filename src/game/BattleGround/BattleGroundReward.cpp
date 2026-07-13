@@ -59,6 +59,8 @@
 #include "Chat.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstdio>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 /**

@@ -215,7 +215,7 @@ void BattleGroundMgr::ToggleArenaTesting()
  */
 void BattleGroundMgr::ScheduleQueueUpdate(uint32 arenaRating, ArenaType arenaType, BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
-    // ACE_Guard<ACE_Thread_Mutex> guard(SchedulerLock);
+    // std::lock_guard<std::mutex> guard(SchedulerLock);
     // we will use only 1 number created of bgTypeId and bracket_id
     uint64 schedule_id = ((uint64)arenaRating << 32) | (arenaType << 24) | (bgQueueTypeId << 16) | (bgTypeId << 8) | bracket_id;
     bool found = false;

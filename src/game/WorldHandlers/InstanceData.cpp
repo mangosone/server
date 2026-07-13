@@ -42,6 +42,7 @@
 #include "InstanceData.h"
 #include "Database/DatabaseEnv.h"
 #include "Map.h"
+#include <string>
 
 /**
  * @brief Save instance state to database

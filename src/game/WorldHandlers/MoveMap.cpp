@@ -48,6 +48,11 @@
 #include "Creature.h"
 #include "MoveMap.h"
 #include "MoveMapSharedDefines.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <set>
+#include <utility>
 
 namespace MMAP
 {

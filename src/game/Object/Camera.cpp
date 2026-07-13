@@ -28,6 +28,7 @@
 #include "Log.h"
 #include "Errors.h"
 #include "Player.h"
+#include <set>
 
 /**
  * @brief Creates a camera bound to a player.

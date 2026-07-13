@@ -74,14 +74,18 @@ SqlDelayThread::~SqlDelayThread()
  * database's configured ping interval.
  *
  * @note This method is called when the thread starts. It should not
- * be called directly - use ACE_Based::Thread::Start() instead.
+ * be called directly - use MaNGOS::Thread::Start() instead.
  */
 void SqlDelayThread::run()
 {
-#ifndef DO_POSTGRESQL
-    // Initialize MySQL thread-local data for this thread
-    mysql_thread_init();
-#endif
+    // Register this thread with the client library before its first query.
+    //
+    // This used to call mysql_thread_init() directly, behind a #ifndef DO_POSTGRESQL — which
+    // hardcoded one backend into a file that is otherwise backend-agnostic, and bypassed the
+    // Database::ThreadStart()/ThreadEnd() virtuals that exist for precisely this. The virtual
+    // dispatches to mysql_thread_init() on a MySQL engine and does nothing on any other, so
+    // the #ifdef was doing by hand what the vtable already does correctly.
+    m_dbEngine->ThreadStart();
 
     const uint32 loopSleepms = 10; /**< Sleep interval between processing cycles in milliseconds */
 
@@ -94,7 +98,7 @@ void SqlDelayThread::run()
     {
         // if the running state gets turned off while sleeping
         // empty the queue before exiting
-        ACE_Based::Thread::Sleep(loopSleepms);
+        MaNGOS::Thread::Sleep(loopSleepms);
 
         ProcessRequests();
 
@@ -106,11 +110,10 @@ void SqlDelayThread::run()
         }
     }
 
-#ifndef DO_POSTGRESQL
-    // Clean up MySQL thread-local data
-    mysql_thread_end();
-#endif
-
+    // Release the client library's thread-local state. This is the pairing that actually
+    // matters: delay threads come and go, so skipping it here would leak per thread — unlike
+    // the main thread, whose block is reclaimed by mysql_library_end() at process teardown.
+    m_dbEngine->ThreadEnd();
 }
 
 /**

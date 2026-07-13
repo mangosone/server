@@ -67,6 +67,9 @@
 #include "terrain/Geometry/Vector3.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <list>
+#include <utility>
+#include <vector>
 #endif /* ENABLE_ELUNA */
 
 /**
@@ -606,7 +609,7 @@ void Spell::EffectPlayMusic(SpellEffectIndex eff_idx)
  *
  * @param eff_idx The bind effect index.
  */
-void Spell::EffectBind(SpellEffectIndex eff_idx)
+void Spell::EffectBind(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
     {

@@ -27,6 +27,8 @@
 
 #include "spline.h"
 #include "MoveSplineInitArgs.h"
+#include <ctime>
+#include <string>
 
 namespace Movement
 {

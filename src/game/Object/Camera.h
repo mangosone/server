@@ -27,6 +27,8 @@
 
 #include "Common.h"
 #include "GridDefines.h"
+#include <list>
+#include <set>
 
 class ViewPoint;
 class WorldObject;

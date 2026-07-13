@@ -26,12 +26,12 @@
 #ifndef _WARDEN_BASE_H
 #define _WARDEN_BASE_H
 
-#include <map>
 #include "ARC4.h"
 #include "BigNumber.h"
 #include "ByteBuffer.h"
 #include "WardenCheckMgr.h"
 #include "Database/DatabaseEnv.h"
+#include <string>
 
 // the default client version with info in warden_checks; for other version checks, see warden_build_specific
 #define DEFAULT_CLIENT_BUILD  8606

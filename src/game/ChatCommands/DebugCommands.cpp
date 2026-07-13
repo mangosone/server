@@ -48,6 +48,10 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "SpellMgr.h"
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
 
 /**
  * @brief Handler for HandleDebugSendSpellFailCommand command.
@@ -1407,7 +1411,8 @@ bool ChatHandler::HandlerDebugModValueHelper(Object* target, uint32 field, char*
         }
 
         uint32 value = target->GetUInt32Value(field);
-        const char* guidString = guid.GetString().c_str();
+        std::string guidStr = guid.GetString();
+        const char* guidString = guidStr.c_str();
 
         switch (type)
         {

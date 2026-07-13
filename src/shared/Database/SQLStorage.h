@@ -840,5 +840,7 @@ class SQLMultiStorageLoader : public SQLStorageLoaderBase<SQLMultiStorageLoader,
 };
 
 #include "SQLStorageImpl.h"
+#include <map>
+#include <utility>
 
 #endif

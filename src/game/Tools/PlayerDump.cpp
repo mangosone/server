@@ -55,6 +55,13 @@
 #include "UpdateFields.h"
 #include "ObjectMgr.h"
 #include "AccountMgr.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
 
 /**
  * @struct DumpTable

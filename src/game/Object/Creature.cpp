@@ -41,6 +41,7 @@
 #include "LootMgr.h"
 #include "MapManager.h"
 #include "TransportSystem.h"
+#include "Transports.h"
 #include "CreatureAI.h"
 #include "CreatureAISelector.h"
 #include "InstanceData.h"
@@ -61,6 +62,10 @@
 
 // apply implementation of the singletons
 #include "Policies/Singleton.h"
+#include <ctime>
+#include <sstream>
+#include <string>
+#include <vector>
 
 
 /**
@@ -156,20 +161,48 @@ bool ForcedDespawnDelayEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
  */
 void CreatureCreatePos::SelectFinalPoint(Creature* cr)
 {
-    // if object provided then selected point at specific dist/angle from object forward look
-    if (m_closeObject)
+    // no object to be near: the coordinates were given to us outright
+    if (!m_closeObject)
     {
-        if (m_dist == 0.0f)
+        return;
+    }
+
+    // right on top of it -- no floor to look for, so a deck needs no special case here
+    if (m_dist == 0.0f)
+    {
+        m_pos.x = m_closeObject->GetPositionX();
+        m_pos.y = m_closeObject->GetPositionY();
+        m_pos.z = m_closeObject->GetPositionZ();
+        return;
+    }
+
+    // The summoner is standing on a deck, and its summon belongs on that deck -- which is
+    // the one floor GetClosePoint cannot find. It resolves Z against the WORLD, and the
+    // world beneath a hull is the sea floor: a pet called at the rail would be created a
+    // hundred yards straight down, in the water under the ship. Out of everyone's sight,
+    // too far below the deck to ever be boarded by Transport::UpdateMinions, and gone.
+    //
+    // So the spot is chosen on the vessel's deck mesh instead, and handed back in WORLD
+    // coordinates, because the creature being created is a grid citizen and the map has to
+    // be told where it stands. Boarding it -- putting it into the vessel's frame for good
+    // -- is UpdateMinions' job, and it does it on the next tick, now that there is a deck
+    // under the thing to find.
+    if (Transport* vessel = Transport::VesselOf(*m_closeObject))
+    {
+        const float distance2d = m_dist + m_closeObject->GetObjectBoundingRadius() +
+                                 cr->GetObjectBoundingRadius();
+
+        if (const auto spot = vessel->DeckSpotNear(*m_closeObject, distance2d, m_angle))
         {
-            m_pos.x = m_closeObject->GetPositionX();
-            m_pos.y = m_closeObject->GetPositionY();
-            m_pos.z = m_closeObject->GetPositionZ();
-        }
-        else
-        {
-            m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, cr->GetObjectBoundingRadius(), m_dist, m_angle);
+            float go;
+            vessel->CalculateGlobalPositionOf(spot->x, spot->y, spot->z, spot->o,
+                                              m_pos.x, m_pos.y, m_pos.z, go);
+            return;
         }
     }
+
+    m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, cr->GetObjectBoundingRadius(),
+                                 m_dist, m_angle);
 }
 
 /**
@@ -204,10 +237,11 @@ Creature::Creature(CreatureSubtype subtype) : Unit(),
     m_lootMoney(0), m_lootGroupRecipientId(0),
     m_corpseRemoveTime(0), m_respawnTime(0), m_respawnDelay(25), m_corpseDelay(60), m_aggroDelay(0), m_respawnradius(5.0f),
     m_subtype(subtype), m_defaultMovementType(IDLE_MOTION_TYPE), m_equipmentId(0),
+    m_PlayerDamageReq(0),
     m_AlreadyCallAssistance(false), m_AlreadySearchedAssistance(false),
     m_AI_locked(false), m_IsDeadByDefault(false), m_temporaryFactionFlags(TEMPFACTION_NONE),
     m_meleeDamageSchoolMask(SPELL_SCHOOL_MASK_NORMAL), m_originalEntry(0),
-    m_PlayerDamageReq(0), m_creatureInfo(NULL)
+    m_creatureInfo(NULL)
 {
     /* Loot data */
     hasBeenLootedOnce = false;
@@ -295,13 +329,11 @@ void Creature::AddToWorld()
  */
 void Creature::RemoveFromWorld()
 {
-    // A creature standing on a deck is a PASSENGER of that vessel, and the vessel holds a
-    // raw pointer to it. A pet that dies or is dismissed is deleted right after this call,
-    // so leaving it boarded would leave the ship dereferencing freed memory on its very
-    // next tick. Step off the boat before leaving the world.
-    //
-    // (Crew are unboarded explicitly by the vessel before it removes them, so by the time
-    // they arrive here they are already ashore and this is a no-op.)
+    // A creature standing on a deck is a PASSENGER of that vessel, which holds a raw pointer
+    // to it in its passenger list (and its container). Step off the boat before leaving the
+    // world, or the ship dereferences freed memory on its next tick. Idempotent, and a no-op
+    // for crew (the vessel unboards them explicitly first) -- but the real guarantee for a
+    // deleted creature is in CleanupsBeforeDelete, which is the path a dying pet takes.
     if (TransportInfo* transportInfo = GetTransportInfo())
     {
         transportInfo->GetTransportBase()->UnBoardPassenger(this);
@@ -324,6 +356,27 @@ void Creature::RemoveFromWorld()
     }
 
     Unit::RemoveFromWorld();
+}
+
+/**
+ * @brief Final cleanup before the creature is deleted.
+ *
+ * This -- not RemoveFromWorld -- is the path a dying or dismissed PET takes: Pet::Unsummon
+ * queues the pet on the map's remove list, and Map::RemoveAllObjectsInRemoveList reaps it
+ * through Map::Remove(true), which calls CleanupsBeforeDelete and then deletes. A boarded pet
+ * must leave its vessel HERE, before it is freed, or the ship keeps a dangling pointer to it
+ * in its passenger list. (The GridReference auto-unlinks from the vessel's container when the
+ * creature is destroyed, but the passenger list is a plain map and does not.) Idempotent, so
+ * it is safe alongside the RemoveFromWorld hook and the vessel's own explicit unboards.
+ */
+void Creature::CleanupsBeforeDelete()
+{
+    if (TransportInfo* transportInfo = GetTransportInfo())
+    {
+        transportInfo->GetTransportBase()->UnBoardPassenger(this);
+    }
+
+    Unit::CleanupsBeforeDelete();
 }
 
 /**
@@ -761,8 +814,6 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                     GameEventCreatureData const* eventData = sGameEventMgr.GetCreatureUpdateDataForActiveEvent(GetGUIDLow());
                     UpdateEntry(m_originalEntry, TEAM_NONE, NULL, eventData);
                 }
-
-                CreatureInfo const* cinfo = GetCreatureInfo();
 
                 SelectLevel();
                 UpdateAllStats();  // to be sure stats is correct regarding level of the creature
@@ -2990,8 +3041,20 @@ void Creature::RelocateToRespawnPoint()
 
     if (TransportInfo* transportInfo = GetTransportInfo())
     {
-        transportInfo->SetLocalPosition(x, y, z, o);
-        return;
+        // CREW: its home IS a deck offset, so the offset is the thing to set, and the vessel
+        // refreshes the world cache from it.
+        if (!transportInfo->IsMinion())
+        {
+            transportInfo->SetLocalPosition(x, y, z, o);
+            return;
+        }
+
+        // A MINION -- a pet, a guardian -- only borrows the deck. Its respawn coord is a place
+        // on the MAP, where it was summoned, so there is nothing here for the deck frame to
+        // do: read as an offset it would name a point in open water beside the ship, and going
+        // home would be the one thing it never did. Going home means going ashore, so it
+        // steps off the boat first and is then relocated in the world, like any other creature.
+        transportInfo->GetTransportBase()->UnBoardPassenger(this);
     }
 
     GetMap()->CreatureRelocation(this, x, y, z, o);

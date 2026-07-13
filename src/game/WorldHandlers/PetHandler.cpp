@@ -51,6 +51,9 @@
 #include "CreatureAI.h"
 #include "Util.h"
 #include "Pet.h"
+#include <cstring>
+#include <ctime>
+#include <string>
 
 /**
  * @brief Handles pet action bar commands, reactions, and spell casts.

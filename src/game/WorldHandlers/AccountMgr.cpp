@@ -48,6 +48,7 @@
 #include "Policies/Singleton.h"
 #include "Util.h"
 #include "Auth/Sha1.h"
+#include <string>
 
 /**
  * @var LoginDatabase
@@ -58,7 +59,6 @@
  */
 extern DatabaseType LoginDatabase;
 
-INSTANTIATE_SINGLETON_1(AccountMgr);
 
 /**
  * @brief Construct AccountMgr singleton

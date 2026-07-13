@@ -22,62 +22,39 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_OBJECTLIFETIME_H
-#define MANGOS_OBJECTLIFETIME_H
+#pragma once
+#include "net/reactor/Poller.hpp"
+#include <cstdint>
 
-#include <stdexcept>
-#include "Platform/Define.h"
-
-/**
- * @brief
- *
- */
-typedef void (* Destroyer)(void);
-
-namespace MaNGOS
-{
-    /**
-     * @brief
-     *
-     * @param (func)()
-     */
-    void  at_exit(void (*func)());
-
-    template<class T>
-    /**
-     * @brief
-     *
-     */
-    class ObjectLifeTime
-    {
-        public:
-
-            /**
-             * @brief
-             *
-             * @param (destroyer)()
-             */
-            static void ScheduleCall(void (*destroyer)())
-            {
-                at_exit(destroyer);
-            }
-
-            /**
-             * @brief
-             *
-             */
-            DECLSPEC_NORETURN static void OnDeadReference() ATTR_NORETURN;
-    };
-
-    template <class T>
-    /**
-     * @brief We don't handle Dead Reference for now
-     *
-     */
-    void ObjectLifeTime<T>::OnDeadReference()           // We don't handle Dead Reference for now
-    {
-        throw std::runtime_error("Dead Reference");
-    }
-}
-
+// epoll(7) is Linux-specific.
+#if defined(__linux__)
+#define MANGOS_HAVE_EPOLL 1
 #endif
+
+#ifdef MANGOS_HAVE_EPOLL
+
+namespace net {
+
+class EpollPoller final : public Poller {
+public:
+    ~EpollPoller() override { shutdown(); }
+
+    bool init() override;
+    bool add(int fd, uint32_t interest, void* udata) override;
+    bool mod(int fd, uint32_t interest, void* udata) override;
+    bool del(int fd) override;
+    int  wait(PollerEvent* out, int maxEvents) override;
+    void wake() override;
+    void shutdown() override;
+    const char* name() const override { return "epoll"; }
+
+private:
+    int m_epfd    = -1;
+    int m_eventfd = -1; // cross-thread wakeup source, registered in the epoll set
+
+    static uint32_t toEpoll(uint32_t interest);
+};
+
+} // namespace net
+
+#endif // MANGOS_HAVE_EPOLL

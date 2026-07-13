@@ -37,6 +37,10 @@
 #include "World.h"
 #include "GMTicketMgr.h"
 #include "Mail.h"
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+#include <string>
 
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
@@ -174,7 +178,6 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         if (m_session)
         {
             const char* format = "[System Message] This ticket was closed by <GM> %s without any written response, perhaps it was resolved by direct chat.";
-            const char* buffer;
             snprintf(response, responseBufferSize, format, m_session->GetPlayer()->GetName());
         }
         else
@@ -305,7 +308,7 @@ bool ChatHandler::HandleTicketDeleteCommand(char* args)
  * @param args Command arguments.
  * @returns True if the command executed successfully, false otherwise.
  */
-bool ChatHandler::HandleTicketInfoCommand(char* args)
+bool ChatHandler::HandleTicketInfoCommand(char* /*args*/)
 {
     size_t count = sTicketMgr.GetTicketCount();
 
@@ -327,7 +330,7 @@ bool ChatHandler::HandleTicketInfoCommand(char* args)
  * @param args Command arguments.
  * @returns True if the command executed successfully, false otherwise.
  */
-bool ChatHandler::HandleTicketListCommand(char* args)
+bool ChatHandler::HandleTicketListCommand(char* /*args*/)
 {
     uint16 numToShow = std::min(uint16(sTicketMgr.GetTicketCount()), uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
     for (uint16 i = 0; i < numToShow; ++i)
@@ -347,7 +350,7 @@ bool ChatHandler::HandleTicketListCommand(char* args)
  * @param args Command arguments.
  * @returns True if the command executed successfully, false otherwise.
  */
-bool ChatHandler::HandleTicketOnlineListCommand(char* args)
+bool ChatHandler::HandleTicketOnlineListCommand(char* /*args*/)
 {
     uint16 count = 0;
     for (uint16 i = 0; i < sTicketMgr.GetTicketCount(); ++i)

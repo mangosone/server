@@ -12,7 +12,6 @@
 #include "../../modules/Bots/ahbot/AhBotConfig.h"
 #include "RandomItemMgr.h"
 
-INSTANTIATE_SINGLETON_1(GuildTaskMgr);
 
 char * strstri (const char* str1, const char* str2);
 

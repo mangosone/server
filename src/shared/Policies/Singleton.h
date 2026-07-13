@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,145 +25,58 @@
 #ifndef MANGOS_SINGLETON_H
 #define MANGOS_SINGLETON_H
 
-/**
- * @brief class Singleton
- */
-
-#include "CreationPolicy.h"
-#include "ThreadingModel.h"
-#include "ObjectLifeTime.h"
-
 namespace MaNGOS
 {
-    template <
-        typename T,
-        class ThreadingModel = MaNGOS::SingleThreaded<T>,
-        class CreatePolicy = MaNGOS::OperatorNew<T>,
-        class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
-        >
-
     /**
-     * @brief Singleton class template
+     * @brief Lazily-constructed process-wide singleton.
      *
-     * This class provides a thread-safe singleton implementation.
+     * Derive and befriend, then reach the instance through the usual accessor macro:
+     * @code
+     *     class World : public MaNGOS::Singleton<World>
+     *     {
+     *             friend class MaNGOS::Singleton<World>;
+     *             World();      // may stay private
+     *             ~World();     // likewise
+     *     };
+     *     #define sWorld MaNGOS::Singleton<World>::Instance()
+     * @endcode
+     *
+     * @note This replaces a hand-rolled double-checked lock over a threading-model
+     * policy. That version was unsound: it read a plain @c T* outside the lock, so a
+     * thread could observe a non-null pointer to a still-constructing object. Making
+     * the mutex recursive (as two of the singletons did) made it worse rather than
+     * better — had a constructor ever re-entered Instance(), the inner call would
+     * have re-acquired the lock, still seen a null pointer, and built a *second*
+     * instance for the outer call to overwrite. A function-local static has none of
+     * these problems, needs no mutex, and diagnoses recursive initialisation instead
+     * of quietly corrupting.
      */
+    template<typename T>
     class Singleton
     {
         public:
 
             /**
-             * @brief Get the singleton instance
+             * @brief Get the singleton instance, constructing it on first use.
              *
-             * @return T& Reference to the singleton instance
+             * Initialisation is thread-safe and happens exactly once: concurrent
+             * callers block until the winner finishes ([stmt.dcl]/4). Destruction runs
+             * at exit, in reverse order of first use.
              */
-            static T& Instance();
+            static T& Instance()
+            {
+                static T instance;
+                return instance;
+            }
+
+            Singleton(const Singleton&) = delete;
+            Singleton& operator=(const Singleton&) = delete;
 
         protected:
 
-            /**
-             * @brief Protected constructor to prevent instantiation
-             */
-            Singleton()
-            {
-            }
-
-        private:
-
-            /**
-             * @brief Prohibited copy constructor
-             *
-             * @param other The other instance to copy from
-             */
-            Singleton(const Singleton&);
-
-            /**
-             * @brief Prohibited assignment operator
-             *
-             * @param other The other instance to assign from
-             * @return Singleton& Reference to this instance
-             */
-            Singleton& operator=(const Singleton&);
-
-            /**
-             * @brief Destroy the singleton instance
-             */
-            static void DestroySingleton();
-
-            /**
-             * @brief Type alias for the threading model's lock
-             */
-            typedef typename ThreadingModel::Lock Guard;
-
-            /**
-             * @brief Pointer to the singleton instance
-             */
-            static T* si_instance;
-
-            /**
-             * @brief Flag indicating if the singleton has been destroyed
-             */
-            static bool si_destroyed;
+            Singleton() = default;
+            ~Singleton() = default;
     };
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-        T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< Initialize singleton instance pointer to NULL */
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-        bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< Initialize destroyed flag to false */
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-
-    /**
-     * @brief Get the singleton instance
-     *
-     * @return T& Reference to the singleton instance
-     */
-    T& MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::Instance()
-    {
-        if (!si_instance)
-        {
-            // double-checked Locking pattern
-            Guard guard; // Named variable
-
-            if (!si_instance)
-            {
-                if (si_destroyed)
-                {
-                    si_destroyed = false;
-                    LifeTimePolicy::OnDeadReference();
-                }
-
-                si_instance = CreatePolicy::Create();
-                LifeTimePolicy::ScheduleCall(&DestroySingleton);
-            }
-        }
-
-        return *si_instance;
-    }
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-
-    /**
-     * @brief Destroy the singleton instance
-     */
-    void MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::DestroySingleton()
-    {
-        CreatePolicy::Destroy(si_instance);
-        si_instance = NULL;
-        si_destroyed = true;
-    }
 }
-
-#define INSTANTIATE_SINGLETON_1(TYPE) \
-template class MaNGOS::Singleton<TYPE, MaNGOS::SingleThreaded<TYPE>, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_2(TYPE, THREADINGMODEL) \
-template class MaNGOS::Singleton<TYPE, THREADINGMODEL, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_3(TYPE, THREADINGMODEL, CREATIONPOLICY ) \
-template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_4(TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME) \
-template class MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >;
 
 #endif

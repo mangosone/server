@@ -75,6 +75,11 @@
 #include "Log.h"
 
 #include <list>
+#include <ctime>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
 
 /**
  * @brief Spell interrupt flags

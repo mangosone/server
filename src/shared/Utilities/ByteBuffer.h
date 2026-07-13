@@ -28,6 +28,11 @@
 #include "Common/Common.h"
 #include "Utilities/ByteConverter.h"
 #include "Utilities/Errors.h"
+#include <cstring>
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
 
 /**
  * @brief Exception thrown when ByteBuffer operations exceed buffer bounds

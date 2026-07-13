@@ -60,6 +60,12 @@
 #include "LootMgr.h"
 #include "DBCEnums.h"
 #include "SharedDefines.h"
+#include <cstring>
+#include <ctime>
+#include <list>
+#include <set>
+#include <string>
+#include <vector>
 
 class WorldSession;
 class Map;

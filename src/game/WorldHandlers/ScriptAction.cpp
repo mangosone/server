@@ -69,6 +69,8 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_SD3
 #include "system/ScriptDevMgr.h"
+#include <utility>
+#include <vector>
 #endif /* ENABLE_SD3 */
 
 /// Helper function to get Object source or target for Script-Command
@@ -1352,8 +1354,6 @@ bool ScriptAction::HandleScriptStep()
         case SCRIPT_COMMAND_DESPAWN_GO:                     // 40
         {
 
-            uint32 goEntry;
-            GameObject* pGo;
             if (!m_script->despawnGo.goGuid)
             {
                 sLog.outErrorDb("Table `db_scripts [type = %d]` has no gameobject defined in SCRIPT_COMMAND_DESPAWN_GO for script id %u", m_type, m_script->id);
@@ -1367,7 +1367,12 @@ bool ScriptAction::HandleScriptStep()
                 break;
             }
 
-            pGo = m_map->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, goData->id, m_script->despawnGo.goGuid));
+            GameObject* pGo = m_map->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, goData->id, m_script->despawnGo.goGuid));
+            if (!pGo)
+            {
+                sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u failed for gameobject(guid: %u, buddyEntry: %u).", m_type, m_script->id, m_script->command, m_script->despawnGo.goGuid, m_script->buddyEntry);
+                break;
+            }
 
             pGo->SetRespawnTime(m_script->despawnGo.respawnTime);
             pGo->SetLootState(GO_JUST_DEACTIVATED);

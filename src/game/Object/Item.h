@@ -57,6 +57,7 @@
 #include "Object.h"
 #include "LootMgr.h"
 #include "ItemPrototype.h"
+#include <string>
 
 struct SpellEntry;
 class Bag;
