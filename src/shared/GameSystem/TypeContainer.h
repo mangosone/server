@@ -36,6 +36,7 @@
 #include <tuple>
 #include <unordered_map>
 #include "GameSystem/GridRefManager.h"
+#include <cassert>
 
 // various metaprogramming primitives
 namespace Meta

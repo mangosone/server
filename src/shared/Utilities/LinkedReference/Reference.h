@@ -26,6 +26,7 @@
 #define MANGOS_H_REFERENCE
 
 #include "Utilities/LinkedList.h"
+#include <cassert>
 
 //=====================================================
 

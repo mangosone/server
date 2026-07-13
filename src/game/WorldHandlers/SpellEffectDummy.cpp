@@ -68,6 +68,8 @@
 #include <random>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <vector>
 #endif /* ENABLE_ELUNA */
 
 /**

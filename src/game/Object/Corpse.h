@@ -53,6 +53,7 @@
 #include "Database/DatabaseEnv.h"
 #include "GridDefines.h"
 #include "LootMgr.h"
+#include <ctime>
 
 /// @brief Corpse type enumeration.
 ///

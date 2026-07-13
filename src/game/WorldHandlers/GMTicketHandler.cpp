@@ -47,6 +47,7 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Chat.h"
+#include <string>
 
 /**
  * @brief Send ticket status to client

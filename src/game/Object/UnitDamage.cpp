@@ -66,6 +66,7 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_ELUNA
 #include "ElunaEventMgr.h"
+#include <ctime>
 #endif /* ENABLE_ELUNA */
 
 /**

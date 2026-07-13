@@ -51,6 +51,9 @@
 #include "Map.h"
 #include "ByteBuffer.h"
 #include "ObjectGuid.h"
+#include <ctime>
+#include <deque>
+#include <map>
 
 // magic event-numbers
 #define BG_EVENT_NONE 255

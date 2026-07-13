@@ -28,6 +28,9 @@
 #include "Common.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
+#include <list>
+#include <map>
+#include <string>
 
 class QueryResult;
 class WorldPacket;

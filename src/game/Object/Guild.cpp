@@ -37,6 +37,9 @@
 #include "World.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <set>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 //// MemberSlot ////////////////////////////////////////////

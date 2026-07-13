@@ -35,6 +35,9 @@
 #include "CreatureAI.h"
 #include "Unit.h"
 #include "Util.h"
+#include <cstdlib>
+#include <ctime>
+#include <sstream>
 
 /**
  * @brief Loads a pet from the database for an owner.
@@ -393,12 +396,6 @@ void Pet::SavePetToDB(PetSaveMode mode)
         _SaveSpells();
         _SaveSpellCooldowns();
         _SaveAuras();
-
-        uint32 loyalty = 1;
-        if (getPetType() != HUNTER_PET)
-        {
-            loyalty = GetLoyaltyLevel();
-        }
 
         uint32 ownerLow = GetOwnerGuid().GetCounter();
         // remove current data

@@ -45,6 +45,8 @@
 #include <fstream>
 #include <map>
 #include <typeinfo>
+#include <cstring>
+#include <list>
 
 /**
  * @brief Handler for HandleMmapPathCommand command.

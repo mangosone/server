@@ -33,6 +33,7 @@
 #include "InstanceData.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cmath>
 #endif /* ENABLE_ELUNA */
 
 /**

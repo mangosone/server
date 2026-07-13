@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,73 +31,54 @@
 #ifndef MANGOS_H_WORLDSOCKETMGR
 #define MANGOS_H_WORLDSOCKETMGR
 
-#include <ace/Basic_Types.h>
-#include <ace/Singleton.h>
-#include <ace/TSS_T.h>
-#include <ace/INET_Addr.h>
-#include <ace/Task.h>
-#include <ace/Acceptor.h>
+#include "Common.h"
+#include "Policies/Singleton.h"
 
-class WorldSocket;
+#include "net/Server.hpp"
+
+#include <cstdint>
+#include <string>
 
 /**
- * @brief World socket manager class
+ * @brief Owns the world server's listening socket.
  *
- * This is a pool of threads designed to be used by an ACE_TP_Reactor.
- * Manages all sockets connected to peers.
+ * A thin lid on the shared networking engine: it starts a net::Server on the world port
+ * and gives it a factory that mints one WorldSocket per accepted connection. The engine
+ * owns the threads, the sockets and the byte plumbing; everything protocol-shaped lives
+ * in WorldSocket.
+ *
+ * The ACE reactor, its thread pool, the acceptor and the per-socket buffer tuning that
+ * used to live here are gone — the engine does that job for every protocol now, and
+ * realmd's AuthServer is the same shape.
  */
-class WorldSocketMgr : public ACE_Task_Base
+class WorldSocketMgr : public MaNGOS::Singleton<WorldSocketMgr>
 {
-    friend class ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>;
-    friend class WorldSocket;
+        friend class MaNGOS::Singleton<WorldSocketMgr>;
 
     public:
-        /**
-         * @brief Start network
-         * @param addr Internet address
-         * @return Result code
-         */
-        int StartNetwork(ACE_INET_Addr& addr);
 
         /**
-         * @brief Stop network
+         * @brief Bind and start accepting world connections.
+         *
+         * @param port   TCP port to listen on.
+         * @param bindIp Interface to bind to; empty (or "0.0.0.0") listens on all.
+         * @return 0 on success, -1 on failure.
          */
+        int StartNetwork(uint16_t port, const std::string& bindIp);
+
+        /// Stop accepting, and tear down every live connection.
         void StopNetwork();
 
     private:
-        /**
-         * @brief Handle socket open
-         * @param sock World socket
-         * @return Result code
-         */
-        int OnSocketOpen(WorldSocket* sock);
 
-        /**
-         * @brief Service method (ACE thread pool)
-         * @return Result code
-         */
-        virtual int svc();
-
-        /**
-         * @brief Constructor
-         */
         WorldSocketMgr();
+        ~WorldSocketMgr();
 
-        /**
-         * @brief Virtual destructor
-         */
-        virtual ~WorldSocketMgr();
-
-    private:
-        int m_SockOutKBuff; ///< Socket output kernel buffer size
-        int m_SockOutUBuff; ///< Socket output user buffer size
-        bool m_UseNoDelay; ///< Use TCP_NODELAY
-
-        ACE_Reactor* reactor_; ///< ACE reactor
-        WorldAcceptor* acceptor_; ///< World acceptor
+        net::Server m_server;
+        bool        m_started;
 };
 
-#define sWorldSocketMgr ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>::instance()
+#define sWorldSocketMgr MaNGOS::Singleton<WorldSocketMgr>::Instance()
 
 #endif
 /// @}

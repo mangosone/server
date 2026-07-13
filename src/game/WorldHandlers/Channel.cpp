@@ -46,6 +46,8 @@
 #include "World.h"
 #include "SocialMgr.h"
 #include "Chat.h"
+#include <cstring>
+#include <string>
 
 Channel::Channel(const std::string& name, uint32 channel_id)
     : m_announce(true), m_moderate(false), m_name(name), m_flags(0), m_channelId(channel_id)
@@ -684,17 +686,6 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     }
 
     ObjectGuid guid = player->GetObjectGuid();
-    Player* plr = sObjectMgr.GetPlayer(guid);
-    bool speakInLocalDef = true;    // By Default everyone could chat in local defense in tbc onwards
-    bool speakInWorldDef = false;
-    if (plr)
-    {
-        if (plr->isGameMaster())
-        {
-            speakInWorldDef = true;
-        }
-
-    }
 
     if (!IsOn(guid))
     {

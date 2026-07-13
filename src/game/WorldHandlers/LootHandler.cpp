@@ -54,6 +54,8 @@
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cmath>
+#include <vector>
 #endif /* ENABLE_ELUNA */
 
 void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
@@ -168,6 +170,8 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
                 }
                 break;
             }
+            default:                                        // FREE_FOR_ALL, ROUND_ROBIN: no extra restriction
+                break;
         }
     }
 

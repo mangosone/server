@@ -28,6 +28,8 @@
 
 #include <map>
 #include "BigNumber.h"
+#include <list>
+#include <string>
 
 /**
  * @brief Warden actions enumeration
@@ -125,7 +127,7 @@ class WardenCheckMgr
         void LoadWardenOverrides();
 
     private:
-        typedef ACE_RW_Thread_Mutex LOCK;
+        typedef std::shared_mutex LOCK;
         typedef std::multimap<uint16, WardenCheck*> CheckMap;
         typedef std::multimap<uint16, WardenCheckResult*> CheckResultMap;
 

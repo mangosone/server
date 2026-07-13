@@ -36,6 +36,7 @@
 #include "Spell.h"
 #include "Unit.h"
 #include "World.h"
+#include <set>
 
 /**
  * @brief Loads spell target destination coordinates from the database.

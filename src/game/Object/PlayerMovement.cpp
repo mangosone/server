@@ -107,7 +107,7 @@ void Player::SetWaterWalk(bool enable)
  *
  * @param enable Unused levitation state flag.
  */
-void Player::SetLevitate(bool enable)
+void Player::SetLevitate(bool /*enable*/)
 {
     // TODO: check if there is something similar for 2.4.3.
     // WorldPacket data;

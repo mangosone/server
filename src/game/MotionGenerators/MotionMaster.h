@@ -28,6 +28,7 @@
 #include "Common.h"
 #include <stack>
 #include <vector>
+#include <sstream>
 
 class MovementGenerator;
 class Unit;

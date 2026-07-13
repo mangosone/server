@@ -25,6 +25,8 @@
 #ifndef CHARACTERDATABASECLEANER_H
 #define CHARACTERDATABASECLEANER_H
 
+#include "Common.h"     // uint32, used by the flags and the function signatures below
+
 namespace CharacterDatabaseCleaner
 {
     /**

@@ -71,6 +71,8 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_SD3
 #include "system/ScriptDevMgr.h"
+#include <mutex>
+#include <set>
 #endif /* ENABLE_SD3 */
 
 /**
@@ -81,7 +83,7 @@
  */
 ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
 {
-    ACE_GUARD_RETURN(ACE_Thread_Mutex, _guard, m_lock, NULL)
+    std::lock_guard<std::mutex> _guard(m_lock);
     if ((type != DBS_INTERNAL) && type < DBS_END)
     {
         return &m_dbScripts[type];
@@ -900,7 +902,7 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
     }
 
     {
-        ACE_GUARD(ACE_Thread_Mutex, _g, m_lock)
+        std::lock_guard<std::mutex> _g(m_lock);
         LoadScripts(t);
     }
 

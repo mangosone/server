@@ -42,6 +42,9 @@
 #include "Log.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <string>
+#include <utility>
 #endif /* ENABLE_ELUNA */
 
 // *************************************************

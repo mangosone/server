@@ -36,6 +36,10 @@
 #include "ObjectMgr.h"
 #include "Mail.h"
 #include "MassMailMgr.h"
+#include <cstdio>
+#include <list>
+#include <string>
+#include <utility>
 
 /**
  * @brief Handler for HandleSendMailCommand command.

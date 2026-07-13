@@ -51,6 +51,8 @@
 #include "Player.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "Item.h"
+#include <ctime>
+#include <string>
 
 /**
  * Creates a new MailSender object.

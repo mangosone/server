@@ -42,10 +42,10 @@
 #include "CommandMgr.h"
 #include "ObjectMgr.h"
 #include "ProgressBar.h"
+#include <string>
 
 class ChatCommand; // Forward declaration
 
-INSTANTIATE_SINGLETON_1(CommandMgr);
 
 /**
  * @brief Construct CommandMgr singleton

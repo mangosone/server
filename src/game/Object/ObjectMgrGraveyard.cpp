@@ -57,6 +57,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <utility>
 
 /**
  * @brief Loads graveyard to zone links from the database.

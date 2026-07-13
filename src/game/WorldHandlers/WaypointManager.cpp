@@ -30,8 +30,9 @@
 #include "MapManager.h"
 #include "ObjectMgr.h"
 #include "ScriptMgr.h"
+#include <set>
+#include <utility>
 
-INSTANTIATE_SINGLETON_1(WaypointManager);
 
 /**
  * If the emote, spell, model1, or model2 variables are not 0, then the function returns false.

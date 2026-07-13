@@ -66,6 +66,7 @@
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_ELUNA
 #include "ElunaEventMgr.h"
+#include <utility>
 #endif /* ENABLE_ELUNA */
 
 /**
@@ -92,16 +93,7 @@ void Unit::AttackerStateUpdate(Unit* pVictim, WeaponAttackType attType, bool ext
         return;
     }
 
-    uint32 hitInfo;
-    if (attType == BASE_ATTACK)
-    {
-        hitInfo = HITINFO_NORMALSWING2;
-    }
-    else if (attType == OFF_ATTACK)
-    {
-        hitInfo = HITINFO_LEFTSWING;
-    }
-    else
+    if (attType != BASE_ATTACK && attType != OFF_ATTACK)
     {
         return;                                              // ignore ranged case
     }

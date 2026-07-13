@@ -57,6 +57,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <list>
 
 /**
  * @brief Loads area trigger teleport destinations and access requirements.

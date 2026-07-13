@@ -56,6 +56,9 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <map>
+#include <set>
+#include <utility>
 
 /**
  * @brief Loads gossip menu headers and validates linked texts, scripts, and conditions.

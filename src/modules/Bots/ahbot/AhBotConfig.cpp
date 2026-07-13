@@ -5,7 +5,6 @@ std::vector<std::string> split(const std::string &s, char delim);
 
 using namespace std;
 
-INSTANTIATE_SINGLETON_1(AhBotConfig);
 
 AhBotConfig::AhBotConfig()
 {

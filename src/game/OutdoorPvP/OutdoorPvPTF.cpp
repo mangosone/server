@@ -30,6 +30,7 @@
 #include "Creature.h"
 #include "GameObject.h"
 #include "Player.h"
+#include <list>
 
 OutdoorPvPTF::OutdoorPvPTF() : OutdoorPvP(),
     m_zoneWorldState(WORLD_STATE_TF_TOWERS_CONTROLLED),

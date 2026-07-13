@@ -41,6 +41,9 @@
 #include "SystemConfig.h"
 #include "UpdateTime.h"
 #include "revision_data.h"
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 /**
  * @brief Handler for HandleServerInfoCommand command.
@@ -432,7 +435,7 @@ bool ChatHandler::HandleServerCorpsesCommand(char* /*args*/)
  * @param args Command arguments.
  * @returns True if the command executed successfully, false otherwise.
  */
-bool ChatHandler::HandleServerResetAllRaidCommand(char* args)
+bool ChatHandler::HandleServerResetAllRaidCommand(char* /*args*/)
 {
     PSendSysMessage("Global raid instances reset, all players in raid instances will be teleported to homebind!");
     sMapPersistentStateMgr.GetScheduler().ResetAllRaid();

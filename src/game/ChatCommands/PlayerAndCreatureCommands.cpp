@@ -39,6 +39,7 @@
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
 #include "terrain/Geometry/Vector3.h"
+#include <cstdlib>
 
 /**
  * @brief Handler for HandleDeMorphCommand command.

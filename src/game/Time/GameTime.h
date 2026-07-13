@@ -28,6 +28,7 @@
 #include "Define.h"
 
 #include <chrono>
+#include <ctime>
 
 /**
  * @brief GameTime namespace provides time-related functions for the game server

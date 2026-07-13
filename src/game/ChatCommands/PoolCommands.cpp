@@ -34,6 +34,7 @@
 
 #include "Chat.h"
 #include "ObjectMgr.h"
+#include <string>
 
 /**
  * @brief Displays summary information for a pool template.

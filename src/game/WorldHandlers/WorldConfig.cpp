@@ -111,6 +111,8 @@
 #endif /* ENABLE_PLAYERBOTS */
 #ifdef ENABLE_PLAYERBOTS
 #include "RandomPlayerbotMgr.h"
+#include <cmath>
+#include <string>
 #endif /* ENABLE_PLAYERBOTS */
 
 /// Initialize config values

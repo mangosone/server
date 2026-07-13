@@ -32,6 +32,10 @@
 #include "Item.h"
 #include "ObjectAccessor.h"
 #include "SharedDefines.h"
+#include <cstring>
+#include <list>
+#include <string>
+#include <vector>
 
 class Item;
 

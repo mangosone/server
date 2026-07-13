@@ -44,7 +44,8 @@
 #include "Common.h"
 #include "Policies/Singleton.h"
 #include "ObjectGuid.h"
-#include <functional>
+#include <map>
+#include <utility>
 
 class Unit;
 class Creature;

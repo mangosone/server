@@ -42,6 +42,8 @@
 #include "Log.h"
 
 #include <cassert>
+#include <cmath>
+#include <sstream>
 
 /**
  * @brief Checks if the movement generator is static (idle movement).
@@ -323,7 +325,7 @@ void MotionMaster::MoveIdle()
  * @param radius Radius of the random movement.
  * @param verticalZ Vertical offset for the movement.
  */
-void MotionMaster::MoveRandomAroundPoint(float x, float y, float z, float radius, float verticalZ)
+void MotionMaster::MoveRandomAroundPoint(float x, float y, float z, float radius, float /*verticalZ*/)
 {
     if (m_owner->GetTypeId() == TYPEID_PLAYER)
     {

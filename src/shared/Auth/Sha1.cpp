@@ -25,6 +25,8 @@
 #include "Auth/Sha1.h"
 #include "Auth/BigNumber.h"
 #include <stdarg.h>
+#include <cstring>
+#include <string>
 
 Sha1Hash::Sha1Hash() : mC(EVP_MD_CTX_new())
 {

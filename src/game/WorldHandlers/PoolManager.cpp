@@ -51,8 +51,11 @@
 #include "MapPersistentStateMgr.h"
 #include "World.h"
 #include "Policies/Singleton.h"
+#include <ctime>
+#include <map>
+#include <set>
+#include <sstream>
 
-INSTANTIATE_SINGLETON_1(PoolManager);
 
 ////////////////////////////////////////////////////////////
 // template class SpawnedPoolData

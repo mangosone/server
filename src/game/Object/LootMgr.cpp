@@ -33,6 +33,8 @@
 #include "SQLStorages.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <limits>
+#include <utility>
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
 {

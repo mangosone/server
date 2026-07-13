@@ -165,7 +165,7 @@ class ObjectWorldLoader
          * @param gloader Parent grid loader with cell/grid/map references
          */
         explicit ObjectWorldLoader(ObjectGridLoader& gloader)
-            : i_cell(gloader.i_cell), i_grid(gloader.i_grid), i_map(gloader.i_map), i_corpses(0)
+            : i_cell(gloader.i_cell), i_map(gloader.i_map), i_corpses(0)
         {}
 
         /**
@@ -181,7 +181,6 @@ class ObjectWorldLoader
 
     private:
         Cell i_cell;                    ///< Cell coordinates
-        NGridType& i_grid;              ///< Grid being loaded
         Map* i_map;                     ///< Owning map
     public:
         uint32 i_corpses;               ///< Count of loaded corpses

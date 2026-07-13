@@ -31,6 +31,7 @@
 #include "ArenaTeam.h"
 #include "World.h"
 #include "SocialMgr.h"
+#include <string>
 
 void WorldSession::HandleInspectArenaTeamsOpcode(WorldPacket& recv_data)
 {

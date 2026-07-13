@@ -57,6 +57,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <set>
 
 /**
  * @brief Loads trainer spell data from a database table.

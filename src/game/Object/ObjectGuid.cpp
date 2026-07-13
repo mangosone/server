@@ -27,7 +27,9 @@
 #include "World.h"
 #include "ObjectMgr.h"
 
+#include <cstdlib>    // std::abort, on guid-space exhaustion
 #include <sstream>
+#include <string>
 
 /**
  * @brief Gets a human-readable type name for a high GUID category.
@@ -94,6 +96,18 @@ uint32 ObjectGuidGenerator<high>::Generate()
     {
         sLog.outError("%s guid overflow!! Can't continue, shutting down server. ", ObjectGuid::GetTypeName(high));
         World::StopNow(ERROR_EXIT_CODE);
+
+        // See IdGenerator<T>::Generate(): the stop lands at the next world-loop check, not
+        // here, so the counter can still be driven past the limit within this tick. Beyond
+        // it every value we could return is one already in use, and a duplicate ObjectGuid
+        // is world corruption that persists into the character database. Refuse to wrap.
+        if (m_nextGuid >= ObjectGuid::GetMaxCounter(high))
+        {
+            sLog.outError("%s guid space is exhausted; refusing to issue a duplicate guid.",
+                          ObjectGuid::GetTypeName(high));
+            sLog.Flush();
+            std::abort();
+        }
     }
     return m_nextGuid++;
 }

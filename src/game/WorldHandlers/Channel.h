@@ -31,6 +31,7 @@
 #include "Player.h"
 
 #include <map>
+#include <string>
 
 enum ChatNotify
 {

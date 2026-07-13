@@ -26,6 +26,10 @@
 #include <sstream>
 #include "Log.h"
 #include "Unit.h"
+#include <cmath>
+#include <ctime>
+#include <iostream>
+#include <string>
 
 namespace Movement
 {

@@ -29,6 +29,10 @@
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
 #include "Language.h"
+#include <ctime>
+#include <list>
+#include <map>
+#include <string>
 
 struct AreaTrigger;
 struct AreaTriggerEntry;

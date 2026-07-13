@@ -460,5 +460,6 @@ namespace Movement
 }
 
 #include "spline.impl.h"
+#include <string>
 
 #endif // MANGOSSERVER_SPLINE_H

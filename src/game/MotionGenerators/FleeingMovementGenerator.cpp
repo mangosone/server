@@ -28,6 +28,7 @@
 #include "MotionFrame.h"
 #include "ObjectAccessor.h"
 #include "Util.h"
+#include <cmath>
 
 namespace
 {

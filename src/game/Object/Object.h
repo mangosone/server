@@ -36,7 +36,9 @@
 #include "LuaValue.h"
 #endif /* ENABLE_ELUNA */
 
-#include <set>
+#include <ctime>
+#include <string>
+#include <vector>
 
 #define CONTACT_DISTANCE            0.5f
 #define INTERACTION_DISTANCE        5.0f

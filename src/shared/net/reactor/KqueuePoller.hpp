@@ -22,38 +22,39 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef _M_DELAY_EXECUTOR_H
-#define _M_DELAY_EXECUTOR_H
+#pragma once
+#include "net/reactor/Poller.hpp"
+#include <cstdint>
 
-#include <ace/Task.h>
-#include <ace/Activation_Queue.h>
-#include <ace/Method_Request.h>
+// kqueue(2): FreeBSD / Darwin / NetBSD / OpenBSD / DragonFly.
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) || \
+    defined(__OpenBSD__) || defined(__DragonFly__)
+#define MANGOS_HAVE_KQUEUE 1
+#endif
 
-class DelayExecutor : protected ACE_Task_Base
-{
-    public:
+#ifdef MANGOS_HAVE_KQUEUE
 
-        DelayExecutor();
-        virtual ~DelayExecutor();
+namespace net {
 
-        static DelayExecutor* instance();
+class KqueuePoller final : public Poller {
+public:
+    ~KqueuePoller() override { shutdown(); }
 
-        int execute(ACE_Method_Request* new_req);
+    bool init() override;
+    bool add(int fd, uint32_t interest, void* udata) override;
+    bool mod(int fd, uint32_t interest, void* udata) override;
+    bool del(int fd) override;
+    int  wait(PollerEvent* out, int maxEvents) override;
+    void wake() override;
+    void shutdown() override;
+    const char* name() const override { return "kqueue"; }
 
-        int _activate(int num_threads = 1);
-
-        int deactivate();
-
-        bool activated();
-
-        virtual int svc();
-
-    private:
-
-        ACE_Activation_Queue queue_;
-        bool activated_;
-
-        void activated(bool s);
+private:
+    int m_kq = -1;
+    // EVFILT_USER identifier used as the cross-thread wakeup source.
+    static constexpr uintptr_t kWakeIdent = 1;
 };
 
-#endif // _M_DELAY_EXECUTOR_H
+} // namespace net
+
+#endif // MANGOS_HAVE_KQUEUE

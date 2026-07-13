@@ -51,6 +51,11 @@
 #include "Chat.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <algorithm>
+#include <cstring>
+#include <sstream>
+#include <string>
+#include <vector>
 #endif /* ENABLE_ELUNA */
 
 /** \addtogroup auctionhouse

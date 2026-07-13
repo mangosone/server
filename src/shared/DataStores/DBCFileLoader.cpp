@@ -29,6 +29,8 @@
 #include <vector>
 
 #include "DBCFileLoader.h"
+#include <cassert>
+#include <cstdint>
 
 /// WDBC header: magic, then recordCount, fieldCount, recordSize, stringSize.
 static const size_t DBC_HEADER_SIZE = 20;

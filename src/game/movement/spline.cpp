@@ -26,6 +26,9 @@
 #include <sstream>
 #include "terrain/Geometry/Matrix4.h"
 #include "terrain/Geometry/Vector4.h"
+#include <cstring>
+#include <iostream>
+#include <string>
 
 namespace Movement
 {

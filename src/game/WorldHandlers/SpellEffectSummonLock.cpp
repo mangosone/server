@@ -426,22 +426,6 @@ void Spell::DoSummonWild(SpellEffectIndex eff_idx, uint32 forceFaction)
         return;
     }
 
-    uint32 level = m_caster->getLevel();
-
-    // level of creature summoned using engineering item based at engineering skill level
-    if (m_caster->GetTypeId() == TYPEID_PLAYER && m_CastItem)
-    {
-        ItemPrototype const* proto = m_CastItem->GetProto();
-        if (proto && proto->RequiredSkill == SKILL_ENGINEERING)
-        {
-            uint16 skill202 = ((Player*)m_caster)->GetSkillValue(SKILL_ENGINEERING);
-            if (skill202)
-            {
-                level = skill202 / 5;
-            }
-        }
-    }
-
     // select center of summon position
     float center_x = m_targets.m_destX;
     float center_y = m_targets.m_destY;
@@ -740,6 +724,7 @@ void Spell::DoSummonTotem(SpellEffectIndex eff_idx, uint8 slot_dbc)
  * @brief Summons a possessed creature and transfers control to the caster.
  *
  * @param eff_idx The summon effect index.
+ * @param forceFaction Faction from the summon properties, 0 to keep the template faction.
  */
 bool Spell::DoSummonPossessed(SpellEffectIndex eff_idx, uint32 forceFaction)
 {
@@ -763,6 +748,11 @@ bool Spell::DoSummonPossessed(SpellEffectIndex eff_idx, uint32 forceFaction)
     spawnCreature->SetCreatorGuid(m_caster->GetObjectGuid());
     spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->ID);
     spawnCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+
+    if (forceFaction)
+    {
+        spawnCreature->setFaction(forceFaction);
+    }
 
     spawnCreature->SetLevel(m_caster->getLevel());
 

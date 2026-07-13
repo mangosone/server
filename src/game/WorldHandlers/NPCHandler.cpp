@@ -69,6 +69,8 @@
 #include "Item.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cmath>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 enum StableResultCode

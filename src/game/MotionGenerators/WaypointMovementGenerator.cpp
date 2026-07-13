@@ -35,6 +35,8 @@
 #include "movement/MoveSplineInit.h"
 
 #include <memory>
+#include <cmath>
+#include <sstream>
 
 namespace
 {

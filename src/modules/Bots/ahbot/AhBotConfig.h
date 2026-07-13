@@ -2,6 +2,11 @@
 
 #include "../../shared/Config/Config.h"
 
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+
 using namespace std;
 
 class AhBotConfig

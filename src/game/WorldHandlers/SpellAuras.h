@@ -27,6 +27,7 @@
 
 #include "SpellAuraDefines.h"
 #include "ObjectMgr.h"
+#include <ctime>
 
 
 /**

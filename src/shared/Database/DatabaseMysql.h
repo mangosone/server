@@ -30,9 +30,8 @@
 //#include "Common.h"
 #include "Database.h"
 #include "Policies/Singleton.h"
-#include <ace/Thread_Mutex.h>
-#include <ace/Guard_T.h>
 #include <mysql.h>
+#include <string>
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -221,7 +220,7 @@ class MySQLConnection : public SqlConnection
  */
 class DatabaseMysql : public Database
 {
-    friend class MaNGOS::OperatorNew<DatabaseMysql>;
+    friend class MaNGOS::Singleton<DatabaseMysql>;
 
     public:
         /**

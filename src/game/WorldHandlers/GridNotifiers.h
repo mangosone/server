@@ -36,6 +36,8 @@
 
 #include <list>
 #include <type_traits>
+#include <set>
+#include <vector>
 
 namespace MaNGOS
 {

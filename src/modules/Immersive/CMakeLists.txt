@@ -80,10 +80,6 @@ if(UNIX)
   endif()
 endif()
 
-if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ace)
-endif()
-
 # Install config files
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/immersive.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/immersive.conf.dist)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/immersive.conf.dist DESTINATION ${CONF_INSTALL_DIR})

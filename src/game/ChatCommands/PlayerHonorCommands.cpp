@@ -34,6 +34,7 @@
 
 #include "Chat.h"
 #include "ObjectMgr.h"
+#include <cstdlib>
 
 /**
  * @brief Handler for HandleHonorAddCommand command.

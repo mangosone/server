@@ -56,9 +56,11 @@
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <map>
+#include <sstream>
 #endif
 
-INSTANTIATE_SINGLETON_1(GameEventMgr);
 
 /**
  * @brief Checks whether a specific game event is active at the given time.

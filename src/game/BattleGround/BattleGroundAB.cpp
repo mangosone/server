@@ -49,6 +49,7 @@
 #include "WorldPacket.h"
 // TODO REMOVE this when graveyard handling for pvp is updated
 #include "DBCStores.h"
+#include <vector>
 
 /**
  * @brief Constructor for BattleGroundAB.

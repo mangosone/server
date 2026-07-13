@@ -67,6 +67,10 @@
 #include "terrain/Geometry/Vector3.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <list>
+#include <string>
+#include <utility>
 #endif /* ENABLE_ELUNA */
 
 /**

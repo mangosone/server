@@ -36,6 +36,8 @@
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "SpellAuras.h"
+#include <sstream>
+#include <string>
 
 /**
  * @brief Handler for HandleListAurasCommand command.
@@ -462,7 +464,6 @@ bool ChatHandler::HandleListPlayersCommand(char* args)
         uint32 mapId = player->GetMapId();
         uint32 zoneId = player->GetZoneId();
 
-        MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
         AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zoneId);
 
         PSendSysMessage("%-20s | Lvl %-2u | Map %u Zone %u (%s)",

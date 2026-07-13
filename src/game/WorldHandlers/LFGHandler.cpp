@@ -45,6 +45,7 @@
 #include "WorldPacket.h"
 #include "ObjectMgr.h"
 #include "World.h"
+#include <string>
 
 static void AttemptJoin(Player* _player)
 {

@@ -53,7 +53,6 @@ class AggressorAI : public CreatureAI
 
     private:
         ObjectGuid i_victimGuid;
-        AggressorState i_state;
         TimeTracker i_tracker;
 };
 

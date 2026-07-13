@@ -4,6 +4,10 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
+#include <array>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace world::terrain
 {

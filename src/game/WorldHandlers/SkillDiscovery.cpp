@@ -34,6 +34,9 @@
 #include "Player.h"
 #include "DBCStores.h"
 #include <map>
+#include <list>
+#include <set>
+#include <sstream>
 
 struct SkillDiscoveryEntry
 {

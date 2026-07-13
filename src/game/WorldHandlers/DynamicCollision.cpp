@@ -29,6 +29,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <utility>
 
 using world::terrain::Aabb;
 using world::terrain::Vec3;

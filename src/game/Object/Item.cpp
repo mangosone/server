@@ -31,6 +31,8 @@
 #include "SQLStorages.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cassert>
+#include <cstring>
 #endif /* ENABLE_ELUNA */
 
 /**

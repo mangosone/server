@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <cmath>
 
 namespace world::terrain
 {

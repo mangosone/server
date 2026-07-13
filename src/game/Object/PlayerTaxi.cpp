@@ -37,6 +37,9 @@
 #include "ObjectAccessor.h"
 #include "DBCStores.h"
 #include "MapManager.h"
+#include <cstdlib>
+#include <sstream>
+#include <string>
 
 /**
  * @brief Initializes known taxi nodes for a newly created player.

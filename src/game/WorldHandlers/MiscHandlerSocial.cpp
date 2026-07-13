@@ -77,6 +77,7 @@
 #include <zlib.h>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 /**

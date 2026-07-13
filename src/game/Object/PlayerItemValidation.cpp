@@ -31,6 +31,7 @@
 #include "DBCStores.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstring>
 #endif /* ENABLE_ELUNA */
 
 /**

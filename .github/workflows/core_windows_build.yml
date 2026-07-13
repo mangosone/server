@@ -5,25 +5,27 @@ permissions:
 
 on:
   push:
-    branches: [ master , devel ]
+    branches: [master, devel]
   pull_request:
-    branches: [ master ]
+    branches: [master]
+
+# Supersede an in-flight run when the branch moves on: its result is already stale.
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: windows-2022
-    strategy:
-      fail-fast: false
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 1
 
-
+      # Bump the -vN suffix to force a re-install of OpenSSL.
       - name: Cache OpenSSL
         id: cache-openssl
         uses: actions/cache@v4
@@ -31,24 +33,20 @@ jobs:
           path: |
             C:\Program Files\OpenSSL
             C:\Program Files\OpenSSL-Win64
-          key: ${{ runner.os }}-openssl-full
+          key: ${{ runner.os }}-openssl-v1
 
-
-      - name: Install full OpenSSL (developer)
+      - name: Install OpenSSL (developer)
         if: steps.cache-openssl.outputs.cache-hit != 'true'
         shell: powershell
         run: |
-          Write-Host "Installing latest full OpenSSL for development..."
           choco upgrade openssl -y --no-progress
           $ver = & openssl version
           Write-Host "Installed OpenSSL version: $ver"
-
 
       - name: Setup Windows 10 SDK
         uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
         with:
           sdk-version: 22621
-
 
       - name: Configure OpenSSL environment
         shell: bash
@@ -63,17 +61,10 @@ jobs:
             echo "OPENSSL_INCLUDE_DIR=C:/Program Files/OpenSSL-Win64/include" >> $GITHUB_ENV
             echo "OPENSSL_CRYPTO_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libcrypto64MT.lib" >> $GITHUB_ENV
             echo "OPENSSL_SSL_LIBRARY=C:/Program Files/OpenSSL-Win64/lib/VC/libssl64MT.lib" >> $GITHUB_ENV
+          else
+            echo "::error::OpenSSL not found in either expected location"
+            exit 1
           fi
-
-
-      - name: Cache CMake build
-        uses: actions/cache@v4
-        with:
-          path: build
-          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
-
 
       - name: Configure CMake project
         shell: bash
@@ -82,9 +73,8 @@ jobs:
           cmake .. \
             -G "Visual Studio 17 2022" \
             -A x64 \
-            -DCMAKE_BUILD_TYPE=Release \
             -DOPENSSL_USE_STATIC_LIBS=TRUE \
-            -DBUILD_TOOLS=1 \
+            -DBUILD_TOOLS=0 \
             -DBUILD_MANGOSD=1 \
             -DBUILD_REALMD=1 \
             -DSOAP=1 \
@@ -93,7 +83,6 @@ jobs:
             -DPLAYERBOTS=1 \
             -DUSE_STORMLIB=1 \
             -DPCH=0
-
 
       - name: Build project
         shell: bash

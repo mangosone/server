@@ -28,6 +28,9 @@
 #include "Utilities/ProgressBar.h"
 #include "Log/Log.h"
 #include "DataStores/DBCFileLoader.h"
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 
 template<class DerivedLoader, class StorageClass>
     template<class S, class D>

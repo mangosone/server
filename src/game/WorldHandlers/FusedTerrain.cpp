@@ -34,6 +34,10 @@
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <cstdint>
+#include <mutex>
+#include <string>
+#include <vector>
 
 using world::terrain::Vec3;
 using world::terrain::Aabb;

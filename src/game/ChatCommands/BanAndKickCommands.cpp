@@ -39,6 +39,8 @@
 #include "AccountMgr.h"
 #include "Util.h"
 #include "ObjectMgr.h"
+#include <ctime>
+#include <string>
 
 /**
 * @brief Helper function to display ban list information.

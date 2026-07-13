@@ -35,10 +35,12 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "Path.h"
+#include "Pet.h"
 #include "Player.h"
 #include "GameTime.h"
 #include "TransportCrewSearch.h"
 #include "World.h"
+#include "movement/MoveSpline.h"
 
 #include "WorldPacket.h"
 #include "DBCStores.h"
@@ -48,6 +50,9 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
+#include <set>
+#include <string>
+#include <vector>
 /**
  * @brief Loads and initializes all configured global transports.
  */
@@ -188,6 +193,33 @@ namespace
     constexpr float DECK_BOARD_SEARCH_UP = 4.0f;
     constexpr float DECK_BOARD_SEARCH_DOWN = 8.0f;
 
+    /// Bearings tried when looking for somewhere to set a minion down next to its master:
+    /// the one asked for, then a sweep around them. A deck is small and full of bulkheads,
+    /// so the first choice is often out over the rail.
+    constexpr uint32 DECK_SPOT_ANGLES = 8;
+
+    /// Chest height for that spot's obstruction probe, so the deck the master is standing
+    /// ON is not itself read as the thing between them.
+    constexpr float DECK_SPOT_PROBE_HEIGHT = 1.0f;
+
+    /**
+     * @brief A totem is PLANTED, not a follower -- and that makes it the one minion the
+     *        boarding rules must leave alone.
+     *
+     * It belongs to the square it was dropped on. It comes aboard only by being dropped on
+     * the deck (where the ordinary board picks it up); it is never CARRIED aboard after a
+     * master who sailed without it, and -- the case that actually bites -- it is never
+     * carried ashore after one who left it behind either. A totem whose shaman steps onto
+     * the pier goes on standing on the deck and sails with the ship until it expires, which
+     * is what it does on retail. Death or despawn is what takes it off the boat, and
+     * Creature::RemoveFromWorld already unboards it there.
+     */
+    bool IsPlanted(Unit const* minion)
+    {
+        return minion->GetTypeId() == TYPEID_UNIT &&
+               static_cast<Creature const*>(minion)->IsTotem();
+    }
+
     /**
      * @brief A player within range of a vessel.
      *
@@ -220,6 +252,28 @@ namespace
                 if (!player->IsInWorld() || player->GetMapId() != m_vessel->GetMapId())
                 {
                     return false;
+                }
+
+                // A passenger is not NEAR the vessel. It is ON it, at zero distance, and it
+                // stays there whatever the two world positions below happen to say -- so the
+                // question is never asked of them.
+                //
+                // Asking it is a slow disaster. BOTH those positions are fictions when a
+                // player stands on a deck. The player's is client-authoritative, so it
+                // FREEZES the moment they stop moving and sending packets. The hull's is only
+                // real while ObservePose is being fed -- and it is fed by those same packets,
+                // so it goes stale two seconds later and Update falls back to hopping the
+                // hull from node to node down the path. One is frozen and the other sails on:
+                // the gap between them grows without bound and eventually exceeds ANY radius.
+                //
+                // At that instant the vessel drops the player from m_observers and sends them
+                // an out-of-range block for the ship they are standing on. Their client
+                // deletes the boat under their feet -- and the crew and their pet with it --
+                // and they fall in the sea. Standing still on a boat is not an edge case; it
+                // is what everybody does on a boat.
+                if (player->GetTransport() == m_vessel)
+                {
+                    return true;
                 }
 
                 const float dx = player->GetPositionX() - m_vessel->GetPositionX();
@@ -585,9 +639,9 @@ uint32 MaNGOS::GatherCrewContainersNear(Map* map, float x, float y, float radius
             break;
         }
 
-        if (!vessel->HasCrew() || vessel->GetMapId() != map->GetId())
+        if (!vessel->HasBoardedCreatures() || vessel->GetMapId() != map->GetId())
         {
-            continue;
+            continue;                                   // nothing on this deck to find
         }
 
         // The HULL, not the origin: a ship is a hundred yards long, so a blast at the bow
@@ -643,6 +697,172 @@ void Transport::UpdateCrew(uint32 diff)
             crew->Update(diff, diff);
         }
     }
+
+    // A boarded minion is in no world cell, so the grid's ObjectUpdater will never tick it
+    // either -- the ship is its map, and the ship must run its update loop (AI, spline, auras)
+    // exactly as it does the crew's, or the pet would be a statue on the deck.
+    for (PassengerMap::value_type const& entry : GetPassengers())
+    {
+        if (!entry.second->IsMinion())
+        {
+            continue;
+        }
+
+        Creature* minion = static_cast<Creature*>(entry.first);
+        if (minion->IsInWorld())
+        {
+            minion->Update(diff, diff);
+        }
+    }
+}
+
+Transport* Transport::VesselOf(WorldObject const& obj)
+{
+    if (TransportInfo const* info = obj.GetTransportInfo())
+    {
+        WorldObject* vessel = info->GetTransport();
+
+        if (vessel && vessel->GetTypeId() == TYPEID_GAMEOBJECT)
+        {
+            return static_cast<Transport*>(vessel);
+        }
+
+        return NULL;
+    }
+
+    if (obj.GetTypeId() == TYPEID_PLAYER)
+    {
+        return static_cast<Player const&>(obj).GetTransport();
+    }
+
+    return NULL;
+}
+
+std::optional<Position> Transport::LocalPositionOf(WorldObject const& obj) const
+{
+    if (TransportInfo const* info = obj.GetTransportInfo())
+    {
+        if (info->GetTransport() != this)
+        {
+            return std::nullopt;                        // aboard a DIFFERENT vessel
+        }
+
+        return Position(info->GetLocalPositionX(), info->GetLocalPositionY(),
+                        info->GetLocalPositionZ(), info->GetLocalOrientation());
+    }
+
+    // A player carries no TransportInfo: it tells us its own deck offset in every packet.
+    if (obj.GetTypeId() == TYPEID_PLAYER)
+    {
+        Player const& player = static_cast<Player const&>(obj);
+
+        if (player.GetTransport() == this)
+        {
+            Position const* t = player.m_movementInfo.GetTransportPos();
+            return Position(t->x, t->y, t->z, t->o);
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::optional<Position> Transport::DeckSpotNear(WorldObject const& master, float distance2d,
+                                                float angle) const
+{
+    if (!HasDeck())
+    {
+        return std::nullopt;
+    }
+
+    const auto anchor = LocalPositionOf(master);
+    if (!anchor)
+    {
+        return std::nullopt;                            // not aboard this vessel
+    }
+
+    for (uint32 step = 0; step < DECK_SPOT_ANGLES; ++step)
+    {
+        const float bearing = anchor->o + angle +
+                              (2 * M_PI_F * float(step) / float(DECK_SPOT_ANGLES));
+
+        const float lx = anchor->x + distance2d * cos(bearing);
+        const float ly = anchor->y + distance2d * sin(bearing);
+
+        // Sought from the MASTER's height: the spot is a step away from where it is
+        // standing, so the deck under it is the deck under them, not whatever lies six
+        // yards below in the hold.
+        const auto lz = DeckHeightAt(lx, ly, anchor->z,
+                                     DECK_BOARD_SEARCH_UP, DECK_BOARD_SEARCH_DOWN);
+        if (!lz)
+        {
+            continue;                                   // out over the rail
+        }
+
+        // ...and nothing solid in between, or we would set a pet down on the far side of a
+        // bulkhead from the master it is supposed to be heeling.
+        if (IsDeckBlocked(Geometry::Vector3(anchor->x, anchor->y, anchor->z + DECK_SPOT_PROBE_HEIGHT),
+                          Geometry::Vector3(lx, ly, *lz + DECK_SPOT_PROBE_HEIGHT)))
+        {
+            continue;
+        }
+
+        return Position(lx, ly, *lz, anchor->o);
+    }
+
+    // Every bearing around them was over the rail or behind a bulkhead -- a master wedged
+    // into a corner of the forecastle. Their OWN square is known good, because they are
+    // standing on it. A minion briefly in its master's boots is odd; a minion left on the
+    // pier is broken.
+    return Position(anchor->x, anchor->y, anchor->z, anchor->o);
+}
+
+void Transport::BoardMinionAt(Unit* minion, float lx, float ly, float lz, float lo)
+{
+    // A boarded minion is a PASSENGER of the vessel, exactly like a crew member -- the ship
+    // is its grid. The `true` marks it player-owned (a pet, not crew), which only matters to
+    // the lifecycle reconciliation in UpdateMinions; to everything else the two are the same.
+    BoardPassenger(minion, lx, ly, lz, lo, true);
+
+    // Stamp the world cache once, so an off-ship searcher (and the pet subsystem's eventual
+    // remove-list pass) has a sane world token before the first tick. This ALSO sets
+    // MOVEFLAG_ONTRANSPORT + the deck offset on its movement info, which is what tells the
+    // client it belongs to the ship.
+    UpdateGlobalPositionOf(minion, lx, ly, lz, lo);
+
+    // THE ONE MOVE that makes it ship-local: take its GridReference out of the world cell it
+    // was standing in and link it into the vessel's own container. From here it is in no map
+    // cell -- the ship ticks it, the ship broadcasts it, and a grid search near the vessel
+    // finds it through m_crewMap. Nothing composes a world position for it any more, and so
+    // nothing can blink it out when the ship's pose drifts. (link() unlinks from the old
+    // container and links to the new one in one step.)
+    static_cast<Creature*>(minion)->GetGridRef().link(&m_crewMap, static_cast<Creature*>(minion));
+
+    // Its motion was planned in the world frame; none of that survives the change of frame.
+    // Start it over -- the next leg its AI lays goes out as SMSG_MONSTER_MOVE_TRANSPORT,
+    // which is what parents it to the ship at every client.
+    //
+    // (A totem never moves, so this costs it nothing -- but it still needs the frame, or its
+    // Z would be resolved against the sea floor and it would sink out of the deck.)
+    minion->GetMotionMaster()->Initialize();
+
+    DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES, "Transport %s boarded minion %s at deck (%f, %f, %f)",
+                      GetName(), minion->GetGuidStr().c_str(), lx, ly, lz);
+}
+
+void Transport::UnBoardPassenger(WorldObject* passenger)
+{
+    // A boarded minion lives in the vessel's container (m_crewMap); take it out before the
+    // base class forgets it is a passenger, or the container would keep a pointer to a
+    // creature that is leaving the world. Crew are unlinked by UnBoardCreature instead, so
+    // only act on a minion here -- and only while it is actually linked.
+    TransportInfo* info = passenger->GetTransportInfo();
+
+    if (info && info->IsMinion() && passenger->GetTypeId() == TYPEID_UNIT)
+    {
+        static_cast<Creature*>(passenger)->GetGridRef().unlink();
+    }
+
+    TransportBase::UnBoardPassenger(passenger);
 }
 
 void Transport::BoardMinion(Unit* minion)
@@ -653,32 +873,125 @@ void Transport::BoardMinion(Unit* minion)
     }
 
     // Where the minion is standing, expressed as a deck offset. The vessel's pose was
-    // solved from its master's last movement packet, so this is exact -- and if the minion
-    // is not actually over the deck yet (still on the pier, mid-follow), the drop fails and
-    // we simply try again next tick, once it has caught up.
+    // solved from its master's last movement packet, so this is exact.
     float lx, ly, lz, lo;
     CalculateLocalPositionOf(minion->GetPositionX(), minion->GetPositionY(), minion->GetPositionZ(),
                              minion->GetOrientation(), lx, ly, lz, lo);
 
-    const auto deckZ = DeckHeightAt(lx, ly, lz, DECK_BOARD_SEARCH_UP, DECK_BOARD_SEARCH_DOWN);
-    if (!deckZ)
+    // Already over the deck: it was summoned here (CreatureCreatePos puts a summon on the
+    // deck when its summoner is aboard), or it is crossing a gangplank of a docked ship.
+    // Board it where it stands.
+    if (const auto deckZ = DeckHeightAt(lx, ly, lz, DECK_BOARD_SEARCH_UP, DECK_BOARD_SEARCH_DOWN))
     {
-        return;                                         // not over the deck
+        BoardMinionAt(minion, lx, ly, *deckZ, lo);
+        return;
     }
 
-    // Grid resident: it keeps its cell, and its world position keeps being maintained
-    // through the grid. All we lend it is a floor.
-    BoardPassenger(minion, lx, ly, *deckZ, lo, true);
+    HaulMinionAboard(minion);
+}
 
-    // Its motion is now expressed in our frame, so whatever it had planned in the world's
-    // frame is meaningless. Start it over.
-    //
-    // (A totem never moves, so this costs it nothing -- but it still needs the frame, or
-    // its Z would be resolved against the sea floor and it would sink out of the deck.)
-    minion->GetMotionMaster()->Initialize();
+void Transport::HaulMinionAboard(Unit* minion)
+{
+    // A shaman who drops a totem on the pier and then sails has left it on the pier, which
+    // is exactly right. See IsPlanted.
+    if (IsPlanted(minion))
+    {
+        return;
+    }
 
-    DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES, "Transport %s boarded minion %s at deck (%f, %f, %f)",
-                      GetName(), minion->GetGuidStr().c_str(), lx, ly, *deckZ);
+    Unit* master = minion->GetOwner();
+    if (!master)
+    {
+        return;
+    }
+
+    // Let it RUN to the margin first, exactly as it does on retail. While it still has a
+    // leg under it, it is making its own way and yanking it off its feet mid-stride would
+    // read as a bug. We take over only once it has come to rest -- which, ashore of a ship,
+    // is the moment its route out across the water was refused and it stopped dead.
+    if (!minion->movespline->Finalized())
+    {
+        return;
+    }
+
+    const auto spot = DeckSpotNear(*master, PET_FOLLOW_DIST + minion->GetObjectBoundingRadius() +
+                                            master->GetObjectBoundingRadius(), PET_FOLLOW_ANGLE);
+    if (!spot)
+    {
+        return;                                         // its master is not aboard after all
+    }
+
+    // Board FIRST. From this instant its movement info carries the deck offset, so the
+    // heartbeat below tells the client not merely where it went but WHAT it is now standing
+    // on -- MovementInfo::Write emits the transport block off MOVEFLAG_ONTRANSPORT, and
+    // BoardMinionAt has just set it. The other order would announce a world position and
+    // leave the pet unparented until its next leg.
+    BoardMinionAt(minion, spot->x, spot->y, spot->z, spot->o);
+
+    // The blink the player actually sees. (BoardMinionAt has already re-filed it in the
+    // grid at the deck's world position; this is what tells the clients watching.)
+    minion->SendHeartBeat();
+
+    DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES, "Transport %s hauled minion %s aboard to %s",
+                      GetName(), minion->GetGuidStr().c_str(), master->GetGuidStr().c_str());
+}
+
+void Transport::PutMinionAshore(Unit* minion)
+{
+    Unit* master = minion->GetOwner();
+
+    // Step off the vessel: out of its container (the override unlinks the GridReference) and
+    // out of its frame. From here the minion is a free creature with no cell.
+    UnBoardPassenger(minion);
+
+    // Dead, dismissed, or its master has left the map: it is on its way out and there is no
+    // heel to return it to. Leave it for the pet subsystem's remove list, which finds it by
+    // its world cache (parked where the ship is -- a cell the master kept loaded). Its motion
+    // is reset only so nothing tries to walk a leg it planned on the deck.
+    if (!minion->IsInWorld() || !minion->IsAlive() || !master || !master->IsInWorld() ||
+        master->GetMapId() != minion->GetMapId())
+    {
+        minion->GetMotionMaster()->Initialize();
+        return;
+    }
+
+    // Master stepped straight from our deck onto ANOTHER vessel. Do not drop the minion into
+    // the water between the two hulls: return it to the world where it stands, and that
+    // vessel's UpdateMinions will haul it over on its next tick.
+    if (Transport::VesselOf(*master))
+    {
+        ReturnMinionToWorld(minion, minion->GetPositionX(), minion->GetPositionY(),
+                            minion->GetPositionZ(), minion->GetOrientation());
+        return;
+    }
+
+    // Ashore for real. Put it back into the world grid at its master's heel, on dry ground
+    // the world frame resolves exactly as it always did for a pet on land.
+    float x, y, z;
+    master->GetClosePoint(x, y, z, minion->GetObjectBoundingRadius(),
+                          PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+
+    ReturnMinionToWorld(minion, x, y, z, master->GetOrientation());
+}
+
+void Transport::ReturnMinionToWorld(Unit* minion, float x, float y, float z, float o)
+{
+    Creature* c = static_cast<Creature*>(minion);
+    Map* map = c->GetMap();
+
+    // The minion is unlinked from the vessel and still in the object store, but in no cell.
+    // Take it out of the store and re-add it to the world grid at (x,y,z): Map::Add re-files
+    // it into the proper cell, restores its ordinary world-grid visibility (a create to the
+    // players around it) and hands its tick back to the grid. This is the exact inverse of
+    // the GridReference relink that boarded it -- and it does NOT depend on the creature's
+    // stale current-cell, which is why it is used instead of a plain relocation.
+    c->RemoveFromWorld();
+    c->Relocate(x, y, z, o);
+    map->Add(c);
+
+    // World frame again; whatever it had planned on the deck is meaningless. The next leg it
+    // lays goes out as an ordinary (non-transport) monster-move.
+    c->GetMotionMaster()->Initialize();
 }
 
 void Transport::UpdateMinions()
@@ -706,12 +1019,20 @@ void Transport::UpdateMinions()
 
     for (PassengerMap::value_type const& entry : GetPassengers())
     {
-        if (!entry.second->IsGridResident())
+        if (!entry.second->IsMinion())
         {
             continue;                                   // crew: ours, and staying
         }
 
         Unit* minion = static_cast<Unit*>(entry.first);
+
+        // A totem rides the deck it was planted on for as long as it lives, whoever its
+        // master is and wherever they have got to. See IsPlanted.
+        if (IsPlanted(minion))
+        {
+            continue;
+        }
+
         Unit* master = minion->GetOwner();
 
         const bool masterAboard =
@@ -726,8 +1047,7 @@ void Transport::UpdateMinions()
 
     for (Unit* minion : leaving)
     {
-        UnBoardPassenger(minion);
-        minion->GetMotionMaster()->Initialize();
+        PutMinionAshore(minion);
     }
 }
 
@@ -1052,9 +1372,112 @@ void Transport::MoveToNextWayPoint()
  * @param y The destination Y coordinate.
  * @param z The destination Z coordinate.
  */
+void Transport::UnBoardAllMinions()
+{
+    // Snapshot first: ReturnMinionToWorld erases each minion from the passenger map, so we
+    // must not be iterating it while that happens.
+    std::vector<Unit*> minions;
+
+    for (PassengerMap::value_type const& entry : GetPassengers())
+    {
+        if (entry.second->IsMinion())
+        {
+            minions.push_back(static_cast<Unit*>(entry.first));
+        }
+    }
+
+    // Called at the START of TeleportTransport, before the master is teleported -- so the
+    // master (and thus a loaded cell) is still here on the OLD map. Hand each minion back to
+    // THIS map's grid where it stands: a proper world creature again, which the master's
+    // imminent far-teleport then unsummons the ordinary way. Left merely unlinked instead, a
+    // minion would be in limbo when the ship changes map out from under it.
+    for (Unit* minion : minions)
+    {
+        UnBoardPassenger(minion);
+        ReturnMinionToWorld(minion, minion->GetPositionX(), minion->GetPositionY(),
+                            minion->GetPositionZ(), minion->GetOrientation());
+    }
+}
+
+void Transport::JumpWithinMap(float x, float y, float z)
+{
+    // The hull moves. That is the whole event.
+    Relocate(x, y, z);
+
+    // The crew and the boarded minions do not move AT ALL: their deck offsets are unchanged,
+    // and the deck offset is the only coordinate they really have. This refreshes nothing but
+    // their world CACHE (a plain Relocate -- no grid, no packets), so an off-ship distance
+    // check still gets a sane answer on the far side of the jump.
+    UpdateGlobalPositions();
+
+    // The players are the only passengers the world grid knows about, so the grid has to be
+    // told which cells they are in now -- otherwise they stay filed beside the port we just
+    // left, and every search, aggro and spell around them would look in the wrong place.
+    //
+    // But this is BOOKKEEPING, not placement. PlayerRelocation moves the cell and refreshes
+    // visibility; it sends the client nothing. We deliberately do NOT teleport the player and
+    // do NOT hand it a composed world position: it is still MOVEFLAG_ONTRANSPORT with the same
+    // deck offset it had a moment ago, and its own client -- which is drawing the vessel jump
+    // from the very same taxi path we just walked -- puts it back on the deck itself.
+    for (Player* passenger : m_playerPassengers)
+    {
+        if (!passenger || !passenger->IsInWorld())
+        {
+            continue;
+        }
+
+        const auto local = LocalPositionOf(*passenger);
+        if (!local)
+        {
+            continue;                                   // not really aboard; leave it alone
+        }
+
+        float gx, gy, gz, go;
+        CalculateGlobalPositionOf(local->x, local->y, local->z, local->o, gx, gy, gz, go);
+
+        GetMap()->PlayerRelocation(passenger, gx, gy, gz, go);
+    }
+
+    DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES,
+                      "Transport %s jumped within map to (%f, %f, %f); %u player(s) carried",
+                      GetName(), x, y, z, uint32(m_playerPassengers.size()));
+}
+
 void Transport::TeleportTransport(uint32 newMapid, float x, float y, float z)
 {
     Map const* oldMap = GetMap();
+
+    // A teleport waypoint that stays on the SAME map (the Auberdine <-> Rut'theran run has
+    // one) is not a map transfer at all. Nothing leaves the ship, nothing is teleported, and
+    // no world position is composed for anybody. See JumpWithinMap.
+    if (newMapid == GetMapId())
+    {
+        JumpWithinMap(x, y, z);
+        return;
+    }
+
+    // THE MINIONS DO NOT COME WITH US, and letting go of them must happen BEFORE the vessel
+    // changes map -- not after, and not never, which is what used to happen.
+    //
+    // A crew member belongs to the vessel, so MoveCrewToMap carries its registration across
+    // the seam by hand. A MINION belongs to the WORLD -- and specifically to the OLD one: it
+    // is in the old map's object store and filed in one of the old map's grid cells, and
+    // nothing here is going to move any of that.
+    //
+    // So the instant SetMap runs, the vessel's own refresh (MoveCrewToMap ->
+    // UpdateGlobalPositions) hands a creature that still lives on the old map to the NEW map's
+    // CreatureRelocation, with coordinates on another continent. The new map was created a
+    // moment ago and has no grids to speak of, so it cannot find a cell for the thing and
+    // refuses it -- which sends it to CreatureRespawnRelocation, which for a boarded minion
+    // comes straight back here. That recursion does not terminate; it overflows the stack and
+    // takes the server with it.
+    //
+    // Nor is there anything to salvage by carrying them: the minions are their masters'
+    // problem, and their masters are being teleported on the line below. A far teleport
+    // unsummons a pet and resummons it on the far side, which is exactly what should happen.
+    // All the vessel has to do is let go.
+    UnBoardAllMinions();
+
     Relocate(x, y, z);
 
     for (PlayerSet::iterator itr = m_playerPassengers.begin(); itr != m_playerPassengers.end();)
@@ -1279,6 +1702,26 @@ void Transport::AppendCrewCreateBlocks(UpdateData& data, Player* observer)
         crew->BuildCreateUpdateBlockForPlayer(&data, observer);
         observer->m_clientGUIDs.insert(crew->GetObjectGuid());
     }
+
+    // A boarded minion is in no grid cell either -- the ship is its grid -- so it too is
+    // announced only here. (A new observer coming into range of the vessel thus receives the
+    // pet on the deck in the same packet as the crew, parented to the ship.)
+    for (PassengerMap::value_type const& entry : GetPassengers())
+    {
+        if (!entry.second->IsMinion())
+        {
+            continue;
+        }
+
+        Creature* minion = static_cast<Creature*>(entry.first);
+        if (!minion->IsInWorld())
+        {
+            continue;
+        }
+
+        minion->BuildCreateUpdateBlockForPlayer(&data, observer);
+        observer->m_clientGUIDs.insert(minion->GetObjectGuid());
+    }
 }
 
 void Transport::AddObserver(Player* observer)
@@ -1294,6 +1737,15 @@ void Transport::RemoveObserver(Player* observer)
     for (Creature* crew : m_crew)
     {
         observer->m_clientGUIDs.erase(crew->GetObjectGuid());
+    }
+
+    // Boarded minions ride in the same packet as the crew, so they are forgotten the same way.
+    for (PassengerMap::value_type const& entry : GetPassengers())
+    {
+        if (entry.second->IsMinion())
+        {
+            observer->m_clientGUIDs.erase(entry.first->GetObjectGuid());
+        }
     }
 }
 
@@ -1324,6 +1776,19 @@ void Transport::RetainAtClient(Player* observer, GuidSet& clientGuids) const
     for (Creature* crew : m_crew)
     {
         clientGuids.erase(crew->GetObjectGuid());
+    }
+
+    // A boarded minion is a passenger with no world cell either, so the elimination sweep
+    // would destroy it for exactly the same reason it would destroy the crew. Vouch for it
+    // too. THIS is what stops a pet blinking out when its master stands still: its visibility
+    // no longer depends on the grid re-finding a composed world position, only on the ship
+    // saying "he is on my deck."
+    for (PassengerMap::value_type const& entry : GetPassengers())
+    {
+        if (entry.second->IsMinion())
+        {
+            clientGuids.erase(entry.first->GetObjectGuid());
+        }
     }
 }
 
@@ -1383,10 +1848,10 @@ void Transport::UpdateVisibility(uint32 diff)
         // one person guaranteed to be looking straight at them.
         const bool aboard = (this == observer->GetTransport());
 
-        if (aboard && m_crew.empty())
+        if (aboard && GetPassengers().empty())
         {
             m_observers.insert(observer->GetObjectGuid());
-            continue;
+            continue;                                   // nothing aboard to announce to them
         }
 
         UpdateData transData;
@@ -1425,6 +1890,13 @@ void Transport::UpdateVisibility(uint32 diff)
             {
                 crew->BuildOutOfRangeUpdateBlock(&transData);
             }
+            for (PassengerMap::value_type const& entry : GetPassengers())
+            {
+                if (entry.second->IsMinion())
+                {
+                    entry.first->BuildOutOfRangeUpdateBlock(&transData);
+                }
+            }
 
             WorldPacket packet;
             transData.BuildPacket(&packet, true);
@@ -1434,6 +1906,13 @@ void Transport::UpdateVisibility(uint32 diff)
             for (Creature* crew : m_crew)
             {
                 gone->m_clientGUIDs.erase(crew->GetObjectGuid());
+            }
+            for (PassengerMap::value_type const& entry : GetPassengers())
+            {
+                if (entry.second->IsMinion())
+                {
+                    gone->m_clientGUIDs.erase(entry.first->GetObjectGuid());
+                }
             }
         }
 

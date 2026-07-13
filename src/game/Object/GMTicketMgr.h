@@ -32,6 +32,8 @@
 #include "WorldSession.h"
 #include "SharedDefines.h"
 #include <map>
+#include <ctime>
+#include <string>
 
 /**
  * \addtogroup game

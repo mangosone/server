@@ -49,8 +49,9 @@
 #include "SharedDefines.h"
 #include "Creature.h"
 #include "CreatureAI.h"
+#include <cmath>
+#include <ctime>
 
-INSTANTIATE_SINGLETON_1(CreatureLinkingMgr);
 
 #define INVALID_MAP_ID      0xFFFFFFFF
 

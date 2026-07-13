@@ -35,6 +35,9 @@
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 /**
  * @brief Handler for HandleUnLearnCommand command.

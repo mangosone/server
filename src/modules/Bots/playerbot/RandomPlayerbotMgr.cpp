@@ -23,7 +23,6 @@
 using namespace ai;
 using namespace MaNGOS;
 
-INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
 /**
  * RandomPlayerbotMgr is responsible for managing random player bots in the game.

@@ -57,6 +57,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <cstdlib>
 
 /**
  * @brief Loads pet base stats for each supported level.

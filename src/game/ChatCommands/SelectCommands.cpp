@@ -36,6 +36,7 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Language.h"
+#include <string>
 
 /**
  * @brief Handler for HandleSelectPlayerCommand command.

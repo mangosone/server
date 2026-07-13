@@ -43,6 +43,9 @@
 #include "Common.h"
 #include "ObjectGuid.h"
 #include <map>
+#include <ctime>
+#include <string>
+#include <vector>
 
 struct AuctionEntry;
 class Item;

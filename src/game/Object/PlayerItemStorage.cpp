@@ -34,6 +34,7 @@
 #include "DBCStores.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
 #endif /* ENABLE_ELUNA */
 
 // Return stored item (if stored to stack, it can diff. from pItem). And pItem ca be deleted in this case.

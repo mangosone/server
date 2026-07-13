@@ -55,6 +55,10 @@
 #include "LootMgr.h"
 #include "Unit.h"
 #include "Player.h"
+#include <ctime>
+#include <list>
+#include <map>
+#include <string>
 
 class WorldSession;
 class WorldPacket;

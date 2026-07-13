@@ -2,12 +2,18 @@ name: Linux Build (GCC + Clang)
 
 on:
   push:
-    branches: [ master, devel ]
+    branches: [master, devel]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 permissions:
   contents: read
+
+# A second push to the same branch makes the first run's result worthless. Cancel it rather
+# than pay for two builds and read the stale one.
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -34,21 +40,35 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Cache CMake build
+      # ccache, not a cached build directory.
+      #
+      # The old workflow cached _build itself, which cannot work with make: actions/checkout
+      # rewrites every source file, so all sources end up NEWER than the restored objects and
+      # make rebuilds the lot anyway -- we paid to upload and download a build tree for zero
+      # reuse. Worse, the key hashed only **/CMakeLists.txt, and actions/cache does not
+      # re-save on an exact key hit, so once populated that tree was frozen for good.
+      #
+      # ccache keys on the *content* of each translation unit, so it is immune to both
+      # problems. The key carries github.sha (always unique => always saved) while
+      # restore-keys pulls the newest previous cache to seed it.
+      - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: _build
-          key: ${{ runner.os }}-${{ matrix.name }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-${{ matrix.name }}-ccache-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.name }}-cmake-
+            ${{ runner.os }}-${{ matrix.name }}-ccache-
 
+      # libace-dev is deliberately absent: ACE was removed from the core (see "ACE removal"),
+      # and the single remaining "ace/..." include in the tree belongs to the Movemap
+      # generator, which BUILD_TOOLS=0 below no longer builds.
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-            git cmake make build-essential \
+            git cmake make build-essential ccache \
             libssl-dev libbz2-dev default-libmysqlclient-dev \
-            libace-dev libreadline-dev \
+            libreadline-dev \
             ${{ matrix.pkg }}
 
       - name: Configure project
@@ -60,18 +80,25 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=../_install \
             -DCMAKE_C_COMPILER=${{ matrix.cc }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-            -DBUILD_TOOLS=1 \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_TOOLS=0 \
             -DBUILD_MANGOSD=1 \
             -DBUILD_REALMD=1 \
             -DSOAP=1 \
             -DSCRIPT_LIB_ELUNA=1 \
-            -DSCRIPT_LIB_SD3_GATE=1 \
+            -DSCRIPT_LIB_SD3=1 \
             -DPLAYERBOTS=1 \
             -DUSE_STORMLIB=1 \
-            -DPCH=0
+            -DPCH=0 \
+            --warn-uninitialized
 
       - name: Build and install
         run: |
           cd _build
           make -j"$(nproc)"
           make install -j"$(nproc)"
+
+      - name: ccache statistics
+        if: always()
+        run: ccache -s

@@ -35,6 +35,8 @@
 #include "Chat.h"
 #include "Language.h"
 #include "ObjectMgr.h"
+#include <cstdio>
+#include <cstring>
 
 /**
  * @brief Opens the auction house interface for the player.

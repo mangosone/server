@@ -27,7 +27,8 @@
 
 #include "Language.h"
 
-class BattleGround;
+// Derives from BattleGround / BattleGroundScore: needs the definitions, not a declaration.
+#include "BattleGround.h"
 
 #define EY_FLAG_RESPAWN_TIME            (10 * IN_MILLISECONDS) //10 seconds
 #define EY_RESOURCES_UPDATE_TIME        (2 * IN_MILLISECONDS) //2 seconds
@@ -278,6 +279,10 @@ class BattleGroundEY : public BattleGround
         /* Battleground Events */
         void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
         void EventPlayerDroppedFlag(Player* source) override;
+
+        // EY captures are node-based, so the private overload below would
+        // otherwise hide this inherited one
+        using BattleGround::EventPlayerCapturedFlag;
 
         Team GetPrematureWinner() override;
 

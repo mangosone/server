@@ -59,8 +59,13 @@
 #include "SharedDefines.h"
 #include "DBCEnums.h"
 #include "BattleGround.h"
-#include <ace/Recursive_Thread_Mutex.h>
 #include "Utilities/EventProcessor.h"
+#include <ctime>
+#include <list>
+#include <map>
+#include <mutex>
+#include <set>
+#include <vector>
 
 /**
  * @brief Container for storing battleground instances.
@@ -244,7 +249,10 @@ class BattleGroundQueue
         uint32 GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id);
 
     private:
-        ACE_Recursive_Thread_Mutex  m_Lock; /**< Mutex that should not allow changing private data, nor allowing to update Queue during private data change. */
+        // No lock here: the battleground queue is driven entirely from the world thread.
+        // There used to be a recursive mutex, but every guard on it had already been
+        // commented out, so it protected nothing. Carrying it over would only have
+        // implied a thread-safety guarantee this class does not actually make.
 
         /**
          * @brief Map for storing queued players.
@@ -773,7 +781,7 @@ class BattleGroundMgr
          */
         static bool IsBGWeekend(BattleGroundTypeId bgTypeId);
     private:
-        ACE_Thread_Mutex    SchedulerLock; /**< Mutex to protect the scheduler from concurrent access. */
+        std::mutex    SchedulerLock; /**< Mutex to protect the scheduler from concurrent access. */
         BattleMastersMap    mBattleMastersMap; /**< Map storing battle master entries. */
         CreatureBattleEventIndexesMap m_CreatureBattleEventIndexMap; /**< Map storing creature battle event indexes. */
         GameObjectBattleEventIndexesMap m_GameObjectBattleEventIndexMap; /**< Map storing game object battle event indexes. */

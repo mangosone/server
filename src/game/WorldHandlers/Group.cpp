@@ -59,6 +59,8 @@
 #include "LootMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 #define LOOT_ROLL_TIMEOUT  (1*MINUTE*IN_MILLISECONDS)

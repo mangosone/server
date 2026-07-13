@@ -24,14 +24,11 @@
 
 #Main Files
 set(SRC_GRP_MAIN
-  AFThread.cpp
-  AFThread.h
-  CliThread.cpp
-  CliThread.h
-  RAThread.cpp
-  RAThread.h
-  WorldThread.cpp
-  WorldThread.h
+  Master.cpp
+  Master.h
+  RASession.cpp
+  RASession.h
+  Service.h
   mangosd.cpp
 )
 source_group("Main" FILES ${SRC_GRP_MAIN})

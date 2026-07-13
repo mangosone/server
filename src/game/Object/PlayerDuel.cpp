@@ -74,6 +74,8 @@
 #include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <ctime>
+#include <vector>
 #endif /* ENABLE_ELUNA */
 
 // If players are too far way of duel flag... then player loose the duel

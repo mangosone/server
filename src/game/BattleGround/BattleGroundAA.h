@@ -25,7 +25,10 @@
 #ifndef MANGOS_H_BATTLEGROUNDAA
 #define MANGOS_H_BATTLEGROUNDAA
 
-class BattleGround;
+// Not a forward declaration: the classes below *derive* from BattleGround and
+// BattleGroundScore, and you cannot inherit from an incomplete type. This header only ever
+// compiled because every .cpp that used it happened to include BattleGround.h first.
+#include "BattleGround.h"
 
 class BattleGroundAAScore : public BattleGroundScore
 {

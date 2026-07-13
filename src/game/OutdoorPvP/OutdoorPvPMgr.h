@@ -27,6 +27,7 @@
 
 #include "Common.h"
 #include "Timer.h"
+#include <map>
 
 /**
  * @brief Timer constants for outdoor PvP manager

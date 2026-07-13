@@ -32,6 +32,8 @@
 #include "Spell.h"
 #include "Unit.h"
 #include "World.h"
+#include <list>
+#include <string>
 
 /**
  * @brief Checks whether a skill line is a primary profession.

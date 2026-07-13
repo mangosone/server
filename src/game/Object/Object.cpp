@@ -67,6 +67,7 @@
 #include "LuaEngine.h"
 #include "ElunaConfig.h"
 #include "ElunaEventMgr.h"
+#include <cstring>
 #endif /* ENABLE_ELUNA */
 
 /**

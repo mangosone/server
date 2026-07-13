@@ -47,8 +47,8 @@
 #include "Policies/Singleton.h"
 #include "ProgressBar.h"
 #include "World.h"
+#include <string>
 
-INSTANTIATE_SINGLETON_1(GuildMgr);
 
 /**
  * @brief Construct GuildMgr singleton

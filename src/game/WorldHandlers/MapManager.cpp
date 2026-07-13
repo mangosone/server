@@ -57,11 +57,12 @@
 
 #ifdef ENABLE_ELUNA
 #include "ElunaConfig.h"
+#include <cassert>
+#include <cstdlib>
+#include <functional>
+#include <mutex>
 #endif /* ENABLE_ELUNA */
 
-#define CLASS_LOCK MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>
-INSTANTIATE_SINGLETON_2(MapManager, CLASS_LOCK);
-INSTANTIATE_CLASS_MUTEX(MapManager, ACE_Recursive_Thread_Mutex);
 
 MapManager::MapManager()
     : i_gridCleanUpDelay(sWorld.getConfig(CONFIG_UINT32_INTERVAL_GRIDCLEAN)), m_lock()
@@ -184,7 +185,7 @@ void MapManager::InitializeVisibilityDistanceInfo()
 /// @param id - MapId of the to be created map. @param obj WorldObject for which the map is to be created. Must be player for Instancable maps.
 Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
 {
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
+    std::lock_guard<LOCK_TYPE> _guard(m_lock);
 
     Map* m = NULL;
 
@@ -205,7 +206,7 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
     else
     {
         // create regular non-instanceable map
-        m = FindMap(id);
+        m = FindMap_unlocked(id);   // m_lock is already held
         if (m == NULL)
         {
             m = new WorldMap(id, i_gridCleanUpDelay);
@@ -231,7 +232,7 @@ Map* MapManager::CreateBgMap(uint32 mapid, BattleGround* bg)
 {
     sTerrainMgr.LoadTerrain(mapid);
 
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
+    std::lock_guard<LOCK_TYPE> _guard(m_lock);
     return CreateBattleGroundMap(mapid, sMapMgr.GenerateInstanceId(), bg);
 }
 
@@ -244,8 +245,13 @@ Map* MapManager::CreateBgMap(uint32 mapid, BattleGround* bg)
  */
 Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
 {
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
+    std::lock_guard<LOCK_TYPE> _guard(m_lock);
+    return FindMap_unlocked(mapid, instanceId);
+}
 
+/// Body of FindMap(), for callers that already hold m_lock. See the header.
+Map* MapManager::FindMap_unlocked(uint32 mapid, uint32 instanceId) const
+{
     MapMapType::const_iterator iter = i_maps.find(MapID(mapid, instanceId));
     if (iter == i_maps.end())
     {
@@ -270,7 +276,7 @@ Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
  */
 void MapManager::DeleteInstance(uint32 mapid, uint32 instanceId)
 {
-    ACE_GUARD(LOCK_TYPE, _guard, m_lock)
+    std::lock_guard<LOCK_TYPE> _guard(m_lock);
 
     MapMapType::iterator iter = i_maps.find(MapID(mapid, instanceId));
     if (iter != i_maps.end())
@@ -443,7 +449,7 @@ uint32 MapManager::GetNumInstances()
 {
     uint32 ret = 0;
 
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, ret)
+    std::lock_guard<LOCK_TYPE> _guard(m_lock);
     for (MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {
         Map* map = itr->second;
@@ -465,7 +471,7 @@ uint32 MapManager::GetNumPlayersInInstances()
 {
     uint32 ret = 0;
 
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, ret)
+    std::lock_guard<LOCK_TYPE> _guard(m_lock);
     for (MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {
         Map* map = itr->second;
@@ -492,14 +498,14 @@ Map* MapManager::CreateInstance(uint32 id, Player* player)
         // find existing bg map for player
         NewInstanceId = player->GetBattleGroundId();
         MANGOS_ASSERT(NewInstanceId);
-        map = FindMap(id, NewInstanceId);
+        map = FindMap_unlocked(id, NewInstanceId);   // called under m_lock from CreateMap()
         MANGOS_ASSERT(map);
     }
     else if (DungeonPersistentState* pSave = player->GetBoundInstanceSaveForSelfOrGroup(id))
     {
         // solo/perm/group
         NewInstanceId = pSave->GetInstanceId();
-        map = FindMap(id, NewInstanceId);
+        map = FindMap_unlocked(id, NewInstanceId);   // called under m_lock from CreateMap()
         // it is possible that the save exists but the map doesn't
         if (!map)
         {

@@ -38,6 +38,8 @@
  */
 
 #include "SQLStorage.h"
+#include <cassert>
+#include <cstring>
 
 // -----------------------------------  SQLStorageBase  ---------------------------------------- //
 

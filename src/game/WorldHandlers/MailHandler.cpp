@@ -52,6 +52,8 @@
 #include "WorldSession.h"
 #include "Opcodes.h"
 #include "Chat.h"
+#include <ctime>
+#include <string>
 
 /**
  * @brief Verifies that the player can legally access the requested mailbox.
@@ -232,10 +234,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_NOT_YOUR_TEAM);
         return;
     }
-
-    uint32 rc_account = receive
-                        ? receive->GetSession()->GetAccountId()
-                        : sObjectMgr.GetPlayerAccountIdByGUID(rc);
 
     Item* items[MAX_MAIL_ITEMS];
 

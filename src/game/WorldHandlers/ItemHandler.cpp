@@ -52,6 +52,7 @@
 #include "Item.h"
 #include "UpdateData.h"
 #include "Chat.h"
+#include <string>
 
 /**
  * @brief Splits part of an item stack into another destination slot.

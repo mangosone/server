@@ -29,6 +29,7 @@
 #include "SharedDefines.h"
 #include "DBCStructure.h"
 #include <map>
+#include <utility>
 
 enum FactionFlags
 {

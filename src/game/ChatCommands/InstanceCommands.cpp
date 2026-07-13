@@ -37,6 +37,10 @@
 #include "ObjectMgr.h"
 #include "MapManager.h"
 #include "InstanceData.h"
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <string>
 
 /**
  * @brief Handler for HandleInstanceListBindsCommand command.

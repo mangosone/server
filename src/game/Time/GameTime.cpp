@@ -45,6 +45,8 @@
 
 #include "GameTime.h"
 #include "Timer.h"
+#include <chrono>
+#include <ctime>
 
 namespace GameTime
 {

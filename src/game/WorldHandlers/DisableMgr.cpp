@@ -44,6 +44,8 @@
 #include "ProgressBar.h"
 #include "World.h"
 #include "BattleGroundMgr.h"
+#include <map>
+#include <set>
 
 namespace DisableMgr
 {
@@ -448,7 +450,7 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
             break;
         }
         case DISABLE_TYPE_MAP:
-            if (Player const* player = unit->ToPlayer())
+            if (unit->ToPlayer())
             {
                 // [-ZERO]
                 //MapEntry const* mapEntry = sMapStore.LookupEntry(entry);
@@ -494,6 +496,8 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
         case DISABLE_TYPE_CREATURE_SPAWN:
         case DISABLE_TYPE_GAMEOBJECT_SPAWN:
             return (itr->second.flags & SPAWN_DISABLE_CHECK_GUID) == 0 || itr->second.params[0].count(adData) > 0;
+        default:
+            break;
     }
 
     return false;

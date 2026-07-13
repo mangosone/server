@@ -28,6 +28,8 @@
 #include "Common/Common.h"
 #include "Utilities/Errors.h"
 #include "Field.h"
+#include <string>
+#include <vector>
 
 /**
  * @brief Abstract base class for database query results

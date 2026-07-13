@@ -29,6 +29,7 @@
 #include "World.h"
 
 #include "soapStub.h"
+#include <string>
 
 /**
  * Runs the SOAP listener loop on the configured host and port.
@@ -47,8 +48,13 @@ void SoapThread(const std::string& host, uint16 port)
 
     if (!soap_valid_socket(soap_bind(&soap, host.c_str(), port, 100)))
     {
-        sLog.outError("SoapThread: couldn't bind to %s:%d", host.c_str(), port);
-        exit(-1);
+        // Losing the SOAP port is not a reason to take the world down with us: the world
+        // is already running, and exiting from this thread would strand it mid-tick with
+        // players connected. Report and leave; the rest of the server carries on without
+        // remote SOAP, exactly as the RA listener does when its own bind fails.
+        sLog.outError("SoapThread: couldn't bind to %s:%d, SOAP disabled", host.c_str(), port);
+        soap_done(&soap);
+        return;
     }
 
     sLog.outString("SoapThread: Bound to http://%s:%d", host.c_str(), port);
@@ -102,7 +108,8 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
 
     if (!sAccountMgr.CheckPassword(accountId, soap->passwd))
     {
-        sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->passwd);
+        // Log the account, never the secret: this line lands in a file that gets shared.
+        sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->userid);
         return 401;
     }
 

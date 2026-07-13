@@ -28,6 +28,7 @@
 #include "Common.h"
 #include "Duration.h"
 #include <ctime>
+#include <chrono>
 
 // New Method
 inline std::chrono::steady_clock::time_point GetApplicationStartTime()

@@ -40,6 +40,9 @@
 #include "AccountMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "Player.h"
+#include <cstdio>
+#include <cstring>
+#include <string>
 
 /**
  * @brief Displays the current account information and access level.

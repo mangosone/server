@@ -38,6 +38,10 @@
 #include "MapManager.h"
 #include "GameEventMgr.h"
 #include "ObjectMgr.h"
+#include <cmath>
+#include <ctime>
+#include <sstream>
+#include <string>
 
 /**
  * @brief Handler for HandleGameObjectDeleteCommand command.

@@ -76,6 +76,12 @@
 #include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <list>
+#include <map>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 // corpse reclaim times
@@ -2015,8 +2021,6 @@ void Player::SendRaidInfo()
 
     size_t p_counter = data.wpos();
     data << uint32(counter);                                // placeholder
-
-    time_t now = time(NULL);
 
     for (int i = 0; i < MAX_DIFFICULTY; ++i)
     {

@@ -29,6 +29,7 @@
 #include "Utilities/TypeList.h"
 #include "ObjectRegistry.h"
 #include "Policies/Singleton.h"
+#include <string>
 
 template < class T, class Key = std::string >
 /**

@@ -26,11 +26,11 @@
 #define MANGOS_H_SQLOPERATIONS
 
 #include "Common/Common.h"
-
-#include <ace/Thread_Mutex.h>
 #include "LockedQueue/LockedQueue.h"
 #include <queue>
 #include "Utilities/Callback.h"
+#include <utility>
+#include <vector>
 
 /// ---- BASE ---
 
@@ -46,27 +46,31 @@ class SqlStmtParameters;
 class SqlOperation
 {
     public:
-        /**
-         * @brief
-         *
-         */
+
         virtual void OnRemove()
         {
             delete this;
         }
 
         /**
-         * @brief
+         * @brief Run this operation, taking the connection's lock.
          *
-         * @param conn
-         * @return bool
+         * Entry point for a standalone operation (i.e. from SqlDelayThread).
          */
-        virtual bool Execute(SqlConnection* conn) = 0;
+        bool Execute(SqlConnection* conn);
 
         /**
-         * @brief
+         * @brief Run this operation with the connection's lock ALREADY held.
          *
+         * SqlTransaction takes the lock once for the whole transaction and then runs
+         * each queued statement through here. That split is what lets a connection use
+         * a plain mutex: previously the transaction locked the connection and then every
+         * statement inside it locked the same connection again, which only worked because
+         * the mutex was recursive — and would have deadlocked the first transaction the
+         * moment it stopped being.
          */
+        virtual bool ExecuteLocked(SqlConnection* conn) = 0;
+
         virtual ~SqlOperation() {}
 };
 
@@ -104,7 +108,7 @@ class SqlPlainRequest : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 
 /**
@@ -142,7 +146,7 @@ class SqlTransaction : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 
 /**
@@ -172,7 +176,7 @@ class SqlPreparedRequest : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 
     private:
         const int m_nIndex; /**< TODO */
@@ -191,7 +195,7 @@ class SqlQueryHolderEx;                                     /// points to a hold
  * @brief
  *
  */
-class SqlResultQueue : public ACE_Based::LockedQueue<MaNGOS::IQueryCallback* , ACE_Thread_Mutex>
+class SqlResultQueue : public MaNGOS::LockedQueue<MaNGOS::IQueryCallback*>
 {
     public:
         /**
@@ -244,7 +248,7 @@ class SqlQuery : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 
 /**
@@ -355,6 +359,6 @@ class SqlQueryHolderEx : public SqlOperation
          * @param conn
          * @return bool
          */
-        bool Execute(SqlConnection* conn) override;
+        bool ExecuteLocked(SqlConnection* conn) override;
 };
 #endif                                                      //__SQLOPERATIONS_H

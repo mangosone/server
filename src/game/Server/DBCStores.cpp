@@ -31,6 +31,16 @@
 #include "DBCfmt.h"
 
 #include <map>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <list>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 typedef std::map<uint16, uint32> AreaFlagByAreaID;
 typedef std::map<uint32, uint32> AreaFlagByMapID;
@@ -904,7 +914,7 @@ ChatChannelsEntry const* GetChannelEntryFor(uint32 channel_id)
     return NULL;
 }
 
-static ChatChannelsEntry worldCh = { 26, 4, "world" };
+static ChatChannelsEntry worldCh = { 26, 4, { "world" } };
 
 /**
  * @brief Finds a chat channel entry by display name.

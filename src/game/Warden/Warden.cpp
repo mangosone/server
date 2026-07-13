@@ -56,6 +56,9 @@
 #include "Warden.h"
 #include "AccountMgr.h"
 #include "GameTime.h"
+#include <cstring>
+#include <sstream>
+#include <string>
 
 /**
  * @brief Warden constructor

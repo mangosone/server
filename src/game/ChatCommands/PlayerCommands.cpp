@@ -38,6 +38,11 @@
 #include "World.h"
 #include "AccountMgr.h"
 #include "SQLStorages.h"
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <sstream>
+#include <string>
 
 /**
  * @brief Handler for HandleCharacterEraseCommand command.

@@ -26,6 +26,8 @@
 #ifndef _WARDEN_MODULE_WIN_H
 #define _WARDEN_MODULE_WIN_H
 
+#include "Common.h"     // uint8, the type of every field of the module blob below
+
 /*
 Seed: 4D808D2C77D905C41A6380EC08586AFE (0x05 packet)
 Hash: 568C054C781A972A6037A2290C22B52571A06F4E (0x04 packet)

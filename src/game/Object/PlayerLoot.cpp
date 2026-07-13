@@ -74,6 +74,7 @@
 #include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cmath>
 #endif /* ENABLE_ELUNA */
 
 /*  If in a battleground a player dies, and an enemy removes the insignia, the player's bones is lootable

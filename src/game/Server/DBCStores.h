@@ -30,6 +30,7 @@
 #include "DBCStructure.h"
 
 #include <list>
+#include <string>
 
 /**
  * Checks whether the specified client build is supported by the server.

@@ -32,6 +32,7 @@
 #include "Player.h"
 #include "Path.h"
 #include "WaypointMovementGenerator.h"
+#include <vector>
 
 /**
  * @brief Handles a client request for the known status of a taxi node.

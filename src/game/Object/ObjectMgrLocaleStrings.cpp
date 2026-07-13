@@ -56,6 +56,7 @@
 #include "CellImpl.h"
 #include "DisableMgr.h"
 #include "ItemEnchantmentMgr.h"
+#include <string>
 
 /**
  * @brief Gets localized creature name and subname strings for a locale index.

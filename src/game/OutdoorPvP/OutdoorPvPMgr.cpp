@@ -34,8 +34,8 @@
 #include "OutdoorPvPTF.h"
 #include "OutdoorPvPZM.h"
 #include "DisableMgr.h"
+#include <cstring>
 
-INSTANTIATE_SINGLETON_1(OutdoorPvPMgr);
 
 OutdoorPvPMgr::OutdoorPvPMgr()
 {

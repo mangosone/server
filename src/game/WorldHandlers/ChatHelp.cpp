@@ -64,6 +64,8 @@
 #include "AuctionHouseBot/AuctionHouseBot.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include <cstring>
+#include <string>
 #endif /* ENABLE_ELUNA */
 
 /**

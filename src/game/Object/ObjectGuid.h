@@ -27,6 +27,10 @@
 
 #include "Common.h"
 #include "ByteBuffer.h"
+#include <list>
+#include <set>
+#include <string>
+#include <vector>
 
 enum TypeID
 {
