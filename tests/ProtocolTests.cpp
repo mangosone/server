@@ -399,6 +399,27 @@ void authenticationFilterVetoSkipsLookupWithoutClosing()
     CHECK(!harness.connection->closed());
 }
 
+void authenticationFilterVetoAllowsALaterAcceptedAttempt()
+{
+    ConnectionHarness harness;
+    BigNumber sessionKey = SuccessfulLookup(harness.gateway);
+    uint32 const clientSeed = 0x55667788;
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+    std::array<uint8, 20> const proof = MakeProof("ACCOUNT", clientSeed,
+        ServerSeed(challenge), sessionKey);
+    std::vector<uint8> const frame = AuthFrame(clientSeed, proof);
+
+    harness.gateway.filterResult = false;
+    harness.connection->onData(frame.data(), frame.size());
+    harness.gateway.filterResult = true;
+    harness.connection->onData(frame.data(), frame.size());
+
+    CHECK(harness.gateway.filterCalls == 2);
+    CHECK(harness.gateway.lookupCalls == 1);
+    CHECK(harness.gateway.attachCalls == 1);
+    CHECK(!harness.connection->closed());
+}
+
 void lookupRejectionSendsStatusAndCloses()
 {
     ConnectionHarness harness;
@@ -462,6 +483,32 @@ void successfulAuthenticationInitializesCryptBeforeAttach()
     CHECK(harness.gateway.traced.back() == std::make_pair(uint16(SMSG_ADDON_INFO), false));
 }
 
+void attachFailureSendsEncryptedSystemErrorWithoutPublishingASession()
+{
+    ConnectionHarness harness;
+    harness.gateway.attachResult = proto::INVALID_SESSION_ID;
+    BigNumber sessionKey = SuccessfulLookup(harness.gateway);
+    uint32 const clientSeed = 0x11223344;
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+    std::array<uint8, 20> const proof = MakeProof("ACCOUNT", clientSeed,
+        ServerSeed(challenge), sessionKey);
+    std::vector<uint8> const auth = AuthFrame(clientSeed, proof);
+
+    harness.connection->onData(auth.data(), auth.size());
+
+    CHECK(harness.gateway.attachCalls == 1);
+    CHECK(harness.gateway.detachCalls == 0);
+    CHECK(harness.sent.size() == 1);
+    if (harness.sent.size() == 1)
+    {
+        HeaderCipher cipher(sessionKey);
+        cipher.DecryptServerHeader(harness.sent[0]);
+        CHECK(ServerOpcode(harness.sent[0]) == SMSG_AUTH_RESPONSE);
+        CHECK(harness.sent[0][4] == uint8(proto::AuthStatus::SystemError));
+    }
+    CHECK(harness.connection->closed());
+}
+
 void authenticatedPacketsStayOpaqueToTheConnection()
 {
     ConnectionHarness harness;
@@ -510,6 +557,42 @@ void coalescedAuthenticationActivatesCryptBeforeTheNextFrame()
     CHECK(harness.gateway.delivered.size() == 1);
     CHECK(harness.gateway.delivered[0] == CMSG_KEEP_ALIVE);
     CHECK(!harness.connection->closed());
+}
+
+void fragmentedEncryptedHeadersKeepCipherStateSynchronized()
+{
+    for (std::size_t split = 1; split < proto::CLIENT_HEADER_SIZE; ++split)
+    {
+        ConnectionHarness harness;
+        BigNumber sessionKey = Authenticate(harness);
+        HeaderCipher cipher(sessionKey);
+        std::vector<uint8> keepAlive = ClientFrame(CMSG_KEEP_ALIVE, {0x42});
+        cipher.EncryptClientHeader(keepAlive);
+
+        harness.connection->onData(keepAlive.data(), split);
+        CHECK(harness.gateway.delivered.empty());
+        CHECK(!harness.connection->closed());
+        harness.connection->onData(keepAlive.data() + split, keepAlive.size() - split);
+
+        CHECK(harness.gateway.delivered.size() == 1);
+        CHECK(harness.gateway.delivered[0] == CMSG_KEEP_ALIVE);
+        CHECK(!harness.connection->closed());
+    }
+}
+
+void invalidPostAuthenticationOpcodeClosesInsteadOfDropping()
+{
+    ConnectionHarness harness;
+    BigNumber sessionKey = Authenticate(harness);
+    HeaderCipher cipher(sessionKey);
+    std::vector<uint8> invalid = ClientFrame(NUM_MSG_TYPES, {});
+    cipher.EncryptClientHeader(invalid);
+
+    harness.connection->onData(invalid.data(), invalid.size());
+
+    CHECK(harness.gateway.delivered.empty());
+    CHECK(harness.connection->closed());
+    CHECK(harness.closeCalls == 1);
 }
 
 void authenticationAddonTailReconstructsAtPositionZero()
@@ -588,11 +671,15 @@ int main()
     connectionChallengeHasTheExpectedShape();
     preAuthenticationWorldPacketsAreRejected();
     authenticationFilterVetoSkipsLookupWithoutClosing();
+    authenticationFilterVetoAllowsALaterAcceptedAttempt();
     lookupRejectionSendsStatusAndCloses();
     invalidProofSendsFailureAndNeverAttaches();
     successfulAuthenticationInitializesCryptBeforeAttach();
+    attachFailureSendsEncryptedSystemErrorWithoutPublishingASession();
     authenticatedPacketsStayOpaqueToTheConnection();
     coalescedAuthenticationActivatesCryptBeforeTheNextFrame();
+    fragmentedEncryptedHeadersKeepCipherStateSynchronized();
+    invalidPostAuthenticationOpcodeClosesInsteadOfDropping();
     authenticationAddonTailReconstructsAtPositionZero();
     repeatedAuthenticationClosesWithoutSecondLookup();
     closeDetachesOnceAndLateSendsAreIgnored();

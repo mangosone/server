@@ -161,7 +161,10 @@ bool ClientConnection::HandleAuthSession(WorldPacket& packet)
     std::shared_ptr<IClientLink> const link = self;
     SessionId const session = m_gateway.Attach(request, link, lookup.context);
     if (session == INVALID_SESSION_ID)
+    {
+        SendAuthResponse(AuthStatus::SystemError);
         return false;
+    }
 
     m_session = session;
     return true;

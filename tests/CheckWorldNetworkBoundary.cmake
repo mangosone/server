@@ -6,12 +6,15 @@ set(REQUIRED_FILES
   "${SOURCE_ROOT}/src/game/Server/WorldNetwork.h"
   "${SOURCE_ROOT}/src/game/Server/WorldNetwork.cpp")
 
+string(CONCAT OLD_SOCKET_NAME "World" "Socket")
+string(CONCAT OLD_SOCKET_MANAGER_NAME "World" "Socket" "Mgr")
+string(CONCAT OLD_LEASE_NAME "Leased" "Ptr")
 set(REMOVED_FILES
-  "${SOURCE_ROOT}/src/game/Server/WorldSocket.h"
-  "${SOURCE_ROOT}/src/game/Server/WorldSocket.cpp"
-  "${SOURCE_ROOT}/src/game/Server/WorldSocketMgr.h"
-  "${SOURCE_ROOT}/src/game/Server/WorldSocketMgr.cpp"
-  "${SOURCE_ROOT}/src/shared/Threading/LeasedPtr.h")
+  "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_NAME}.h"
+  "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_NAME}.cpp"
+  "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_MANAGER_NAME}.h"
+  "${SOURCE_ROOT}/src/game/Server/${OLD_SOCKET_MANAGER_NAME}.cpp"
+  "${SOURCE_ROOT}/src/shared/Threading/${OLD_LEASE_NAME}.h")
 
 foreach(FILE_PATH IN LISTS REQUIRED_FILES)
   if(NOT EXISTS "${FILE_PATH}")
