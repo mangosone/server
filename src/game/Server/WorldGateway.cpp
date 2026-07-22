@@ -184,6 +184,12 @@ proto::SessionId WorldGateway::Attach(const proto::AuthRequest& request,
     if (wardenActive)
         session->InitWarden(uint16(request.build), &account->sessionKey, account->os);
 
+    WorldPacket addonResponse;
+    if (sAddOnHandler.BuildAddonPacket(&addonSource, &addonResponse))
+        link->SendPacket(addonResponse);
+    if (link->IsClosed())
+        return proto::INVALID_SESSION_ID;
+
     proto::SessionId sessionId;
     {
         std::lock_guard<std::mutex> guard(m_lock);
@@ -197,10 +203,17 @@ proto::SessionId WorldGateway::Attach(const proto::AuthRequest& request,
         m_routes.emplace(sessionId, mailbox);
     }
 
-    sWorld.AddSession(session.release());
-    WorldPacket addonResponse;
-    if (sAddOnHandler.BuildAddonPacket(&addonSource, &addonResponse))
-        link->SendPacket(addonResponse);
+    WorldSession* const publishedSession = session.release();
+    try
+    {
+        sWorld.AddSession(publishedSession);
+    }
+    catch (...)
+    {
+        session.reset(publishedSession);
+        Detach(sessionId);
+        throw;
+    }
     return sessionId;
 }
 

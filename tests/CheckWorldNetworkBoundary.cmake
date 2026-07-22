@@ -27,3 +27,15 @@ foreach(FILE_PATH IN LISTS REMOVED_FILES)
     message(FATAL_ERROR "Obsolete coupled file still exists: ${FILE_PATH}")
   endif()
 endforeach()
+
+file(READ "${SOURCE_ROOT}/src/game/Server/WorldGateway.cpp" WORLD_GATEWAY_SOURCE)
+foreach(REQUIRED_TRANSACTION_STEP IN ITEMS
+    "WorldSession* const publishedSession = session.release()"
+    "session.reset(publishedSession)"
+    "Detach(sessionId)")
+  string(FIND "${WORLD_GATEWAY_SOURCE}" "${REQUIRED_TRANSACTION_STEP}" STEP_POSITION)
+  if(STEP_POSITION EQUAL -1)
+    message(FATAL_ERROR
+      "WorldGateway session publication is missing rollback step: ${REQUIRED_TRANSACTION_STEP}")
+  endif()
+endforeach()

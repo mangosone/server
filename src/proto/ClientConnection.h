@@ -43,6 +43,7 @@ private:
     PacketCodec m_codec;
     AuthCrypt m_crypt;
     std::mutex m_cryptSendLock;
+    std::mutex m_sessionLock;
     uint32 m_seed;
     SessionId m_session = INVALID_SESSION_ID;
     bool m_authStarted = false;

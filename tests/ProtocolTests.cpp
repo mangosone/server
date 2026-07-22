@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <stdexcept>
@@ -87,6 +88,8 @@ public:
     std::shared_ptr<proto::IClientLink> retainedLink;
     bool sendDuringAttach = false;
     bool throwOnLookup = false;
+    bool throwOnTrace = false;
+    std::function<void()> duringAttach;
 
     bool FilterAuthPacket(WorldPacket&) override
     {
@@ -96,6 +99,8 @@ public:
 
     void TracePacket(const WorldPacket& packet, bool incoming) override
     {
+        if (throwOnTrace)
+            throw std::runtime_error("simulated trace failure");
         traced.emplace_back(packet.GetOpcode(), incoming);
     }
 
@@ -112,6 +117,8 @@ public:
         const std::shared_ptr<proto::AuthContext>&) override
     {
         ++attachCalls;
+        if (duringAttach)
+            duringAttach();
         attachedRequest = request;
         retainedLink = link;
         if (sendDuringAttach)
@@ -475,6 +482,76 @@ void gatewayExceptionsCloseWithoutEscapingTheTransportBoundary()
     CHECK(harness.closeCalls == 1);
 }
 
+void traceExceptionsCloseWithoutEscapingTheTransportBoundary()
+{
+    ConnectionHarness connectHarness;
+    connectHarness.gateway.throwOnTrace = true;
+    bool connectEscaped = false;
+    try
+    {
+        connectHarness.connection->onConnect();
+    }
+    catch (std::runtime_error const&)
+    {
+        connectEscaped = true;
+    }
+    CHECK(!connectEscaped);
+    CHECK(connectHarness.connection->closed());
+    CHECK(connectHarness.closeCalls == 1);
+
+    ConnectionHarness dataHarness;
+    dataHarness.connection->onConnect();
+    dataHarness.gateway.throwOnTrace = true;
+    std::vector<uint8> const frame = ClientFrame(CMSG_KEEP_ALIVE, {});
+    bool dataEscaped = false;
+    try
+    {
+        dataHarness.connection->onData(frame.data(), frame.size());
+    }
+    catch (std::runtime_error const&)
+    {
+        dataEscaped = true;
+    }
+    CHECK(!dataEscaped);
+    CHECK(dataHarness.connection->closed());
+    CHECK(dataHarness.closeCalls == 1);
+
+    ConnectionHarness sendHarness;
+    sendHarness.connection->onConnect();
+    sendHarness.gateway.throwOnTrace = true;
+    WorldPacket packet(SMSG_PONG, 0);
+    bool sendEscaped = false;
+    try
+    {
+        sendHarness.connection->SendPacket(packet);
+    }
+    catch (std::runtime_error const&)
+    {
+        sendEscaped = true;
+    }
+    CHECK(!sendEscaped);
+    CHECK(sendHarness.connection->closed());
+    CHECK(sendHarness.closeCalls == 1);
+}
+
+void closeDuringAttachDetachesThePublishedSession()
+{
+    ConnectionHarness harness;
+    BigNumber sessionKey = SuccessfulLookup(harness.gateway);
+    uint32 const clientSeed = 0x1234ABCD;
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+    std::array<uint8, 20> const proof = MakeProof("ACCOUNT", clientSeed,
+        ServerSeed(challenge), sessionKey);
+    std::vector<uint8> const auth = AuthFrame(clientSeed, proof);
+    harness.gateway.duringAttach = [&harness]() { harness.connection->onClose(); };
+
+    harness.connection->onData(auth.data(), auth.size());
+
+    CHECK(harness.gateway.attachCalls == 1);
+    CHECK(harness.gateway.detachCalls == 1);
+    CHECK(harness.connection->closed());
+}
+
 void invalidProofSendsFailureAndNeverAttaches()
 {
     ConnectionHarness harness;
@@ -702,6 +779,8 @@ int main()
     authenticationFilterVetoAllowsALaterAcceptedAttempt();
     lookupRejectionSendsStatusAndCloses();
     gatewayExceptionsCloseWithoutEscapingTheTransportBoundary();
+    traceExceptionsCloseWithoutEscapingTheTransportBoundary();
+    closeDuringAttachDetachesThePublishedSession();
     invalidProofSendsFailureAndNeverAttaches();
     successfulAuthenticationInitializesCryptBeforeAttach();
     attachFailureSendsEncryptedSystemErrorWithoutPublishingASession();

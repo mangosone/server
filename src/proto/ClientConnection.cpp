@@ -5,7 +5,6 @@
 #include "Utilities/Util.h"
 
 #include <cstring>
-#include <exception>
 #include <memory>
 
 namespace proto
@@ -20,54 +19,58 @@ std::vector<uint8_t> ClientConnection::onConnect()
     if (m_closed.load())
         return {};
 
-    WorldPacket challenge(SMSG_AUTH_CHALLENGE, 4);
-    challenge << m_seed;
-    m_gateway.TracePacket(challenge, false);
-    return EncodePacket(challenge);
+    try
+    {
+        WorldPacket challenge(SMSG_AUTH_CHALLENGE, 4);
+        challenge << m_seed;
+        m_gateway.TracePacket(challenge, false);
+        return EncodePacket(challenge);
+    }
+    catch (...)
+    {
+        Close();
+        return {};
+    }
 }
 
 std::vector<uint8_t> ClientConnection::onData(const uint8_t* data, std::size_t len)
 {
     if (m_closed.load())
         return {};
-    if (!data && len != 0)
+    try
     {
-        Close();
-        return {};
-    }
-
-    std::size_t offset = 0;
-    std::vector<WorldPacket> packets;
-    while (offset < len && !m_closed.load())
-    {
-        packets.clear();
-        std::size_t consumed = 0;
-        DecodeStatus const status = m_codec.FeedOne(data + offset, len - offset, consumed, packets);
-        offset += consumed;
-
-        if (status == DecodeStatus::Malformed)
+        if (!data && len != 0)
         {
             Close();
-            break;
+            return {};
         }
-        if (status == DecodeStatus::NeedMore)
-            break;
 
-        WorldPacket& packet = packets.front();
-        m_gateway.TracePacket(packet, true);
-        try
+        std::size_t offset = 0;
+        std::vector<WorldPacket> packets;
+        while (offset < len && !m_closed.load())
         {
+            packets.clear();
+            std::size_t consumed = 0;
+            DecodeStatus const status = m_codec.FeedOne(data + offset, len - offset, consumed, packets);
+            offset += consumed;
+
+            if (status == DecodeStatus::Malformed)
+            {
+                Close();
+                break;
+            }
+            if (status == DecodeStatus::NeedMore)
+                break;
+
+            WorldPacket& packet = packets.front();
+            m_gateway.TracePacket(packet, true);
             if (!HandlePacket(packet))
                 Close();
         }
-        catch (ByteBufferException const&)
-        {
-            Close();
-        }
-        catch (std::exception const&)
-        {
-            Close();
-        }
+    }
+    catch (...)
+    {
+        Close();
     }
 
     return {};
@@ -76,32 +79,55 @@ std::vector<uint8_t> ClientConnection::onData(const uint8_t* data, std::size_t l
 void ClientConnection::onClose()
 {
     m_closed.store(true);
-    if (m_session != INVALID_SESSION_ID)
+    SessionId session = INVALID_SESSION_ID;
     {
-        SessionId const session = m_session;
+        std::lock_guard<std::mutex> guard(m_sessionLock);
+        session = m_session;
         m_session = INVALID_SESSION_ID;
-        m_gateway.Detach(session);
+    }
+    if (session != INVALID_SESSION_ID)
+    {
+        try
+        {
+            m_gateway.Detach(session);
+        }
+        catch (...)
+        {
+        }
     }
 }
 
 void ClientConnection::SendPacket(const WorldPacket& packet)
 {
-    std::lock_guard<std::mutex> guard(m_cryptSendLock);
-    if (m_closed.load() || !m_sender)
-        return;
+    try
+    {
+        std::lock_guard<std::mutex> guard(m_cryptSendLock);
+        if (m_closed.load() || !m_sender)
+            return;
 
-    m_gateway.TracePacket(packet, false);
-    std::vector<uint8> const frame = PacketCodec::Encode(packet,
-        [this](uint8* header, std::size_t len) { m_crypt.EncryptSend(header, len); });
-    m_sender(frame.data(), frame.size());
+        m_gateway.TracePacket(packet, false);
+        std::vector<uint8> const frame = PacketCodec::Encode(packet,
+            [this](uint8* header, std::size_t len) { m_crypt.EncryptSend(header, len); });
+        m_sender(frame.data(), frame.size());
+    }
+    catch (...)
+    {
+        Close();
+    }
 }
 
 void ClientConnection::Close()
 {
     if (m_closed.exchange(true))
         return;
-    if (m_closer)
-        m_closer();
+    try
+    {
+        if (m_closer)
+            m_closer();
+    }
+    catch (...)
+    {
+    }
 }
 
 bool ClientConnection::HandlePacket(WorldPacket& packet)
@@ -171,7 +197,18 @@ bool ClientConnection::HandleAuthSession(WorldPacket& packet)
         return false;
     }
 
-    m_session = session;
+    bool closedDuringAttach = false;
+    {
+        std::lock_guard<std::mutex> guard(m_sessionLock);
+        closedDuringAttach = m_closed.load();
+        if (!closedDuringAttach)
+            m_session = session;
+    }
+    if (closedDuringAttach)
+    {
+        m_gateway.Detach(session);
+        return false;
+    }
     return true;
 }
 
