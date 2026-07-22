@@ -299,7 +299,7 @@ World::AddSession_(WorldSession* s)
 {
     MANGOS_ASSERT(s);
 
-    // NOTE - Still there is race condition in WorldSession* being used in the Sockets
+    // New sessions arrive through a locked queue and become world-thread-owned here.
 
     ///- kick already loaded player with same account (if any) and remove session
     ///- if player is in loading and want to load again, return

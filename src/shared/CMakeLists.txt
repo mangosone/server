@@ -112,7 +112,6 @@ set(SRC_GRP_LOG
 source_group("Log" FILES ${SRC_GRP_LOG})
 
 set(SRC_GRP_THREAD
-  Threading/LeasedPtr.h
   Threading/ThreadLocalStore.h
   Threading/Threading.cpp
   Threading/Threading.h

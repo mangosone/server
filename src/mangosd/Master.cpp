@@ -39,7 +39,7 @@
 #include "Timer.h"
 #include "Util.h"
 #include "World.h"
-#include "WorldSocketMgr.h"
+#include "WorldNetwork.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapThread.h"
@@ -283,7 +283,7 @@ void Master::WorldLoop()
     sLog.outString("[shutdown] final UpdateSessions done");
 
     sLog.outString("[shutdown] StopNetwork: closing listener + joining network threads...");
-    sWorldSocketMgr.StopNetwork();
+    sWorldNetwork.Stop();
     sLog.outString("[shutdown] StopNetwork done");
 
     sLog.outString("[shutdown] UnloadAll: unloading maps + MapUpdater teardown...");
@@ -689,7 +689,7 @@ int Master::Run()
     const std::string bindIp = sConfig.GetStringDefault("BindIP", "0.0.0.0");
     const uint16 worldPort = uint16(sWorld.getConfig(CONFIG_UINT32_PORT_WORLD));
 
-    if (sWorldSocketMgr.StartNetwork(worldPort, bindIp) == -1)
+    if (!sWorldNetwork.Start(worldPort, bindIp))
     {
         sLog.outError("Failed to start network");
         World::StopNow(ERROR_EXIT_CODE);

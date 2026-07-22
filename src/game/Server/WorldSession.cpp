@@ -41,15 +41,16 @@
  * - World::UpdateSessions() context: Process all packets
  *
  * @see WorldSession for the session class
- * @see WorldSocket for the network socket
- * @see Opcodes.cpp for opcode registration
+ * @see SessionMailbox for incoming protocol delivery
+ * @see OpcodeTable.cpp for opcode registration
  */
 
-#include "WorldSocket.h"
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
+#include "IClientLink.h"
 #include "Log.h"
 #include "OpcodeTable.h"
+#include "SessionMailbox.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Player.h"
@@ -152,28 +153,29 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
+WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                           std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                           uint8 expansion, time_t mute_time, LocaleConstant locale) :
     LookingForGroup_auto_join(false), LookingForGroup_auto_add(false), m_muteTime(mute_time),
-    _player(NULL), m_OwningSocket(sock), m_Socket(std::move(sock)), _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
+    _player(NULL), m_link(std::move(link)),
+    m_mailbox(mailbox ? std::move(mailbox) : std::make_shared<SessionMailbox>()),
+    _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0), m_npcWatchLastGuid(),
     m_lastPingTime(0), m_overSpeedPings(0)
 {
-    if (m_Socket)
-    {
-        m_Address = m_Socket->GetRemoteAddress();
-
-    }
+    if (m_link)
+        m_Address = m_link->GetRemoteAddress();
 }
 
 /// WorldSession destructor
 WorldSession::~WorldSession()
 {
-    if (std::shared_ptr<WorldSocket> socket = m_OwningSocket.lock())
-    {
-        socket->DetachSessionAndWait();
-    }
+    m_mailbox->Close();
+    WorldPacket* packet = NULL;
+    while (m_mailbox->Next(packet))
+        delete packet;
 
     ///- unload player if not unloaded
     if (_player)
@@ -181,11 +183,11 @@ WorldSession::~WorldSession()
         LogoutPlayer(true);
     }
 
-    /// - If have unclosed socket, close it
-    if (m_Socket)
+    /// - If the client link remains live, close it
+    if (m_link)
     {
-        m_Socket->CloseSocket();
-        m_Socket.reset();
+        m_link->Close();
+        m_link.reset();
     }
 
     // Warden
@@ -194,12 +196,6 @@ WorldSession::~WorldSession()
         delete _warden;
     }
 
-    ///- empty incoming packet queue
-    WorldPacket* packet = NULL;
-    while (_recvQueue.next(packet))
-    {
-        delete packet;
-    }
 }
 
 /**
@@ -237,7 +233,7 @@ void WorldSession::SendPacket(WorldPacket const* packet)
     }
 #endif
 
-    if (!m_Socket)
+    if (!m_link)
     {
         return;
     }
@@ -284,16 +280,13 @@ void WorldSession::SendPacket(WorldPacket const* packet)
 
 #endif                                                  // !MANGOS_DEBUG
 
-    if (m_Socket->SendPacket(*packet) == -1)
-    {
-        m_Socket->CloseSocket();
-    }
+    m_link->SendPacket(*packet);
 }
 
 /// Add an incoming packet to the queue
 void WorldSession::QueuePacket(WorldPacket* new_packet)
 {
-    _recvQueue.add(new_packet);
+    m_mailbox->Enqueue(std::unique_ptr<WorldPacket>(new_packet));
 }
 
 /// Logging helper for unexpected opcodes
@@ -318,9 +311,9 @@ void WorldSession::LogUnprocessedTail(WorldPacket* packet)
 bool WorldSession::Update(PacketFilter& updater)
 {
     ///- Retrieve packets from the receive queue and call the appropriate handlers
-    /// not process packets if socket already closed
+    /// not process packets if the client link already closed
     WorldPacket* packet = NULL;
-    while (m_Socket && !m_Socket->IsClosed() && _recvQueue.next(packet, updater))
+    while (m_link && !m_link->IsClosed() && m_mailbox->Next(packet, updater))
     {
         /*#if 1
         sLog.outError( "MOEP: %s (0x%.4X)",
@@ -447,14 +440,14 @@ bool WorldSession::Update(PacketFilter& updater)
     }
 #endif
 
-    ///- Cleanup socket pointer if need
-    if (m_Socket && m_Socket->IsClosed())
+    ///- Cleanup client link if needed
+    if (m_link && m_link->IsClosed())
     {
-        m_Socket.reset();
+        m_link.reset();
     }
 
     // Warden
-    if (m_Socket && !m_Socket->IsClosed() && _warden)
+    if (m_link && !m_link->IsClosed() && _warden)
     {
         _warden->Update();
     }
@@ -465,18 +458,18 @@ bool WorldSession::Update(PacketFilter& updater)
     {
         ///- If necessary, log the player out
         time_t currTime = time(NULL);
-        if (!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading))
+        if (!m_link || (ShouldLogOut(currTime) && !m_playerLoading))
         {
             LogoutPlayer(true);
         }
 
         // Warden
-        if (m_Socket && GetPlayer() && _warden)
+        if (m_link && GetPlayer() && _warden)
         {
             _warden->Update();
         }
 
-        if (!m_Socket)
+        if (!m_link)
         {
             return false;                                    // Will remove this session from the world session map
         }
@@ -493,7 +486,7 @@ bool WorldSession::Update(PacketFilter& updater)
 void WorldSession::HandleBotPackets()
 {
     WorldPacket* packet;
-    while (_recvQueue.next(packet))
+    while (m_mailbox->Next(packet))
     {
         OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
         (this->*opHandle.handler)(*packet);
@@ -687,7 +680,7 @@ void WorldSession::LogoutPlayer(bool Save)
 
         // remove player from the group if he is:
         // a) in group; b) not in raid group; c) logging out normally (not being kicked or disconnected)
-        if (_player->GetGroup() && !_player->GetGroup()->isRaidGroup() && m_Socket)
+        if (_player->GetGroup() && !_player->GetGroup()->isRaidGroup() && m_link)
         {
             _player->RemoveFromGroup();
         }
@@ -759,17 +752,16 @@ void WorldSession::LogoutPlayer(bool Save)
 /// Kick a player out of the World
 void WorldSession::KickPlayer()
 {
-    if (m_Socket)
+    if (m_link)
     {
-        m_Socket->CloseSocket();
+        m_link->Close();
     }
 }
 
 /**
  * @brief Handles a client ping and replies with a pong.
  *
- * Formerly handled in-place on the network thread by WorldSocket; now runs
- * here, on the world/map thread, like every other opcode.
+ * Runs here, on the world/map thread, like every other opcode.
  */
 void WorldSession::HandlePingOpcode(WorldPacket& recv_data)
 {
@@ -820,8 +812,7 @@ void WorldSession::HandlePingOpcode(WorldPacket& recv_data)
 /**
  * @brief Handles a client keep-alive.
  *
- * Formerly handled in-place on the network thread by WorldSocket; now runs
- * here, on the world/map thread. ExecuteOpcode() invokes the Eluna packet hook
+ * Runs here, on the world/map thread. ExecuteOpcode() invokes the Eluna packet hook
  * before dispatch, so this handler must not invoke it a second time.
  */
 void WorldSession::HandleKeepAliveOpcode(WorldPacket& recv_data)
@@ -923,7 +914,7 @@ void WorldSession::Handle_NULL(WorldPacket& recvPacket)
  */
 void WorldSession::Handle_EarlyProccess(WorldPacket& recvPacket)
 {
-    sLog.outError("SESSION: received opcode %s (0x%.4X) that must be processed in WorldSocket::OnRead",
+    sLog.outError("SESSION: received opcode %s (0x%.4X) that must be processed by the protocol layer",
                   LookupOpcodeName(recvPacket.GetOpcode()),
                   recvPacket.GetOpcode());
 }

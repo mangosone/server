@@ -126,7 +126,7 @@ bool ReactorServer::start(uint16_t port, SessionFactory factory,
 
     m_acceptThread = std::thread([this] { acceptLoop(); });
 
-    sLog.outString("WorldSocket: listening on %s:%u with %u worker threads (%s)",
+    sLog.outString("World network: listening on %s:%u with %u worker threads (%s)",
                    (bindIp.empty() ? "0.0.0.0" : bindIp.c_str()), (unsigned)port,
                    (unsigned)nWorkers, m_acceptPoller->name());
     return true;

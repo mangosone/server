@@ -55,7 +55,7 @@ class Player;
 class Unit;
 class Warden;
 class WorldPacket;
-class WorldSocket;
+class SessionMailbox;
 class QueryResult;
 class LoginQueryHolder;
 class CharacterHandler;
@@ -64,6 +64,11 @@ class MovementInfo;
 class WorldSession;
 
 struct OpcodeHandler;
+
+namespace proto
+{
+class IClientLink;
+}
 
 /**
  * @brief Party operation enumeration
@@ -249,12 +254,15 @@ class WorldSession
         /**
          * @brief Constructor
          * @param id Session ID
-         * @param sock World socket
+         * @param link Client protocol link
+         * @param mailbox Incoming packet mailbox
          * @param sec Account security level
          * @param mute_time Mute time
          * @param locale Locale
          */
-        WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                     std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                     uint8 expansion, time_t mute_time, LocaleConstant locale);
 
         /**
          * @brief Destructor
@@ -501,7 +509,7 @@ class WorldSession
 
         // opcodes handlers
         void Handle_NULL(WorldPacket& recvPacket);          // not used
-        void Handle_EarlyProccess(WorldPacket& recvPacket); // just mark packets processed in WorldSocket::OnRead
+        void Handle_EarlyProccess(WorldPacket& recvPacket); // marks packets handled by the protocol layer
         void Handle_ServerSide(WorldPacket& recvPacket);    // sever side only, can't be accepted from client
         void Handle_Deprecated(WorldPacket& recvPacket);    // never used anymore by client
 
@@ -958,10 +966,10 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
-        std::weak_ptr<WorldSocket> m_OwningSocket;
-        /// Shared with the transport: the socket may outlive its connection, which is
-        /// what lets a tick in progress finish safely (its sends simply become no-ops).
-        std::shared_ptr<WorldSocket> m_Socket;
+        /// Thread-safe protocol link retained while the client is connected.
+        std::shared_ptr<proto::IClientLink> m_link;
+        /// Shared queue used by the network gateway without exposing this session.
+        std::shared_ptr<SessionMailbox> m_mailbox;
         std::string m_Address;
 
         AccountTypes _security;
@@ -986,12 +994,11 @@ class WorldSession
         int32 m_clientTimeDelay;
         ObjectGuid m_npcWatchLastGuid;
 
-        // Ping flood tracking, formerly on WorldSocket (network thread); now
+        // Ping flood tracking now lives exclusively on the world thread and is
         // only ever touched from HandlePingOpcode() on the world/map thread.
         time_t m_lastPingTime;
         uint32 m_overSpeedPings;
 
-        MaNGOS::LockedQueue<WorldPacket*> _recvQueue;
 };
 #endif
 /// @}

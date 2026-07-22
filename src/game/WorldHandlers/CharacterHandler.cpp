@@ -223,7 +223,7 @@ class CharacterHandler
             // The bot's WorldSession is owned by the bot's Player object
             // The bot's WorldSession is deleted by PlayerbotMgr::LogoutPlayerBot
             uint32 botAccountId = lqh->GetAccountId();
-            WorldSession *botSession = new WorldSession(botAccountId, NULL, SEC_PLAYER, 1,0, LOCALE_enUS);
+            WorldSession *botSession = new WorldSession(botAccountId, nullptr, nullptr, SEC_PLAYER, 1, 0, LOCALE_enUS);
             botSession->m_Address = "bot";
             botSession->HandlePlayerLogin(lqh); // will delete lqh
             Player* bot = botSession->GetPlayer();
@@ -1214,6 +1214,5 @@ void WorldSession::HandleShowingCloakOpcode(WorldPacket & /*recv_data*/)
     DEBUG_LOG("CMSG_SHOWING_CLOAK for %s", _player->GetName());
     _player->ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
 }
-
 
 

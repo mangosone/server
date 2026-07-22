@@ -139,7 +139,7 @@ bool IocpServer::start(uint16_t port, SessionFactory factory,
     if (!m_wsaStarted) {
         WSADATA wsa{};
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-            sLog.outError("WorldSocket: WSAStartup failed");
+            sLog.outError("World network: WSAStartup failed");
             return false;
         }
         m_wsaStarted = true;
@@ -197,7 +197,7 @@ bool IocpServer::start(uint16_t port, SessionFactory factory,
     for (int i = 0; i < PENDING_ACCEPTS; ++i)
         postAccept();
 
-    sLog.outString("WorldSocket: listening on %s:%u with %u worker threads (IOCP)",
+    sLog.outString("World network: listening on %s:%u with %u worker threads (IOCP)",
                    (bindIp.empty() ? "0.0.0.0" : bindIp.c_str()), (unsigned)port, (unsigned)nThreads);
     return true;
 }

@@ -20,16 +20,27 @@ target_link_libraries(network_regression_tests PRIVATE shared Threads::Threads)
 add_test(NAME network_regression_tests COMMAND network_regression_tests)
 set_tests_properties(network_regression_tests PROPERTIES TIMEOUT 60)
 
-add_executable(lease_tests LeaseTests.cpp)
-target_include_directories(lease_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/shared")
-target_link_libraries(lease_tests PRIVATE Threads::Threads)
-add_test(NAME lease_tests COMMAND lease_tests)
-
 add_test(NAME proto_boundary
   COMMAND ${CMAKE_COMMAND}
     -DPROTO_DIR=${PROJECT_SOURCE_DIR}/src/proto
     -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckProtoBoundary.cmake)
 
+add_test(NAME world_network_boundary
+  COMMAND ${CMAKE_COMMAND}
+    -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckWorldNetworkBoundary.cmake)
+
 add_executable(protocol_tests ProtocolTests.cpp)
 target_link_libraries(protocol_tests PRIVATE proto shared Threads::Threads mangos_openssl_strict)
 add_test(NAME protocol_tests COMMAND protocol_tests)
+
+add_executable(database_concurrency_tests DatabaseConcurrencyTests.cpp)
+target_link_libraries(database_concurrency_tests PRIVATE shared Threads::Threads)
+add_test(NAME database_concurrency_tests COMMAND database_concurrency_tests)
+
+add_executable(session_mailbox_tests
+  SessionMailboxTests.cpp
+  ${PROJECT_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp)
+target_include_directories(session_mailbox_tests PRIVATE ${PROJECT_SOURCE_DIR}/src/game/Server)
+target_link_libraries(session_mailbox_tests PRIVATE shared Threads::Threads)
+add_test(NAME session_mailbox_tests COMMAND session_mailbox_tests)

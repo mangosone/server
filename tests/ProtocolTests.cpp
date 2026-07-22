@@ -512,6 +512,37 @@ void coalescedAuthenticationActivatesCryptBeforeTheNextFrame()
     CHECK(!harness.connection->closed());
 }
 
+void authenticationAddonTailReconstructsAtPositionZero()
+{
+    std::array<uint8, 20> digest{};
+    for (std::size_t i = 0; i < digest.size(); ++i)
+        digest[i] = uint8(i);
+
+    WorldPacket original(CMSG_AUTH_SESSION, 64);
+    original << uint32(8606) << uint32(7) << std::string("ACCOUNT") << uint32(9);
+    original.append(digest.data(), digest.size());
+    uint8 const addon[] = {0x04, 0x00, 0x00, 0x00, 0x78, 0x9C};
+    original.append(addon, sizeof(addon));
+
+    uint32 build;
+    uint32 unknown;
+    uint32 clientSeed;
+    std::string account;
+    std::array<uint8, 20> parsedDigest{};
+    original >> build >> unknown >> account >> clientSeed;
+    original.read(parsedDigest.data(), parsedDigest.size());
+    std::vector<uint8> const tail(original.contents() + original.rpos(),
+        original.contents() + original.size());
+
+    WorldPacket reconstructed(CMSG_AUTH_SESSION, tail.size());
+    reconstructed.append(tail.data(), tail.size());
+
+    CHECK(reconstructed.rpos() == 0);
+    CHECK(reconstructed.size() == sizeof(addon));
+    CHECK(std::equal(reconstructed.contents(),
+        reconstructed.contents() + reconstructed.size(), addon));
+}
+
 void repeatedAuthenticationClosesWithoutSecondLookup()
 {
     ConnectionHarness harness;
@@ -562,6 +593,7 @@ int main()
     successfulAuthenticationInitializesCryptBeforeAttach();
     authenticatedPacketsStayOpaqueToTheConnection();
     coalescedAuthenticationActivatesCryptBeforeTheNextFrame();
+    authenticationAddonTailReconstructsAtPositionZero();
     repeatedAuthenticationClosesWithoutSecondLookup();
     closeDetachesOnceAndLateSendsAreIgnored();
     return mangos::test::failures == 0 ? 0 : 1;
