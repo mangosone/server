@@ -24,3 +24,8 @@ add_executable(lease_tests LeaseTests.cpp)
 target_include_directories(lease_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/shared")
 target_link_libraries(lease_tests PRIVATE Threads::Threads)
 add_test(NAME lease_tests COMMAND lease_tests)
+
+add_test(NAME proto_boundary
+  COMMAND ${CMAKE_COMMAND}
+    -DPROTO_DIR=${PROJECT_SOURCE_DIR}/src/proto
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckProtoBoundary.cmake)

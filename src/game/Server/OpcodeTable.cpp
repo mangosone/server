@@ -23,7 +23,7 @@
  */
 
 /**
- * @file Opcodes.cpp
+ * @file OpcodeTable.cpp
  * @brief Network opcode handler registration
  *
  * This file registers all network packet handlers for the world server.
@@ -39,12 +39,11 @@
  * - STATUS_LOGGEDIN: Require player to be logged in
  * - STATUS_UNHANDLED: No handler assigned
  *
- * @see Opcodes.h for opcode definitions
+ * @see OpcodeTable.h for handler metadata
  * @see WorldSession for packet handler implementations
  */
 
-#include "Opcodes.h"
-#include "WorldSession.h"
+#include "OpcodeTable.h"
 
 /**
  * @brief Define opcode handler

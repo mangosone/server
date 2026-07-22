@@ -53,7 +53,7 @@
 #include "SharedDefines.h"
 #include "ByteBuffer.h"
 #include "AddonHandler.h"
-#include "Opcodes.h"
+#include "OpcodeTable.h"
 #include "Database/DatabaseEnv.h"
 #include "Auth/BigNumber.h"
 #include "Auth/Sha1.h"
@@ -216,7 +216,7 @@ int WorldSocket::SendPacket(const WorldPacket& pct)
 
     if (sLog.IsPacketLoggingEnabled())
     {
-        sLog.outWorldPacketDump(0, pct.GetOpcode(), pct.GetOpcodeName(), &pct, false);
+        sLog.outWorldPacketDump(0, pct.GetOpcode(), LookupOpcodeName(pct.GetOpcode()), &pct, false);
     }
 
     const std::vector<uint8_t> frame = EncodePacket(pct);
@@ -364,7 +364,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     // Dump received packet (opt-in via PacketLoggingEnabled; off by default).
     if (sLog.IsPacketLoggingEnabled())
     {
-        sLog.outWorldPacketDump(0, new_pct->GetOpcode(), new_pct->GetOpcodeName(), new_pct, true);
+        sLog.outWorldPacketDump(0, new_pct->GetOpcode(), LookupOpcodeName(new_pct->GetOpcode()), new_pct, true);
     }
 
     try
