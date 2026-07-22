@@ -29,3 +29,7 @@ add_test(NAME proto_boundary
   COMMAND ${CMAKE_COMMAND}
     -DPROTO_DIR=${PROJECT_SOURCE_DIR}/src/proto
     -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckProtoBoundary.cmake)
+
+add_executable(protocol_tests ProtocolTests.cpp)
+target_link_libraries(protocol_tests PRIVATE proto shared Threads::Threads mangos_openssl_strict)
+add_test(NAME protocol_tests COMMAND protocol_tests)
