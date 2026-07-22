@@ -958,6 +958,7 @@ class WorldSession
         void LogUnprocessedTail(WorldPacket* packet);
 
         Player* _player;
+        std::weak_ptr<WorldSocket> m_OwningSocket;
         /// Shared with the transport: the socket may outlive its connection, which is
         /// what lets a tick in progress finish safely (its sends simply become no-ops).
         std::shared_ptr<WorldSocket> m_Socket;

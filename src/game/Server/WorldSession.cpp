@@ -154,15 +154,15 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 /// WorldSession constructor
 WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
     LookingForGroup_auto_join(false), LookingForGroup_auto_add(false), m_muteTime(mute_time),
-    _player(NULL), m_Socket(std::move(sock)), _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
+    _player(NULL), m_OwningSocket(sock), m_Socket(std::move(sock)), _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0), m_npcWatchLastGuid(),
     m_lastPingTime(0), m_overSpeedPings(0)
 {
-    if (sock)
+    if (m_Socket)
     {
-        m_Address = sock->GetRemoteAddress();
+        m_Address = m_Socket->GetRemoteAddress();
 
     }
 }
@@ -170,6 +170,11 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, Account
 /// WorldSession destructor
 WorldSession::~WorldSession()
 {
+    if (std::shared_ptr<WorldSocket> socket = m_OwningSocket.lock())
+    {
+        socket->DetachSessionAndWait();
+    }
+
     ///- unload player if not unloaded
     if (_player)
     {
@@ -815,19 +820,13 @@ void WorldSession::HandlePingOpcode(WorldPacket& recv_data)
 /**
  * @brief Handles a client keep-alive.
  *
- * Formerly handled in-place on the network thread by WorldSocket (including
- * the Eluna hook below); now runs here, on the world/map thread.
+ * Formerly handled in-place on the network thread by WorldSocket; now runs
+ * here, on the world/map thread. ExecuteOpcode() invokes the Eluna packet hook
+ * before dispatch, so this handler must not invoke it a second time.
  */
 void WorldSession::HandleKeepAliveOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_KEEP_ALIVE ,size: %zu ", recv_data.size());
-
-#ifdef ENABLE_ELUNA
-    if (Eluna* e = sWorld.GetEluna())
-    {
-        e->OnPacketReceive(this, recv_data);
-    }
-#endif /* ENABLE_ELUNA */
 }
 
 /// Cancel channeling handler

@@ -56,6 +56,7 @@ option(BUILD_MANGOSD        "Build the main server"                         ON)
 option(BUILD_REALMD         "Build the login server"                        ON)
 option(BUILD_TOOLS          "Build the assets extractor (baker)"            ON)
 option(BUILD_TESTS          "Build collision-related utilities"             OFF)
+option(BUILD_REGRESSION_TESTS "Build focused regression tests"               OFF)
 option(USE_STORMLIB         "Use StormLib for reading MPQs"                 ON)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
 option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
@@ -147,6 +148,11 @@ endif()
 
 find_package(Threads REQUIRED)
 find_package(OpenSSL 3.0 REQUIRED)
+# OpenSSL 4.x support is intentionally deferred until the OpenSSL 4.2 LTS migration.
+if(OPENSSL_VERSION VERSION_GREATER_EQUAL "4.0.0")
+  message(FATAL_ERROR
+    "Unsupported OpenSSL ${OPENSSL_VERSION}: MaNGOS currently requires >=3.0.0 and <4.0.0")
+endif()
 find_package(MySQL REQUIRED)
 
 # =============================================================================
@@ -243,6 +249,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt")
   add_subdirectory(src)
 else()
   message(WARNING "Source directory 'src' not found. Nothing to build.")
+endif()
+
+if(BUILD_REGRESSION_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
 endif()
 
 # =============================================================================

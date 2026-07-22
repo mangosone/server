@@ -119,7 +119,6 @@ struct ClientPktHeader
  * - Random seed for encryption
  */
 WorldSocket::WorldSocket() :
-    m_Session(0),
     m_closed(false),
     m_headerPending(false),
     m_recvOpcode(0),
@@ -152,7 +151,7 @@ void WorldSocket::CloseSocket()
 
     // Detach the session first, so the network thread can never route a packet into a
     // session that is being torn down.
-    SetSession(NULL);
+    m_session.detach();
 
     if (m_closer)
     {
@@ -242,7 +241,7 @@ void WorldSocket::onClose()
 
     // Drop the session link so a world tick still holding this socket stops routing
     // through it. The WorldSession itself outlives us; it notices via IsClosed().
-    SetSession(NULL);
+    m_session.detach();
 }
 
 /**
@@ -276,7 +275,12 @@ std::vector<uint8_t> WorldSocket::onData(const uint8_t* data, size_t len)
             memcpy(&header, m_recvBuf.data() + pos, sizeof(header));
             pos += sizeof(header);
 
-            m_Crypt.DecryptRecv(reinterpret_cast<uint8*>(&header), sizeof(header));
+            {
+                // Init runs on the world thread after the async account lookup,
+                // while header parsing stays on the network thread.
+                std::lock_guard<std::mutex> guard(m_CryptRecvLock);
+                m_Crypt.DecryptRecv(reinterpret_cast<uint8*>(&header), sizeof(header));
+            }
 
             EndianConvertReverse(header.size);
             EndianConvert(header.cmd);
@@ -392,17 +396,12 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
             // in-place on the network thread.
             default:
             {
-                // Hold the session lock across QueuePacket so the session cannot be
-                // cleared (and later destroyed) while we hand the packet to it.
-                // QueuePacket only touches its own queue lock, so no lock order is at
-                // risk here.
-                std::lock_guard<std::mutex> Guard(m_SessionLock);
-
-                if (m_Session != NULL)
+                SessionLease session = GetSession();
+                if (session)
                 {
                     // OK ,give the packet to WorldSession
                     aptr.release();
-                    m_Session->QueuePacket(new_pct);
+                    session->QueuePacket(new_pct);
                     return 0;
                 }
                 else
@@ -415,7 +414,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     }
     catch (ByteBufferException&)
     {
-        WorldSession* session = GetSession();
+        SessionLease session = GetSession();
         sLog.outError("WorldSocket::ProcessIncoming ByteBufferException occured while parsing an instant handled packet (opcode: %u) from client %s, accountid=%i.",
                       opcode, GetRemoteAddress().c_str(), session ? session->GetAccountId() : -1);
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))
@@ -503,29 +502,33 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // Account lookup and ban check in a single round-trip: the account_banned
     // check needs the account id, which this same query produces, so it is
     // expressed as a correlated subquery instead of a second chained query.
-    LoginDatabase.AsyncPQuery([self](QueryResult* result)
-                              {
-                                  self->HandleAuthSessionCallback(result);
-                              },
-                              "SELECT "
-                              "`a`.`id`, "                  // 0
-                              "`a`.`gmlevel`, "              // 1
-                              "`a`.`sessionkey`, "           // 2
-                              "`a`.`last_ip`, "              // 3
-                              "`a`.`locked`, "               // 4
-                              "`a`.`v`, "                    // 5
-                              "`a`.`s`, "                    // 6
-                              "`a`.`expansion`, "            // 7
-                              "`a`.`mutetime`, "             // 8
-                              "`a`.`locale`, "               // 9
-                              "`a`.`os`, "                   // 10
-                              "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
-                              "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), " // 11
-                              "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) "
-                              "AND `ip` = '%s' LIMIT 1) "    // 12
-                              "FROM `account` AS `a` "
-                              "WHERE `a`.`username` = '%s'",
-                              GetRemoteAddress().c_str(), safe_account.c_str());
+    if (!LoginDatabase.AsyncPQuery([self](QueryResult* result)
+                                   {
+                                       self->HandleAuthSessionCallback(result);
+                                   },
+                                   "SELECT "
+                                   "`a`.`id`, "                  // 0
+                                   "`a`.`gmlevel`, "              // 1
+                                   "`a`.`sessionkey`, "           // 2
+                                   "`a`.`last_ip`, "              // 3
+                                   "`a`.`locked`, "               // 4
+                                   "`a`.`v`, "                    // 5
+                                   "`a`.`s`, "                    // 6
+                                   "`a`.`expansion`, "            // 7
+                                   "`a`.`mutetime`, "             // 8
+                                   "`a`.`locale`, "               // 9
+                                   "`a`.`os`, "                   // 10
+                                   "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
+                                   "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), " // 11
+                                   "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) "
+                                   "AND `ip` = '%s' LIMIT 1) "    // 12
+                                   "FROM `account` AS `a` "
+                                   "WHERE `a`.`username` = '%s'",
+                                   GetRemoteAddress().c_str(), safe_account.c_str()))
+    {
+        sLog.outError("WorldSocket::HandleAuthSession: Could not queue account lookup.");
+        return -1;
+    }
 
     return 0;
 }
@@ -544,8 +547,6 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 void WorldSocket::HandleAuthSessionCallback(QueryResult* result)
 {
     std::unique_ptr<QueryResult> resultGuard(result);
-
-    m_AuthPending = false;
 
     if (m_closed.load())
     {
@@ -695,11 +696,16 @@ void WorldSocket::HandleAuthSessionCallback(QueryResult* result)
     WorldSession* session = new WorldSession(id, std::static_pointer_cast<WorldSocket>(shared_from_this()),
                                             AccountTypes(security), expansion, mutetime, locale);
 
+    // Init touches both cipher directions and runs on the world thread, while
+    // packet encoding and header parsing can run on transport threads.
+    {
+        std::scoped_lock guard(m_CryptSendLock, m_CryptRecvLock);
+        m_Crypt.Init(&K);
+    }
+
     // Publish the session under the lock so the network thread routes incoming
     // packets to it consistently.
     SetSession(session);
-
-    m_Crypt.Init(&K);
 
     session->LoadTutorialsData();
 
@@ -720,27 +726,24 @@ void WorldSocket::HandleAuthSessionCallback(QueryResult* result)
 }
 
 /**
- * @brief Returns the current session pointer under m_SessionLock.
- *
- * The returned pointer is either a live session or NULL, never a dangling
- * pointer, because the session is always cleared under the same lock before it
- * is destroyed.
- *
- * @return WorldSession* The current session, or NULL if none/closed.
+ * @brief Acquires the current session for the lifetime of the returned lease.
  */
-WorldSession* WorldSocket::GetSession()
+WorldSocket::SessionLease WorldSocket::GetSession()
 {
-    std::lock_guard<std::mutex> Guard(m_SessionLock);
-    return m_Session;
+    return m_session.acquire();
 }
 
 /**
- * @brief Stores the session pointer under m_SessionLock.
+ * @brief Publishes the session pointer for future leases.
  *
  * @param session The session to associate with this socket, or NULL to clear.
  */
 void WorldSocket::SetSession(WorldSession* session)
 {
-    std::lock_guard<std::mutex> Guard(m_SessionLock);
-    m_Session = session;
+    m_session.publish(session);
+}
+
+void WorldSocket::DetachSessionAndWait()
+{
+    m_session.detachAndWait();
 }

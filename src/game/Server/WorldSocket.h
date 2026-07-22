@@ -34,6 +34,7 @@
 #include "Common.h"
 #include "Auth/AuthCrypt.h"
 #include "Auth/Sha1.h"
+#include "Threading/LeasedPtr.h"
 #include "WorldPacket.h"
 
 #include "net/ISession.hpp"
@@ -111,6 +112,9 @@ class WorldSocket : public net::ISession
 
     private:
 
+        friend class WorldSession;
+        using SessionLease = LeasedPtr<WorldSession>::Lease;
+
         /// Serialise one packet into an encrypted-header frame ready for the wire.
         std::vector<uint8_t> EncodePacket(const WorldPacket& pct);
 
@@ -127,10 +131,10 @@ class WorldSocket : public net::ISession
         /// Takes ownership of (and must delete) @p result.
         void HandleAuthSessionCallback(QueryResult* result);
 
-        /// Current session, read under m_SessionLock. Either live or NULL, never
-        /// dangling: it is cleared under the same lock before the session is destroyed.
-        WorldSession* GetSession();
+        /// Current session, held live for the lifetime of the returned lease.
+        SessionLease GetSession();
         void SetSession(WorldSession* session);
+        void DetachSessionAndWait();
 
     private:
 
@@ -144,10 +148,13 @@ class WorldSocket : public net::ISession
         /// both the world thread (SendPacket) and the network thread (onConnect).
         std::mutex m_CryptSendLock;
 
-        /// Protects m_Session. Set from the network thread on authentication and cleared
-        /// on close, while the network thread also reads it to route incoming packets.
-        std::mutex    m_SessionLock;
-        WorldSession* m_Session;
+        /// Serialises DecryptRecv against Init, which runs on the world thread after
+        /// the asynchronous account lookup completes.
+        std::mutex m_CryptRecvLock;
+
+        /// Publishes the non-owning session link while preventing deletion during a
+        /// network callback that has acquired a lease.
+        LeasedPtr<WorldSession> m_session;
 
         /// Set once the connection is finished with; the transport polls closed().
         std::atomic<bool> m_closed;
@@ -171,9 +178,10 @@ class WorldSocket : public net::ISession
 
         const uint32 m_Seed;
 
-        /// Set once HandleAuthSession() issues the async account lookup, so a second
-        /// CMSG_AUTH_SESSION arriving before the first one's callback runs is rejected
-        /// instead of clobbering the fields below.
+        /// Set once HandleAuthSession() issues the async account lookup and kept set for
+        /// the rest of the socket lifetime. A successful callback publishes a session,
+        /// while every failure closes the socket, so clearing this during the callback
+        /// would only reopen a window for a second auth packet to clobber the fields below.
         bool m_AuthPending;
 
         /// Captured from CMSG_AUTH_SESSION and read back once the async account lookup

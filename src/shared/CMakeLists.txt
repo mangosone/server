@@ -39,7 +39,9 @@ source_group("Auth" FILES ${SRC_GRP_AUTH})
 set(SRC_GRP_COMMON
   Common/Common.cpp
   Common/Common.h
+  Common/Locales.h
   Common/ServerDefines.h
+  Common/TimeConstants.h
   Common/GitRevision.cpp
   Common/GitRevision.h
 )
@@ -110,6 +112,7 @@ set(SRC_GRP_LOG
 source_group("Log" FILES ${SRC_GRP_LOG})
 
 set(SRC_GRP_THREAD
+  Threading/LeasedPtr.h
   Threading/ThreadLocalStore.h
   Threading/Threading.cpp
   Threading/Threading.h
