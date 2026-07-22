@@ -18,23 +18,45 @@ DecodeStatus PacketCodec::Feed(const uint8* data, std::size_t len,
         return DecodeStatus::Malformed;
     }
 
-    bool producedPacket = false;
     std::size_t offset = 0;
+    bool producedPacket = false;
 
     while (offset < len)
+    {
+        std::size_t consumed = 0;
+        DecodeStatus const status = FeedOne(data + offset, len - offset, consumed, out);
+        offset += consumed;
+
+        if (status == DecodeStatus::Malformed)
+            return status;
+        if (status == DecodeStatus::Ready)
+            producedPacket = true;
+        if (consumed == 0 || status == DecodeStatus::NeedMore)
+            break;
+    }
+
+    return producedPacket ? DecodeStatus::Ready : DecodeStatus::NeedMore;
+}
+
+DecodeStatus PacketCodec::FeedOne(const uint8* data, std::size_t len,
+    std::size_t& consumed, std::vector<WorldPacket>& out)
+{
+    consumed = 0;
+    if (!data && len != 0)
+        return DecodeStatus::Malformed;
+
+    while (consumed < len)
     {
         if (!m_haveHeader)
         {
             std::size_t const wanted = CLIENT_HEADER_SIZE - m_headerFill;
-            std::size_t const taken = std::min(wanted, len - offset);
-            std::memcpy(m_header + m_headerFill, data + offset, taken);
+            std::size_t const taken = std::min(wanted, len - consumed);
+            std::memcpy(m_header + m_headerFill, data + consumed, taken);
             m_headerFill += taken;
-            offset += taken;
+            consumed += taken;
 
             if (m_headerFill < CLIENT_HEADER_SIZE)
-            {
-                return producedPacket ? DecodeStatus::Ready : DecodeStatus::NeedMore;
-            }
+                return DecodeStatus::NeedMore;
 
             if (m_decryptor)
             {
@@ -62,15 +84,13 @@ DecodeStatus PacketCodec::Feed(const uint8* data, std::size_t len,
 
         if (m_payloadNeeded != 0)
         {
-            std::size_t const taken = std::min<std::size_t>(m_payloadNeeded, len - offset);
-            m_payload.insert(m_payload.end(), data + offset, data + offset + taken);
-            offset += taken;
+            std::size_t const taken = std::min<std::size_t>(m_payloadNeeded, len - consumed);
+            m_payload.insert(m_payload.end(), data + consumed, data + consumed + taken);
+            consumed += taken;
             m_payloadNeeded -= uint32(taken);
 
             if (m_payloadNeeded != 0)
-            {
-                return producedPacket ? DecodeStatus::Ready : DecodeStatus::NeedMore;
-            }
+                return DecodeStatus::NeedMore;
         }
 
         WorldPacket packet(m_opcode, m_payload.size());
@@ -79,14 +99,14 @@ DecodeStatus PacketCodec::Feed(const uint8* data, std::size_t len,
             packet.append(m_payload.data(), m_payload.size());
         }
         out.push_back(packet);
-        producedPacket = true;
 
         m_haveHeader = false;
         m_headerFill = 0;
         m_payload.clear();
+        return DecodeStatus::Ready;
     }
 
-    return producedPacket ? DecodeStatus::Ready : DecodeStatus::NeedMore;
+    return DecodeStatus::NeedMore;
 }
 
 std::vector<uint8> PacketCodec::Encode(const WorldPacket& packet,

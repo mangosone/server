@@ -33,6 +33,9 @@ public:
     DecodeStatus Feed(const uint8* data, std::size_t len,
         std::vector<WorldPacket>& out);
 
+    DecodeStatus FeedOne(const uint8* data, std::size_t len,
+        std::size_t& consumed, std::vector<WorldPacket>& out);
+
     static std::vector<uint8> Encode(const WorldPacket& packet,
         const HeaderEncryptor& encryptor = HeaderEncryptor());
 

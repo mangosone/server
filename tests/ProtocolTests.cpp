@@ -1,12 +1,21 @@
 #include "TestSupport.hpp"
 
+#include "Auth/HMACSHA1.h"
+#include "Auth/Sha1.h"
+#include "ClientConnection.h"
 #include "IWorldGateway.h"
 #include "Opcodes.h"
 #include "PacketCodec.h"
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <initializer_list>
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -44,6 +53,219 @@ std::vector<uint8> ClientFrame(uint32 opcode, std::initializer_list<uint8> paylo
     };
     wire.insert(wire.end(), payload.begin(), payload.end());
     return wire;
+}
+
+std::vector<uint8> ClientFrame(uint32 opcode, const uint8* payload, std::size_t payloadSize)
+{
+    uint16 const size = uint16(4 + payloadSize);
+    std::vector<uint8> wire = {
+        uint8(size >> 8), uint8(size),
+        uint8(opcode), uint8(opcode >> 8), uint8(opcode >> 16), uint8(opcode >> 24)
+    };
+    wire.insert(wire.end(), payload, payload + payloadSize);
+    return wire;
+}
+
+class DummyAuthContext final : public proto::AuthContext
+{
+};
+
+class FakeGateway final : public proto::IWorldGateway
+{
+public:
+    bool filterResult = true;
+    proto::AuthLookup lookup;
+    proto::SessionId attachResult = 41;
+    unsigned filterCalls = 0;
+    unsigned lookupCalls = 0;
+    unsigned attachCalls = 0;
+    unsigned detachCalls = 0;
+    std::vector<uint16> delivered;
+    std::vector<std::pair<uint16, bool>> traced;
+    proto::AuthRequest attachedRequest;
+    std::shared_ptr<proto::IClientLink> retainedLink;
+    bool sendDuringAttach = false;
+
+    bool FilterAuthPacket(WorldPacket&) override
+    {
+        ++filterCalls;
+        return filterResult;
+    }
+
+    void TracePacket(const WorldPacket& packet, bool incoming) override
+    {
+        traced.emplace_back(packet.GetOpcode(), incoming);
+    }
+
+    proto::AuthLookup LookupAccount(const proto::AuthRequest&) override
+    {
+        ++lookupCalls;
+        return lookup;
+    }
+
+    proto::SessionId Attach(const proto::AuthRequest& request,
+        const std::shared_ptr<proto::IClientLink>& link,
+        const std::shared_ptr<proto::AuthContext>&) override
+    {
+        ++attachCalls;
+        attachedRequest = request;
+        retainedLink = link;
+        if (sendDuringAttach)
+        {
+            WorldPacket addon(SMSG_ADDON_INFO, 1);
+            addon << uint8(0xA5);
+            link->SendPacket(addon);
+        }
+        return attachResult;
+    }
+
+    void Deliver(proto::SessionId id, WorldPacket&& packet) override
+    {
+        CHECK(id == attachResult);
+        delivered.push_back(packet.GetOpcode());
+    }
+
+    void Detach(proto::SessionId id) override
+    {
+        CHECK(id == attachResult);
+        ++detachCalls;
+    }
+};
+
+struct ConnectionHarness
+{
+    FakeGateway gateway;
+    std::shared_ptr<proto::ClientConnection> connection =
+        std::make_shared<proto::ClientConnection>(gateway);
+    std::vector<std::vector<uint8>> sent;
+    unsigned closeCalls = 0;
+
+    ConnectionHarness()
+    {
+        connection->setPeerAddress("127.0.0.1");
+        connection->setSender([this](const uint8* data, std::size_t len)
+        {
+            sent.emplace_back(data, data + len);
+        });
+        connection->setCloser([this]() { ++closeCalls; });
+    }
+};
+
+uint16 ServerOpcode(const std::vector<uint8>& frame)
+{
+    CHECK(frame.size() >= proto::SERVER_HEADER_SIZE);
+    return uint16(frame[2]) | (uint16(frame[3]) << 8);
+}
+
+uint32 ServerSeed(const std::vector<uint8>& challenge)
+{
+    CHECK(challenge.size() == proto::SERVER_HEADER_SIZE + 4);
+    return uint32(challenge[4])
+        | (uint32(challenge[5]) << 8)
+        | (uint32(challenge[6]) << 16)
+        | (uint32(challenge[7]) << 24);
+}
+
+std::array<uint8, 20> MakeProof(const std::string& account, uint32 clientSeed,
+    uint32 serverSeed, BigNumber& sessionKey)
+{
+    uint8 const zero[4] = {0, 0, 0, 0};
+    Sha1Hash sha;
+    sha.UpdateData(account);
+    sha.UpdateData(zero, sizeof(zero));
+    sha.UpdateData(reinterpret_cast<const uint8*>(&clientSeed), sizeof(clientSeed));
+    sha.UpdateData(reinterpret_cast<const uint8*>(&serverSeed), sizeof(serverSeed));
+    sha.UpdateBigNumbers(&sessionKey, nullptr);
+    sha.Finalize();
+
+    std::array<uint8, 20> digest{};
+    std::copy(sha.GetDigest(), sha.GetDigest() + digest.size(), digest.begin());
+    return digest;
+}
+
+std::vector<uint8> AuthFrame(uint32 clientSeed, const std::array<uint8, 20>& digest,
+    std::initializer_list<uint8> addonData = {})
+{
+    WorldPacket packet(CMSG_AUTH_SESSION, 64);
+    packet << uint32(8606);
+    packet << uint32(0x12345678);
+    packet << std::string("ACCOUNT");
+    packet << clientSeed;
+    packet.append(digest.data(), digest.size());
+    if (addonData.size() != 0)
+        packet.append(addonData.begin(), addonData.size());
+    return ClientFrame(CMSG_AUTH_SESSION, packet.contents(), packet.size());
+}
+
+class HeaderCipher
+{
+public:
+    explicit HeaderCipher(BigNumber& sessionKey)
+    {
+        uint8 seed[SEED_KEY_SIZE] = {
+            0x38, 0xA7, 0x83, 0x15, 0xF8, 0x92, 0x25, 0x30,
+            0x71, 0x98, 0x67, 0xB1, 0x8C, 0x04, 0xE2, 0xAA
+        };
+        HMACSHA1 hash(SEED_KEY_SIZE, seed);
+        hash.UpdateBigNumber(&sessionKey);
+        hash.Finalize();
+        m_key.assign(hash.GetDigest(), hash.GetDigest() + SHA_DIGEST_LENGTH);
+    }
+
+    void EncryptClientHeader(std::vector<uint8>& frame)
+    {
+        CHECK(frame.size() >= proto::CLIENT_HEADER_SIZE);
+        for (std::size_t offset = 0; offset < proto::CLIENT_HEADER_SIZE; ++offset)
+        {
+            m_clientIndex %= m_key.size();
+            uint8 const encrypted = uint8((frame[offset] ^ m_key[m_clientIndex]) + m_clientPrevious);
+            ++m_clientIndex;
+            frame[offset] = m_clientPrevious = encrypted;
+        }
+    }
+
+    void DecryptServerHeader(std::vector<uint8>& frame)
+    {
+        CHECK(frame.size() >= proto::SERVER_HEADER_SIZE);
+        for (std::size_t offset = 0; offset < proto::SERVER_HEADER_SIZE; ++offset)
+        {
+            m_serverIndex %= m_key.size();
+            uint8 const encrypted = frame[offset];
+            frame[offset] = uint8((encrypted - m_serverPrevious) ^ m_key[m_serverIndex]);
+            ++m_serverIndex;
+            m_serverPrevious = encrypted;
+        }
+    }
+
+private:
+    std::vector<uint8> m_key;
+    std::size_t m_clientIndex = 0;
+    std::size_t m_serverIndex = 0;
+    uint8 m_clientPrevious = 0;
+    uint8 m_serverPrevious = 0;
+};
+
+BigNumber SuccessfulLookup(FakeGateway& gateway)
+{
+    BigNumber sessionKey;
+    sessionKey.SetHexStr("0123456789ABCDEF0123456789ABCDEF01234567");
+    gateway.lookup.status = proto::AuthStatus::Ok;
+    gateway.lookup.sessionKey = sessionKey;
+    gateway.lookup.context = std::make_shared<DummyAuthContext>();
+    return sessionKey;
+}
+
+BigNumber Authenticate(ConnectionHarness& harness, uint32 clientSeed = 0xA1B2C3D4)
+{
+    BigNumber sessionKey = SuccessfulLookup(harness.gateway);
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+    std::array<uint8, 20> const proof = MakeProof("ACCOUNT", clientSeed,
+        ServerSeed(challenge), sessionKey);
+    std::vector<uint8> const auth = AuthFrame(clientSeed, proof, {0xCA, 0xFE});
+    harness.connection->onData(auth.data(), auth.size());
+    CHECK(harness.gateway.attachCalls == 1);
+    CHECK(!harness.connection->closed());
+    return sessionKey;
 }
 
 void fragmentedFrameDecodesOnce()
@@ -134,6 +356,195 @@ void serverFramesUseTheFixed243Header()
     CHECK(wire[4] == 0xAA);
     CHECK(wire[5] == 0xBB);
 }
+
+void connectionChallengeHasTheExpectedShape()
+{
+    ConnectionHarness harness;
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+
+    CHECK(challenge.size() == proto::SERVER_HEADER_SIZE + 4);
+    CHECK(challenge[0] == 0x00);
+    CHECK(challenge[1] == 0x06);
+    CHECK(ServerOpcode(challenge) == SMSG_AUTH_CHALLENGE);
+    CHECK(harness.gateway.traced.size() == 1);
+    CHECK(harness.gateway.traced[0] == std::make_pair(uint16(SMSG_AUTH_CHALLENGE), false));
+    CHECK(harness.connection->GetRemoteAddress() == "127.0.0.1");
+}
+
+void preAuthenticationWorldPacketsAreRejected()
+{
+    ConnectionHarness harness;
+    std::vector<uint8> const frame = ClientFrame(CMSG_KEEP_ALIVE, {});
+
+    harness.connection->onData(frame.data(), frame.size());
+
+    CHECK(harness.connection->closed());
+    CHECK(harness.closeCalls == 1);
+    CHECK(harness.gateway.delivered.empty());
+    CHECK(harness.gateway.traced.size() == 1);
+    CHECK(harness.gateway.traced[0] == std::make_pair(uint16(CMSG_KEEP_ALIVE), true));
+}
+
+void authenticationFilterVetoSkipsLookupWithoutClosing()
+{
+    ConnectionHarness harness;
+    harness.gateway.filterResult = false;
+    std::array<uint8, 20> const digest{};
+    std::vector<uint8> const frame = AuthFrame(7, digest);
+
+    harness.connection->onData(frame.data(), frame.size());
+
+    CHECK(harness.gateway.filterCalls == 1);
+    CHECK(harness.gateway.lookupCalls == 0);
+    CHECK(!harness.connection->closed());
+}
+
+void lookupRejectionSendsStatusAndCloses()
+{
+    ConnectionHarness harness;
+    harness.gateway.lookup.status = proto::AuthStatus::UnknownAccount;
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+    (void)challenge;
+    std::array<uint8, 20> const digest{};
+    std::vector<uint8> const frame = AuthFrame(7, digest);
+
+    harness.connection->onData(frame.data(), frame.size());
+
+    CHECK(harness.gateway.lookupCalls == 1);
+    CHECK(harness.gateway.attachCalls == 0);
+    CHECK(harness.sent.size() == 1);
+    CHECK(ServerOpcode(harness.sent[0]) == SMSG_AUTH_RESPONSE);
+    CHECK(harness.sent[0].size() == proto::SERVER_HEADER_SIZE + 1);
+    CHECK(harness.sent[0][4] == uint8(proto::AuthStatus::UnknownAccount));
+    CHECK(harness.connection->closed());
+    CHECK(harness.closeCalls == 1);
+    std::vector<std::pair<uint16, bool>> const expectedTraces = {
+        {uint16(SMSG_AUTH_CHALLENGE), false},
+        {uint16(CMSG_AUTH_SESSION), true},
+        {uint16(SMSG_AUTH_RESPONSE), false}
+    };
+    CHECK(harness.gateway.traced == expectedTraces);
+}
+
+void invalidProofSendsFailureAndNeverAttaches()
+{
+    ConnectionHarness harness;
+    SuccessfulLookup(harness.gateway);
+    harness.connection->onConnect();
+    std::array<uint8, 20> const digest{};
+    std::vector<uint8> const frame = AuthFrame(7, digest);
+
+    harness.connection->onData(frame.data(), frame.size());
+
+    CHECK(harness.gateway.lookupCalls == 1);
+    CHECK(harness.gateway.attachCalls == 0);
+    CHECK(harness.sent.size() == 1);
+    CHECK(harness.sent[0][4] == uint8(proto::AuthStatus::Failed));
+    CHECK(harness.connection->closed());
+}
+
+void successfulAuthenticationInitializesCryptBeforeAttach()
+{
+    ConnectionHarness harness;
+    harness.gateway.sendDuringAttach = true;
+    BigNumber sessionKey = Authenticate(harness);
+
+    CHECK(harness.gateway.attachedRequest.build == 8606);
+    CHECK(harness.gateway.attachedRequest.unknown == 0x12345678);
+    CHECK(harness.gateway.attachedRequest.account == "ACCOUNT");
+    CHECK(harness.gateway.attachedRequest.peerAddress == "127.0.0.1");
+    CHECK(harness.gateway.attachedRequest.addonData == std::vector<uint8>({0xCA, 0xFE}));
+    CHECK(harness.sent.size() == 1);
+
+    HeaderCipher cipher(sessionKey);
+    cipher.DecryptServerHeader(harness.sent[0]);
+    CHECK(ServerOpcode(harness.sent[0]) == SMSG_ADDON_INFO);
+    CHECK(harness.gateway.traced.back() == std::make_pair(uint16(SMSG_ADDON_INFO), false));
+}
+
+void authenticatedPacketsStayOpaqueToTheConnection()
+{
+    ConnectionHarness harness;
+    BigNumber sessionKey = Authenticate(harness);
+    HeaderCipher cipher(sessionKey);
+
+    std::vector<uint8> ping = ClientFrame(CMSG_PING, {0x01, 0x02});
+    cipher.EncryptClientHeader(ping);
+    harness.connection->onData(ping.data(), ping.size());
+
+    std::vector<uint8> keepAlive = ClientFrame(CMSG_KEEP_ALIVE, {});
+    cipher.EncryptClientHeader(keepAlive);
+    harness.connection->onData(keepAlive.data(), keepAlive.size());
+
+    CHECK(harness.gateway.delivered.size() == 2);
+    CHECK(harness.gateway.delivered[0] == CMSG_PING);
+    CHECK(harness.gateway.delivered[1] == CMSG_KEEP_ALIVE);
+    CHECK(!harness.connection->closed());
+    std::vector<std::pair<uint16, bool>> const expectedTraces = {
+        {uint16(SMSG_AUTH_CHALLENGE), false},
+        {uint16(CMSG_AUTH_SESSION), true},
+        {uint16(CMSG_PING), true},
+        {uint16(CMSG_KEEP_ALIVE), true}
+    };
+    CHECK(harness.gateway.traced == expectedTraces);
+}
+
+void coalescedAuthenticationActivatesCryptBeforeTheNextFrame()
+{
+    ConnectionHarness harness;
+    BigNumber sessionKey = SuccessfulLookup(harness.gateway);
+    uint32 const clientSeed = 0x10203040;
+    std::vector<uint8> const challenge = harness.connection->onConnect();
+    std::array<uint8, 20> const proof = MakeProof("ACCOUNT", clientSeed,
+        ServerSeed(challenge), sessionKey);
+    std::vector<uint8> input = AuthFrame(clientSeed, proof);
+
+    HeaderCipher cipher(sessionKey);
+    std::vector<uint8> keepAlive = ClientFrame(CMSG_KEEP_ALIVE, {});
+    cipher.EncryptClientHeader(keepAlive);
+    input.insert(input.end(), keepAlive.begin(), keepAlive.end());
+
+    harness.connection->onData(input.data(), input.size());
+
+    CHECK(harness.gateway.attachCalls == 1);
+    CHECK(harness.gateway.delivered.size() == 1);
+    CHECK(harness.gateway.delivered[0] == CMSG_KEEP_ALIVE);
+    CHECK(!harness.connection->closed());
+}
+
+void repeatedAuthenticationClosesWithoutSecondLookup()
+{
+    ConnectionHarness harness;
+    BigNumber sessionKey = Authenticate(harness);
+    HeaderCipher cipher(sessionKey);
+    std::array<uint8, 20> const digest{};
+    std::vector<uint8> repeated = AuthFrame(9, digest);
+    cipher.EncryptClientHeader(repeated);
+
+    harness.connection->onData(repeated.data(), repeated.size());
+
+    CHECK(harness.gateway.lookupCalls == 1);
+    CHECK(harness.connection->closed());
+    CHECK(harness.closeCalls == 1);
+}
+
+void closeDetachesOnceAndLateSendsAreIgnored()
+{
+    ConnectionHarness harness;
+    Authenticate(harness);
+    CHECK(harness.gateway.retainedLink != nullptr);
+
+    harness.connection->onClose();
+    harness.connection->onClose();
+    std::size_t const tracesBeforeLateSend = harness.gateway.traced.size();
+    std::size_t const sendsBeforeLateSend = harness.sent.size();
+    WorldPacket late(SMSG_PONG, 0);
+    harness.gateway.retainedLink->SendPacket(late);
+
+    CHECK(harness.gateway.detachCalls == 1);
+    CHECK(harness.gateway.traced.size() == tracesBeforeLateSend);
+    CHECK(harness.sent.size() == sendsBeforeLateSend);
+}
 }
 
 int main()
@@ -143,5 +554,15 @@ int main()
     splitHeadersDecryptExactlyOnce();
     malformedFramesAreRejected();
     serverFramesUseTheFixed243Header();
+    connectionChallengeHasTheExpectedShape();
+    preAuthenticationWorldPacketsAreRejected();
+    authenticationFilterVetoSkipsLookupWithoutClosing();
+    lookupRejectionSendsStatusAndCloses();
+    invalidProofSendsFailureAndNeverAttaches();
+    successfulAuthenticationInitializesCryptBeforeAttach();
+    authenticatedPacketsStayOpaqueToTheConnection();
+    coalescedAuthenticationActivatesCryptBeforeTheNextFrame();
+    repeatedAuthenticationClosesWithoutSecondLookup();
+    closeDetachesOnceAndLateSendsAreIgnored();
     return mangos::test::failures == 0 ? 0 : 1;
 }
