@@ -17,9 +17,9 @@ bool SessionMailbox::Enqueue(std::unique_ptr<WorldPacket> packet)
     if (m_closed)
         return false;
 
-    m_packets.add(packet.get());
-    packet.release();
-    return true;
+    WorldPacket* const accepted = packet.get();
+    m_packets.add(accepted);
+    return packet.release() == accepted;
 }
 
 bool SessionMailbox::Next(WorldPacket*& packet)
