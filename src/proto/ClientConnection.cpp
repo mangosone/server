@@ -5,6 +5,7 @@
 #include "Utilities/Util.h"
 
 #include <cstring>
+#include <exception>
 #include <memory>
 
 namespace proto
@@ -60,6 +61,10 @@ std::vector<uint8_t> ClientConnection::onData(const uint8_t* data, std::size_t l
                 Close();
         }
         catch (ByteBufferException const&)
+        {
+            Close();
+        }
+        catch (std::exception const&)
         {
             Close();
         }

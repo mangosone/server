@@ -14,6 +14,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -85,6 +86,7 @@ public:
     proto::AuthRequest attachedRequest;
     std::shared_ptr<proto::IClientLink> retainedLink;
     bool sendDuringAttach = false;
+    bool throwOnLookup = false;
 
     bool FilterAuthPacket(WorldPacket&) override
     {
@@ -100,6 +102,8 @@ public:
     proto::AuthLookup LookupAccount(const proto::AuthRequest&) override
     {
         ++lookupCalls;
+        if (throwOnLookup)
+            throw std::runtime_error("simulated gateway failure");
         return lookup;
     }
 
@@ -447,6 +451,30 @@ void lookupRejectionSendsStatusAndCloses()
     CHECK(harness.gateway.traced == expectedTraces);
 }
 
+void gatewayExceptionsCloseWithoutEscapingTheTransportBoundary()
+{
+    ConnectionHarness harness;
+    harness.gateway.throwOnLookup = true;
+    harness.connection->onConnect();
+    std::array<uint8, 20> const digest{};
+    std::vector<uint8> const frame = AuthFrame(7, digest);
+
+    bool escaped = false;
+    try
+    {
+        harness.connection->onData(frame.data(), frame.size());
+    }
+    catch (std::runtime_error const&)
+    {
+        escaped = true;
+    }
+
+    CHECK(!escaped);
+    CHECK(harness.gateway.lookupCalls == 1);
+    CHECK(harness.connection->closed());
+    CHECK(harness.closeCalls == 1);
+}
+
 void invalidProofSendsFailureAndNeverAttaches()
 {
     ConnectionHarness harness;
@@ -673,6 +701,7 @@ int main()
     authenticationFilterVetoSkipsLookupWithoutClosing();
     authenticationFilterVetoAllowsALaterAcceptedAttempt();
     lookupRejectionSendsStatusAndCloses();
+    gatewayExceptionsCloseWithoutEscapingTheTransportBoundary();
     invalidProofSendsFailureAndNeverAttaches();
     successfulAuthenticationInitializesCryptBeforeAttach();
     attachFailureSendsEncryptedSystemErrorWithoutPublishingASession();
