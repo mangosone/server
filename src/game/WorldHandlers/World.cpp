@@ -346,6 +346,7 @@ World::AddSession_(WorldSession* s)
     if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity() == SEC_PLAYER)
     {
         AddQueuedSession(s);
+        s->SendPendingAddonInfo();
         UpdateMaxSessionCounters();
         DETAIL_LOG("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
         return;
@@ -358,6 +359,7 @@ World::AddSession_(WorldSession* s)
     packet << uint32(0);                                    // BillingTimeRested
     packet << uint8(s->Expansion());                        // 0 - normal, 1 - TBC. Must be set in database manually for each account.
     s->SendPacket(&packet);
+    s->SendPendingAddonInfo();
 
     UpdateMaxSessionCounters();
 

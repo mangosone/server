@@ -35,6 +35,7 @@ public:
 private:
     bool HandlePacket(WorldPacket& packet);
     bool HandleAuthSession(WorldPacket& packet);
+    SessionId CurrentSession();
     void SendAuthResponse(AuthStatus status);
     std::vector<uint8> EncodePacket(const WorldPacket& packet);
 

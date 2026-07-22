@@ -283,6 +283,20 @@ void WorldSession::SendPacket(WorldPacket const* packet)
     m_link->SendPacket(*packet);
 }
 
+void WorldSession::SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet)
+{
+    m_pendingAddonInfo = std::move(packet);
+}
+
+void WorldSession::SendPendingAddonInfo()
+{
+    if (!m_pendingAddonInfo)
+        return;
+
+    SendPacket(m_pendingAddonInfo.get());
+    m_pendingAddonInfo.reset();
+}
+
 /// Add an incoming packet to the queue
 void WorldSession::QueuePacket(WorldPacket* new_packet)
 {

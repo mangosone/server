@@ -299,6 +299,8 @@ class WorldSession
         void SizeError(WorldPacket const& packet, uint32 size) const;
 
         void SendPacket(WorldPacket const* packet);
+        void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
+        void SendPendingAddonInfo();
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, const std::string& name, DeclinedName* declinedName);
@@ -970,6 +972,7 @@ class WorldSession
         std::shared_ptr<proto::IClientLink> m_link;
         /// Shared queue used by the network gateway without exposing this session.
         std::shared_ptr<SessionMailbox> m_mailbox;
+        std::unique_ptr<WorldPacket> m_pendingAddonInfo;
         std::string m_Address;
 
         AccountTypes _security;

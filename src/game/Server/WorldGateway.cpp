@@ -186,7 +186,10 @@ proto::SessionId WorldGateway::Attach(const proto::AuthRequest& request,
 
     WorldPacket addonResponse;
     if (sAddOnHandler.BuildAddonPacket(&addonSource, &addonResponse))
-        link->SendPacket(addonResponse);
+    {
+        session->SetPendingAddonInfo(
+            std::make_unique<WorldPacket>(std::move(addonResponse)));
+    }
     if (link->IsClosed())
         return proto::INVALID_SESSION_ID;
 

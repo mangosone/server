@@ -136,11 +136,18 @@ bool ClientConnection::HandlePacket(WorldPacket& packet)
         return HandleAuthSession(packet);
     if (packet.GetOpcode() >= NUM_MSG_TYPES)
         return false;
-    if (m_session == INVALID_SESSION_ID)
+    SessionId const session = CurrentSession();
+    if (session == INVALID_SESSION_ID)
         return false;
 
-    m_gateway.Deliver(m_session, std::move(packet));
+    m_gateway.Deliver(session, std::move(packet));
     return true;
+}
+
+SessionId ClientConnection::CurrentSession()
+{
+    std::lock_guard<std::mutex> guard(m_sessionLock);
+    return m_session;
 }
 
 bool ClientConnection::HandleAuthSession(WorldPacket& packet)
