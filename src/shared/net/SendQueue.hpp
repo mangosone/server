@@ -31,7 +31,7 @@
 // COALESCING. A world tick emits a great many small packets — movement, chat, spell
 // updates — often to the same client. A queue-of-buffers would make that one heap
 // allocation and one syscall per packet, which is exactly the cost the ACE-era
-// WorldSocket built a 64 KB output buffer (and a 10 ms cork) to avoid. Here,
+// The former world protocol path built a 64 KB output buffer (and a 10 ms cork) to avoid. Here,
 // producers append into `m_pending` while the socket drains `m_inflight`; when the
 // in-flight span is fully written the two are swapped. So every packet queued during
 // one write completes in the *next* single write, and both vectors keep their

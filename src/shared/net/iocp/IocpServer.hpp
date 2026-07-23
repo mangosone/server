@@ -41,6 +41,8 @@
 #include "net/ISession.hpp"
 #include "net/SendQueue.hpp"
 #include <atomic>
+#include <cassert>
+#include <condition_variable>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -50,6 +52,68 @@
 #include <vector>
 
 namespace net {
+
+class OutstandingOperations {
+public:
+    bool startSubmissions()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_count != 0)
+            return false;
+        m_acceptingSubmissions = true;
+        return true;
+    }
+
+    bool tryBegin()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_acceptingSubmissions)
+            return false;
+        ++m_count;
+        return true;
+    }
+
+    void stopSubmissions()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_acceptingSubmissions = false;
+        if (m_count == 0)
+            m_zero.notify_all();
+    }
+
+    void complete()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        assert(m_count != 0);
+        --m_count;
+        if (m_count == 0)
+            m_zero.notify_all();
+    }
+
+    void waitForZero()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_zero.wait(lock, [&] { return m_count == 0; });
+    }
+
+    std::size_t count() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_count;
+    }
+
+    bool acceptingSubmissions() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_acceptingSubmissions;
+    }
+
+private:
+    mutable std::mutex m_mutex;
+    std::condition_variable m_zero;
+    std::size_t m_count = 0;
+    bool m_acceptingSubmissions = true;
+};
 
 // ── Per-operation type tag ────────────────────────────────────────────────────
 enum class IoType : uint8_t { Accept, Recv, Send };
@@ -82,6 +146,7 @@ struct SendOv {
 };
 
 // ── Per-connection context ────────────────────────────────────────────────────
+class IocpServer;
 struct ConnCtx;
 
 // Lifetime-safe handle the session uses to send from any thread (e.g. the world
@@ -96,6 +161,8 @@ struct ConnCtx;
 struct SendChannel {
     std::mutex mu;
     ConnCtx*   ctx = nullptr;
+    bool       closeRequested = false;
+    bool       sendShutdown = false;
     SendQueue  out;                        // coalescing buffer + byte backpressure
 
     void post(const uint8_t* data, size_t len);  // append + kick a write while armed
@@ -107,8 +174,10 @@ struct ConnCtx {
     SOCKET   sock{INVALID_SOCKET};
     RecvOv   recvOv;
     SendOv   sendOv;
+    OVERLAPPED closeOv{};
     std::shared_ptr<ISession>    session;
     std::shared_ptr<SendChannel> channel;
+    IocpServer* owner = nullptr;
 
     // Lifetime: the ConnCtx must outlive every overlapped op posted on it, because
     // their completions arrive (keyed by this pointer) on an IOCP worker possibly
@@ -118,8 +187,10 @@ struct ConnCtx {
     // teardown idempotent across the recv/send/close paths that can all race to it.
     std::atomic<long> refs{1};
     std::atomic<bool> dead{false};
+    std::atomic<bool> controlPending{false};
 
-    explicit ConnCtx(const SessionFactory& factory) : session(factory()) {}
+    ConnCtx(const SessionFactory& factory, IocpServer* server)
+        : session(factory()), owner(server) {}
 
     void addRef()  { refs.fetch_add(1, std::memory_order_relaxed); }
     void release() { if (refs.fetch_sub(1, std::memory_order_acq_rel) == 1) delete this; }
@@ -155,6 +226,9 @@ public:
     void stop();
 
 private:
+    friend struct SendChannel;
+    friend struct ConnCtx;
+
     HANDLE   m_iocp{nullptr};
     SOCKET   m_listen{INVALID_SOCKET};
     SessionFactory m_factory;
@@ -164,6 +238,7 @@ private:
 
     std::vector<std::thread>    m_workers;
     std::atomic<bool>           m_running{false};
+    OutstandingOperations       m_operations;
     bool                        m_wsaStarted{false};   // owns one WSAStartup ref
 
     static constexpr int PENDING_ACCEPTS = 4;
@@ -176,9 +251,12 @@ private:
     void workerThread();
     void postAccept();
     bool postRecv  (ConnCtx* ctx);              // refs++ on success
+    bool postControl(ConnCtx* ctx);              // refs++ on success
     void handleAccept(AcceptOv* aov, DWORD bytes);
     void handleRecv (ConnCtx* ctx, DWORD bytes);
     void handleSend (ConnCtx* ctx, DWORD bytes);// `bytes` MUST be honoured (short writes)
+    void handleControl(ConnCtx* ctx);
+    bool closeIfDrained(ConnCtx* ctx);
     void markDead   (ConnCtx* ctx);             // idempotent teardown; releases alive ref
 };
 

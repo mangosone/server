@@ -55,7 +55,6 @@ class WorldSession;
 class Player;
 class SqlResultQueue;
 class QueryResult;
-class WorldSocket;
 
 // ServerMessages.dbc
 enum ServerMessageType

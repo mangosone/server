@@ -39,7 +39,9 @@ source_group("Auth" FILES ${SRC_GRP_AUTH})
 set(SRC_GRP_COMMON
   Common/Common.cpp
   Common/Common.h
+  Common/Locales.h
   Common/ServerDefines.h
+  Common/TimeConstants.h
   Common/GitRevision.cpp
   Common/GitRevision.h
 )

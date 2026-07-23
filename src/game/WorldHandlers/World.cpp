@@ -48,7 +48,7 @@
 #include "Platform/Define.h"
 #include "SystemConfig.h"
 #include "Log.h"
-#include "Opcodes.h"
+#include "OpcodeTable.h"
 #include "WorldSession.h"
 #include "WorldPacket.h"
 #include "Player.h"
@@ -299,7 +299,7 @@ World::AddSession_(WorldSession* s)
 {
     MANGOS_ASSERT(s);
 
-    // NOTE - Still there is race condition in WorldSession* being used in the Sockets
+    // New sessions arrive through a locked queue and become world-thread-owned here.
 
     ///- kick already loaded player with same account (if any) and remove session
     ///- if player is in loading and want to load again, return
@@ -346,6 +346,7 @@ World::AddSession_(WorldSession* s)
     if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity() == SEC_PLAYER)
     {
         AddQueuedSession(s);
+        s->SendPendingAddonInfo();
         UpdateMaxSessionCounters();
         DETAIL_LOG("PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
         return;
@@ -358,6 +359,7 @@ World::AddSession_(WorldSession* s)
     packet << uint32(0);                                    // BillingTimeRested
     packet << uint8(s->Expansion());                        // 0 - normal, 1 - TBC. Must be set in database manually for each account.
     s->SendPacket(&packet);
+    s->SendPendingAddonInfo();
 
     UpdateMaxSessionCounters();
 

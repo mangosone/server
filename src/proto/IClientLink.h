@@ -1,0 +1,22 @@
+#ifndef MANGOS_PROTO_ICLIENTLINK_H
+#define MANGOS_PROTO_ICLIENTLINK_H
+
+#include <string>
+
+class WorldPacket;
+
+namespace proto
+{
+class IClientLink
+{
+public:
+    virtual ~IClientLink() = default;
+
+    virtual void SendPacket(const WorldPacket& packet) = 0;
+    virtual void Close() = 0;
+    virtual const std::string& GetRemoteAddress() const = 0;
+    virtual bool IsClosed() const = 0;
+};
+}
+
+#endif

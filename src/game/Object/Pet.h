@@ -194,6 +194,7 @@ extern const uint32 LevelStartLoyalty[6];
 #define PET_FOLLOW_ANGLE (M_PI_F/2.0f)
 
 class Player;
+struct ItemPrototype;
 
 class Pet : public Creature
 {

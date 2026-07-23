@@ -273,6 +273,7 @@ target_compile_definitions(game
 
 target_link_libraries(game
     PUBLIC
+        proto
         shared
         RecastNavigation::Detour
         ZLIB::ZLIB

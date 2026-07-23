@@ -651,7 +651,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CO
 # This used to read ADD_CXX_PCH(Bots ${bots_PCH}) -- and bots_PCH was never set anywhere, so it
 # collapsed to ADD_CXX_PCH(Bots) and precompiled nothing at all, silently. Meanwhile 275 of
 # these 277 sources open botpch.h by hand on their first line, so every one of them was parsing
-# WorldSocket.h, ObjectMgr.h and playerbot.h from scratch. Name the header.
+# ObjectMgr.h and playerbot.h from scratch. Name the header.
 if(PCH)
     ADD_CXX_PCH(Bots botpch.h)
 endif()
