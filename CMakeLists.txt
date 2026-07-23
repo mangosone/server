@@ -216,6 +216,11 @@ endif()
 # =============================================================================
 # Subdirectories
 # =============================================================================
+if(BUILD_REGRESSION_TESTS)
+  set(BUILD_TESTING ON)
+  enable_testing()
+endif()
+
 if (NOT TARGET "ZLIB::ZLIB")
     add_subdirectory(dep/zlib)
 endif()
@@ -252,7 +257,6 @@ else()
 endif()
 
 if(BUILD_REGRESSION_TESTS)
-  enable_testing()
   add_subdirectory(tests)
 endif()
 
