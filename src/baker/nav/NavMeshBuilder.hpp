@@ -49,6 +49,32 @@ namespace world::nav
         int threads = 0;
     };
 
+    // Inclusive terrain-cell range contributed by one orthogonal neighbour. Tile
+    // indices and height-cell indices both increase toward falling world coordinates.
+    struct CellRect
+    {
+        int ixFirst = 0;
+        int ixLast = 0;
+        int iyFirst = 0;
+        int iyLast = 0;
+    };
+
+    inline bool neighbourCellRect(int deltaGx, int deltaGy, CellRect& out)
+    {
+        constexpr int last = 127;
+        if (deltaGx == -1 && deltaGy == 0)
+            out = {last, last, 0, last};
+        else if (deltaGx == 1 && deltaGy == 0)
+            out = {0, 0, 0, last};
+        else if (deltaGx == 0 && deltaGy == -1)
+            out = {0, last, last, last};
+        else if (deltaGx == 0 && deltaGy == 1)
+            out = {0, last, 0, 0};
+        else
+            return false;
+        return true;
+    }
+
     /// Bakes navmesh for every map found in `tileDir`, writing into `outDir`.
     class NavMeshBuilder
     {

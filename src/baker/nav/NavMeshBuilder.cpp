@@ -52,7 +52,8 @@ namespace world::nav
         // Mirrors MoveMapSharedDefines.h. Duplicated (not included) because that header
         // drags in Platform/Define.h -> ACE, which the offline baker must not link.
         constexpr uint32_t MMAP_MAGIC = 0x4d4d4150;   // 'MMAP'
-        constexpr uint32_t MMAP_VERSION = 5;
+        // Version 6 adds orthogonal terrain/liquid border cells during fused navmesh baking.
+        constexpr uint32_t MMAP_VERSION = 6;
 
         struct MmapTileHeader
         {
@@ -186,6 +187,53 @@ namespace world::nav
             }
         }
 
+        // Recast's ledge filter and walkable-radius erosion need geometry outside the
+        // tile's core bounds. The legacy generator supplied one terrain cell from each
+        // orthogonal neighbour. Models are deliberately excluded because their placed
+        // geometry already overlaps adjacent tiles.
+        void addTerrainCells(const TerrainTile& tile, int gx, int gy,
+                             const CellRect& cells, Soup& out)
+        {
+            if (!tile.hasTerrain || tile.v9.empty() || tile.v8.empty())
+            {
+                return;
+            }
+
+            const auto v9 = [&](int ix, int iy) { return tile.v9[ix * V9_SIDE + iy]; };
+            const auto v8 = [&](int ix, int iy) { return tile.v8[ix * V8_SIDE + iy]; };
+
+            for (int ix = cells.ixFirst; ix <= cells.ixLast; ++ix)
+            {
+                for (int iy = cells.iyFirst; iy <= cells.iyLast; ++iy)
+                {
+                    if (tile.isHoleAt(ix, iy))
+                    {
+                        continue;
+                    }
+
+                    const int a = out.addVertex(
+                        Vec3{worldX(gx, float(ix)), worldY(gy, float(iy)), v9(ix, iy)});
+                    const int b = out.addVertex(
+                        Vec3{worldX(gx, float(ix)), worldY(gy, float(iy) + 1.f),
+                             v9(ix, iy + 1)});
+                    const int c = out.addVertex(
+                        Vec3{worldX(gx, float(ix) + 1.f), worldY(gy, float(iy) + 1.f),
+                             v9(ix + 1, iy + 1)});
+                    const int d = out.addVertex(
+                        Vec3{worldX(gx, float(ix) + 1.f), worldY(gy, float(iy)),
+                             v9(ix + 1, iy)});
+                    const int m = out.addVertex(
+                        Vec3{worldX(gx, float(ix) + 0.5f),
+                             worldY(gy, float(iy) + 0.5f), v8(ix, iy)});
+
+                    out.addTriangle(a, m, b, NAV_GROUND);
+                    out.addTriangle(b, m, c, NAV_GROUND);
+                    out.addTriangle(c, m, d, NAV_GROUND);
+                    out.addTriangle(d, m, a, NAV_GROUND);
+                }
+            }
+        }
+
         unsigned char liquidArea(world::terrain::LiquidKind kind)
         {
             switch (kind)
@@ -232,6 +280,56 @@ namespace world::nav
                     const int d = out.addVertex(Vec3{worldX(gx, float(ix) + 1.f), worldY(gy, float(iy)), h(ix + 1, iy)});
 
                     // Reversed ring, same reason as the terrain: up-facing normals.
+                    out.addTriangle(a, c, b, area);
+                    out.addTriangle(a, d, c, area);
+                }
+            }
+        }
+
+        void addLiquidCells(const TerrainTile& tile, int gx, int gy,
+                            const CellRect& cells, Soup& out)
+        {
+            if (!tile.hasLiquid || tile.liquidHeight.empty() || tile.liquidShow.empty())
+            {
+                return;
+            }
+
+            const auto h = [&](int ix, int iy)
+            {
+                return tile.liquidHeight[ix * V9_SIDE + iy];
+            };
+
+            for (int ix = cells.ixFirst; ix <= cells.ixLast; ++ix)
+            {
+                for (int iy = cells.iyFirst; iy <= cells.iyLast; ++iy)
+                {
+                    const size_t cell = size_t(ix) * V8_SIDE + iy;
+                    if (!tile.liquidShow[cell])
+                    {
+                        continue;
+                    }
+
+                    const auto kind = tile.liquidType.empty()
+                                          ? world::terrain::LiquidKind::Water
+                                          : world::terrain::LiquidKind(tile.liquidType[cell]);
+                    const unsigned char area = liquidArea(kind);
+                    if (area == NAV_EMPTY)
+                    {
+                        continue;
+                    }
+
+                    const int a = out.addVertex(
+                        Vec3{worldX(gx, float(ix)), worldY(gy, float(iy)), h(ix, iy)});
+                    const int b = out.addVertex(
+                        Vec3{worldX(gx, float(ix)), worldY(gy, float(iy) + 1.f),
+                             h(ix, iy + 1)});
+                    const int c = out.addVertex(
+                        Vec3{worldX(gx, float(ix) + 1.f), worldY(gy, float(iy) + 1.f),
+                             h(ix + 1, iy + 1)});
+                    const int d = out.addVertex(
+                        Vec3{worldX(gx, float(ix) + 1.f), worldY(gy, float(iy)),
+                             h(ix + 1, iy)});
+
                     out.addTriangle(a, c, b, area);
                     out.addTriangle(a, d, c, area);
                 }
@@ -412,21 +510,85 @@ namespace world::nav
             int borderSize = 0;
         };
 
+        bool addNeighbourGeometry(const MapBake& mb, int gx, int gy,
+                                  Soup& solid, Soup& liquid)
+        {
+            constexpr int neighbours[][2] = {
+                {-1, 0},
+                {1, 0},
+                {0, -1},
+                {0, 1},
+            };
+
+            for (const auto& offset : neighbours)
+            {
+                const int neighbourGx = gx + offset[0];
+                const int neighbourGy = gy + offset[1];
+                const std::string path =
+                    mb.tileDir + "/t_" + std::to_string(mb.mapId) + "_" +
+                    std::to_string(neighbourGx) + "_" +
+                    std::to_string(neighbourGy) + ".tile";
+
+                std::error_code ec;
+                const bool exists = std::filesystem::exists(path, ec);
+                if (ec)
+                {
+                    logError("[nav] map " + std::to_string(mb.mapId) + " tile (" +
+                             std::to_string(gx) + "," + std::to_string(gy) +
+                             "): cannot inspect neighbour (" +
+                             std::to_string(neighbourGx) + "," +
+                             std::to_string(neighbourGy) + "): " + ec.message());
+                    return false;
+                }
+                if (!exists)
+                {
+                    continue;
+                }
+
+                std::shared_ptr<TerrainTile> neighbour =
+                    world::terrain::readTile(path);
+                if (!neighbour)
+                {
+                    logError("[nav] map " + std::to_string(mb.mapId) + " tile (" +
+                             std::to_string(gx) + "," + std::to_string(gy) +
+                             "): existing neighbour (" +
+                             std::to_string(neighbourGx) + "," +
+                             std::to_string(neighbourGy) + ") is unreadable: " + path);
+                    return false;
+                }
+
+                CellRect cells{};
+                if (!neighbourCellRect(offset[0], offset[1], cells))
+                {
+                    return false;
+                }
+                addTerrainCells(*neighbour, neighbourGx, neighbourGy, cells, solid);
+                addLiquidCells(*neighbour, neighbourGx, neighbourGy, cells, liquid);
+            }
+            return true;
+        }
+
         /// Bakes one grid cell into one .mmtile.
         ///
-        /// Tiles share nothing: this reads its own .tile, owns its own Recast context and
-        /// allocations, and writes its own file. That is what lets the map bake run one
-        /// tile per core with no locking on the hot path.
+        /// Workers share no mutable state: each reads its own tile plus up to four
+        /// neighbour borders, owns its Recast context and allocations, and writes its
+        /// own file. This keeps the map bake safe to run one tile per core without a
+        /// shared cache lock.
         ///
         /// Returns false when the tile yields no navmesh -- an ocean tile with nothing to
         /// stand on is the common case, not an error.
-        bool bakeTile(const MapBake& mb, int gx, int gy)
+        bool bakeTile(const MapBake& mb, int gx, int gy, bool& tileError)
         {
+            tileError = false;
             const std::string tilePath = mb.tileDir + "/t_" + std::to_string(mb.mapId) + "_" +
                                          std::to_string(gx) + "_" + std::to_string(gy) + ".tile";
             std::shared_ptr<TerrainTile> tile = world::terrain::readTile(tilePath);
             if (!tile)
             {
+                logError("[nav] map " + std::to_string(mb.mapId) + " tile (" +
+                         std::to_string(gx) + "," + std::to_string(gy) +
+                         ") is unreadable: " + tilePath);
+                tileError = true;
                 return false;
             }
 
@@ -444,6 +606,11 @@ namespace world::nav
             if (solid.empty())
             {
                 return false;   // ocean tile: nothing to stand on
+            }
+            if (!addNeighbourGeometry(mb, gx, gy, solid, liquid))
+            {
+                tileError = true;
+                return false;
             }
 
             const int navTileX = gy;
@@ -650,6 +817,7 @@ namespace world::nav
         std::atomic<size_t> nextTile{0};
         std::atomic<int> written{0};
         std::atomic<int> finished{0};
+        std::atomic<int> tileErrors{0};
 
         // Tiles are handed out one at a time rather than sliced up front: their cost
         // varies by an order of magnitude (a dense city tile against an empty coast), so
@@ -664,9 +832,14 @@ namespace world::nav
                     break;
                 }
 
-                if (bakeTile(mb, grids[i].first, grids[i].second))
+                bool tileError = false;
+                if (bakeTile(mb, grids[i].first, grids[i].second, tileError))
                 {
                     written.fetch_add(1, std::memory_order_relaxed);
+                }
+                else if (tileError)
+                {
+                    tileErrors.fetch_add(1, std::memory_order_relaxed);
                 }
 
                 const int n = finished.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -691,6 +864,13 @@ namespace world::nav
         }
 
         std::cout << std::endl;
+        if (tileErrors.load(std::memory_order_relaxed) != 0)
+        {
+            logError("[nav] map " + std::to_string(mapId) + " failed: " +
+                     std::to_string(tileErrors.load(std::memory_order_relaxed)) +
+                     " tile input error(s)");
+            return -1;
+        }
         return written.load(std::memory_order_relaxed);
     }
 
@@ -743,7 +923,12 @@ namespace world::nav
             // terminates it.
             std::cout << "  nav map " << mapId << " (" << grids.size() << " tiles) "
                       << std::flush;
-            total += bakeMap(mapId, grids);
+            const int written = bakeMap(mapId, grids);
+            if (written < 0)
+            {
+                return -1;
+            }
+            total += written;
         }
         return total;
     }

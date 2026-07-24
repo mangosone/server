@@ -44,3 +44,8 @@ add_executable(session_mailbox_tests
 target_include_directories(session_mailbox_tests PRIVATE ${PROJECT_SOURCE_DIR}/src/game/Server)
 target_link_libraries(session_mailbox_tests PRIVATE shared Threads::Threads)
 add_test(NAME session_mailbox_tests COMMAND session_mailbox_tests)
+
+add_executable(nav_mesh_builder_tests NavMeshBuilderTests.cpp)
+target_include_directories(nav_mesh_builder_tests
+  PRIVATE ${PROJECT_SOURCE_DIR}/src/baker)
+add_test(NAME nav_mesh_builder_tests COMMAND nav_mesh_builder_tests)
