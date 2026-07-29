@@ -34,7 +34,6 @@
 #include "WorldSession.h"
 #include "UpdateMask.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
 #include "DBCStores.h"
 #include "MapManager.h"
 #include <cstdlib>
@@ -93,7 +92,7 @@ void PlayerTaxi::LoadTaxiMask(const char* data)
     for (iter = tokens.begin(), index = 0; (index < TaxiMaskSize) && (iter != tokens.end()); ++iter, ++index)
     {
         // load and set bits only for existing taxi nodes
-        m_taximask[index] = sTaxiNodesMask[index] & uint32(atol((*iter).c_str()));
+        m_taximask[index] = sTaxiNodesMask[index] & uint32(std::strtoul((*iter).c_str(), NULL, 10));
     }
 }
 
@@ -136,7 +135,7 @@ bool PlayerTaxi::LoadTaxiDestinationsFromString(const std::string& values, Team 
 
     for (Tokens::iterator iter = tokens.begin(); iter != tokens.end(); ++iter)
     {
-        uint32 node = uint32(atol(iter->c_str()));
+        uint32 node = uint32(std::strtoul(iter->c_str(), NULL, 10));
         AddTaxiDestination(node);
     }
 

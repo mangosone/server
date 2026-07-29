@@ -38,7 +38,7 @@
 #include "TargetedMovementGenerator.h"
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
-#include "terrain/Geometry/Vector3.h"
+#include "Geometry/Vector3.h"
 #include <cstdlib>
 
 /**

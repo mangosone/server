@@ -1,3 +1,5 @@
+#include "Common/Locales.h"
+#include <mutex>
 #include "WorldGateway.h"
 
 #include "AddonHandler.h"

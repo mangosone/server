@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <unordered_map>
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "ProgressBar.h"
@@ -51,7 +52,7 @@ struct SkillDiscoveryEntry
 };
 
 typedef std::list<SkillDiscoveryEntry> SkillDiscoveryList;
-typedef UNORDERED_MAP<int32, SkillDiscoveryList> SkillDiscoveryMap;
+typedef std::unordered_map<int32, SkillDiscoveryList> SkillDiscoveryMap;
 
 static SkillDiscoveryMap SkillDiscoveryStore;
 

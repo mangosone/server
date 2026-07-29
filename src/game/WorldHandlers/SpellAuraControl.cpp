@@ -45,7 +45,8 @@
 
 
 #include "SpellAuras.h"
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -61,7 +62,6 @@
 #include "DynamicObject.h"
 #include "Group.h"
 #include "UpdateData.h"
-#include "ObjectAccessor.h"
 #include "Policies/Singleton.h"
 #include "Totem.h"
 #include "Creature.h"
@@ -272,7 +272,7 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
         pet->AttackStop();
 
         // out of range pet dismissed
-        if (!pet->IsWithinDistInMap(p_caster, pet->GetMap()->GetVisibilityDistance()))
+        if (!InReach(*pet, *p_caster, pet->GetMap()->GetVisibilityDistance()))
         {
             p_caster->RemovePet(PET_SAVE_REAGENTS);
         }
@@ -569,7 +569,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         {
             GameObject* pObj = new GameObject;
             if (pObj->Create(target->GetMap()->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), 185584, target->GetMap(),
-                             target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), target->GetOrientation()))
+                             target->Where().X(), target->Where().Y(), target->Where().Z(), target->Where().Facing()))
             {
                 pObj->SetRespawnTime(GetAuraDuration() / IN_MILLISECONDS);
                 pObj->SetSpellId(GetId());

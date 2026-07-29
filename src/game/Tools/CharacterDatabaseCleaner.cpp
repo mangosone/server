@@ -42,7 +42,7 @@
  * @see CLEANING_FLAG_* constants for available operations
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "CharacterDatabaseCleaner.h"
 #include "World.h"
 #include "Database/DatabaseEnv.h"

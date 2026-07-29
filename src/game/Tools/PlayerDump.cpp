@@ -48,7 +48,7 @@
  * @see PlayerDumpReader for import functionality
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "PlayerDump.h"
 #include "Database/DatabaseEnv.h"
 #include "SQLStorages.h"

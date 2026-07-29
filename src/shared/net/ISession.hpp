@@ -24,11 +24,10 @@
 
 #pragma once
 
-// Protocol-agnostic per-connection contract used by every networking backend
-// (IOCP / epoll / kqueue / io_uring). The transport owns the sockets and the
-// byte plumbing; a concrete ISession owns the protocol. This is what lets the
-// same networking power different protocols (e.g. world clients and remote
-// access): each supplies its own ISession + factory, nothing else changes.
+// Protocol-agnostic per-connection contract used by every backend. The transport owns the
+// sockets and the byte plumbing; a concrete ISession owns the protocol -- which is what
+// lets one transport serve world clients and remote access alike, each supplying its own
+// ISession and factory.
 
 #include <cstddef>
 #include <cstdint>
@@ -39,38 +38,17 @@
 
 namespace net {
 
-// Thread-safe, lifetime-safe outbound channel. The transport hands each session
-// one of these; the session may call send() from ANY thread (notably the world
-// update thread) to push bytes to the client. Once the connection is torn down
-// the transport disarms it, after which send() is a harmless no-op — so a world
-// thread that still holds a reference can never touch a freed socket.
-//
-// Takes a raw span, NOT a std::vector, on purpose. A world tick emits a great many
-// small packets (movement, chat, spell updates), and the transport's job is simply
-// to append those bytes to the connection's outbound buffer (see net::SendQueue).
-// Handing over a vector would force a heap allocation per packet that the transport
-// would immediately memcpy and throw away; a span lets it copy straight into a
-// buffer that has already reached its steady-state capacity — no allocation at all.
-// The bytes need only stay valid for the duration of the call.
+// Thread-safe outbound channel. The session may call send() from any thread; once the
+// connection is torn down the transport disarms it and send() becomes a no-op. The
+// span need only stay valid for the duration of the call.
 using Sender = std::function<void(const uint8_t* data, size_t len)>;
 
-// Symmetric to Sender: lets the world thread ask the transport to tear the
-// connection down (e.g. a protocol violation found while ticking). Also a no-op
-// once the socket is already gone.
+// Lets a session ask the transport to tear the connection down. No-op once gone.
 using Closer = std::function<void()>;
 
-// Backpressure handle for a session that produces bulk output faster than a peer
-// can drain it (realmd's patch stream). The Sender queues unconditionally, so a
-// naive producer that pushes a whole file at once buffers the whole file. A
-// producer instead calls awaitWritable() before each push: it blocks until this
-// connection's outbound backlog has drained to at most `maxOutstandingBytes`,
-// capping queued memory regardless of file size.
-//
-// The ceiling is in BYTES, not buffers: the transport coalesces queued packets into
-// one contiguous stream (net::SendQueue), so a count of outstanding buffers would be
-// meaningless — and bytes are what a memory ceiling actually wants to bound anyway.
-// Lifetime-safe like the Sender — after the connection is torn down awaitWritable()
-// returns false (rather than touching a freed connection) so the producer stops.
+// Backpressure handle for bulk producers (realmd's patch stream): awaitWritable()
+// blocks until this connection's outbound backlog drains to at most
+// maxOutstandingBytes, or returns false once the connection is gone.
 class FlowControl {
 public:
     virtual ~FlowControl() = default;
@@ -113,13 +91,8 @@ public:
     // request/response sessions do all their work inline in onData.
     virtual void update() {}
 
-    // Second phase of a world tick (world thread), run for every session AFTER all
-    // updates. update() is the "compute" phase: a session may, while ticking, push
-    // bytes into *another* session's outbound buffer (e.g. broadcasting movement to
-    // nearby players). flush() is the "send" phase that drains each session's buffer
-    // to its socket — so a broadcast lands the same tick regardless of update order,
-    // and a session with no inbound traffic still delivers packets others queued for
-    // it. Default: nothing.
+    // Second phase of a world tick (world thread), after every session's update(), so
+    // packets one session queued into another's buffer are delivered the same tick.
     virtual void flush() {}
 
     // Called by the transport when the socket is being torn down (net thread),

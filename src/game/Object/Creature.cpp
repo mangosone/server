@@ -22,6 +22,9 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
+#include <algorithm>
+#include "Utilities/MathDefines.h"
 #include "Creature.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "Database/DatabaseEnv.h"
@@ -40,8 +43,8 @@
 #include "Log.h"
 #include "LootMgr.h"
 #include "MapManager.h"
-#include "TransportSystem.h"
 #include "Transports.h"
+#include "TransportMap.h"
 #include "CreatureAI.h"
 #include "CreatureAISelector.h"
 #include "InstanceData.h"
@@ -66,6 +69,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "PlayerRegistry.h"
+#include "Corpse.h"
 
 
 /**
@@ -170,9 +175,9 @@ void CreatureCreatePos::SelectFinalPoint(Creature* cr)
     // right on top of it -- no floor to look for, so a deck needs no special case here
     if (m_dist == 0.0f)
     {
-        m_pos.x = m_closeObject->GetPositionX();
-        m_pos.y = m_closeObject->GetPositionY();
-        m_pos.z = m_closeObject->GetPositionZ();
+        m_pos.x = m_closeObject->Where().X();
+        m_pos.y = m_closeObject->Where().Y();
+        m_pos.z = m_closeObject->Where().Z();
         return;
     }
 
@@ -182,27 +187,23 @@ void CreatureCreatePos::SelectFinalPoint(Creature* cr)
     // hundred yards straight down, in the water under the ship. Out of everyone's sight,
     // too far below the deck to ever be boarded by Transport::UpdateMinions, and gone.
     //
-    // So the spot is chosen on the vessel's deck mesh instead, and handed back in WORLD
-    // coordinates, because the creature being created is a grid citizen and the map has to
-    // be told where it stands. Boarding it -- putting it into the vessel's frame for good
-    // -- is UpdateMinions' job, and it does it on the next tick, now that there is a deck
-    // under the thing to find.
-    if (Transport* vessel = Transport::VesselOf(*m_closeObject))
+    // So the spot is chosen on the vessel's own map, in that map's coordinates, which are
+    // the only coordinates a deck has -- nothing is composed and nothing is converted.
+    if (TransportMap* hull = m_closeObject->GetMap()->AsTransport())
     {
-        const float distance2d = m_dist + m_closeObject->GetObjectBoundingRadius() +
-                                 cr->GetObjectBoundingRadius();
+        const float distance2d = m_dist + m_closeObject->Where().Extent() +
+                                 cr->Where().Extent();
 
-        if (const auto spot = vessel->DeckSpotNear(*m_closeObject, distance2d, m_angle))
+        if (const auto spot = hull->FreeSpotNear(*m_closeObject, distance2d, m_angle))
         {
-            float go;
-            vessel->CalculateGlobalPositionOf(spot->x, spot->y, spot->z, spot->o,
-                                              m_pos.x, m_pos.y, m_pos.z, go);
+            m_pos.x = spot->x;
+            m_pos.y = spot->y;
+            m_pos.z = spot->z;
             return;
         }
     }
 
-    m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, cr->GetObjectBoundingRadius(),
-                                 m_dist, m_angle);
+    ClosePointNear(*m_closeObject, m_pos.x, m_pos.y, m_pos.z, cr->Where().Extent(), m_dist, m_angle);
 }
 
 /**
@@ -211,13 +212,13 @@ void CreatureCreatePos::SelectFinalPoint(Creature* cr)
  * @param cr The creature to move.
  * @return true if the new position is valid; otherwise, false.
  */
-bool CreatureCreatePos::Relocate(Creature* cr) const
+bool CreatureCreatePos::PlaceOn(Creature* cr) const
 {
-    cr->Relocate(m_pos.x, m_pos.y, m_pos.z, m_pos.o);
+    cr->Place().MoveTo(m_pos.x, m_pos.y, m_pos.z, m_pos.o);
 
-    if (!cr->IsPositionValid())
+    if (!IsPlaceable(*cr))
     {
-        sLog.outError("%s not created. Suggested coordinates isn't valid (X: %f Y: %f)", cr->GetGuidStr().c_str(), cr->GetPositionX(), cr->GetPositionY());
+        sLog.outError("%s not created. Suggested coordinates isn't valid (X: %f Y: %f)", cr->GetGuidStr().c_str(), cr->Where().X(), cr->Where().Y());
         return false;
     }
 
@@ -254,9 +255,7 @@ Creature::Creature(CreatureSubtype subtype) : Unit(),
     // Zero sentinel: lets waypoint evade tell "combat start never recorded"
     // apart from a real recorded position (set in Unit::Attack), so it can
     // resume from the departure point instead of the last reached waypoint.
-    m_combatStartX = 0.0f;
-    m_combatStartY = 0.0f;
-    m_combatStartZ = 0.0f;
+    m_combatStart = Geometry::Vector3();
 
     for (int i = 0; i < CREATURE_MAX_SPELLS; ++i)
     {
@@ -329,14 +328,14 @@ void Creature::AddToWorld()
  */
 void Creature::RemoveFromWorld()
 {
-    // A creature standing on a deck is a PASSENGER of that vessel, which holds a raw pointer
-    // to it in its passenger list (and its container). Step off the boat before leaving the
-    // world, or the ship dereferences freed memory on its next tick. Idempotent, and a no-op
-    // for crew (the vessel unboards them explicitly first) -- but the real guarantee for a
-    // deleted creature is in CleanupsBeforeDelete, which is the path a dying pet takes.
-    if (TransportInfo* transportInfo = GetTransportInfo())
+    // Off the vessel's crew index. NOT an unboarding -- being aboard is what having this
+    // map MEANS -- but the index holds a raw pointer and must not outlive the creature.
+    if (IsInWorld() && GetMap())
     {
-        transportInfo->GetTransportBase()->UnBoardPassenger(this);
+        if (TransportMap* hull = GetMap()->AsTransport())
+        {
+            hull->DelistCrew(this);
+        }
     }
 
 #ifdef ENABLE_ELUNA
@@ -371,9 +370,12 @@ void Creature::RemoveFromWorld()
  */
 void Creature::CleanupsBeforeDelete()
 {
-    if (TransportInfo* transportInfo = GetTransportInfo())
+    if (GetMap())
     {
-        transportInfo->GetTransportBase()->UnBoardPassenger(this);
+        if (TransportMap* hull = GetMap()->AsTransport())
+        {
+            hull->DelistCrew(this);
+        }
     }
 
     Unit::CleanupsBeforeDelete();
@@ -1138,7 +1140,7 @@ void Creature::DoFleeToGetAssistance()
         else
         {
             SetTargetGuid(ObjectGuid());        // creature flee loose its target
-            GetMotionMaster()->MoveSeekAssistance(pCreature->GetPositionX(), pCreature->GetPositionY(), pCreature->GetPositionZ());
+            GetMotionMaster()->MoveSeekAssistance(pCreature->Where().X(), pCreature->Where().Y(), pCreature->Where().Z());
         }
     }
 }
@@ -1186,13 +1188,13 @@ bool Creature::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo cons
 
     cPos.SelectFinalPoint(this);
 
-    if (!cPos.Relocate(this))
+    if (!cPos.PlaceOn(this))
     {
         return false;
     }
 
     // Notify the outdoor pvp script
-    if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
+    if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z())))
     {
         outdoorPvP->HandleCreatureCreate(this);
     }
@@ -1451,7 +1453,7 @@ void Creature::PrepareBodyLootState()
  */
 Player* Creature::GetOriginalLootRecipient() const
 {
-    return m_lootRecipientGuid ? sObjectAccessor.FindPlayer(m_lootRecipientGuid) : NULL;
+    return m_lootRecipientGuid ? sPlayerRegistry.Find(m_lootRecipientGuid) : NULL;
 }
 
 /**
@@ -1640,10 +1642,10 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask)
     data.spawnMask = spawnMask;
     data.modelid_override = displayId;
     data.equipmentId = GetEquipmentId();
-    data.posX = GetPositionX();
-    data.posY = GetPositionY();
-    data.posZ = GetPositionZ();
-    data.orientation = GetOrientation();
+    data.posX = Where().X();
+    data.posY = Where().Y();
+    data.posZ = Where().Z();
+    data.orientation = Where().Facing();
     data.spawntimesecs = m_respawnDelay;
     // prevent add data integrity problems
     data.spawndist = GetDefaultMovementType() == IDLE_MOTION_TYPE ? 0 : m_respawnradius;
@@ -1765,7 +1767,7 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
         return false;
     }
 
-    SetRespawnCoord(pos);
+    SetSpawn(pos);
     m_respawnradius = data->spawndist;
 
     m_respawnDelay = data->spawntimesecs;
@@ -1780,10 +1782,11 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
         m_deathState = DEAD;
         if (CanFly())
         {
-            float tz = GetMap()->GetTerrain()->GetHeightStatic(data->posX, data->posY, data->posZ, false);
+            const auto spawnFloor = GetMap()->GetTerrain()->StaticFloor(data->posX, data->posY, data->posZ);
+                float tz = spawnFloor ? *spawnFloor : INVALID_HEIGHT;
             if (data->posZ - tz > 0.1)
             {
-                Relocate(data->posX, data->posY, tz);
+                Place().MoveTo(data->posX, data->posY, tz);
             }
         }
     }
@@ -1814,10 +1817,11 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
             // Just set to dead, so need to relocate like above
             if (CanFly())
             {
-                float tz = GetMap()->GetTerrain()->GetHeightStatic(data->posX, data->posY, data->posZ, false);
+                const auto spawnFloor = GetMap()->GetTerrain()->StaticFloor(data->posX, data->posY, data->posZ);
+                float tz = spawnFloor ? *spawnFloor : INVALID_HEIGHT;
                 if (data->posZ - tz > 0.1)
                 {
-                    Relocate(data->posX, data->posY, tz);
+                    Place().MoveTo(data->posX, data->posY, tz);
                 }
             }
         }
@@ -2291,9 +2295,9 @@ SpellEntry const* Creature::ReachWithSpellAttack(Unit* pVictim)
         float range = GetSpellMaxRange(srange);
         float minrange = GetSpellMinRange(srange);
 
-        float dist = GetCombatDistance(pVictim, spellInfo->RangeIndex == SPELL_RANGE_IDX_COMBAT);
+        float dist = CombatDistanceBetween(*this, *pVictim, spellInfo->RangeIndex == SPELL_RANGE_IDX_COMBAT);
 
-        // if (!IsInFront( pVictim, range ) && spellInfo->AttributesEx )
+        // if (!InFrontPhased(*this, *pVictim, range, M_PI_F) && spellInfo->AttributesEx )
         //    continue;
         if (dist > range || dist < minrange)
         {
@@ -2360,9 +2364,9 @@ SpellEntry const* Creature::ReachWithSpellCure(Unit* pVictim)
         float range = GetSpellMaxRange(srange);
         float minrange = GetSpellMinRange(srange);
 
-        float dist = GetCombatDistance(pVictim, spellInfo->RangeIndex == SPELL_RANGE_IDX_COMBAT);
+        float dist = CombatDistanceBetween(*this, *pVictim, spellInfo->RangeIndex == SPELL_RANGE_IDX_COMBAT);
 
-        // if (!IsInFront( pVictim, range ) && spellInfo->AttributesEx )
+        // if (!InFrontPhased(*this, *pVictim, range, M_PI_F) && spellInfo->AttributesEx )
         //    continue;
         if (dist > range || dist < minrange)
         {
@@ -2413,7 +2417,7 @@ bool Creature::IsVisibleInGridForPlayer(Player* pl) const
         if (corpse)
         {
             // 20 - aggro distance for same level, 25 - max additional distance if player level less that creature level
-            if (corpse->IsWithinDistInMap(this, (20 + 25)*sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO)))
+            if (InReach(*corpse, *this, (20 + 25)*sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO)))
             {
                 return true;
             }
@@ -2611,7 +2615,7 @@ bool Creature::IsOutOfThreatArea(Unit* pVictim) const
         return true;
     }
 
-    if (!pVictim->IsInMap(this))
+    if (!pVictim->Where().ShareFrame(this->Where()))
     {
         return true;
     }
@@ -2640,8 +2644,7 @@ bool Creature::IsOutOfThreatArea(Unit* pVictim) const
     float ThreatRadius = sWorld.getConfig(CONFIG_FLOAT_THREAT_RADIUS);
 
     // Use AttackDistance in distance check if threat radius is lower. This prevents creature bounce in and out of combat every update tick.
-    return !pVictim->IsWithinDist3d(m_combatStartX, m_combatStartY, m_combatStartZ,
-                                    ThreatRadius > AttackDist ? ThreatRadius : AttackDist);
+    return !pVictim->Where().WithinDist(CombatAnchor(), ThreatRadius > AttackDist ? ThreatRadius : AttackDist);
 }
 
 /**
@@ -2751,7 +2754,7 @@ bool Creature::LoadCreatureAddon(bool reload)
  */
 void Creature::SendZoneUnderAttackMessage(Player* attacker)
 {
-    sWorld.SendZoneUnderAttackMessage(GetZoneId(), attacker->GetTeam() == ALLIANCE ? HORDE : ALLIANCE);
+    sWorld.SendZoneUnderAttackMessage(GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z()), attacker->GetTeam() == ALLIANCE ? HORDE : ALLIANCE);
 }
 
 /**
@@ -2826,16 +2829,16 @@ bool Creature::MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* 
         return false;
     }
 
-    if (selectFlags & SELECT_FLAG_IN_MELEE_RANGE && !CanReachWithMeleeAttack(pTarget))
+    if (selectFlags & SELECT_FLAG_IN_MELEE_RANGE && !InMeleeReach(*this, *pTarget))
     {
         return false;
     }
-    if (selectFlags & SELECT_FLAG_NOT_IN_MELEE_RANGE && CanReachWithMeleeAttack(pTarget))
+    if (selectFlags & SELECT_FLAG_NOT_IN_MELEE_RANGE && InMeleeReach(*this, *pTarget))
     {
         return false;
     }
 
-    if (pSpellInfo && selectFlags & SELECT_FLAG_IN_LOS && !DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, pSpellInfo->ID, pTarget, SPELL_DISABLE_LOS) && !IsWithinLOSInMap(pTarget))
+    if (pSpellInfo && selectFlags & SELECT_FLAG_IN_LOS && !DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, pSpellInfo->ID, pTarget, SPELL_DISABLE_LOS) && !HasLineOfSight(*this, *pTarget))
     {
         return false;
     }
@@ -2846,13 +2849,13 @@ bool Creature::MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* 
         {
             case SPELL_RANGE_IDX_SELF_ONLY: return false;
             case SPELL_RANGE_IDX_ANYWHERE:  return true;
-            case SPELL_RANGE_IDX_COMBAT:    return CanReachWithMeleeAttack(pTarget);
+            case SPELL_RANGE_IDX_COMBAT:    return InMeleeReach(*this, *pTarget);
         }
 
         SpellRangeEntry const* srange = sSpellRangeStore.LookupEntry(pSpellInfo->RangeIndex);
         float max_range = GetSpellMaxRange(srange);
         float min_range = GetSpellMinRange(srange);
-        float dist = GetCombatDistance(pTarget, false);
+        float dist = CombatDistanceBetween(*this, *pTarget, false);
 
         return dist < max_range && dist >= min_range;
     }
@@ -3036,61 +3039,33 @@ time_t Creature::GetRespawnTimeEx() const
  */
 void Creature::RelocateToRespawnPoint()
 {
-    float x, y, z, o;
-    GetRespawnCoord(x, y, z, &o);
+    const Geometry::Vector3 home = Spawn().Pos();
+    const float x = home.x, y = home.y, z = home.z, o = Spawn().Facing();
 
-    if (TransportInfo* transportInfo = GetTransportInfo())
-    {
-        // CREW: its home IS a deck offset, so the offset is the thing to set, and the vessel
-        // refreshes the world cache from it.
-        if (!transportInfo->IsMinion())
-        {
-            transportInfo->SetLocalPosition(x, y, z, o);
-            return;
-        }
-
-        // A MINION -- a pet, a guardian -- only borrows the deck. Its respawn coord is a place
-        // on the MAP, where it was summoned, so there is nothing here for the deck frame to
-        // do: read as an offset it would name a point in open water beside the ship, and going
-        // home would be the one thing it never did. Going home means going ashore, so it
-        // steps off the boat first and is then relocated in the world, like any other creature.
-        transportInfo->GetTransportBase()->UnBoardPassenger(this);
-    }
-
+    // Aboard, the respawn coord is already a place on the vessel's own map, because that
+    // map is the only frame anything on a deck has ever been expressed in. So this is one
+    // relocation, on whichever map the creature is on, and nothing has to know which.
     GetMap()->CreatureRelocation(this, x, y, z, o);
 }
 
-void Creature::GetRespawnCoord(float& x, float& y, float& z, float* ori, float* dist) const
+void Creature::SetSpawn(CreatureCreatePos const& pos)
 {
-    x = m_respawnPos.x;
-    y = m_respawnPos.y;
-    z = m_respawnPos.z;
-
-    if (ori)
-    {
-        *ori = m_respawnPos.o;
-    }
-
-    if (dist)
-    {
-        *dist = GetRespawnRadius();
-    }
-
-    // lets check if our creatures have valid spawn coordinates
-    MANGOS_ASSERT(MaNGOS::IsValidMapCoord(x, y, z) || PrintCoordinatesError(x, y, z, "respawn"));
+    SetSpawn(Geometry::Vector3(pos.m_pos.x, pos.m_pos.y, pos.m_pos.z), pos.m_pos.o);
 }
 
-/**
- * @brief Resets the respawn coordinates from static database spawn data.
- */
-void Creature::ResetRespawnCoord()
+void Creature::SetSpawn(Geometry::Vector3 const& at, float facing)
+{
+    m_spawn.EnterFrame(Where().CurrentFrame(), at, facing);
+
+    MANGOS_ASSERT(MaNGOS::IsValidMapCoord(at.x, at.y, at.z) ||
+                  PrintCoordinatesError(at.x, at.y, at.z, "respawn"));
+}
+
+void Creature::ResetSpawn()
 {
     if (CreatureData const* data = sObjectMgr.GetCreatureData(GetGUIDLow()))
     {
-        m_respawnPos.x = data->posX;
-        m_respawnPos.y = data->posY;
-        m_respawnPos.z = data->posZ;
-        m_respawnPos.o = data->orientation;
+        SetSpawn(Geometry::Vector3(data->posX, data->posY, data->posZ), data->orientation);
     }
 }
 

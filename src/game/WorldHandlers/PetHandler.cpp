@@ -40,7 +40,7 @@
  * Pet actions are validated and synchronized with the owner.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "ObjectMgr.h"
@@ -151,7 +151,7 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                         return;
                     }
                     // Not let attack through obstructions
-                    if (!pet->IsWithinLOSInMap(TargetUnit))
+                    if (!HasLineOfSight(*pet, *TargetUnit))
                     {
                         return;
                     }

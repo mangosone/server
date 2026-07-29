@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +22,16 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/MathDefines.h"
 #include "MotionFrame.h"
 #include "Map.h"
 #include "MapManager.h"
 #include "PathFinder.h"
 #include "Player.h"
-#include "TransportSystem.h"
 #include "Transports.h"
+#include "TransportMap.h"
 #include "Unit.h"
-#include "Util.h"
+#include "Utilities/Util.h"
 
 #include <algorithm>
 #include <cmath>
@@ -46,9 +47,7 @@ namespace Motion
         constexpr float DEFAULT_PATH_LENGTH =
             float(MAX_POINT_PATH_LENGTH) * SMOOTH_PATH_STEP_SIZE;
 
-        /**
-         * @brief The world frame's router: the Detour navmesh, behind IPathQuery.
-         */
+        /// The world frame's router: the Detour navmesh, behind IPathQuery.
         class WorldPathQuery final : public IPathQuery
         {
             public:
@@ -66,9 +65,9 @@ namespace Motion
                         return false;
                     }
 
-                    // A failed route still leaves a straight-line shortcut in the
-                    // points, which some movement kinds want and others refuse -- so
-                    // report it (Failed) rather than deciding here.
+                    // A failed route still leaves a straight-line shortcut in the points,
+                    // which some movement kinds want and others refuse -- so report it
+                    // through Failed() rather than deciding here.
                     return m_path.getPath().size() >= 2;
                 }
 
@@ -91,17 +90,17 @@ namespace Motion
                 }
 
             private:
-                /// getPath() is non-const on PathFinder, though reading the routed
-                /// points does not mutate the query as far as callers are concerned.
+                /// getPath() is non-const on PathFinder, though reading the routed points
+                /// does not mutate the query as far as callers are concerned.
                 mutable PathFinder m_path;
         };
 
         /**
          * @brief The world's own coordinate system: navmesh routing, terrain heights.
-         *        What the movement code always did, now behind the frame interface so
-         *        a transport frame can replace it wholesale.
+         *        What the movement code always did, now behind the frame interface so a
+         *        transport frame can replace it wholesale.
          */
-        class WorldFrame final : public IMotionFrame
+        class WorldFrame : public IMotionFrame
         {
             public:
                 FrameKind Kind() const override { return FrameKind::World; }
@@ -114,33 +113,28 @@ namespace Motion
                 Vector3 MoverPosition(Unit const& mover) const override
                 {
                     Vector3 p;
-                    mover.GetPosition(p.x, p.y, p.z);
+                    p.x = mover.Where().X(), p.y = mover.Where().Y(), p.z = mover.Where().Z();
                     return p;
                 }
 
                 /// The world frame IS world space, so both conversions are the identity.
                 /// This is what lets every generator convert its anchors unconditionally
-                /// and cost nothing for the 99.99% of units that are not on a boat.
+                /// and cost nothing for the units that are not on a vessel.
                 Vector3 FromWorld(Unit const& /*mover*/, Vector3 const& world) const override
                 {
                     return world;
                 }
 
-                Vector3 ToWorld(Unit const& /*mover*/, Vector3 const& local) const override
-                {
-                    return local;
-                }
-
                 Vector3 ObjectPosition(Unit const& /*mover*/, WorldObject const& obj) const override
                 {
                     Vector3 p;
-                    obj.GetPosition(p.x, p.y, p.z);
+                    p.x = obj.Where().X(), p.y = obj.Where().Y(), p.z = obj.Where().Z();
                     return p;
                 }
 
                 float ObjectOrientation(Unit const& /*mover*/, WorldObject const& obj) const override
                 {
-                    return obj.GetOrientation();
+                    return obj.Where().Facing();
                 }
 
                 Vector3 NearPoint(Unit const& mover, WorldObject const& target,
@@ -148,8 +142,7 @@ namespace Motion
                                   float absAngle) const override
                 {
                     Vector3 p;
-                    target.GetNearPoint(&mover, p.x, p.y, p.z, searcherBounding,
-                                        distance2d, absAngle);
+                    FindFreeSpotNear(target, &mover, p.x, p.y, p.z, searcherBounding, distance2d, absAngle);
                     return p;
                 }
 
@@ -171,7 +164,11 @@ namespace Motion
                     Map* map = mover.GetMap();
 
                     Vector3 p = guess;
-                    if (!map->GetHeightInRange(p.x, p.y, p.z))
+                    if (auto floor = map->FloorNear(p.x, p.y, p.z))
+                    {
+                        p.z = *floor;
+                    }
+                    else
                     {
                         return std::nullopt;
                     }
@@ -186,7 +183,11 @@ namespace Motion
                                                 p.x, p.y, testZ, -0.1f))
                         {
                             p.z = testZ;
-                            if (!map->GetHeightInRange(p.x, p.y, p.z))
+                            if (auto floor = map->FloorNear(p.x, p.y, p.z))
+                            {
+                                p.z = *floor;
+                            }
+                            else
                             {
                                 return std::nullopt;
                             }
@@ -199,21 +200,15 @@ namespace Motion
 
         /* ***************************** The transport frame **************************
          *
-         * A boarded unit is not standing on the map. It is standing in a little world of
-         * its own, which happens to be advertised at a drifting point on one. Everything
-         * below therefore speaks DECK-LOCAL coordinates, in and out, and every collision
-         * question is answered by the vessel's baked mesh IN THE SPACE IT WAS BAKED IN.
+         * A boarded unit is not standing on the map it is advertised over. It is standing
+         * on the vessel's OWN map, and deck-local coordinates are that map's coordinates,
+         * so everything below speaks them in and out with no transform anywhere.
          *
-         * No world transform is ever applied to that mesh, and this is not an
-         * optimisation -- it is the only correct thing to do. The server does not know
-         * where the ship is: the client interpolates it along a Catmull-Rom curve that
+         * That is not an optimisation, it is the only correct thing to do. The server does
+         * not know where the ship is: the client interpolates it along a Catmull-Rom curve
          * the server never reproduces. Posing the hull into world coordinates and firing
-         * rays at it -- which is what every other core does, and why none of them can keep
-         * a crew on a deck -- computes collisions against a ship that is not there.
+         * rays at it computes collisions against a ship that is not there.
          */
-
-        /// The step, in yards, between the samples a deck leg is built from.
-        constexpr float DECK_STEP = 2.0f;
 
         /// Each sample is sought from this far above the last one -- so a low step or a
         /// ramp is found underfoot -- and no further than this below it, so a hatch does
@@ -229,66 +224,11 @@ namespace Motion
         /// clutter; rejecting a bad point is cheaper than being clever about picking one.
         constexpr int DECK_RANDOM_TRIES = 8;
 
-        /// The vessel a boarded unit stands in, or NULL.
-        Transport* VesselOf(Unit const& mover)
-        {
-            TransportInfo* info = mover.GetTransportInfo();
-            if (!info)
-            {
-                return NULL;
-            }
-
-            WorldObject* owner = info->GetTransport();
-            if (!owner || owner->GetTypeId() != TYPEID_GAMEOBJECT)
-            {
-                return NULL;
-            }
-
-            return static_cast<Transport*>(owner);
-        }
-
-        Vector3 LocalPositionOf(TransportInfo const& info)
-        {
-            return Vector3(info.GetLocalPositionX(),
-                           info.GetLocalPositionY(),
-                           info.GetLocalPositionZ());
-        }
-
-        /**
-         * @brief The deck offset of an object aboard `vessel`, if it is aboard at all.
-         *
-         * Both ways of being on a ship have to be read -- a passenger's TransportInfo and a
-         * player's own client-sent offset -- and Transport::LocalPositionOf is where that
-         * rule lives. A pet following its master needs the player case: without it the
-         * chase would aim at the master's WORLD position brought into the deck frame
-         * through a vessel pose we are only estimating, when the exact answer was sitting
-         * in the master's movement packet all along.
-         */
-        std::optional<Vector3> LocalPositionAboard(Transport const& vessel, WorldObject const& obj)
-        {
-            if (const auto local = vessel.LocalPositionOf(obj))
-            {
-                return Vector3(local->x, local->y, local->z);
-            }
-
-            return std::nullopt;
-        }
-
-        std::optional<float> LocalOrientationAboard(Transport const& vessel, WorldObject const& obj)
-        {
-            if (const auto local = vessel.LocalPositionOf(obj))
-            {
-                return local->o;
-            }
-
-            return std::nullopt;
-        }
-
         /// Drop a deck-local point onto the deck. Local in, local out.
-        std::optional<Vector3> DeckDrop(Transport const& vessel, Vector3 const& local)
+        std::optional<Vector3> DeckDrop(TransportMap const& hull, Vector3 const& local)
         {
-            const auto z = vessel.DeckHeightAt(local.x, local.y, local.z,
-                                               DECK_SEARCH_UP, DECK_SEARCH_DOWN);
+            const auto z = hull.SurfaceAt(local.x, local.y, local.z,
+                                          DECK_SEARCH_UP, DECK_SEARCH_DOWN);
             if (!z)
             {
                 return std::nullopt;
@@ -298,228 +238,85 @@ namespace Motion
         }
 
         /// Does the vessel's own geometry stand between these two deck points?
-        bool DeckBlocked(Transport const& vessel, Vector3 const& from, Vector3 const& to)
+        bool DeckBlocked(TransportMap const& hull, Vector3 const& from, Vector3 const& to)
         {
-            return vessel.IsDeckBlocked(Vector3(from.x, from.y, from.z + DECK_PROBE_HEIGHT),
-                                        Vector3(to.x, to.y, to.z + DECK_PROBE_HEIGHT));
+            return hull.IsBlocked(Vector3(from.x, from.y, from.z + DECK_PROBE_HEIGHT),
+                                  Vector3(to.x, to.y, to.z + DECK_PROBE_HEIGHT));
         }
 
         /**
-         * @brief The deck's router.
+         * @brief The deck's router: Detour, on the deck map's own navmesh.
          *
-         * There is no navmesh on a ship, so a deck leg is the straight line to the goal --
-         * but SAMPLED, with every sample dropped onto the deck, and cut short at the first
-         * one that has no deck under it or that cannot be reached from the sample before.
+         * A vessel's hull is a map, and the baker gives that map a navmesh like any other,
+         * so a deck leg is a REAL route -- round a bulkhead, up a companionway -- rather
+         * than a sampled line that merely follows the floor. Deck coordinates are that
+         * map's coordinates, so nothing is transformed on the way in or out.
          *
-         * That sampling is the entire value of the thing. It is what makes a leg follow a
-         * ramp or a companionway instead of shearing through it, and what stops a
-         * deckhand strolling off the bow into the sea.
+         * The mover is still filed under the world map, so the map id is passed explicitly.
          */
         class DeckPathQuery final : public IPathQuery
         {
             public:
-                explicit DeckPathQuery(Unit const& mover) : m_mover(&mover) {}
+                DeckPathQuery(Unit const& mover, uint32 deckMapId)
+                    : m_path(&mover, deckMapId)
+                {
+                }
 
                 bool Calculate(Vector3 const& start, Vector3 const& goal,
-                               bool forceDestination, float /*lengthLimit*/) override
+                               bool forceDestination, float lengthLimit) override
                 {
-                    m_points.clear();
-                    m_failed = true;
-                    m_reachable = false;
+                    m_path.setPathLengthLimit(lengthLimit > 0.0f ? lengthLimit
+                                                                 : DEFAULT_PATH_LENGTH);
 
-                    Transport* vessel = VesselOf(*m_mover);
-                    if (!vessel)
+                    if (!m_path.calculate(start.x, start.y, start.z,
+                                          goal.x, goal.y, goal.z, forceDestination))
                     {
                         return false;
                     }
 
-                    m_points.push_back(start);
-
-                    // No baked mesh: there is no deck to walk on, and we must NOT quietly
-                    // fall back to the world terrain under the hull -- that is the sea
-                    // floor. All we can honestly offer is the straight line, reported as
-                    // Failed, exactly as a world route with no navmesh is. The movement
-                    // kinds that refuse a shortcut then refuse this too.
-                    if (!vessel->HasDeck())
-                    {
-                        m_points.push_back(goal);
-                        return true;
-                    }
-
-                    const Vector3 delta = goal - start;
-                    const float span = std::sqrt(delta.x * delta.x + delta.y * delta.y);
-                    const uint32 steps =
-                        std::max<uint32>(1, uint32(std::ceil(span / DECK_STEP)));
-
-                    Vector3 prev = start;
-                    bool complete = true;
-
-                    for (uint32 i = 1; i <= steps; ++i)
-                    {
-                        const float t = float(i) / float(steps);
-
-                        // Sought from the height of the previous sample, so the leg climbs
-                        // a ramp one step at a time instead of trying to find the whole
-                        // rise from where it started.
-                        const Vector3 guess(start.x + delta.x * t,
-                                            start.y + delta.y * t,
-                                            prev.z);
-
-                        const auto onDeck = DeckDrop(*vessel, guess);
-                        if (!onDeck || DeckBlocked(*vessel, prev, *onDeck))
-                        {
-                            complete = false;   // off the deck, or into something solid
-                            break;
-                        }
-
-                        m_points.push_back(*onDeck);
-                        prev = *onDeck;
-                    }
-
-                    if (forceDestination && !complete)
-                    {
-                        // A pet heeling its master may cheat past the ship's SCENERY -- a
-                        // crate, a companionway, whatever its master strolled straight
-                        // through. It may not cheat through the SHIP. The spot it lands on
-                        // still has to be a spot on the deck, so the cheat skips the
-                        // obstruction test and only that; the floor is not negotiable.
-                        //
-                        // Taking the goal raw -- which is what the world frame safely does,
-                        // because a world goal was dropped onto the terrain by GetNearPoint
-                        // long before it reached any router -- would walk the pet into a
-                        // bulkhead and leave it standing inside the hull, where no client
-                        // can draw it. On a deck the sampling above IS the ground
-                        // resolution, and NearPoint hands back goals it could not resolve
-                        // (see the note there) precisely because it trusts the router to
-                        // refuse them.
-                        //
-                        // No deck under the goal at all -- the master is leaning over the
-                        // rail and the heel spot is out over the water -- and the leg simply
-                        // stays short: the pet crowds up against the rail, as close as the
-                        // deck allows. That is what it does on retail, and it beats swimming.
-                        if (const auto onDeck = DeckDrop(*vessel, goal))
-                        {
-                            m_points.push_back(*onDeck);
-                            complete = true;
-                        }
-                    }
-
-                    if (m_points.size() < 2)
-                    {
-                        // Not one step was walkable.
-                        m_points.push_back(goal);
-                        return true;
-                    }
-
-                    m_failed = false;
-                    m_reachable = complete;
-                    return true;
+                    return m_path.getPath().size() >= 2;
                 }
 
-                PointsArray const& Points() const override { return m_points; }
-                bool Failed() const override { return m_failed; }
+                PointsArray const& Points() const override { return m_path.getPath(); }
 
-                /// A deck leg is NEVER a route: there is no navmesh to route through, so
-                /// it is a straight line that merely follows the floor. Saying so is what
-                /// stops waypoint smoothing from welding deck legs together on the
-                /// strength of a route it never actually had.
-                bool Routed() const override { return false; }
+                bool Failed() const override
+                {
+                    return (m_path.getPathType() & PATHFIND_NOPATH) != 0;
+                }
 
-                bool Reachable() const override { return m_reachable; }
+                bool Routed() const override
+                {
+                    return (m_path.getPathType() &
+                            (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH)) == 0;
+                }
+
+                bool Reachable() const override
+                {
+                    return (m_path.getPathType() & PATHFIND_NORMAL) != 0;
+                }
 
             private:
-                Unit const* m_mover;
-                PointsArray m_points;
-                bool m_failed = true;
-                bool m_reachable = false;
+                mutable PathFinder m_path;
         };
 
-        class TransportFrame final : public IMotionFrame
+        /**
+         * @brief A deck is a map WITH EDGES. That is the whole of the difference.
+         *
+         * Every question about where something IS was answered here by asking the vessel --
+         * and once boarding stopped being recorded, those answers became (0,0,0) and every
+         * deckhand set off from the centre of the ship. They were the wrong questions to
+         * begin with: a unit on a deck is on a MAP, its position is that map's position,
+         * and WorldFrame already reads it straight from the placement, routes on that map's
+         * navmesh and drops onto that map's terrain -- which is the hull.
+         *
+         * What is left below is what a continent does not have: a rail. Off the edge or
+         * through a bulkhead is REFUSED rather than clamped, because a unit inches from a
+         * gunwale must be told no, not quietly pulled back.
+         */
+        class TransportFrame final : public WorldFrame
         {
             public:
                 FrameKind Kind() const override { return FrameKind::Transport; }
-
-                std::unique_ptr<IPathQuery> CreatePathQuery(Unit const& mover) const override
-                {
-                    return std::make_unique<DeckPathQuery>(mover);
-                }
-
-                Vector3 MoverPosition(Unit const& mover) const override
-                {
-                    TransportInfo const* info = mover.GetTransportInfo();
-                    return info ? LocalPositionOf(*info) : Vector3();
-                }
-
-                Vector3 FromWorld(Unit const& mover, Vector3 const& world) const override
-                {
-                    Transport* vessel = VesselOf(mover);
-                    if (!vessel)
-                    {
-                        return world;
-                    }
-
-                    float lx, ly, lz, lo;
-                    vessel->CalculateLocalPositionOf(world.x, world.y, world.z, 0.0f,
-                                                     lx, ly, lz, lo);
-                    return Vector3(lx, ly, lz);
-                }
-
-                Vector3 ToWorld(Unit const& mover, Vector3 const& local) const override
-                {
-                    Transport* vessel = VesselOf(mover);
-                    if (!vessel)
-                    {
-                        return local;
-                    }
-
-                    float gx, gy, gz, go;
-                    vessel->CalculateGlobalPositionOf(local.x, local.y, local.z, 0.0f,
-                                                      gx, gy, gz, go);
-                    return Vector3(gx, gy, gz);
-                }
-
-                Vector3 ObjectPosition(Unit const& mover, WorldObject const& obj) const override
-                {
-                    Transport* vessel = VesselOf(mover);
-
-                    // A fellow passenger's deck offset is exact and needs no conversion. It
-                    // is also the only reading that stays right while the vessel moves under
-                    // both of them -- which is precisely why chase and follow work on a
-                    // rolling deck with no changes of their own, and why a pet keeps up with
-                    // its master instead of swimming after the boat.
-                    if (vessel)
-                    {
-                        if (auto local = LocalPositionAboard(*vessel, obj))
-                        {
-                            return *local;
-                        }
-                    }
-
-                    // Someone ashore, or on another vessel. Read where they are in the
-                    // world and bring that into our frame. The leg to them will be cut off
-                    // at the deck's edge by the router -- which is the right answer: a mob
-                    // may not walk off a ship to reach you.
-                    Vector3 p;
-                    obj.GetPosition(p.x, p.y, p.z);
-                    return FromWorld(mover, p);
-                }
-
-                float ObjectOrientation(Unit const& mover, WorldObject const& obj) const override
-                {
-                    Transport* vessel = VesselOf(mover);
-                    if (!vessel)
-                    {
-                        return obj.GetOrientation();
-                    }
-
-                    if (auto local = LocalOrientationAboard(*vessel, obj))
-                    {
-                        return *local;
-                    }
-
-                    return MapManager::NormalizeOrientation(obj.GetOrientation() -
-                                                            vessel->GetOrientation());
-                }
 
                 Vector3 NearPoint(Unit const& mover, WorldObject const& target,
                                   float /*searcherBounding*/, float distance2d,
@@ -533,13 +330,13 @@ namespace Motion
                                         t.y + distance2d * std::sin(absAngle),
                                         t.z);
 
-                    Transport* vessel = VesselOf(mover);
-                    if (!vessel)
+                    TransportMap* hull = mover.GetMap()->AsTransport();
+                    if (!hull)
                     {
                         return guess;
                     }
 
-                    if (auto onDeck = DeckDrop(*vessel, guess))
+                    if (const auto onDeck = DeckDrop(*hull, guess))
                     {
                         return *onDeck;
                     }
@@ -554,8 +351,8 @@ namespace Motion
                 std::optional<Vector3> RandomPoint(Unit& mover, Vector3 const& centre,
                                                    float radius) const override
                 {
-                    Transport* vessel = VesselOf(mover);
-                    if (!vessel || !vessel->HasDeck())
+                    TransportMap* hull = mover.GetMap()->AsTransport();
+                    if (!hull)
                     {
                         return std::nullopt;
                     }
@@ -569,8 +366,8 @@ namespace Motion
                                             centre.y + dist * std::sin(angle),
                                             centre.z);
 
-                        const auto onDeck = DeckDrop(*vessel, guess);
-                        if (onDeck && !DeckBlocked(*vessel, centre, *onDeck))
+                        const auto onDeck = DeckDrop(*hull, guess);
+                        if (onDeck && !DeckBlocked(*hull, centre, *onDeck))
                         {
                             return onDeck;
                         }
@@ -582,13 +379,13 @@ namespace Motion
                 std::optional<Vector3> GroundPoint(Unit& mover, Vector3 const& from,
                                                    Vector3 const& guess) const override
                 {
-                    Transport* vessel = VesselOf(mover);
-                    if (!vessel || !vessel->HasDeck())
+                    TransportMap* hull = mover.GetMap()->AsTransport();
+                    if (!hull)
                     {
                         return std::nullopt;
                     }
 
-                    const auto onDeck = DeckDrop(*vessel, guess);
+                    const auto onDeck = DeckDrop(*hull, guess);
                     if (!onDeck)
                     {
                         return std::nullopt;   // no deck there: a panicking unit may not
@@ -597,9 +394,8 @@ namespace Motion
 
                     // Unlike the world frame, the obstruction test applies to EVERYONE and
                     // rejects rather than pulls back. A deck is a warren of bulkheads and
-                    // the units on it are inches from them; shoving a feared creature
-                    // through one is no better than shoving a player through one.
-                    if (DeckBlocked(*vessel, from, *onDeck))
+                    // the units on it are inches from them.
+                    if (DeckBlocked(*hull, from, *onDeck))
                     {
                         return std::nullopt;
                     }
@@ -608,8 +404,7 @@ namespace Motion
                 }
         };
 
-        /// The two shared frames. Both are stateless, so one instance of each serves every
-        /// mover on every map and on every vessel.
+        /// Both are stateless, so one instance of each serves every mover on every vessel.
         const WorldFrame s_worldFrame;
         const TransportFrame s_transportFrame;
     }
@@ -619,7 +414,7 @@ namespace Motion
         // The one place in the server where "which world am I in?" is decided. A boarded
         // unit moves in its vessel's frame; everything else in the map's. Nothing above
         // this call knows the difference, and nothing above it needs to.
-        if (mover.GetTransportInfo())
+        if (mover.GetMap() && mover.GetMap()->AsTransport())
         {
             return s_transportFrame;
         }

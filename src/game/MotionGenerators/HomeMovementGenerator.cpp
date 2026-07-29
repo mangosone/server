@@ -45,7 +45,11 @@ void HomeMovementGenerator::Initialize(Unit& owner)
 
     if (motion->empty() || !motion->top()->GetResetPosition(owner, x, y, z, o))
     {
-        static_cast<Creature&>(owner).GetRespawnCoord(x, y, z, &o);
+        const Creature& home = static_cast<Creature&>(owner);
+        x = home.Spawn().X();
+        y = home.Spawn().Y();
+        z = home.Spawn().Z();
+        o = home.Spawn().Facing();
     }
 
     m_home = Motion::Vector3(x, y, z);

@@ -25,7 +25,11 @@
 #ifndef MANGOS_H_OBJECTMGR
 #define MANGOS_H_OBJECTMGR
 
-#include "Common.h"
+#include <unordered_map>
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
+#include "Utilities/PackedValues.h"
 #include "Object.h"
 #include "Bag.h"
 #include "Creature.h"
@@ -39,7 +43,6 @@
 #include "MapPersistentStateMgr.h"
 #include "ObjectGuid.h"
 #include "Policies/Singleton.h"
-#include "ObjectAccessor.h"
 
 #include <map>
 #include <limits>
@@ -65,7 +68,7 @@ struct GameTele
     std::wstring wnameLow;
 };
 
-typedef UNORDERED_MAP<uint32, GameTele > GameTeleMap;
+typedef std::unordered_map<uint32, GameTele > GameTeleMap;
 
 struct SpellClickInfo
 {
@@ -120,8 +123,8 @@ struct CellObjectGuids
     CellGuidSet gameobjects;
     CellCorpseSet corpses;
 };
-typedef UNORDERED_MAP < uint32/*cell_id*/, CellObjectGuids > CellObjectGuidsMap;
-typedef UNORDERED_MAP < uint32/*(mapid,spawnMode) pair*/, CellObjectGuidsMap > MapObjectGuids;
+typedef std::unordered_map < uint32/*cell_id*/, CellObjectGuids > CellObjectGuidsMap;
+typedef std::unordered_map < uint32/*(mapid,spawnMode) pair*/, CellObjectGuidsMap > MapObjectGuids;
 
 // mangos string ranges
 #define MIN_MANGOS_STRING_ID           1                    // 'mangos_string'
@@ -145,7 +148,7 @@ struct MangosStringLocale
     uint32 Emote;
 };
 
-typedef UNORDERED_MAP<uint32 /*guid*/, CreatureData> CreatureDataMap;
+typedef std::unordered_map<uint32 /*guid*/, CreatureData> CreatureDataMap;
 typedef CreatureDataMap::value_type CreatureDataPair;
 
 class FindCreatureData
@@ -168,7 +171,7 @@ class FindCreatureData
         float i_spawnedDist;
 };
 
-typedef UNORDERED_MAP<uint32, GameObjectData> GameObjectDataMap;
+typedef std::unordered_map<uint32, GameObjectData> GameObjectDataMap;
 typedef GameObjectDataMap::value_type GameObjectDataPair;
 
 class FindGOData
@@ -191,15 +194,15 @@ class FindGOData
         float i_spawnedDist;
 };
 
-typedef UNORDERED_MAP<uint32, CreatureLocale> CreatureLocaleMap;
-typedef UNORDERED_MAP<uint32, GameObjectLocale> GameObjectLocaleMap;
-typedef UNORDERED_MAP<uint32, ItemLocale> ItemLocaleMap;
-typedef UNORDERED_MAP<uint32, QuestLocale> QuestLocaleMap;
-typedef UNORDERED_MAP<uint32, NpcTextLocale> NpcTextLocaleMap;
-typedef UNORDERED_MAP<uint32, PageTextLocale> PageTextLocaleMap;
-typedef UNORDERED_MAP<int32, MangosStringLocale> MangosStringLocaleMap;
-typedef UNORDERED_MAP<uint32, GossipMenuItemsLocale> GossipMenuItemsLocaleMap;
-typedef UNORDERED_MAP<uint32, PointOfInterestLocale> PointOfInterestLocaleMap;
+typedef std::unordered_map<uint32, CreatureLocale> CreatureLocaleMap;
+typedef std::unordered_map<uint32, GameObjectLocale> GameObjectLocaleMap;
+typedef std::unordered_map<uint32, ItemLocale> ItemLocaleMap;
+typedef std::unordered_map<uint32, QuestLocale> QuestLocaleMap;
+typedef std::unordered_map<uint32, NpcTextLocale> NpcTextLocaleMap;
+typedef std::unordered_map<uint32, PageTextLocale> PageTextLocaleMap;
+typedef std::unordered_map<int32, MangosStringLocale> MangosStringLocaleMap;
+typedef std::unordered_map<uint32, GossipMenuItemsLocale> GossipMenuItemsLocaleMap;
+typedef std::unordered_map<uint32, PointOfInterestLocale> PointOfInterestLocaleMap;
 
 typedef std::multimap<int32, uint32> ExclusiveQuestGroupsMap;
 typedef std::multimap<uint32, ItemRequiredTarget> ItemRequiredTargetMap;
@@ -235,7 +238,7 @@ struct MailLevelReward
 };
 
 typedef std::list<MailLevelReward> MailLevelRewardList;
-typedef UNORDERED_MAP<uint8, MailLevelRewardList> MailLevelRewardMap;
+typedef std::unordered_map<uint8, MailLevelRewardList> MailLevelRewardMap;
 
 // We assume the rate is in general the same for all three types below, but chose to keep three for scalability and customization
 struct RepRewardRate
@@ -417,10 +420,10 @@ class PlayerCondition
 };
 
 // NPC gossip text id
-typedef UNORDERED_MAP<uint32, uint32> CacheNpcTextIdMap;
+typedef std::unordered_map<uint32, uint32> CacheNpcTextIdMap;
 
-typedef UNORDERED_MAP<uint32, VendorItemData> CacheVendorItemMap;
-typedef UNORDERED_MAP<uint32, TrainerSpellData> CacheTrainerSpellMap;
+typedef std::unordered_map<uint32, VendorItemData> CacheVendorItemMap;
+typedef std::unordered_map<uint32, TrainerSpellData> CacheTrainerSpellMap;
 
 enum SkillRangeType
 {
@@ -490,21 +493,21 @@ class ObjectMgr
         ObjectMgr();
         ~ObjectMgr();
 
-        typedef UNORDERED_MAP<uint32, Group*> GroupMap;
+        typedef std::unordered_map<uint32, Group*> GroupMap;
 
-        typedef UNORDERED_MAP<uint32, ArenaTeam*> ArenaTeamMap;
+        typedef std::unordered_map<uint32, ArenaTeam*> ArenaTeamMap;
 
-        typedef UNORDERED_MAP<uint32, Quest*> QuestMap;
+        typedef std::unordered_map<uint32, Quest*> QuestMap;
 
-        typedef UNORDERED_MAP<uint32, AreaTrigger> AreaTriggerMap;
+        typedef std::unordered_map<uint32, AreaTrigger> AreaTriggerMap;
 
-        typedef UNORDERED_MAP<uint32, RepRewardRate > RepRewardRateMap;
-        typedef UNORDERED_MAP<uint32, ReputationOnKillEntry> RepOnKillMap;
-        typedef UNORDERED_MAP<uint32, RepSpilloverTemplate> RepSpilloverTemplateMap;
+        typedef std::unordered_map<uint32, RepRewardRate > RepRewardRateMap;
+        typedef std::unordered_map<uint32, ReputationOnKillEntry> RepOnKillMap;
+        typedef std::unordered_map<uint32, RepSpilloverTemplate> RepSpilloverTemplateMap;
 
-        typedef UNORDERED_MAP<uint32, PointOfInterest> PointOfInterestMap;
+        typedef std::unordered_map<uint32, PointOfInterest> PointOfInterestMap;
 
-        typedef UNORDERED_MAP<uint32, PetCreateSpellEntry> PetCreateSpellMap;
+        typedef std::unordered_map<uint32, PetCreateSpellEntry> PetCreateSpellMap;
 
         typedef std::multimap<uint32 /*mapId*/, uint32 /*guid*/> ActiveCreatureGuidsOnMap;
 
@@ -1304,8 +1307,8 @@ class ObjectMgr
 
         QuestMap            mQuestTemplates;
 
-        typedef UNORDERED_MAP<uint32, GossipText> GossipTextMap;
-        typedef UNORDERED_MAP<uint32, uint32> QuestAreaTriggerMap;
+        typedef std::unordered_map<uint32, GossipText> GossipTextMap;
+        typedef std::unordered_map<uint32, uint32> QuestAreaTriggerMap;
         typedef std::set<uint32> TavernAreaTriggerSet;
         typedef std::set<uint32> GameObjectForQuestSet;
 

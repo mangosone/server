@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Common/Locales.h"
 #include "Chat.h"
 #include "Language.h"
 #include "World.h"

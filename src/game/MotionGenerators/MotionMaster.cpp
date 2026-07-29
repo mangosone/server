@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
 #include "MotionMaster.h"
 #include "ConfusedMovementGenerator.h"
 #include "FleeingMovementGenerator.h"
@@ -734,22 +735,22 @@ bool MotionMaster::GetDestination(float& x, float& y, float& z)
 void MotionMaster::MoveFall()
 {
     // Use larger distance for vmap height search than in most other cases
-    float tz = m_owner->GetMap()->GetHeight(m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ());
+    float tz = m_owner->GetMap()->GetHeight(m_owner->Where().X(), m_owner->Where().Y(), m_owner->Where().Z());
     if (tz <= INVALID_HEIGHT)
     {
         DEBUG_LOG("MotionMaster::MoveFall: unable retrive a proper height at map %u (x: %f, y: %f, z: %f).",
-                  m_owner->GetMap()->GetId(), m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ());
+                  m_owner->GetMap()->GetId(), m_owner->Where().X(), m_owner->Where().Y(), m_owner->Where().Z());
         return;
     }
 
     // Abort too if the ground is very near
-    if (fabs(m_owner->GetPositionZ() - tz) < 0.1f)
+    if (fabs(m_owner->Where().Z() - tz) < 0.1f)
     {
         return;
     }
 
     Movement::MoveSplineInit init(*m_owner);
-    init.MoveTo(m_owner->GetPositionX(), m_owner->GetPositionY(), tz);
+    init.MoveTo(m_owner->Where().X(), m_owner->Where().Y(), tz);
     init.SetFall();
     init.Launch();
     Mutate(new EffectMovementGenerator(0));

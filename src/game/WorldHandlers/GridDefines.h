@@ -25,7 +25,9 @@
 #ifndef MANGOS_GRIDDEFINES_H
 #define MANGOS_GRIDDEFINES_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <algorithm>
 #include "GameSystem/NGrid.h"
 #include <cmath>
 
@@ -76,8 +78,8 @@ typedef GridRefManager<DynamicObject>   DynamicObjectMapType;
 typedef GridRefManager<GameObject>      GameObjectMapType;
 typedef GridRefManager<Player>          PlayerMapType;
 
+typedef Grid<Player, WorldTypeMapContainer, GridTypeMapContainer> GridType;
 typedef NGrid<MAX_NUMBER_OF_CELLS, Player, WorldTypeMapContainer, GridTypeMapContainer> NGridType;
-typedef NGridType::GridCell GridType;
 
 /**
  * @brief A structure representing a pair of coordinates.

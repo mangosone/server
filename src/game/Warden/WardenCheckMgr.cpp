@@ -41,7 +41,8 @@
  * @see WardenCheck for individual check definitions
  */
 
-#include "Common.h"
+#include <shared_mutex>
+#include "Platform/Define.h"
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"

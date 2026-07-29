@@ -39,7 +39,9 @@
  * appearance customization, and starting location setup.
  */
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
 #include "Database/DatabaseEnv.h"
 #include "Database/SqlOperations.h"       // LoginQueryHolder derives from SqlQueryHolder
 #include "WorldPacket.h"
@@ -54,7 +56,7 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "UpdateMask.h"
-#include "ObjectAccessor.h"
+#include "CorpseManager.h"
 #include "Group.h"
 #include "PlayerDump.h"
 #include "SocialMgr.h"
@@ -74,6 +76,7 @@
 #include <ctime>
 #include <memory>
 #include <string>
+#include "PlayerRegistry.h"
 #endif
 
 // config option SkipCinematics supported values
@@ -740,10 +743,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     WorldPacket data(SMSG_LOGIN_VERIFY_WORLD, 20);
     data << pCurrChar->GetMapId();
-    data << pCurrChar->GetPositionX();
-    data << pCurrChar->GetPositionY();
-    data << pCurrChar->GetPositionZ();
-    data << pCurrChar->GetOrientation();
+    data << pCurrChar->Where().X();
+    data << pCurrChar->Where().Y();
+    data << pCurrChar->Where().Z();
+    data << pCurrChar->Where().Facing();
     SendPacket(&data);
 
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);
@@ -893,7 +896,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
 
     /* This code is run if we can not add the player to the map for some reason */
-    if (lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->GetMap()->Add(pCurrChar))
+    if (lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->BoardingMap()->Add(pCurrChar))
     {
         /* Attempt to find an areatrigger to teleport the player for us */
         AreaTrigger const* at = sObjectMgr.GetGoBackTrigger(pCurrChar->GetMapId());
@@ -903,13 +906,13 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         }
 
         /* We couldn't find an areatrigger to teleport, so just move the player back to their home bind */
-        if (!at || lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, pCurrChar->GetOrientation()))
+        if (!at || lockStatus != AREA_LOCKSTATUS_OK || !pCurrChar->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, pCurrChar->Where().Facing()))
         {
             pCurrChar->TeleportToHomebind();
         }
     }
 
-    sObjectAccessor.AddObject(pCurrChar);
+    sPlayerRegistry.Add(pCurrChar);
     DEBUG_LOG("Player %s added to map %i", pCurrChar->GetName(), pCurrChar->GetMapId());
 
     /* send the player's social lists */

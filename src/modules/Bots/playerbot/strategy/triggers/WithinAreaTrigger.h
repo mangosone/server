@@ -1,4 +1,6 @@
 #pragma once
+#include "Utilities/MathDefines.h"
+#include <cmath>
 #include "../Trigger.h"
 #include "../values/LastMovementValue.h"
 

@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,75 +22,68 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/// \addtogroup mangosd
-/// @{
-/// \file
-
 #ifndef MANGOS_H_MASTER
 #define MANGOS_H_MASTER
 
-#include "Common.h"
-#include "RASession.h"
 #include "Service.h"
+
+#include "Platform/Define.h"
 
 #include <memory>
 #include <vector>
 
 /**
- * @brief Brings the world daemon up, runs it, and takes it back down.
+ * @brief Owns the server's lifetime: databases, the world loop, and services.
  *
- * Owns everything with a lifetime: the databases, the listening sockets, and the
- * auxiliary threads (freeze detector, console, remote access, SOAP). The world
- * heartbeat itself runs on the caller's thread — Run() only returns once the world has
- * stopped and everything else has been joined.
+ * The world loop runs on the calling thread rather than a spawned one. That is
+ * the one structural change worth pointing at: previously main() started a
+ * WorldThread and then blocked waiting for it, so there were two threads where
+ * one would do, and the shutdown tail (kick players, drain sessions, stop the
+ * listener, unload maps) lived inside that thread's body where nothing else
+ * could sequence against it. Running the loop here makes the order plain --
+ * everything after Run() returns happens strictly after the last world tick.
  *
- * This replaces four ACE_Task_Base subclasses (WorldThread, RAThread, CliThread,
- * AntiFreezeThread) and the global ACE_Thread_Manager::wait() that used to reap them.
+ * Services (console, remote administration, SOAP, freeze watchdog) are started
+ * in registration order and stopped in reverse, with every RequestStop() issued
+ * before the first Join().
  */
 class Master
 {
     public:
 
-        Master() = default;
+        Master();
+        ~Master();
 
         Master(const Master&) = delete;
         Master& operator=(const Master&) = delete;
 
         /**
-         * @brief Run the server to completion.
+         * @brief Bring the server up, run the world, and shut it down again.
+         *
          * @return The process exit code.
          */
         int Run();
 
     private:
 
-        /// Open the three databases and check their schema versions.
         bool StartDatabases();
-
-        /// Flush and close the databases (in the reverse order they were opened).
         void StopDatabases();
-
-        /// Reset the online flags left behind by an unclean shutdown.
         void ClearOnlineAccounts();
 
-        /// The world heartbeat. Runs on the calling thread and returns once stopped.
-        void WorldLoop();
-
-        /**
-         * @brief Start an auxiliary service and take ownership of it.
-         *
-         * Order matters, and now it is the only thing that has to: services are joined in
-         * exactly the reverse of the order they were started here, so a service may safely
-         * depend on anything started before it.
-         */
-        void StartService(std::unique_ptr<IService> service);
-
-        /// Ask every service to stop, then join them in reverse order of start.
+        void StartServices();
         void StopServices();
 
-        /// The auxiliary threads: freeze watchdog, console, remote access, SOAP.
+        /// The world heartbeat. Returns when World::IsStopped() becomes true.
+        void WorldLoop();
+
+        /// Push the once-a-second figures into the full-screen console's status
+        /// region. A no-op when that console is not running.
+        void PublishConsoleStatus(uint32 diff);
+
+        /// Everything that must happen after the final world tick.
+        void ShutdownWorld();
+
         std::vector<std::unique_ptr<IService>> m_services;
 };
 
 #endif
-/// @}

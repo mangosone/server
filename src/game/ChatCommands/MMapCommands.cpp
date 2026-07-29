@@ -120,7 +120,9 @@ bool ChatHandler::HandleMmapPathCommand(char* args)
 
     // unit locations
     float x, y, z;
-    destinationUnit->GetPosition(x, y, z);
+    x = destinationUnit->Where().X();
+    y = destinationUnit->Where().Y();
+    z = destinationUnit->Where().Z();
 
     // path
     PathFinder path(originUnit);
@@ -174,8 +176,8 @@ bool ChatHandler::HandleMmapLocCommand(char* /*args*/)
     // grid tile location
     Player* player = m_session->GetPlayer();
 
-    int32 gx = 32 - player->GetPositionX() / SIZE_OF_GRIDS;
-    int32 gy = 32 - player->GetPositionY() / SIZE_OF_GRIDS;
+    int32 gx = 32 - player->Where().X() / SIZE_OF_GRIDS;
+    int32 gy = 32 - player->Where().Y() / SIZE_OF_GRIDS;
 
     PSendSysMessage("%04u%02i%02i.mmtile", player->GetMapId(), gy, gx);
     PSendSysMessage("gridloc [%i,%i]", gx, gy);
@@ -192,7 +194,9 @@ bool ChatHandler::HandleMmapLocCommand(char* /*args*/)
     const float* min = navmesh->getParams()->orig;
 
     float x, y, z;
-    player->GetPosition(x, y, z);
+    x = player->Where().X();
+    y = player->Where().Y();
+    z = player->Where().Z();
     float location[VERTEX_SIZE] = {y, z, x};
     float extents[VERTEX_SIZE] = {3.0f, 5.0f, 3.0f};
 
@@ -372,7 +376,9 @@ bool ChatHandler::HandleMmapTestArea(char* args)
         uint32 uStartTime = GameTime::GetGameTimeMS();
 
         float gx, gy, gz;
-        m_session->GetPlayer()->GetPosition(gx, gy, gz);
+        gx = m_session->GetPlayer()->Where().X();
+        gy = m_session->GetPlayer()->Where().Y();
+        gz = m_session->GetPlayer()->Where().Z();
         for (std::list<Creature*>::iterator itr = creatureList.begin(); itr != creatureList.end(); ++itr)
         {
             PathFinder path(*itr);
@@ -437,7 +443,9 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
     }
 
     float gx, gy, gz;
-    unit->GetPosition(gx, gy, gz);
+    gx = unit->Where().X();
+    gy = unit->Where().Y();
+    gz = unit->Where().Z();
 
     Creature* summoned = unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz + 0.5f, 0, TEMPSPAWN_TIMED_DESPAWN, 20000);
     summoned->CastSpell(summoned, 8599, false);
@@ -446,7 +454,9 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
     uint32 startTime = GameTime::GetGameTimeMS();
     for (; tries < 500; ++tries)
     {
-        unit->GetPosition(gx, gy, gz);
+        gx = unit->Where().X();
+        gy = unit->Where().Y();
+        gz = unit->Where().Z();
         if (unit->GetMap()->GetReachableRandomPosition(unit, gx, gy, gz, radius))
         {
             unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSPAWN_TIMED_DESPAWN, 15000);

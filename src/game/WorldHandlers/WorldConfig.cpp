@@ -88,6 +88,7 @@
 #include "CreatureLinkingMgr.h"
 #include "Weather.h"
 #include "DisableMgr.h"
+#include "LineOfSightExemptions.h"
 #include "Language.h"
 #include "CommandMgr.h"
 #include "GitRevision.h"
@@ -97,6 +98,7 @@
 #include "SystemConfig.h"
 #include <iostream>
 #include <sstream>
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -716,8 +718,7 @@ void World::LoadConfigSettings(bool reload)
     // exist -- there is nothing to switch off. Only the indoor check and the LoS spell
     // exemptions remain meaningful.
     setConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK, "vmap.enableIndoorCheck", true);
-    std::string ignoreSpellIds = sConfig.GetStringDefault("vmap.ignoreSpellIds", "");
-    DisableMgr::LoadLoSIgnoredSpells(ignoreSpellIds.c_str());
+    LineOfSightExemptions::Load(sConfig.GetStringDefault("vmap.ignoreSpellIds", ""));
 
     sLog.outString("WORLD: Collision served from fused tiles. indoorCheck:%i",
         getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);

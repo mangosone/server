@@ -24,7 +24,10 @@
 
 
 
-#include "Common.h"
+#include <random>
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Utilities/MathDefines.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -42,7 +45,6 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "SharedDefines.h"
 #include "Pet.h"
 #include "GameObject.h"
@@ -64,7 +66,8 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "terrain/Geometry/Vector3.h"
+#include "Geometry/Vector3.h"
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -453,7 +456,10 @@ void Spell::DoSummonWild(SpellEffectIndex eff_idx, uint32 forceFaction)
             // Summon in random point all other units if location present
             else
             {
-                m_caster->GetRandomPoint(center_x, center_y, center_z, radius, px, py, pz);
+                const Geometry::Vector3 spot = RandomGroundPointNear(*m_caster, Geometry::Vector3(center_x, center_y, center_z), radius);
+                px = spot.x;
+                py = spot.y;
+                pz = spot.z;
             }
         }
         // Summon if dest location not present near caster
@@ -462,18 +468,18 @@ void Spell::DoSummonWild(SpellEffectIndex eff_idx, uint32 forceFaction)
             if (radius > 0.0f)
             {
                 // not using bounding radius of caster here
-                m_caster->GetClosePoint(px, py, pz, 0.0f, radius);
+                ClosePointNear(*m_caster, px, py, pz, 0.0f, radius);
             }
             else
             {
                 // EffectRadiusIndex 0 or 36
-                px = m_caster->GetPositionX();
-                py = m_caster->GetPositionY();
-                pz = m_caster->GetPositionZ();
+                px = m_caster->Where().X();
+                py = m_caster->Where().Y();
+                pz = m_caster->Where().Z();
             }
         }
 
-        if (Creature* summon = m_caster->SummonCreature(creature_entry, px, py, pz, m_caster->GetOrientation(), summonType, duration))
+        if (Creature* summon = m_caster->SummonCreature(creature_entry, px, py, pz, m_caster->Where().Facing(), summonType, duration))
         {
             summon->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->ID);
 
@@ -557,7 +563,7 @@ void Spell::DoSummonGuardian(SpellEffectIndex eff_idx, uint32 forceFaction)
 
         // If dest location if present
         // Summon 1 unit in dest location
-        CreatureCreatePos pos(m_caster->GetMap(), m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation() + M_PI_F);
+        CreatureCreatePos pos(m_caster->GetMap(), m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->Where().Facing() + M_PI_F);
 
         if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
         {
@@ -565,14 +571,17 @@ void Spell::DoSummonGuardian(SpellEffectIndex eff_idx, uint32 forceFaction)
             if (count > 0)
             {
                 float x, y, z;
-                m_caster->GetRandomPoint(center_x, center_y, center_z, radius, x, y, z);
-                pos = CreatureCreatePos(m_caster->GetMap(), x, y, z, m_caster->GetOrientation());
+                const Geometry::Vector3 spot = RandomGroundPointNear(*m_caster, Geometry::Vector3(center_x, center_y, center_z), radius);
+                x = spot.x;
+                y = spot.y;
+                z = spot.z;
+                pos = CreatureCreatePos(m_caster->GetMap(), x, y, z, m_caster->Where().Facing());
             }
         }
         // Summon if dest location not present near caster
         else
         {
-            pos = CreatureCreatePos(m_caster, m_caster->GetOrientation());
+            pos = CreatureCreatePos(m_caster, m_caster->Where().Facing());
         }
 
         Map* map = m_caster->GetMap();
@@ -584,7 +593,7 @@ void Spell::DoSummonGuardian(SpellEffectIndex eff_idx, uint32 forceFaction)
             return;
         }
 
-        spawnCreature->SetRespawnCoord(pos);
+        spawnCreature->SetSpawn(pos);
 
         if (m_duration > 0)
         {
@@ -658,7 +667,7 @@ void Spell::DoSummonTotem(SpellEffectIndex eff_idx, uint8 slot_dbc)
     // if totem have creature_template_addon.auras with persistent point for example or script call
     float angle = slot < MAX_TOTEM_SLOT ? M_PI_F / MAX_TOTEM_SLOT - (slot * 2 * M_PI_F / MAX_TOTEM_SLOT) : 0;
 
-    CreatureCreatePos pos(m_caster, m_caster->GetOrientation(), 2.0f, angle);
+    CreatureCreatePos pos(m_caster, m_caster->Where().Facing(), 2.0f, angle);
 
     CreatureInfo const* cinfo = ObjectMgr::GetCreatureTemplate(m_spellInfo->EffectMiscValue[eff_idx]);
     if (!cinfo)
@@ -675,7 +684,7 @@ void Spell::DoSummonTotem(SpellEffectIndex eff_idx, uint8 slot_dbc)
         return;
     }
 
-    pTotem->SetRespawnCoord(pos);
+    pTotem->SetSpawn(pos);
 
     if (slot < MAX_TOTEM_SLOT)
     {
@@ -736,7 +745,7 @@ bool Spell::DoSummonPossessed(SpellEffectIndex eff_idx, uint32 forceFaction)
         return false;
     }
 
-    Creature* spawnCreature = m_caster->SummonCreature(creatureEntry, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation(), TEMPSPAWN_CORPSE_DESPAWN, 0);
+    Creature* spawnCreature = m_caster->SummonCreature(creatureEntry, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->Where().Facing(), TEMPSPAWN_CORPSE_DESPAWN, 0);
     if (!spawnCreature)
     {
         sLog.outError("Spell::DoSummonPossessed: creature entry %u for spell %u could not be summoned.", creatureEntry, m_spellInfo->ID);
@@ -838,10 +847,10 @@ void Spell::DoSummonCritter(SpellEffectIndex eff_idx, uint32 forceFaction)
         player->RemoveMiniPet();
     }
 
-    CreatureCreatePos pos(m_caster->GetMap(), m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation());
+    CreatureCreatePos pos(m_caster->GetMap(), m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->Where().Facing());
     if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION))
     {
-        pos = CreatureCreatePos(m_caster, m_caster->GetOrientation());
+        pos = CreatureCreatePos(m_caster, m_caster->Where().Facing());
     }
 
     // summon new pet
@@ -856,7 +865,7 @@ void Spell::DoSummonCritter(SpellEffectIndex eff_idx, uint32 forceFaction)
         return;
     }
 
-    critter->SetRespawnCoord(pos);
+    critter->SetSpawn(pos);
 
     // critter->SetName("");                                // generated by client
     critter->SetOwnerGuid(m_caster->GetObjectGuid());

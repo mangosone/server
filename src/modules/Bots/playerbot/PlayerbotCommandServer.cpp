@@ -1,3 +1,4 @@
+#include <vector>
 #include "../botpch.h"
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"

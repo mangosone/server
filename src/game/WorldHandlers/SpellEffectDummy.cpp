@@ -24,7 +24,13 @@
 
 
 
-#include "Common.h"
+#include <iterator>
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include "Utilities/MathDefines.h"
+#include <cstdlib>
+#include <list>
+#include <algorithm>
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -42,7 +48,6 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "SharedDefines.h"
 #include "Pet.h"
 #include "GameObject.h"
@@ -64,8 +69,9 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "terrain/Geometry/Vector3.h"
+#include "Geometry/Vector3.h"
 #include <random>
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <ctime>
@@ -443,8 +449,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     if (!pGameObj->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), 177704,
                                           map,
-                                          unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(),
-                                          unitTarget->GetOrientation()))
+                                          unitTarget->Where().X(), unitTarget->Where().Y(), unitTarget->Where().Z(),
+                                          unitTarget->Where().Facing()))
                     {
                         delete pGameObj;
                         return;
@@ -528,8 +534,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     // create before death for get proper coordinates
                     if (!pGameObj->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), 179644, map,
-                                          creatureTarget->GetPositionX(), creatureTarget->GetPositionY(), creatureTarget->GetPositionZ(),
-                                          creatureTarget->GetOrientation()))
+                                          creatureTarget->Where().X(), creatureTarget->Where().Y(), creatureTarget->Where().Z(),
+                                          creatureTarget->Where().Facing()))
                     {
                         delete pGameObj;
                         return;
@@ -902,7 +908,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 case 35745:                                 // Socrethar's Stone
                 {
                     uint32 spell_id;
-                    switch (m_caster->GetAreaId())
+                    switch (m_caster->GetTerrain()->GetAreaId(m_caster->Where().X(), m_caster->Where().Y(), m_caster->Where().Z()))
                     {
                         case 3900: spell_id = 35743; break; // Socrethar Portal
                         case 3742: spell_id = 35744; break; // Socrethar Portal
@@ -928,10 +934,10 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     uint32 health = tempSummon->GetHealth();
                     const uint32 entry_list[6] = {21821, 21820, 21817};
 
-                    float x = tempSummon->GetPositionX();
-                    float y = tempSummon->GetPositionY();
-                    float z = tempSummon->GetPositionZ();
-                    float o = tempSummon->GetOrientation();
+                    float x = tempSummon->Where().X();
+                    float y = tempSummon->Where().Y();
+                    float z = tempSummon->Where().Z();
+                    float o = tempSummon->Where().Facing();
 
                     tempSummon->UnSummon();
 
@@ -1068,7 +1074,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         return;
                     }
 
-                    m_caster->SummonCreature(23416, unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(), 0, TEMPSPAWN_TIMED_OR_CORPSE_DESPAWN, 30000);
+                    m_caster->SummonCreature(23416, unitTarget->Where().X(), unitTarget->Where().Y(), unitTarget->Where().Z(), 0, TEMPSPAWN_TIMED_OR_CORPSE_DESPAWN, 30000);
                     return;
                 }
                 case 41333:                                 // Empyreal Equivalency

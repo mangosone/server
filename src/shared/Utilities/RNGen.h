@@ -76,9 +76,9 @@ class RNGen
  * @brief Per-thread access to an RNGen.
  *
  * std::mt19937 is not thread-safe, so every thread gets its own generator (each
- * seeded independently from std::random_device). A genuine thread_local, unlike the
- * ACE thread-specific singleton it replaces, needs no mutex on the access path — and
- * these are called from the world and map-update threads on every roll.
+ * seeded independently from std::random_device). A genuine thread_local needs no
+ * mutex on the access path — and these are called from the world and map-update
+ * threads on every roll.
  */
 class RNG
 {

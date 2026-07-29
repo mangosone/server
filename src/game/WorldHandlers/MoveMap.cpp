@@ -43,6 +43,7 @@
  * @see DetourNavMesh for underlying navigation mesh
  */
 
+#include "Utilities/Errors.h"
 #include "Log.h"
 #include "World.h"
 #include "Creature.h"

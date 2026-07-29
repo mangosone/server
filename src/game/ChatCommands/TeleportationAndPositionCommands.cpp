@@ -33,13 +33,14 @@
  * - Location saving and loading
  */
 
+#include "Utilities/MathDefines.h"
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "MapManager.h"
 #include "CellImpl.h"
 #include "Player.h"
-#include "TransportSystem.h"
+#include "TransportMap.h"
 #include "Transports.h"
 #include <cmath>
 #include <cstring>
@@ -96,7 +97,7 @@ static char const* const areatriggerKeys[] =
 bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const zPtr, float const ortPtr)
 {
     float z;
-    float ort = player->GetOrientation();
+    float ort = player->Where().Facing();
     z = zPtr;
     if (zPtr > 0.0f)
     {
@@ -257,8 +258,8 @@ bool ChatHandler::HandleSummonCommand(char* args)
 
         // before GM
         float x, y, z;
-        player->GetClosePoint(x, y, z, target->GetObjectBoundingRadius());
-        target->TeleportTo(player->GetMapId(), x, y, z, target->GetOrientation());
+        ClosePointNear(*player, x, y, z, target->Where().Extent());
+        target->TeleportTo(player->GetMapId(), x, y, z, target->Where().Facing());
     }
     else
     {
@@ -274,11 +275,11 @@ bool ChatHandler::HandleSummonCommand(char* args)
 
         // in point where GM stay
         Player::SavePositionInDB(target_guid, player->GetMapId(),
-                                 player->GetPositionX(),
-                                 player->GetPositionY(),
-                                 player->GetPositionZ(),
-                                 player->GetOrientation(),
-                                 player->GetZoneId());
+                                 player->Where().X(),
+                                 player->Where().Y(),
+                                 player->Where().Z(),
+                                 player->Where().Facing(),
+                                 player->GetTerrain()->GetZoneId(player->Where().X(), player->Where().Y(), player->Where().Z()));
     }
 
     return true;
@@ -419,9 +420,9 @@ bool ChatHandler::HandleAppearCommand(char* args)
 
         // to point to see at target with same orientation
         float x, y, z;
-        target->GetContactPoint(_player, x, y, z);
+        ContactPointNear(*target, _player, x, y, z);
 
-        _player->TeleportTo(target->GetMapId(), x, y, z, _player->GetAngle(target), TELE_TO_GM_MODE);
+        _player->TeleportTo(target->GetMapId(), x, y, z, _player->Where().BearingTo(target->Where()), TELE_TO_GM_MODE);
     }
     else
     {
@@ -553,8 +554,8 @@ bool ChatHandler::HandleGroupgoCommand(char* args)
 
         // before GM
         float x, y, z;
-        m_session->GetPlayer()->GetClosePoint(x, y, z, pl->GetObjectBoundingRadius());
-        pl->TeleportTo(m_session->GetPlayer()->GetMapId(), x, y, z, pl->GetOrientation());
+        ClosePointNear(*m_session->GetPlayer(), x, y, z, pl->Where().Extent());
+        pl->TeleportTo(m_session->GetPlayer()->GetMapId(), x, y, z, pl->Where().Facing());
     }
 
     return true;
@@ -591,104 +592,60 @@ bool ChatHandler::HandleRecallCommand(char* args)
 }
 
 /**
- * @brief The transport half of .gps: where you are in the VESSEL'S world, not the map's.
+ * @brief The transport half of .gps: where you are ON THE VESSEL, which is a map.
  *
- * Which of these numbers you may TRUST depends entirely on who produced them, and the
- * answer is not the same for a player as for a crew member:
- *
- *   A PLAYER aboard is CLIENT-DRIVEN, and its client sends BOTH coordinate systems in every
- *   movement packet -- the world position AND the deck offset, orientations included. Both
- *   are exact. Neither is derived from anything. (That over-determination is exactly what
- *   lets Transport::ObservePose solve for the ship: yaw = pos.o - t_pos.o.)
- *
- *   A CREW MEMBER or a boarded pet is SERVER-DRIVEN. Its deck offset is the truth; its
- *   world position is COMPOSED from that offset and the vessel pose, and is therefore only
- *   as good as the pose. Which is exact while anybody is aboard -- and a waypoint-snapped
- *   guess when nobody is, at which point nobody is looking.
- *
- * The third number, DECK, is what the baked mesh says is under the offset, raycast in the
- * mesh's own space with no world transform applied at all. If it disagrees with the
- * offset's own Z by more than a few inches you are not standing on the deck: you are
- * hovering over it, or inside it.
+ * There is one coordinate system aboard and this prints it. A hull's mesh IS its map's
+ * terrain, so the position and the floor under it are read the same way they are anywhere
+ * else -- and the vessel's own world pose is shown only to say which water she is on, with
+ * the reminder that it is an estimate nothing is allowed to decide anything from.
  */
 void ChatHandler::ReportTransportPosition(WorldObject* obj)
 {
-    Transport* vessel = NULL;
-    float lx = 0.0f, ly = 0.0f, lz = 0.0f, lo = 0.0f;
-    char const* localSource = "";
-    char const* worldSource = "";
-
-    // Two ways to be aboard, and they have genuinely different sources of truth.
-    if (TransportInfo* info = obj->GetTransportInfo())
-    {
-        WorldObject* owner = info->GetTransport();
-        if (owner->GetTypeId() == TYPEID_GAMEOBJECT)
-        {
-            vessel = static_cast<Transport*>(owner);
-            info->GetLocalPosition(lx, ly, lz, lo);
-
-            localSource = "SERVER, TransportInfo -- THE TRUTH (what the motion stack moves it by)";
-            worldSource = "DERIVED from the offset + vessel pose -- a cache, for off-ship range checks only";
-        }
-    }
-    else if (obj->GetTypeId() == TYPEID_PLAYER)
-    {
-        Player* player = static_cast<Player*>(obj);
-        if ((vessel = player->GetTransport()) != NULL)
-        {
-            lx = player->GetTransOffsetX();
-            ly = player->GetTransOffsetY();
-            lz = player->GetTransOffsetZ();
-            lo = player->GetTransOffsetO();
-
-            localSource = "CLIENT, MovementInfo::t_pos -- EXACT";
-            worldSource = "CLIENT, MovementInfo::pos -- EXACT (the client sends both; neither is derived)";
-        }
-    }
+    TransportMap* hull = obj->GetMap() ? obj->GetMap()->AsTransport() : NULL;
+    Transport* vessel = hull ? hull->Vessel() : NULL;
 
     if (!vessel)
     {
         return;                                         // not aboard anything; nothing to say
     }
 
-    PSendSysMessage("--- TRANSPORT %u (%s) ---", vessel->GetEntry(), vessel->GetName());
+    PSendSysMessage("--- TRANSPORT %u (%s), map %u ---", vessel->GetEntry(), vessel->GetName(),
+                    hull->GetId());
 
-    PSendSysMessage("Vessel pose: X:%.3f Y:%.3f Z:%.3f O:%.3f  [%s]",
-                    vessel->GetPositionX(), vessel->GetPositionY(),
-                    vessel->GetPositionZ(), vessel->GetOrientation(),
-                    vessel->HasFreshPose()
-                        ? "RECOVERED from a player aboard -- exact"
-                        : "waypoint token -- an ESTIMATE; nobody is aboard to tell us better");
+    PSendSysMessage("Vessel pose: X:%.3f Y:%.3f Z:%.3f O:%.3f  [waypoint estimate -- names "
+                    "the grid to search, decides nothing]",
+                    vessel->Where().X(), vessel->Where().Y(),
+                    vessel->Where().Z(), vessel->Where().Facing());
 
-    PSendSysMessage("World coords above: %s", worldSource);
-    PSendSysMessage("Local coords (%s):", localSource);
-    PSendSysMessage("  X:%.3f Y:%.3f Z:%.3f O:%.3f", lx, ly, lz, lo);
+    PSendSysMessage("Aboard at: X:%.3f Y:%.3f Z:%.3f O:%.3f  [this map's own coordinates]",
+                    obj->Where().X(), obj->Where().Y(), obj->Where().Z(), obj->Where().Facing());
 
-    if (!vessel->HasDeck())
+    if (!hull->IsCommissioned())
     {
-        SendSysMessage("Deck mesh: NONE BAKED for this display. Crew cannot stand on it.");
+        SendSysMessage("Deck mesh: NONE BAKED for this vessel. She carries nobody.");
         return;
     }
 
-    // The deck, raycast in the mesh's OWN space. No world transform is applied, because
-    // there is no trustworthy world transform to apply -- that is the whole design.
-    const auto deckZ = vessel->DeckHeightAt(lx, ly, lz, 3.0f, 10.0f);
+    const auto deckZ = hull->SurfaceAt(obj->Where().X(), obj->Where().Y(), obj->Where().Z(),
+                                       3.0f, 10.0f);
 
     if (!deckZ)
     {
-        PSendSysMessage("Deck mesh: NO FLOOR under local (%.3f, %.3f). You are over the side.",
-                        lx, ly);
+        PSendSysMessage("Deck mesh: NO FLOOR under (%.3f, %.3f). You are over the side.",
+                        obj->Where().X(), obj->Where().Y());
         return;
     }
 
-    PSendSysMessage("Deck mesh (raycast local, untransformed): Z:%.3f  (you are %+.3f above it)",
-                    *deckZ, lz - *deckZ);
+    PSendSysMessage("Deck mesh: Z:%.3f  (you are %+.3f above it), hull radius %.1f",
+                    *deckZ, obj->Where().Z() - *deckZ, hull->HullRadius());
 
     // The deck's slope under the feet, by sampling the mesh a short way out along the
     // facing. This is the orientation a creature planted here would actually stand at.
     const float PROBE = 1.0f;
-    const auto aheadZ = vessel->DeckHeightAt(lx + PROBE * cos(lo), ly + PROBE * sin(lo),
-                                             *deckZ, 3.0f, 10.0f);
+    const float lo = obj->Where().Facing();
+    const auto aheadZ = hull->SurfaceAt(obj->Where().X() + PROBE * cos(lo),
+                                        obj->Where().Y() + PROBE * sin(lo),
+                                        *deckZ, 3.0f, 10.0f);
 
     if (aheadZ)
     {
@@ -700,9 +657,6 @@ void ChatHandler::ReportTransportPosition(WorldObject* obj)
     {
         PSendSysMessage("Deck slope: edge of the deck %.1f yd ahead along O:%.3f", PROBE, lo);
     }
-
-    SendSysMessage("Author crew from the LOCAL coords. They are the only ones that stay "
-                   "true as the vessel moves.");
 }
 
 /**
@@ -739,18 +693,18 @@ bool ChatHandler::HandleGPSCommand(char* args)
             return false;
         }
     }
-    CellPair cell_val = MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY());
+    CellPair cell_val = MaNGOS::ComputeCellPair(obj->Where().X(), obj->Where().Y());
     Cell cell(cell_val);
 
     uint32 zone_id, area_id;
-    obj->GetZoneAndAreaId(zone_id, area_id);
+    obj->GetTerrain()->GetZoneAndAreaId(zone_id, area_id, obj->Where().X(), obj->Where().Y(), obj->Where().Z());
 
     MapEntry const* mapEntry = sMapStore.LookupEntry(obj->GetMapId());
     AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zone_id);
     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(area_id);
 
-    float zone_x = obj->GetPositionX();
-    float zone_y = obj->GetPositionY();
+    float zone_x = obj->Where().X();
+    float zone_y = obj->Where().Y();
 
     if (!Map2ZoneCoordinates(zone_x, zone_y, zone_id))
     {
@@ -759,23 +713,23 @@ bool ChatHandler::HandleGPSCommand(char* args)
     }
 
     Map const* map = obj->GetMap();
-    float ground_z = map->GetHeight(obj->GetPositionX(), obj->GetPositionY(), MAX_HEIGHT);
-    float floor_z = map->GetHeight(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ());
+    float ground_z = map->GetHeight(obj->Where().X(), obj->Where().Y(), MAX_HEIGHT);
+    float floor_z = map->GetHeight(obj->Where().X(), obj->Where().Y(), obj->Where().Z());
 
-    GridPair p = MaNGOS::ComputeGridPair(obj->GetPositionX(), obj->GetPositionY());
+    GridPair p = MaNGOS::ComputeGridPair(obj->Where().X(), obj->Where().Y());
 
     int gx = 63 - p.x_coord;
     int gy = 63 - p.y_coord;
 
     // Terrain and collision now share one fused .tile, so a single existence check.
-    uint32 have_map = FusedTerrain::HasTile(obj->GetMapId(), gx, gy) ? 1 : 0;
+    uint32 have_map = TerrainInfo::ExistTile(obj->GetMapId(), gx, gy) ? 1 : 0;
     uint32 have_vmap = have_map;
 
-    FusedTerrain const* terrain = obj->GetTerrain();
+    TerrainInfo const* terrain = obj->GetTerrain();
 
     if (have_vmap)
     {
-        if (terrain->IsOutdoors(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ()))
+        if (terrain->IsOutdoors(obj->Where().X(), obj->Where().Y(), obj->Where().Z()))
         {
             PSendSysMessage("You are OUTdoor");
         }
@@ -793,7 +747,7 @@ bool ChatHandler::HandleGPSCommand(char* args)
                     obj->GetMapId(), (mapEntry ? mapEntry->MapName_lang[GetSessionDbcLocale()] : "<unknown>"),
                     zone_id, (zoneEntry ? zoneEntry->AreaName_lang[GetSessionDbcLocale()] : "<unknown>"),
                     area_id, (areaEntry ? areaEntry->AreaName_lang[GetSessionDbcLocale()] : "<unknown>"),
-                    obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
+                    obj->Where().X(), obj->Where().Y(), obj->Where().Z(), obj->Where().Facing(),
                     cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
                     zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
@@ -808,19 +762,20 @@ bool ChatHandler::HandleGPSCommand(char* args)
               obj->GetMapId(), (mapEntry ? mapEntry->MapName_lang[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
               zone_id, (zoneEntry ? zoneEntry->AreaName_lang[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
               area_id, (areaEntry ? areaEntry->AreaName_lang[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-              obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
+              obj->Where().X(), obj->Where().Y(), obj->Where().Z(), obj->Where().Facing(),
               cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
               zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     GridMapLiquidData liquid_status;
-    GridMapLiquidStatus res = terrain->getLiquidStatus(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status);
+    GridMapLiquidStatus res = terrain->getLiquidStatus(obj->Where().X(), obj->Where().Y(), obj->Where().Z(), MAP_ALL_LIQUIDS, &liquid_status);
     if (res)
     {
         PSendSysMessage(LANG_LIQUID_STATUS, liquid_status.level, liquid_status.depth_level, liquid_status.type_flags, res);
     }
 
     // Fused static floor (terrain + WMO/M2 collision, one query)
-    PSendSysMessage("Static floor Z: %f", obj->GetTerrain()->GetHeightStatic(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ()));
+    const auto staticFloor = obj->GetTerrain()->StaticFloor(obj->Where().X(), obj->Where().Y(), obj->Where().Z());
+    PSendSysMessage("Static floor Z: %f", staticFloor ? *staticFloor : INVALID_HEIGHT);
 
     return true;
 }
@@ -864,11 +819,11 @@ bool ChatHandler::HandleGetDistanceCommand(char* args)
     Player* player = m_session->GetPlayer();
     // Calculate point-to-point distance
     float dx, dy, dz;
-    dx = player->GetPositionX() - obj->GetPositionX();
-    dy = player->GetPositionY() - obj->GetPositionY();
-    dz = player->GetPositionZ() - obj->GetPositionZ();
+    dx = player->Where().X() - obj->Where().X();
+    dy = player->Where().Y() - obj->Where().Y();
+    dz = player->Where().Z() - obj->Where().Z();
 
-    PSendSysMessage(LANG_DISTANCE, player->GetDistance(obj), player->GetDistance2d(obj), sqrt(dx * dx + dy * dy + dz * dz));
+    PSendSysMessage(LANG_DISTANCE, player->Where().DistanceTo(obj->Where()), player->Where().DistanceTo(obj->Where(), false), sqrt(dx * dx + dy * dy + dz * dz));
 
     return true;
 }
@@ -903,9 +858,9 @@ bool ChatHandler::HandleNearGraveCommand(char* args)
     }
 
     Player* player = m_session->GetPlayer();
-    uint32 zone_id = player->GetZoneId();
+    uint32 zone_id = player->GetTerrain()->GetZoneId(player->Where().X(), player->Where().Y(), player->Where().Z());
 
-    WorldSafeLocsEntry const* graveyard = sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), g_team);
+    WorldSafeLocsEntry const* graveyard = sObjectMgr.GetClosestGraveYard(player->Where().X(), player->Where().Y(), player->Where().Z(), player->GetMapId(), g_team);
 
     if (graveyard)
     {
@@ -1089,7 +1044,7 @@ bool ChatHandler::HandleGoXYCommand(char* args)
     float z = 0.0f;
     if (MapManager::IsValidMapCoord(mapid, x, y))
     {
-        if (FusedTerrain const* terrain = sTerrainMgr.LoadTerrain(mapid))
+        if (TerrainInfo const* terrain = sTerrainMgr.LoadTerrain(mapid))
         {
             float ground = terrain->GetWaterOrGroundLevel(x, y, MAX_HEIGHT);
             if (ground > INVALID_HEIGHT)
@@ -1171,7 +1126,7 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
     }
     else
     {
-        areaid = _player->GetZoneId();
+        areaid = _player->GetTerrain()->GetZoneId(_player->Where().X(), _player->Where().Y(), _player->Where().Z());
     }
 
     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(areaid);
@@ -1706,10 +1661,10 @@ bool ChatHandler::HandleTeleAddCommand(char* args)
     }
 
     GameTele tele;
-    tele.position_x = player->GetPositionX();
-    tele.position_y = player->GetPositionY();
-    tele.position_z = player->GetPositionZ();
-    tele.orientation = player->GetOrientation();
+    tele.position_x = player->Where().X();
+    tele.position_y = player->Where().Y();
+    tele.position_z = player->Where().Z();
+    tele.orientation = player->Where().Facing();
     tele.mapId = player->GetMapId();
     tele.name = name;
 
@@ -1793,8 +1748,8 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
             }
 
             float dx, dy, dz;
-            destPlayer->GetContactPoint(target, dx, dy, dz);
-            return HandleGoHelper(target, destPlayer->GetMapId(), dx, dy, dz, target->GetAngle(destPlayer));
+            ContactPointNear(*destPlayer, target, dx, dy, dz);
+            return HandleGoHelper(target, destPlayer->GetMapId(), dx, dy, dz, target->Where().BearingTo(destPlayer->Where()));
         }
         else
         {

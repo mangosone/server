@@ -25,7 +25,7 @@
 #ifndef OUTDOOR_PVP_H
 #define OUTDOOR_PVP_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "OutdoorPvPMgr.h"

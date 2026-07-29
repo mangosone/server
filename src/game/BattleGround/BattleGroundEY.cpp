@@ -462,7 +462,7 @@ void BattleGroundEY::EventPlayerDroppedFlag(Player* source)
 
 void BattleGroundEY::EventPlayerClickedOnFlag(Player* source, GameObject* target_obj)
 {
-    if (GetStatus() != STATUS_IN_PROGRESS || IsFlagPickedUp() || !source->IsWithinDistInMap(target_obj, 10))
+    if (GetStatus() != STATUS_IN_PROGRESS || IsFlagPickedUp() || !InReach(*source, *target_obj, 10))
     {
         return;
     }
@@ -625,9 +625,9 @@ WorldSafeLocsEntry const* BattleGroundEY::GetClosestGraveYard(Player* player)
         return NULL;
     }
 
-    float plr_x = player->GetPositionX();
-    float plr_y = player->GetPositionY();
-    float plr_z = player->GetPositionZ();
+    float plr_x = player->Where().X();
+    float plr_y = player->Where().Y();
+    float plr_z = player->Where().Z();
 
 
     distance = (entry->x - plr_x) * (entry->x - plr_x) + (entry->y - plr_y) * (entry->y - plr_y) + (entry->z - plr_z) * (entry->z - plr_z);

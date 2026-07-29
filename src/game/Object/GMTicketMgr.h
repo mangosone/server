@@ -25,6 +25,7 @@
 #ifndef MANGOS_H_GMTICKETMGR
 #define MANGOS_H_GMTICKETMGR
 
+#include <iterator>
 #include "Policies/Singleton.h"
 #include "Database/DatabaseEnv.h"
 #include "Util.h"

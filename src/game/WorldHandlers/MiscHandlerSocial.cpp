@@ -49,7 +49,8 @@
 
 
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -67,7 +68,7 @@
 #include "LootMgr.h"
 #include "Chat.h"
 #include "ScriptMgr.h"
-#include "ObjectAccessor.h"
+#include "PlayerRegistry.h"
 #include "Object.h"
 #include "BattleGround/BattleGround.h"
 #include "OutdoorPvP/OutdoorPvP.h"
@@ -175,7 +176,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 acc
         }
         else
         {
-            Player* pFriend = sObjectAccessor.FindPlayer(friendGuid);
+            Player* pFriend = sPlayerRegistry.Find(friendGuid);
             if (pFriend && pFriend->IsInWorld() && pFriend->IsVisibleGloballyFor(player))
             {
                 friendResult = FRIEND_ADDED_ONLINE;

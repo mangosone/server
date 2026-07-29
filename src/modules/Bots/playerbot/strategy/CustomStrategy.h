@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include "Strategy.h"
 
 namespace ai

@@ -39,6 +39,7 @@
  * where teams compete to control them and generate resources toward victory.
  */
 
+#include "Utilities/Errors.h"
 #include "Object.h"
 #include "Player.h"
 #include "BattleGround.h"
@@ -714,8 +715,8 @@ WorldSafeLocsEntry const* BattleGroundAB::GetClosestGraveYard(Player* player)
     // If there are occupied nodes, select the closest one to place the ghost
     if (!nodes.empty())
     {
-        float plr_x = player->GetPositionX();
-        float plr_y = player->GetPositionY();
+        float plr_x = player->Where().X();
+        float plr_y = player->Where().Y();
 
         float mindist = 999999.0f;
         for (uint8 i = 0; i < nodes.size(); ++i)

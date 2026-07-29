@@ -24,7 +24,8 @@
 
 
 
-#include "Common.h"
+#include <random>
+#include "Platform/Define.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -42,7 +43,6 @@
 #include "Group.h"
 #include "UpdateData.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "SharedDefines.h"
 #include "Pet.h"
 #include "GameObject.h"
@@ -64,7 +64,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
-#include "terrain/Geometry/Vector3.h"
+#include "Geometry/Vector3.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <vector>

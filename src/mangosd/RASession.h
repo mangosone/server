@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,13 @@
 #ifndef MANGOS_H_RASESSION
 #define MANGOS_H_RASESSION
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/ServerDefines.h"
 #include "SharedDefines.h"
 
+#include "Service.h"
+
+#include "Log.h"
 #include "net/Server.hpp"
 
 #include <atomic>
@@ -39,17 +43,12 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <utility>
 #include <vector>
 
 /**
- * @brief One remote-access (telnet) connection.
- *
- * A line-oriented login shell: username, password, then commands, which are queued to
- * the world thread exactly as the local CLI's are. This is the second protocol the
- * shared networking engine was built to carry — the ACE reactor, acceptor and
- * hand-rolled output buffer it used to need are all gone, and the transport supplies
- * them for free.
+ * One remote-access (telnet) connection: a line-oriented login shell (username,
+ * password, then commands) whose commands are queued to the world thread exactly as
+ * the local CLI's are. Runs on the shared networking engine.
  */
 class RASession : public net::ISession
 {
@@ -57,8 +56,6 @@ class RASession : public net::ISession
 
         RASession();
         ~RASession() override;
-
-        // ── net::ISession ────────────────────────────────────────────────────────
 
         void setPeerAddress(const std::string& address) override { m_address = address; }
         void setSender(net::Sender sender) override { m_sender = std::move(sender); }
@@ -72,24 +69,18 @@ class RASession : public net::ISession
 
     private:
 
-        /// Stages of the login handshake.
         enum Stage
         {
-            NONE,   ///< nothing entered yet; awaiting the username
+            NONE,   ///< awaiting the username
             LG,     ///< username accepted; awaiting the password
             OK      ///< authenticated; accepting commands
         };
 
-        /// Write a line to the peer. Thread-safe: the world thread calls this from the
-        /// command callbacks, and the Sender is a no-op once the connection is gone.
+        /// Write a line to the peer. Thread-safe (the Sender is a no-op once gone).
         void Send(const char* message);
-
-        /// Ask the transport to close this connection.
         void Close();
 
-        /// Handle one complete line of input (network thread).
         void HandleLine(const std::string& line);
-
         void HandleUsername(const std::string& line);
         void HandlePassword(const std::string& line);
         void HandleCommand(const std::string& line);
@@ -97,8 +88,6 @@ class RASession : public net::ISession
         /// World-thread callbacks handed to CliCommandHolder.
         static void CommandPrint(void* callbackArg, const char* text);
         static void CommandFinished(void* callbackArg, bool success);
-
-        /// Release the keep-alive taken when a command was queued.
         void ReleaseCommand();
 
         std::string  m_address;
@@ -107,8 +96,7 @@ class RASession : public net::ISession
 
         std::atomic<bool> m_closed;
 
-        /// Partial line carried over between reads (telnet is a byte stream too).
-        std::string m_input;
+        std::string m_input;   ///< partial line carried between reads
 
         Stage        m_stage;
         uint32       m_accountId;
@@ -118,17 +106,16 @@ class RASession : public net::ISession
         bool         m_stricted;  ///< forbid SEC_CONSOLE-only commands remotely
         AccountTypes m_minLevel;  ///< lowest account level allowed to connect
 
-        // A queued command is executed later, on the world thread, and hands back a raw
-        // pointer to this session. Hold a reference to ourselves for as long as any
-        // command is outstanding, so the session cannot be destroyed underneath a
-        // callback if the peer disconnects mid-command.
+        // A queued command runs later on the world thread and is handed a bare pointer
+        // to us; hold a reference to ourselves while any command is outstanding so a
+        // peer disconnecting mid-command cannot free the session under the callback.
         std::mutex                 m_commandLock;
         std::shared_ptr<RASession> m_keepAlive;
         int                        m_commandsPending;
 };
 
 /**
- * @brief Owns the remote-access listening socket.
+ * Owns the remote-access listening socket.
  */
 class RaServer
 {
@@ -137,7 +124,6 @@ class RaServer
         RaServer() : m_started(false) {}
         ~RaServer() { Stop(); }
 
-        /// Bind and start accepting RA connections. Returns false on failure.
         bool Start(uint16_t port, const std::string& bindIp);
         void Stop();
 
@@ -145,6 +131,42 @@ class RaServer
 
         net::Server m_server;
         bool        m_started;
+};
+
+/**
+ * @brief The remote-administration listener, as a Master service.
+ *
+ * Nothing but lifetime: the listener itself is RaServer, and each accepted
+ * connection becomes an RASession on the shared networking engine -- the same
+ * engine the world port uses, rather than the separate hand-rolled acceptor
+ * this replaced.
+ */
+class RaService : public IService
+{
+    public:
+
+        RaService(uint16_t port, const std::string& bindIp)
+            : m_port(port), m_bindIp(bindIp) {}
+
+        const char* Name() const override { return "remote administration"; }
+
+        void Start() override
+        {
+            if (!m_server.Start(m_port, m_bindIp))
+            {
+                sLog.outError("Remote administration could not bind %s:%u",
+                              m_bindIp.c_str(), unsigned(m_port));
+            }
+        }
+
+        void RequestStop() override { m_server.Stop(); }
+        void Join() override {}
+
+    private:
+
+        RaServer    m_server;
+        uint16_t    m_port;
+        std::string m_bindIp;
 };
 
 #endif

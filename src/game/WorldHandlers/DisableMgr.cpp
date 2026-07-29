@@ -36,6 +36,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Utilities/Errors.h"
 #include "DisableMgr.h"
 #include "ObjectMgr.h"
 #include "OutdoorPvPMgr.h"
@@ -426,7 +427,7 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
                     if (spellFlags & SPELL_DISABLE_AREA)
                     {
                         std::set<uint32> const& areaIds = itr->second.params[1];
-                        if (areaIds.find(unit->GetAreaId()) != areaIds.end())
+                        if (areaIds.find(unit->GetTerrain()->GetAreaId(unit->Where().X(), unit->Where().Y(), unit->Where().Z())) != areaIds.end())
                         {
                             return true;                                        // Spell is disabled in this area
                         }
@@ -513,61 +514,6 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
 bool IsVMAPDisabledFor(uint32 entry, uint8 flags)
 {
     return IsDisabledFor(DISABLE_TYPE_VMAP, entry, NULL, flags);
-}
-
-namespace
-{
-    // Spell ids the `vmap.ignoreSpellIds` config exempts from the LoS check.
-    std::set<uint32> s_losIgnoredSpells;
-}
-
-/**
- * @brief Parses the config list of spells exempted from the line-of-sight check.
- *
- * @param spellIdList Comma/space separated spell ids ("" disables the exemption).
- */
-void LoadLoSIgnoredSpells(const char* spellIdList)
-{
-    s_losIgnoredSpells.clear();
-    if (!spellIdList)
-    {
-        return;
-    }
-
-    uint32 id = 0;
-    bool haveDigits = false;
-    for (const char* p = spellIdList; ; ++p)
-    {
-        if (*p >= '0' && *p <= '9')
-        {
-            id = id * 10 + uint32(*p - '0');
-            haveDigits = true;
-            continue;
-        }
-
-        if (haveDigits && id)
-        {
-            s_losIgnoredSpells.insert(id);
-        }
-        id = 0;
-        haveDigits = false;
-
-        if (!*p)
-        {
-            break;
-        }
-    }
-}
-
-/**
- * @brief Whether a spell must still pass the line-of-sight check.
- *
- * @param spellId The spell identifier.
- * @return false when the spell is exempted by config; otherwise true.
- */
-bool IsSpellLoSChecked(uint32 spellId)
-{
-    return s_losIgnoredSpells.find(spellId) == s_losIgnoredSpells.end();
 }
 
 /**

@@ -41,6 +41,8 @@
  * @see Channel for channel chat
  */
 
+#include "Common/Locales.h"
+#include "Utilities/Errors.h"
 #include "Chat.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
@@ -60,6 +62,7 @@
 #include "GameEventMgr.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
 #include "CommandMgr.h"
+#include "ObjectLookup.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -457,22 +460,6 @@ ChatCommand* ChatHandler::getCommandTable()
     };
 
     // .trans npc add <entry> [<movement_type>] [<wander_distance>]
-    //
-    // Authoring crew for a vessel. The GM's own client is already sending the deck offset it
-    // is standing at, so the command reads it back rather than trying to derive it -- which
-    // is the only way to get these numbers that cannot be wrong.
-    static ChatCommand transNpcCommandTable[] =
-    {
-        { "add",            SEC_ADMINISTRATOR,  false, &ChatHandler::HandleTransNpcAddCommand,         "", NULL },
-        { NULL,             0,                  false, NULL,                                           "", NULL }
-    };
-
-    static ChatCommand transCommandTable[] =
-    {
-        { "npc",            SEC_ADMINISTRATOR,  false, NULL,                                           "", transNpcCommandTable },
-        { NULL,             0,                  false, NULL,                                           "", NULL }
-    };
-
     static ChatCommand npcCommandTable[] =
     {
         { "add",            SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcAddCommand,              "", NULL },
@@ -809,7 +796,6 @@ ChatCommand* ChatHandler::getCommandTable()
         { "lookup",         SEC_MODERATOR,      true,  NULL,                                           "", lookupCommandTable   },
         { "modify",         SEC_MODERATOR,      false, NULL,                                           "", modifyCommandTable   },
         { "npc",            SEC_MODERATOR,      false, NULL,                                           "", npcCommandTable      },
-        { "trans",          SEC_ADMINISTRATOR,  false, NULL,                                           "", transCommandTable    },
         { "pool",           SEC_GAMEMASTER,     true,  NULL,                                           "", poolCommandTable     },
         { "pdump",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", pdumpCommandTable    },
         { "quest",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", questCommandTable    },
@@ -1591,7 +1577,7 @@ Unit* ChatHandler::getSelectedUnit()
     }
 
     // can be selected player at another map
-    return sObjectAccessor.GetUnit(*m_session->GetPlayer(), guid);
+    return ObjectLookup::GetUnit(*m_session->GetPlayer(), guid);
 }
 
 /**
@@ -1901,7 +1887,7 @@ void ChatHandler::LogCommand(char const* fullcmd)
         Player* p = m_session->GetPlayer();
         ObjectGuid sel_guid = p->GetSelectionGuid();
         sLog.outCommand(GetAccountId(), "Command: %s [Player: %s (Account: %u) X: %f Y: %f Z: %f Map: %u Selected: %s]",
-                        fullcmd, p->GetName(), GetAccountId(), p->GetPositionX(), p->GetPositionY(), p->GetPositionZ(), p->GetMapId(),
+                        fullcmd, p->GetName(), GetAccountId(), p->Where().X(), p->Where().Y(), p->Where().Z(), p->GetMapId(),
                         sel_guid.GetString().c_str());
     }
     else                                        // 0 account -> console

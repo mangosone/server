@@ -10,7 +10,7 @@
 #include "AuctionHouseMgr.h"
 #include "WorldSession.h"
 #include "Player.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
 #include "playerbot/PlayerbotAIConfig.h"

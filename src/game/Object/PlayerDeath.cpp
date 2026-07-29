@@ -24,6 +24,7 @@
 
 
 
+#include "Utilities/Errors.h"
 #include "Player.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
@@ -47,7 +48,7 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
+#include "CorpseManager.h"
 #include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
@@ -56,6 +57,7 @@
 #include "Pet.h"
 #include "Util.h"
 #include "Transports.h"
+#include "TransportMap.h"
 #include "Weather.h"
 #include "BattleGround/BattleGround.h"
 #include "BattleGround/BattleGroundMgr.h"
@@ -72,6 +74,7 @@
 #include "DBCStores.h"
 #include "SQLStorages.h"
 #include "DisableMgr.h"
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <ctime>
@@ -103,14 +106,24 @@ void Player::BuildPlayerRepop()
         MANGOS_ASSERT(false);
     }
 
-    // create a corpse and place it at the player's location
-    Corpse* corpse = CreateCorpse();
-    if (!corpse)
+    // NO BODY IS EVER LEFT ON A SHIP. She is a map that sails away, and her grids are pinned
+    // for as long as the server runs, so a corpse aboard is one nobody can walk back to and
+    // nothing will ever unload. Retail agrees: dying on a transport releases you to the
+    // nearest port, alive. RepopAtGraveyard -- which always follows this call -- resurrects
+    // him and finds that port from the vessel's own position.
+    Corpse* corpse = NULL;
+
+    if (!GetMap()->AsTransport())
     {
-        sLog.outError("Error creating corpse for Player %s [%u]", GetName(), GetGUIDLow());
-        return;
+        // create a corpse and place it at the player's location
+        corpse = CreateCorpse();
+        if (!corpse)
+        {
+            sLog.outError("Error creating corpse for Player %s [%u]", GetName(), GetGUIDLow());
+            return;
+        }
+        GetMap()->Add(corpse);
     }
-    GetMap()->Add(corpse);
 
     // convert player body to ghost
     SetHealth(1);
@@ -177,7 +190,7 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 
     // trigger update zone for alive state zone updates
     uint32 newzone, newarea;
-    GetZoneAndAreaId(newzone, newarea);
+    GetTerrain()->GetZoneAndAreaId(newzone, newarea, Where().X(), Where().Y(), Where().Z());
     UpdateZone(newzone, newarea);
 
     m_deathTimer = 0;
@@ -325,7 +338,7 @@ Corpse* Player::CreateCorpse()
     }
 
     // register for player, but not show
-    sObjectAccessor.AddCorpse(corpse);
+    sCorpseManager.Add(corpse);
     return corpse;
 }
 
@@ -334,7 +347,7 @@ Corpse* Player::CreateCorpse()
  */
 void Player::SpawnCorpseBones()
 {
-    if (sObjectAccessor.ConvertCorpseForPlayer(GetObjectGuid()))
+    if (sCorpseManager.ConvertCorpseForPlayer(GetObjectGuid()))
         if (!GetSession()->PlayerLogoutWithSave())          // at logout we will already store the player
         {
             SaveToDB(); // prevent loading as ghost without corpse
@@ -348,7 +361,7 @@ void Player::SpawnCorpseBones()
  */
 Corpse* Player::GetCorpse() const
 {
-    return sObjectAccessor.GetCorpseForPlayerGUID(GetObjectGuid());
+    return sCorpseManager.FindForPlayer(GetObjectGuid());
 }
 
 /**
@@ -359,10 +372,20 @@ void Player::RepopAtGraveyard()
     // note: this can be called also when the player is alive
     // for example from WorldSession::HandleMovementOpcodes
 
-    AreaTableEntry const* zone = GetAreaEntryByAreaID(GetAreaId());
+    // THE ANCHOR, not the placement. Aboard, this is the map the ship sails and her own
+    // waypoint estimate: a hull carries no area table, so asking the map underfoot yields
+    // zone 0, and a graveyard is ashore in any case.
+    uint32 graveMap;
+    float graveX, graveY, graveZ;
+    GetWorldAnchor(graveMap, graveX, graveY, graveZ);
 
-    // Such zones are considered unreachable as a ghost and the player must be automatically revived
-    if ((!IsAlive() && zone && zone->Flags & AREA_FLAG_NEED_FLY) || GetTransport())
+    AreaTableEntry const* zone =
+        GetAreaEntryByAreaID(AnchorTerrain()->GetAreaId(graveX, graveY, graveZ));
+
+    // Such zones are considered unreachable as a ghost, and so is a ship that has sailed:
+    // there is no walking back to a body aboard one, so he is revived on the spot and put
+    // ashore at the nearest port below. No corpse was left there -- see BuildPlayerRepop.
+    if (!IsAlive() && ((zone && zone->Flags & AREA_FLAG_NEED_FLY) || GetMap()->AsTransport()))
     {
         ResurrectPlayer(0.5f);
         SpawnCorpseBones();
@@ -377,7 +400,7 @@ void Player::RepopAtGraveyard()
     }
     else
     {
-        ClosestGrave = sObjectMgr.GetClosestGraveYard(GetPositionX(), GetPositionY(), GetPositionZ(), GetMapId(), GetTeam());
+        ClosestGrave = sObjectMgr.GetClosestGraveYard(graveX, graveY, graveZ, graveMap, GetTeam());
     }
 
     // stop countdown until repop
@@ -388,7 +411,7 @@ void Player::RepopAtGraveyard()
     if (ClosestGrave)
     {
         bool updateVisibility = IsInWorld() && GetMapId() == ClosestGrave->map_id;
-        TeleportTo(ClosestGrave->map_id, ClosestGrave->x, ClosestGrave->y, ClosestGrave->z, GetOrientation());
+        TeleportTo(ClosestGrave->map_id, ClosestGrave->x, ClosestGrave->y, ClosestGrave->z, Where().Facing());
         if (IsDead())                                       // not send if alive, because it used in TeleportTo()
         {
             WorldPacket data(SMSG_DEATH_RELEASE_LOC, 4 * 4);// show spirit healer position on minimap

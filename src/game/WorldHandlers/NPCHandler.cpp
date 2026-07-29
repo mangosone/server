@@ -47,7 +47,8 @@
  * - CMSG_BUY_STABLE_SLOT: Buy stable slot
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <algorithm>
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -67,6 +68,7 @@
 #include "Chat.h"
 #include "World.h"
 #include "Item.h"
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <cmath>
@@ -606,7 +608,7 @@ void WorldSession::SendSpiritResurrect()
     Corpse* corpse = _player->GetCorpse();
     if (corpse)
         corpseGrave = sObjectMgr.GetClosestGraveYard(
-                          corpse->GetPositionX(), corpse->GetPositionY(), corpse->GetPositionZ(), corpse->GetMapId(), _player->GetTeam());
+                          corpse->Where().X(), corpse->Where().Y(), corpse->Where().Z(), corpse->GetMapId(), _player->GetTeam());
 
     // now can spawn bones
     _player->SpawnCorpseBones();
@@ -615,11 +617,11 @@ void WorldSession::SendSpiritResurrect()
     if (corpseGrave)
     {
         WorldSafeLocsEntry const* ghostGrave = sObjectMgr.GetClosestGraveYard(
-                _player->GetPositionX(), _player->GetPositionY(), _player->GetPositionZ(), _player->GetMapId(), _player->GetTeam());
+                _player->Where().X(), _player->Where().Y(), _player->Where().Z(), _player->GetMapId(), _player->GetTeam());
 
         if (corpseGrave != ghostGrave)
         {
-            _player->TeleportTo(corpseGrave->map_id, corpseGrave->x, corpseGrave->y, corpseGrave->z, _player->GetOrientation());
+            _player->TeleportTo(corpseGrave->map_id, corpseGrave->x, corpseGrave->y, corpseGrave->z, _player->Where().Facing());
         }
         // or update at original position
         else

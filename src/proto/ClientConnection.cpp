@@ -1,4 +1,7 @@
+#include <vector>
+#include <mutex>
 #include "ClientConnection.h"
+#include "Log/Log.h"
 
 #include "Auth/Sha1.h"
 #include "Opcodes.h"
@@ -45,27 +48,23 @@ std::vector<uint8_t> ClientConnection::onData(const uint8_t* data, std::size_t l
             return {};
         }
 
-        std::size_t offset = 0;
         std::vector<WorldPacket> packets;
-        while (offset < len && !m_closed.load())
+        if (m_codec.Feed(data, len, packets) == DecodeStatus::Malformed)
         {
-            packets.clear();
-            std::size_t consumed = 0;
-            DecodeStatus const status = m_codec.FeedOne(data + offset, len - offset, consumed, packets);
-            offset += consumed;
+            sLog.outError("proto: malformed packet framing from %s, dropping",
+                          m_address.c_str());
+            Close();
+            return {};
+        }
 
-            if (status == DecodeStatus::Malformed)
+        for (size_t i = 0; i < packets.size() && !m_closed.load(); ++i)
+        {
+            m_gateway.TracePacket(packets[i], true);
+            if (!HandlePacket(packets[i]))
             {
                 Close();
                 break;
             }
-            if (status == DecodeStatus::NeedMore)
-                break;
-
-            WorldPacket& packet = packets.front();
-            m_gateway.TracePacket(packet, true);
-            if (!HandlePacket(packet))
-                Close();
         }
     }
     catch (...)

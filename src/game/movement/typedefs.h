@@ -25,10 +25,10 @@
 #ifndef MANGOSSERVER_TYPEDEFS_H
 #define MANGOSSERVER_TYPEDEFS_H
 
-#include "Common.h"
-#include "terrain/Geometry/Vector2.h"
-#include "terrain/Geometry/Vector3.h"
-#include "terrain/Geometry/Vector4.h"
+#include "Platform/Define.h"
+#include "Geometry/Vector2.h"
+#include "Geometry/Vector3.h"
+#include "Geometry/Vector4.h"
 
 namespace Movement
 {

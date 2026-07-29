@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_SPELLCOOLDOWNMGR
 #define MANGOS_H_SPELLCOOLDOWNMGR
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include <map>
 #include <ctime>
 

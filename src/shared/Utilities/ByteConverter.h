@@ -34,41 +34,18 @@
  * This is essential for network protocol handling in World of Warcraft.
  */
 
-#include <cstddef>
-#include <cstdint>
 #include <utility>
-
-// Byte order. The `shared` library is compiled with -DMANGOS_ENDIAN=<0|1> (see
-// TEST_BIG_ENDIAN in src/shared/CMakeLists.txt), and Platform/Define.h derives the same
-// macro from ACE. Neither is available to standalone tools that compile this header
-// without linking `shared` (mangos-baker), so derive it from the compiler's own byte-order
-// macro when nobody else has. This must never be left undefined: `MANGOS_ENDIAN ==
-// MANGOS_BIGENDIAN` with both macros absent expands to `0 == 0`, which would silently
-// byte-swap every field on a little-endian host.
-#ifndef MANGOS_LITTLEENDIAN
-#  define MANGOS_LITTLEENDIAN 0
-#endif
-#ifndef MANGOS_BIGENDIAN
-#  define MANGOS_BIGENDIAN    1
-#endif
-#ifndef MANGOS_ENDIAN
-#  if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
-      (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-#    define MANGOS_ENDIAN MANGOS_BIGENDIAN
-#  else
-#    define MANGOS_ENDIAN MANGOS_LITTLEENDIAN
-#  endif
-#endif
+#include "Platform/Define.h"
+#include <algorithm>
 
 namespace ByteConverter
 {
-
     /**
      * @brief Reverse byte order for a value of size T
      * @param val Pointer to value to convert
      */
     template<size_t T>
-        inline void convert(char* val)
+    inline void convert(char* val)
     {
         std::swap(*val, *(val + T - 1));
         convert < T - 2 > (val + 1);
@@ -78,7 +55,6 @@ namespace ByteConverter
      * @brief Template specialization for size 0 (no-op)
      */
     template<> inline void convert<0>(char*) {}
-
     /**
      * @brief Template specialization for size 1 (no-op, single byte)
      */
@@ -89,27 +65,25 @@ namespace ByteConverter
      * @param val Pointer to value to convert
      */
     template<typename T>
-        inline void apply(T* val)
+    inline void apply(T* val)
     {
         convert<sizeof(T)>((char*)(val));
     }
 }
 
 #if MANGOS_ENDIAN == MANGOS_BIGENDIAN
-
 /**
  * @brief Convert from host to little-endian byte order (big-endian host)
  * @param val Value to convert
  */
 template<typename T> inline void EndianConvert(T& val) { ByteConverter::apply<T>(&val); }
-
 /**
  * @brief Reverse byte order (no-op on big-endian host)
  * @param val Value to convert
  */
-template<typename T> inline void EndianConvertReverse(T&) {}
+template<typename T> inline void EndianConvertReverse(T&) { }
 #else
-template<typename T> inline void EndianConvert(T&) {}
+template<typename T> inline void EndianConvert(T&) { }
 template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::apply<T>(&val); }
 #endif
 
@@ -117,34 +91,26 @@ template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::a
  * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
 template<typename T> void EndianConvert(T*);
-
 /**
  * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
 template<typename T> void EndianConvertReverse(T*);
 
-// Single-byte overloads. Spelled with the fixed-width types rather than MaNGOS's uint8 /
-// int8, which are ACE typedefs for the very same types -- this header must stay free of
-// Platform/Define.h so the DBC loader can be compiled into ACE-less tools.
-
 /**
  * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvert(std::uint8_t&) {}
-
+inline void EndianConvert(uint8&) { }
 /**
  * @brief No-op for int8 (single byte)
  */
-inline void EndianConvert(std::int8_t&)  {}
-
+inline void EndianConvert(int8&)  { }
 /**
  * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvertReverse(std::uint8_t&) {}
-
+inline void EndianConvertReverse(uint8&) { }
 /**
  * @brief No-op for int8 (single byte)
  */
-inline void EndianConvertReverse(std::int8_t&) {}
+inline void EndianConvertReverse(int8&) { }
 
 #endif

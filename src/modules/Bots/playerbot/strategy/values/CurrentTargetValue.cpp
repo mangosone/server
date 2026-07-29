@@ -1,3 +1,4 @@
+#include "ObjectLookup.h"
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "CurrentTargetValue.h"
@@ -13,7 +14,7 @@ Unit* CurrentTargetValue::Get()
         return NULL;
     }
 
-    Unit* unit = sObjectAccessor.GetUnit(*bot, selection);
+    Unit* unit = ObjectLookup::GetUnit(*bot, selection);
     if (unit && !bot->IsWithinLOSInMap(unit))
     {
         return NULL;

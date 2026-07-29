@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@
 #ifndef MANGOS_MOTIONFRAME_H
 #define MANGOS_MOTIONFRAME_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Utilities/MathDefines.h"
 #include "movement/MoveSplineInitArgs.h"
 
 #include <cmath>
@@ -36,37 +37,24 @@ class Unit;
 class WorldObject;
 
 /**
- * @brief The COORDINATE FRAME a movement leg lives in -- the seam that makes the
+ * @brief The coordinate frame a movement leg lives in -- the seam that makes the
  *        spline and the path calculus terrain-agnostic.
  *
  * Every terrain-dependent question the movement stack asks -- route me, where is my
  * target, give me a reachable point nearby, drop this guess onto the ground -- is
- * answered by the frame, not by a direct call into Map or PathFinder. That is the
- * whole point: nothing above this interface knows, or may know, whether the unit is
- * walking on world terrain or on the deck of a moving ship.
+ * answered by the frame rather than by a direct call into Map or PathFinder. Nothing
+ * above this interface knows, or may know, whether the unit walks on world terrain or
+ * on the deck of a moving vessel.
  *
- *   * WorldFrame     -- world coordinates. Routing through the Detour navmesh, heights
- *                      from the terrain. Behaves exactly as the movement code did
- *                      before the seam existed.
+ * The invariant that makes this safe: A LEG NEVER SPANS TWO FRAMES. The driver
+ * enforces it by dropping its router whenever the frame under it changes.
  *
- *   * TransportFrame -- a vessel's LOCAL system. A boarded unit's position, its target's
- *                      position and the leg it walks are all LOCAL coordinates the
- *                      client composes with the live vessel pose; the floor comes from
- *                      the deck mesh rather than the world, so a passenger can never
- *                      sink to the sea floor. The wire is already frame-aware:
- *                      MoveSplineInit::Launch feeds the spline the local position and
- *                      switches to SMSG_MONSTER_MOVE_TRANSPORT.
- *
- * The invariant that makes this safe: A LEG NEVER SPANS TWO FRAMES. Boarding or
- * leaving a transport ends the current leg; the next is laid in the new frame. The
- * driver enforces it by dropping its router whenever the frame under it changes.
- *
- * The other half of that invariant is FromWorld/ToWorld. Every anchor a generator
- * captures -- a respawn coord, a DB waypoint, a script's MovePoint -- is WORLD data,
- * because world data is the only kind the database and the script API speak. Read as
- * a deck offset it would send the unit somewhere absurd, so it must come through
- * FromWorld. Under WorldFrame both calls are the identity, which is why the
- * generators can do this unconditionally.
+ * The other half of that invariant is FromWorld. Every anchor a generator captures --
+ * a respawn coord, a DB waypoint, a script's MovePoint -- is WORLD data, because world
+ * data is the only kind the database and the script API speak. Under the world frame it
+ * is the identity, which is why generators may convert unconditionally and pay nothing.
+ * There is no way back: a deck IS a map, so nothing on one is ever composed into the
+ * world, and a frame that could do it would be a frame someone would eventually use.
  */
 namespace Motion
 {
@@ -77,18 +65,15 @@ namespace Motion
     enum class FrameKind : uint8
     {
         World,    ///< World coordinates (terrain + navmesh).
-        Transport ///< A transport's model-local coordinates (deck mesh).
+        Transport ///< A vessel's model-local coordinates (deck mesh).
     };
 
     /**
      * @brief The 2D bearing from one FRAME point to another, normalised to [0, 2*PI)
      *        exactly as WorldObject::GetAngle normalises.
      *
-     * Generators need this because GetAngle itself reads world positions -- and a boarded
-     * unit's world position is only a cache, derived from a vessel pose the server is
-     * merely estimating. A chase bearing computed from it would aim at where the deck is
-     * not. Distances survive the change of frame (a rigid transform preserves them, which
-     * is why GetDistance is still fine); ANGLES do not, because the deck is rotated.
+     * Generators need this because GetAngle itself reads world positions. Distances
+     * survive a change of frame (a rigid transform preserves them); ANGLES do not.
      */
     inline float AngleBetween(Vector3 const& from, Vector3 const& to)
     {
@@ -114,7 +99,6 @@ namespace Motion
              * @param lengthLimit Cap the path length in yards (0 = default).
              * @return True when usable geometry came out -- which INCLUDES the
              *         straight-line fallback used when routing failed (see Failed).
-             *         False only when nothing at all could be produced.
              */
             virtual bool Calculate(Vector3 const& start, Vector3 const& goal,
                                    bool forceDestination, float lengthLimit) = 0;
@@ -124,22 +108,16 @@ namespace Motion
 
             /**
              * @brief Routing failed and Points() is only a straight line through
-             *        whatever is in the way.
-             *
-             * Whether that is acceptable is the CALLER's decision, and the movement
-             * kinds genuinely disagree -- hence MOVE_REQUIRE_PATH on the intent rather
-             * than the router quietly picking one behaviour for everybody.
+             *        whatever is in the way. Whether that is acceptable is the
+             *        CALLER's decision -- hence MOVE_REQUIRE_PATH on the intent.
              */
             virtual bool Failed() const = 0;
 
             /**
              * @brief The last Calculate produced a REAL route, not a straight line --
              *        a different question from Failed, because a map with no routing
-             *        data answers every query with a straight line that did not "fail".
-             *
-             * Waypoint smoothing needs this: it may only weld several patrol legs into
-             * one spline when it knows each leg actually goes around what is between
-             * the nodes.
+             *        data answers every query with a line that did not "fail".
+             *        Waypoint smoothing may only weld legs together when this holds.
              */
             virtual bool Routed() const = 0;
 
@@ -164,50 +142,31 @@ namespace Motion
             /// The mover's own position, in frame coordinates.
             virtual Vector3 MoverPosition(Unit const& mover) const = 0;
 
-            /**
-             * @brief Bring a WORLD-space point into this frame.
-             *
-             * Spawn coordinates, DB waypoints and every script that says "walk to
-             * (x,y,z)" speak world space and always will -- so an anchor a generator
-             * captures from them has to be converted before it can be used as a goal.
-             * The identity under WorldFrame.
-             */
+            /// Bring a WORLD-space point into this frame; the identity under the world
+            /// frame. Spawn coords, DB waypoints and script destinations all speak world
+            /// space, so an anchor captured from them must come through here.
             virtual Vector3 FromWorld(Unit const& mover, Vector3 const& world) const = 0;
 
-            /// The inverse: a frame point back out to world space, for anything that has
-            /// to talk to the map (grid placement, a spell's destination, a summon).
-            virtual Vector3 ToWorld(Unit const& mover, Vector3 const& local) const = 0;
-
-            /// Another object's position, in the MOVER's frame -- this is what lets
-            /// chase and follow track a target without caring which frame either of
-            /// them stands in, and why there is no need for deck-local twins of them.
+            /// Another object's position, in the MOVER's frame -- what lets chase and
+            /// follow track a target without caring which frame either stands in.
             virtual Vector3 ObjectPosition(Unit const& mover, WorldObject const& obj) const = 0;
 
             /// Another object's facing, in the mover's frame.
             virtual float ObjectOrientation(Unit const& mover, WorldObject const& obj) const = 0;
 
-            /**
-             * @brief The point `distance2d` yards from `target` at `absAngle`, dropped
-             *        onto whatever this frame considers ground. The destination of
-             *        every chase and follow leg.
-             */
+            /// The point `distance2d` yards from `target` at `absAngle`, dropped onto
+            /// this frame's ground. The destination of every chase and follow leg.
             virtual Vector3 NearPoint(Unit const& mover, WorldObject const& target,
                                       float searcherBounding, float distance2d,
                                       float absAngle) const = 0;
 
-            /**
-             * @brief A reachable random point within `radius` of `centre`, on this
-             *        frame's ground. Drives wander and the confused stagger.
-             * @return Nothing when no reachable point was found (retry later).
-             */
+            /// A reachable random point within `radius` of `centre`. Drives wander and
+            /// the confused stagger. Nothing when none was found (retry later).
             virtual std::optional<Vector3> RandomPoint(Unit& mover, Vector3 const& centre,
                                                        float radius) const = 0;
 
-            /**
-             * @brief Drop `guess` onto this frame's ground, pulled back to the first
-             *        obstruction on the way from `from`. Drives the flee-point search.
-             * @return Nothing when there is no ground there (reject the point).
-             */
+            /// Drop `guess` onto this frame's ground, pulled back to the first
+            /// obstruction on the way from `from`. Drives the flee-point search.
             virtual std::optional<Vector3> GroundPoint(Unit& mover, Vector3 const& from,
                                                        Vector3 const& guess) const = 0;
     };
@@ -215,9 +174,9 @@ namespace Motion
     /**
      * @brief The frame `mover` is currently moving in.
      *
-     * Always the world frame today. When TransportFrame lands, a boarded unit resolves
-     * to its vessel's frame HERE and nothing above this call has to change -- that is
-     * the payoff of routing every terrain question through IMotionFrame.
+     * Always the world frame today. When a transport frame lands, a boarded unit
+     * resolves to its vessel's frame HERE and nothing above this call has to change --
+     * that is the payoff of routing every terrain question through IMotionFrame.
      */
     IMotionFrame const& FrameFor(Unit const& mover);
 }

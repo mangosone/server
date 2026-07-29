@@ -26,7 +26,7 @@
 #ifndef _WARDEN_MODULE_MAC_H
 #define _WARDEN_MODULE_MAC_H
 
-#include "Common.h"     // uint8, the type of the module blob below
+#include "Platform/Define.h"
 
 uint8 Module_0DBBF209A27B1E279A9FEC5C168A15F7_Data[9318] =
 {

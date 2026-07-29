@@ -40,6 +40,7 @@
 #include <list>
 #include <string>
 #include <utility>
+#include "PlayerRegistry.h"
 
 /**
  * @brief Handler for HandlePInfoCommand command.
@@ -150,11 +151,11 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     if (target)
     {
         uint32 mapId = target->GetMapId();
-        uint32 zoneId = target->GetZoneId();
-        float posX = target->GetPositionX();
-        float posY = target->GetPositionY();
-        float posZ = target->GetPositionZ();
-        float orientation = target->GetOrientation();
+        uint32 zoneId = target->GetTerrain()->GetZoneId(target->Where().X(), target->Where().Y(), target->Where().Z());
+        float posX = target->Where().X();
+        float posY = target->Where().Y();
+        float posZ = target->Where().Z();
+        float orientation = target->Where().Facing();
 
         MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
         AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zoneId);
@@ -351,7 +352,7 @@ bool ChatHandler::HandleGMFlyCommand(char* args)
 bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
 {
     std::list< std::pair<std::string, bool> > names;
-    sObjectAccessor.DoForAllPlayers([&names, this](Player *player)
+    sPlayerRegistry.ForEach([&names, this](Player *player)
     {
         AccountTypes security = player->GetSession()->GetSecurity();
         if ((player->isGameMaster() || (security > SEC_PLAYER && security <= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_GM_LIST))) &&
@@ -484,7 +485,7 @@ bool ChatHandler::HandleChangeWeatherCommand(char* args)
     }
 
     Player* player = m_session->GetPlayer();
-    uint32 zoneId = player->GetZoneId();
+    uint32 zoneId = player->GetTerrain()->GetZoneId(player->Where().X(), player->Where().Y(), player->Where().Z());
     if (!sWeatherMgr.GetWeatherChances(zoneId))
     {
         SendSysMessage(LANG_NO_WEATHER);

@@ -24,6 +24,7 @@
 
 #ifndef MANGOS_H_SQLDELAYTHREAD
 #define MANGOS_H_SQLDELAYTHREAD
+
 #include "LockedQueue/LockedQueue.h"
 #include "Threading/Threading.h"
 
@@ -37,17 +38,26 @@ class SqlConnection;
  */
 class SqlDelayThread : public MaNGOS::Runnable
 {
-    /**
-     * @brief
-     *
-     */
-    typedef MaNGOS::LockedQueue<SqlOperation*> SqlQueue;
+        /**
+         * @brief
+         *
+         */
+        typedef MaNGOS::LockedQueue<SqlOperation*> SqlQueue;
 
     private:
         SqlQueue m_sqlQueue;                                /**< Queue of SQL statements */
         Database* m_dbEngine;                               /**< Pointer to used Database engine */
         SqlConnection* m_dbConnection;                      /**< Pointer to DB connection */
         volatile bool m_running; /**< TODO */
+
+    public:
+
+        /// True while the loop is running. CommitTransactionChecked() asks before it
+        /// enqueues: a transaction queued onto a stopped thread is never drained, and
+        /// the caller would block on its promise forever.
+        bool IsRunning() const { return m_running; }
+
+    private:
 
         /**
          * @brief process all enqueued requests
@@ -63,7 +73,6 @@ class SqlDelayThread : public MaNGOS::Runnable
          * @param conn
          */
         SqlDelayThread(Database* db, SqlConnection* conn);
-
         /**
          * @brief
          *
@@ -83,7 +92,6 @@ class SqlDelayThread : public MaNGOS::Runnable
          *
          */
         virtual void Stop();
-
         /**
          * @brief Main Thread loop
          *

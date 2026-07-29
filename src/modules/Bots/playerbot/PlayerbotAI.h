@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "../botpch.h"
 #include "PlayerbotMgr.h"
 #include "PlayerbotAIBase.h"

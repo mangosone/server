@@ -29,7 +29,11 @@
 #ifndef MANGOS_H_WORLDSESSION
 #define MANGOS_H_WORLDSESSION
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
+#include <list>
+#include "SessionProtocolPolicy.h"
 #include "Auth/BigNumber.h"
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
@@ -999,8 +1003,7 @@ class WorldSession
 
         // Ping flood tracking now lives exclusively on the world thread and is
         // only ever touched from HandlePingOpcode() on the world/map thread.
-        time_t m_lastPingTime;
-        uint32 m_overSpeedPings;
+        SessionPingTracker m_pingTracker;
 
 };
 #endif

@@ -43,6 +43,7 @@
 
 
 
+#include "Common/Locales.h"
 #include "Chat.h"
 #include "Language.h"
 #include "ObjectMgr.h"
@@ -1238,9 +1239,9 @@ bool ChatHandler::ExtractLocationFromLink(char** text, uint32& mapid, float& x, 
             if (Player* player = sObjectMgr.GetPlayer(name.c_str()))
             {
                 mapid = player->GetMapId();
-                x = player->GetPositionX();
-                y = player->GetPositionY();
-                z = player->GetPositionZ();
+                x = player->Where().X();
+                y = player->Where().Y();
+                z = player->Where().Z();
                 return true;
             }
 

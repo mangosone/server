@@ -25,6 +25,7 @@
 #ifndef MANGOS_LOOTMGR_H
 #define MANGOS_LOOTMGR_H
 
+#include <unordered_map>
 #include "ByteBuffer.h"
 #include "ObjectGuid.h"
 #include "Utilities/LinkedReference/RefManager.h"
@@ -146,7 +147,7 @@ class LootTemplate;
 typedef std::vector<QuestItem> QuestItemList;
 typedef std::map<uint32, QuestItemList*> QuestItemMap;
 typedef std::vector<LootStoreItem> LootStoreItemList;
-typedef UNORDERED_MAP<uint32, LootTemplate*> LootTemplateMap;
+typedef std::unordered_map<uint32, LootTemplate*> LootTemplateMap;
 
 typedef std::set<uint32> LootIdSet;
 

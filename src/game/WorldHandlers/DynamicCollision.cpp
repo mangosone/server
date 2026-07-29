@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,142 +23,86 @@
  */
 
 #include "DynamicCollision.h"
+
 #include "GameObjectModel.h"
-#include "FusedTerrain.h"           // INVALID_HEIGHT_VALUE
-#include "terrain/Terrain.hpp"      // tileIndex
+#include "terrain/Terrain.hpp"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
-#include <cstdint>
-#include <utility>
 
-using world::terrain::Aabb;
-using world::terrain::Vec3;
+using Geometry::Vector3;
 
 namespace
 {
-    const int GRID_COUNT = 64;
+    constexpr int GRID_COUNT = world::terrain::FusedTerrainGridCount;
 
-    // tileIndex() decreases as the world coordinate grows, so the low/high world edges
-    // map to the high/low tile indices. Normalise to an inclusive [lo,hi] tile range.
-    void TileRange(float loCoord, float hiCoord, int& outLo, int& outHi)
+    int ClampTile(int v)
     {
-        int a = world::terrain::tileIndex(loCoord);
-        int b = world::terrain::tileIndex(hiCoord);
-        if (a > b)
-        {
-            std::swap(a, b);
-        }
-        outLo = std::max(0, a);
-        outHi = std::min(GRID_COUNT - 1, b);
+        return std::min(GRID_COUNT - 1, std::max(0, v));
     }
-} // namespace
+}
 
-template <typename F>
-void DynamicCollision::ForEachCandidate_(float minx, float miny, float maxx, float maxy, F&& f) const
+void DynamicCollision::FileBody(GameObjectModel& model)
 {
-    const uint32_t epoch = ++m_epoch;
+    model.m_cells.clear();
+    const Geometry::Aabb& b = model.GetBounds();
+    if (!b.valid())
+    {
+        return;
+    }
 
-    int txLo, txHi, tyLo, tyHi;
-    TileRange(minx, maxx, txLo, txHi);
-    TileRange(miny, maxy, tyLo, tyHi);
+    // Filed under EVERY tile the body's box overlaps. Keying on its position instead
+    // would file a hundred-yard bridge under one cell and lose it from every other.
+    const int txLo = ClampTile(world::terrain::TileIndex(b.hi.x));
+    const int txHi = ClampTile(world::terrain::TileIndex(b.lo.x));
+    const int tyLo = ClampTile(world::terrain::TileIndex(b.hi.y));
+    const int tyHi = ClampTile(world::terrain::TileIndex(b.lo.y));
 
     for (int tx = txLo; tx <= txHi; ++tx)
     {
         for (int ty = tyLo; ty <= tyHi; ++ty)
         {
-            auto it = m_buckets.find(CellKey_(tx, ty));
-            if (it == m_buckets.end())
-            {
-                continue;
-            }
-            // Flat sweep: the bucket is a contiguous vector of bodies that, in steady
-            // state, never changes. Each body's own AABB reject happens in Raycast.
-            for (GameObjectModel* m : it->second)
-            {
-                if (m->GetEpoch() == epoch)
-                {
-                    continue;   // already visited via another tile it straddles
-                }
-                m->SetEpoch(epoch);
-                f(*m);
-            }
+            const uint32_t key = CellKey(tx, ty);
+            m_buckets[key].push_back(&model);
+            model.m_cells.push_back(key);
         }
     }
+}
 
-    // The handful of transports/elevators: no bucket, just scan.
-    for (GameObjectModel* m : m_movers)
+void DynamicCollision::UnfileBody(GameObjectModel& model)
+{
+    for (uint32_t key : model.m_cells)
     {
-        if (m->GetEpoch() == epoch)
+        auto bucket = m_buckets.find(key);
+        if (bucket == m_buckets.end())
         {
             continue;
         }
-        m->SetEpoch(epoch);
-        f(*m);
+        auto& v = bucket->second;
+        v.erase(std::remove(v.begin(), v.end(), &model), v.end());
+        if (v.empty())
+        {
+            m_buckets.erase(bucket);
+        }
     }
+    model.m_cells.clear();
 }
 
 void DynamicCollision::Insert(GameObjectModel& model)
 {
-    if (std::find(m_all.begin(), m_all.end(), &model) != m_all.end())
+    if (Contains(model))
     {
         return;
     }
     m_all.push_back(&model);
-
-    if (model.IsMover())
-    {
-        m_movers.push_back(&model);
-        return;
-    }
-
-    const Aabb& b = model.GetBounds();
-    int txLo, txHi, tyLo, tyHi;
-    TileRange(b.lo.x, b.hi.x, txLo, txHi);
-    TileRange(b.lo.y, b.hi.y, tyLo, tyHi);
-
-    model.Cells().clear();
-    for (int tx = txLo; tx <= txHi; ++tx)
-    {
-        for (int ty = tyLo; ty <= tyHi; ++ty)
-        {
-            const uint32_t key = CellKey_(tx, ty);
-            m_buckets[key].push_back(&model);
-            model.Cells().push_back(key);
-        }
-    }
+    FileBody(model);
 }
 
 void DynamicCollision::Remove(GameObjectModel& model)
 {
-    auto a = std::find(m_all.begin(), m_all.end(), &model);
-    if (a == m_all.end())
-    {
-        return;
-    }
-    m_all.erase(a);
-
-    if (model.IsMover())
-    {
-        m_movers.erase(std::remove(m_movers.begin(), m_movers.end(), &model), m_movers.end());
-        return;
-    }
-
-    for (uint32_t key : model.Cells())
-    {
-        auto it = m_buckets.find(key);
-        if (it == m_buckets.end())
-        {
-            continue;
-        }
-        auto& v = it->second;
-        v.erase(std::remove(v.begin(), v.end(), &model), v.end());
-        if (v.empty())
-        {
-            m_buckets.erase(it);
-        }
-    }
-    model.Cells().clear();
+    UnfileBody(model);
+    m_all.erase(std::remove(m_all.begin(), m_all.end(), &model), m_all.end());
 }
 
 bool DynamicCollision::Contains(const GameObjectModel& model) const
@@ -168,97 +112,95 @@ bool DynamicCollision::Contains(const GameObjectModel& model) const
 
 void DynamicCollision::Refresh(GameObjectModel& model)
 {
-    const bool tracked = Contains(model);
-    if (!tracked)
+    if (!Contains(model))
     {
-        model.UpdatePose();
         return;
     }
-
-    // A mover keeps no bucket membership, so re-posing is all there is to do.
-    if (model.IsMover())
-    {
-        model.UpdatePose();
-        return;
-    }
-
-    // A frozen body changed pose (door rotated, object teleported): re-file it. Pose
-    // changes are rare, so paying a bucket re-file here keeps the query path free of
-    // any per-tick maintenance.
-    Remove(model);
-    model.UpdatePose();
-    Insert(model);
+    UnfileBody(model);
+    FileBody(model);
 }
 
-void DynamicCollision::Update(uint32_t /*diff*/)
+template <typename F>
+void DynamicCollision::ForEachCandidate(float minx, float miny, float maxx, float maxy,
+                                        F&& f) const
 {
-    // Only the movers need per-tick work, and only to re-derive their pose+bounds.
-    // There is no tree to rebalance.
-    for (GameObjectModel* m : m_movers)
+    const int txLo = ClampTile(world::terrain::TileIndex(maxx));
+    const int txHi = ClampTile(world::terrain::TileIndex(minx));
+    const int tyLo = ClampTile(world::terrain::TileIndex(maxy));
+    const int tyHi = ClampTile(world::terrain::TileIndex(miny));
+
+    ++m_epoch;
+    for (int tx = txLo; tx <= txHi; ++tx)
     {
-        m->UpdatePose();
+        for (int ty = tyLo; ty <= tyHi; ++ty)
+        {
+            auto bucket = m_buckets.find(CellKey(tx, ty));
+            if (bucket == m_buckets.end())
+            {
+                continue;
+            }
+            for (GameObjectModel* model : bucket->second)
+            {
+                // A body spanning several cells appears in several buckets; the stamp
+                // is what keeps one query from raycasting it more than once.
+                if (model->m_epoch == m_epoch)
+                {
+                    continue;
+                }
+                model->m_epoch = m_epoch;
+                f(*model);
+            }
+        }
     }
 }
 
-float DynamicCollision::NearestHitFraction(float x1, float y1, float z1,
-                                           float x2, float y2, float z2) const
+float DynamicCollision::NearestHitFraction(float x1, float y1, float z1, float x2,
+                                           float y2, float z2, uint32_t phasemask) const
 {
-    const Vec3 a{x1, y1, z1}, b{x2, y2, z2};
-    const Vec3 seg = b - a;
-    const float len = std::sqrt(world::terrain::dot(seg, seg));
-    if (len < 1e-4f)
+    const Vector3 a{x1, y1, z1};
+    const Vector3 b{x2, y2, z2};
+    const Vector3 seg = b - a;
+    if (Geometry::dot(seg, seg) < 1e-6f)
     {
         return 2.0f;
     }
-    const Vec3 dir{seg.x / len, seg.y / len, seg.z / len};
 
-    float best = len;
-    bool hit = false;
+    auto inv = [](float d) { return std::fabs(d) > 1e-9f ? 1.0f / d : 1e30f; };
+    const Vector3 invDir{inv(seg.x), inv(seg.y), inv(seg.z)};
 
-    const float minx = std::min(a.x, b.x), maxx = std::max(a.x, b.x);
-    const float miny = std::min(a.y, b.y), maxy = std::max(a.y, b.y);
-
-    ForEachCandidate_(minx, miny, maxx, maxy, [&](const GameObjectModel& m)
+    float best = 2.0f;
+    ForEachCandidate(std::min(x1, x2), std::min(y1, y2), std::max(x1, x2),
+                     std::max(y1, y2), [&](const GameObjectModel& model)
     {
-        // tMax tightens as we go, so later bodies reject earlier.
-        if (auto t = m.Raycast(a, dir, best))
+        if (!model.IsCollidable() || !(model.GetPhaseMask() & phasemask) ||
+            !model.GetBounds().intersectsRay(a, invDir, 1.0f))
         {
-            if (*t >= 0.f && *t < best)
-            {
-                best = *t;
-                hit = true;
-            }
+            return;
+        }
+        const float t = model.SegmentHitFraction(a, b);
+        if (t < best)
+        {
+            best = t;
         }
     });
-
-    return hit ? (best / len) : 2.0f;
+    return best;
 }
 
-bool DynamicCollision::IsInLineOfSight(float x1, float y1, float z1,
-                                       float x2, float y2, float z2) const
+bool DynamicCollision::IsInLineOfSight(float x1, float y1, float z1, float x2, float y2,
+                                       float z2, uint32_t phasemask) const
 {
-    return NearestHitFraction(x1, y1, z1, x2, y2, z2) > 1.0f;
+    return NearestHitFraction(x1, y1, z1, x2, y2, z2, phasemask) > 1.0f;
 }
 
-float DynamicCollision::GetHeight(float x, float y, float z, float maxSearchDist) const
+void DynamicCollision::AddSurfaces(float x, float y, float zTop, float zBottom,
+                                   uint32_t filter, world::terrain::Column& out) const
 {
-    const Vec3 origin{x, y, z};
-    const Vec3 down{0.0f, 0.0f, -1.0f};
-
-    float best = maxSearchDist;
-    bool hit = false;
-
-    ForEachCandidate_(x, y, x, y, [&](const GameObjectModel& m)
+    ForEachCandidate(x, y, x, y, [&](const GameObjectModel& model)
     {
-        if (auto t = m.Raycast(origin, down, best))
+        if (!model.IsCollidable() || !(model.GetPhaseMask() & filter))
         {
-            if (*t >= 0.f && *t < best)
-            {
-                best = *t;
-                hit = true;
-            }
+            return;
         }
+        model.AddSurfaces(x, y, zTop, zBottom, out);
     });
-
-    return hit ? (z - best) : INVALID_HEIGHT_VALUE;
 }

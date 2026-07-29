@@ -38,12 +38,29 @@
  * It supports both formatted output and raw string logging.
  */
 
-#include "Common/Common.h"
+#include "Threading/Threading.h"
+#include "Platform/Define.h"
+
+// The console colour path below uses FOREGROUND_*, HANDLE and GetStdHandle.
+// Those arrived transitively through the ACE headers that Common.h pulled in on
+// Windows; with Common.h gone they have to be asked for by name.
+#ifdef _WIN32
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#endif
+
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <sstream>
 #include "Log.h"
+#include <chrono>
+#include <thread>
+#include <mutex>
 #include "ConsoleLogWriter.h"
 #include "Policies/Singleton.h"
 #include "Config/Config.h"
-#include "Utilities/ConsoleStyle.h"
 #include "Utilities/Util.h"
 #include "Utilities/ByteBuffer.h"
 #include "Utilities/ProgressBar.h"
@@ -52,20 +69,15 @@
 #include <fstream>
 #include <iostream>
 #include <utility>
-#include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
+
+
+
 LogFilterData logFilterData[LOG_FILTER_COUNT] =
 {
     { "transport_moves",     "LogFilter_TransportMoves",     true  },
     { "creature_moves",      "LogFilter_CreatureMoves",      true  },
     { "visibility_changes",  "LogFilter_VisibilityChanges",  true  },
-    { "",                    "",                             true  },
+    { "achievement_updates", "LogFilter_AchievementUpdates", true  },
     { "weather",             "LogFilter_Weather",            true  },
     { "player_stats",        "LogFilter_PlayerStats",        true  },
     { "sql_text",            "LogFilter_SQLText",            true  },
@@ -81,20 +93,11 @@ LogFilterData logFilterData[LOG_FILTER_COUNT] =
     { "pathfinding",         "LogFilter_Pathfinding",        true  },
     { "map_loading",         "LogFilter_MapsLoading",        true  },
     { "event_ai_dev",        "LogFilter_EventAiDev",         true  },
+    { "calendar",            "LogFilter_Calendar",           true  },
     { "cell_envelope",       "LogFilter_CellEnvelope",       true  },
     { "grid_add",            "LogFilter_GridAdd",            true  },
     { "db_scripts",          "LogFilter_DbScripts",          true  },
 };
-
-enum LogType
-{
-    LogNormal = 0,
-    LogDetails,
-    LogDebug,
-    LogError
-};
-
-const int LogType_count = int(LogError) + 1;
 
 /**
  * @brief Construct the Log singleton
@@ -107,15 +110,15 @@ const int LogType_count = int(LogError) + 1;
  *
  * @note This is called automatically when sLog is first accessed
  */
-Log::Log()
-    : raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL),
+Log::Log() :
+    raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL),
 #ifdef ENABLE_ELUNA
     elunaErrLogfile(NULL),
 #endif /* ENABLE_ELUNA */
 
-eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL),
-    m_consoleBody(NULL), m_consoleThread(NULL), m_consoleAsync(false), m_consoleFilter(NULL),
-    m_colored(false), m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
+    eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL),
+    m_consoleBody(NULL), m_consoleThread(NULL), m_consoleAsync(false), m_colored(false),
+    m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
     Initialize();
 }
@@ -378,35 +381,25 @@ std::string Log::ConsoleTimePrefix() const
     return std::string(buf);
 }
 
-void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* fmt, va_list* ap)
+void Log::ConsoleEmit(bool toStdout, LogType type, bool applyColor, const char* fmt, va_list* ap)
 {
-    // Format first, so the filter sees the message the way the user wrote it
-    // (the time prefix, if any, is prepended only once the line survives).
-    std::string message = vutf8format(fmt, ap);
-
-    // Console-side filter: the startup UI folds the ">> Loaded N rows" result
-    // lines into the step they belong to instead of printing them. The caller
-    // still writes the line to the log file, so nothing is lost from the record.
-    // stderr (outError/outErrorDb) is never offered: errors must always show.
-    if (toStdout && m_consoleFilter && m_consoleFilter(message.c_str()))
-    {
-        return;
-    }
+    const Color color = m_colors[type];
 
     // Record text carries NO trailing newline: the newline is emitted after
     // ResetColor (here and in ConsoleLogWriter::Emit) so the line terminator
     // stays OUTSIDE the color span, byte-matching the legacy ordering
     // (SetColor -> body -> ResetColor -> "\n").
     std::string body;
-    body.reserve(message.size() + 16);
+    body.reserve(256);
     body += ConsoleTimePrefix();
-    body += message;
+    body += vutf8format(fmt, ap);
 
     if (m_consoleAsync && m_consoleBody)
     {
         ConsoleLogRecord rec;
         rec.text = std::move(body);
         rec.color = color;
+        rec.type = type;
         rec.applyColor = applyColor;
         rec.toStdout = toStdout;
         m_consoleBody->Enqueue(rec);
@@ -415,7 +408,6 @@ void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* f
     {
         // synchronous fallback (thread not started yet / already stopped)
         FILE* out = toStdout ? stdout : stderr;
-        Log::ClearConsoleLine(out);
         if (applyColor)
         {
             Log::SetColor(toStdout, color);
@@ -435,13 +427,6 @@ void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* f
 
 void Log::ConsoleEmitBlank(bool toStdout)
 {
-    // A blank spacer would break a line the startup UI is repainting in place,
-    // so offer it to the filter too (as the empty string) before drawing it.
-    if (toStdout && m_consoleFilter && m_consoleFilter(""))
-    {
-        return;
-    }
-
     // Uncolored variant: text is the (possibly empty) time prefix only; the
     // newline is appended after it, matching the legacy bare fprintf("\n").
     std::string b = ConsoleTimePrefix();
@@ -456,7 +441,6 @@ void Log::ConsoleEmitBlank(bool toStdout)
     else
     {
         FILE* out = toStdout ? stdout : stderr;
-        Log::ClearConsoleLine(out);
         fwrite(b.data(), 1, b.size(), out);
         fputc('\n', out);
         if (!toStdout)
@@ -492,46 +476,7 @@ void Log::ConsoleEmitRaw(const std::string& bytes)
     {
         fwrite(bytes.data(), 1, bytes.size(), stdout);
         fflush(stdout);
-        Log::MarkConsoleLineDirty(bytes[bytes.size() - 1] != '\n');
     }
-}
-
-// Cursor bookkeeping for in-place repaints. Written only by whoever currently
-// owns stdout -- the writer thread while it runs, the producer on the
-// synchronous fallback before it starts / after it stops -- and those two never
-// overlap (see the StopConsoleThread invariant), so a plain bool is sufficient.
-namespace
-{
-    bool s_consoleLineDirty = false;
-}
-
-void Log::MarkConsoleLineDirty(bool dirty)
-{
-    s_consoleLineDirty = dirty;
-}
-
-void Log::ClearConsoleLine(FILE* out)
-{
-    if (!s_consoleLineDirty)
-    {
-        return;
-    }
-
-    if (ConsoleStyle::Colored())
-    {
-        fputs("\r\x1b[K", out);                             // CSI K: erase to end of line
-    }
-    else
-    {
-        // No ANSI: overwrite the drawn line with spaces instead. One short of the
-        // terminal width, so the padding cannot wrap onto the next line.
-        const std::string blank(size_t(ConsoleStyle::Width() - 1), ' ');
-        fputc('\r', out);
-        fwrite(blank.data(), 1, blank.size(), out);
-        fputc('\r', out);
-    }
-
-    s_consoleLineDirty = false;
 }
 
 void Log::StartConsoleThread()
@@ -654,12 +599,10 @@ void Log::Initialize()
     for (int i = 0; i < LOG_FILTER_COUNT; ++i)
     {
         if (*logFilterData[i].name)
-        {
             if (sConfig.GetBoolDefault(logFilterData[i].configName, logFilterData[i].defaultState))
             {
                 m_logFilter |= (1 << i);
             }
-        }
     }
 
     // Char log settings
@@ -778,7 +721,7 @@ void Log::outString(const char* str, ...)
     va_list ap;
 
     va_start(ap, str);
-    ConsoleEmit(true, m_colors[LogNormal], m_colored, str, &ap);
+    ConsoleEmit(true, LogNormal, m_colored, str, &ap);
     va_end(ap);
 
     if (logfile)
@@ -803,7 +746,7 @@ void Log::outError(const char* err, ...)
     va_list ap;
 
     va_start(ap, err);
-    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
+    ConsoleEmit(false, LogError, m_colored, err, &ap);
     va_end(ap);
 
     if (logfile)
@@ -849,7 +792,7 @@ void Log::outErrorDb(const char* err, ...)
     va_list ap;
 
     va_start(ap, err);
-    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
+    ConsoleEmit(false, LogError, m_colored, err, &ap);
     va_end(ap);
 
     if (logfile)
@@ -914,7 +857,7 @@ void Log::outErrorEluna(const char* err, ...)
     va_list ap;
 
     va_start(ap, err);
-    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
+    ConsoleEmit(false, LogError, m_colored, err, &ap);
     va_end(ap);
 
     if (logfile)
@@ -977,7 +920,7 @@ void Log::outErrorEventAI(const char* err, ...)
     va_list ap;
 
     va_start(ap, err);
-    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
+    ConsoleEmit(false, LogError, m_colored, err, &ap);
     va_end(ap);
 
     if (logfile)
@@ -1018,7 +961,7 @@ void Log::outBasic(const char* str, ...)
     {
         va_list ap;
         va_start(ap, str);
-        ConsoleEmit(true, m_colors[LogDetails], m_colored, str, &ap);
+        ConsoleEmit(true, LogDetails, m_colored, str, &ap);
         va_end(ap);
     }
 
@@ -1045,7 +988,7 @@ void Log::outDetail(const char* str, ...)
     {
         va_list ap;
         va_start(ap, str);
-        ConsoleEmit(true, m_colors[LogDetails], m_colored, str, &ap);
+        ConsoleEmit(true, LogDetails, m_colored, str, &ap);
         va_end(ap);
     }
 
@@ -1074,7 +1017,7 @@ void Log::outDebug(const char* str, ...)
     {
         va_list ap;
         va_start(ap, str);
-        ConsoleEmit(true, m_colors[LogDebug], m_colored, str, &ap);
+        ConsoleEmit(true, LogDebug, m_colored, str, &ap);
         va_end(ap);
     }
 
@@ -1103,7 +1046,7 @@ void Log::outCommand(uint32 account, const char* str, ...)
     {
         va_list ap;
         va_start(ap, str);
-        ConsoleEmit(true, m_colors[LogDetails], m_colored, str, &ap);
+        ConsoleEmit(true, LogDetails, m_colored, str, &ap);
         va_end(ap);
     }
 
@@ -1164,14 +1107,11 @@ void Log::outWarden(const char* str, ...)
     {
         return;
     }
-    if (m_logLevel >= LOG_LVL_DETAIL)
-    {
-        va_list ap;
 
-        va_start(ap, str);
-        ConsoleEmit(true, m_colors[LogNormal], m_colored, str, &ap);
-        va_end(ap);
-    }
+    // FILE ONLY. Warden narrates six lines per check per player, every thirty seconds --
+    // at LogLevel 3 that is a console nobody can read anything else in. It has a logfile of
+    // its own, which is the whole point of having one; a real detection is reported through
+    // outError and reaches the console that way.
 
     if (wardenLogfile && m_logFileLevel >= LOG_LVL_DETAIL)
     {
@@ -1246,7 +1186,7 @@ void Log::outErrorScriptLib(const char* err, ...)
     va_list ap;
 
     va_start(ap, err);
-    ConsoleEmit(false, m_colors[LogError], m_colored, err, &ap);
+    ConsoleEmit(false, LogError, m_colored, err, &ap);
     va_end(ap);
 
     if (logfile)

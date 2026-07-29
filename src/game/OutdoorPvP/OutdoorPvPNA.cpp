@@ -116,7 +116,7 @@ void OutdoorPvPNA::HandlePlayerKillInsideArea(Player* player)
     {
         // check capture point range
         GameObjectInfo const* info = capturePoint->GetGOInfo();
-        if (info && player->IsWithinDistInMap(capturePoint, info->capturePoint.radius))
+        if (info && InReach(*player, *capturePoint, info->capturePoint.radius))
         {
             // check capture point team
             if (player->GetTeam() == m_zoneOwner)
@@ -178,7 +178,10 @@ void OutdoorPvPNA::HandleCreatureDeath(Creature* creature)
 
     // get the location of the dead guard for future respawn
     float x, y, z, o;
-    creature->GetRespawnCoord(x, y, z, &o);
+    x = creature->Spawn().X();
+    y = creature->Spawn().Y();
+    z = creature->Spawn().Z();
+    o = creature->Spawn().Facing();
     HalaaSoldiersSpawns location = {x, y, z, o};
     m_deadSoldiers.push(location);
 

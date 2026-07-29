@@ -22,7 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Utilities/MathDefines.h"
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
@@ -36,6 +37,7 @@
 #include "Util.h"
 #include <cmath>
 #include <ctime>
+#include "ObjectLookup.h"
 
 pAuraProcHandler AuraProcHandler[TOTAL_AURAS] =
 {
@@ -792,7 +794,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                             target = getVictim();
                             if (!target)
                             {
-                                target = sObjectAccessor.GetUnit(*this, ((Player*)this)->GetSelectionGuid());
+                                target = ObjectLookup::GetUnit(*this, ((Player*)this)->GetSelectionGuid());
                                 if (!target)
                                 {
                                     return SPELL_AURA_PROC_FAILED;
@@ -977,7 +979,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
             if (dummySpell->IsFitToFamilyMask(UI64LIT(0x0000000800000000)))
             {
                 // check attack comes not from behind
-                if (!HasInArc(M_PI_F, pVictim))
+                if (!Where().HasInArc(pVictim->Where(), M_PI_F))
                 {
                     return SPELL_AURA_PROC_FAILED;
                 }

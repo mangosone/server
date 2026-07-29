@@ -41,6 +41,8 @@
 
 
 
+#include "Utilities/Errors.h"
+#include <vector>
 #include "Object.h"
 #include "SharedDefines.h"
 #include "WorldPacket.h"
@@ -56,6 +58,7 @@
 #include "Util.h"
 #include "MapManager.h"
 #include "Transports.h"
+#include "TransportMap.h"
 #include "TargetedMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
 #include "CellImpl.h"
@@ -295,8 +298,13 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 
         // Update movement info time
         unit->m_movementInfo.UpdateTime(GameTime::GetGameTimeMS());
-        // Write movement info
-        unit->m_movementInfo.Write(*data);
+
+        // A boarded unit has no world position worth sending: the client places it from
+        // the vessel's own interpolated pose and the deck offset. A composed world
+        // coordinate here is a guess the client would have to discard -- and when it does
+        // not, the unit lands wherever the guess pointed. Same shape the vessel itself
+        // uses below: zero the position, keep the facing.
+        unit->WriteMovementInfo(*data);
 
         // Unit speeds
         *data << float(unit->GetSpeed(MOVE_WALK));
@@ -323,14 +331,14 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
             *data << float(0);
             *data << float(0);
             *data << float(0);
-            *data << float(((WorldObject*)this)->GetOrientation());
+            *data << float(((WorldObject*)this)->Where().Facing());
         }
         else
         {
-            *data << float(((WorldObject*)this)->GetPositionX());
-            *data << float(((WorldObject*)this)->GetPositionY());
-            *data << float(((WorldObject*)this)->GetPositionZ());
-            *data << float(((WorldObject*)this)->GetOrientation());
+            *data << float(((WorldObject*)this)->Where().X());
+            *data << float(((WorldObject*)this)->Where().Y());
+            *data << float(((WorldObject*)this)->Where().Z());
+            *data << float(((WorldObject*)this)->Where().Facing());
         }
     }
 
@@ -401,7 +409,19 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     // 0x2
     if (updateFlags & UPDATEFLAG_TRANSPORT)
     {
-        *data << uint32(GameTime::GetGameTimeMS());           // ms time
+        // THE PHASE, not the clock. The client does not take the modulo itself: it wants
+        // how far along the route she is, and that is ours to compute. Hand it a raw wall
+        // clock and the hull stops animating altogether -- a dead ship, with everyone
+        // standing on her frozen too.
+        if (isType(TYPEMASK_GAMEOBJECT)
+            && ((GameObject*)this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
+        {
+            *data << uint32(((Transport*)this)->GetPathProgress());
+        }
+        else
+        {
+            *data << uint32(GameTime::GetGameTimeMS());       // ms time
+        }
     }
 }
 
@@ -709,7 +729,7 @@ bool Object::LoadValues(const char* data)
     int index;
     for (iter = tokens.begin(), index = 0; index < m_valuesCount; ++iter, ++index)
     {
-        m_uint32Values[index] = atol((*iter).c_str());
+        m_uint32Values[index] = std::strtoul((*iter).c_str(), NULL, 10);
     }
 
     return true;

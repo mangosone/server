@@ -1,7 +1,7 @@
 #ifndef _PLAYERBOTMGR_H
 #define _PLAYERBOTMGR_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "PlayerbotAIBase.h"
 #include "../botpch.h"
 

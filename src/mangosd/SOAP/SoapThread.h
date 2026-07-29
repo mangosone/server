@@ -25,8 +25,9 @@
 #ifndef MANGOS_H_SOAPTHREAD
 #define MANGOS_H_SOAPTHREAD
 
-#include "Common.h"
+#include "Platform/Define.h"
 
+#include <mutex>
 #include <future>
 #include <string>
 

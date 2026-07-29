@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_NPCHANDLER
 #define MANGOS_H_NPCHANDLER
 
-#include "Common.h"
+#include "Platform/Define.h"
 
 #include <string>
 #include <vector>

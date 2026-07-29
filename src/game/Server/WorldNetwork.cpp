@@ -1,3 +1,4 @@
+#include <string>
 #include "WorldNetwork.h"
 
 #include "Log.h"

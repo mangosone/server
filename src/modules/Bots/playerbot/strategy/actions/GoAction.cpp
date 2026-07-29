@@ -85,7 +85,7 @@ bool GoAction::Execute(Event event)
             return false;
         }
 
-        const FusedTerrain* terrain = map->GetTerrain();
+        const TerrainInfo* terrain = map->GetTerrain();
         if (terrain->IsUnderWater(x, y, z) || terrain->IsInWater(x, y, z))
         {
             ai->TellMaster("It is under water");

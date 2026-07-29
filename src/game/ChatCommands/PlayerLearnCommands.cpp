@@ -32,6 +32,7 @@
  * - Talent modification
  */
 
+#include "Common/Locales.h"
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
@@ -705,7 +706,7 @@ bool ChatHandler::HandleLearnAllCommand(char* /*args*/)
     int loop = 0;
     while (strcmp(allSpellList[loop], "0"))
     {
-        uint32 spell = atol((char*)allSpellList[loop++]);
+        uint32 spell = std::strtoul((char*)allSpellList[loop++], NULL, 10);
 
         if (m_session->GetPlayer()->HasSpell(spell))
         {
@@ -756,7 +757,7 @@ bool ChatHandler::HandleLearnAllGMCommand(char* /*args*/)
     uint16 gmSpellIter = 0;
     while (strcmp(gmSpellList[gmSpellIter], "0"))
     {
-        uint32 spell = atol((char*)gmSpellList[gmSpellIter++]);
+        uint32 spell = std::strtoul((char*)gmSpellList[gmSpellIter++], NULL, 10);
 
         SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell);
         if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, m_session->GetPlayer()))

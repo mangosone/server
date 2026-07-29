@@ -1,3 +1,4 @@
+#include <string>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "SayAction.h"
@@ -99,7 +100,7 @@ bool SayAction::Execute(Event event)
 
     if (bot->GetMap())
     {
-        const FusedTerrain * terrain = bot->GetMap()->GetTerrain();
+        const TerrainInfo * terrain = bot->GetMap()->GetTerrain();
         if (terrain)
         {
             uint32 areaId = terrain->GetAreaId(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());

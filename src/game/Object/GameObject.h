@@ -51,7 +51,8 @@
 #ifndef MANGOSSERVER_GAMEOBJECT_H
 #define MANGOSSERVER_GAMEOBJECT_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
 #include "SharedDefines.h"
 #include "Object.h"
 #include "LootMgr.h"
@@ -664,7 +665,6 @@ class GameObject : public WorldObject
         // rotation methods
         void GetQuaternion(Geometry::Quat& q) const;
         void SetQuaternion(Geometry::Quat const& q);
-        float GetOrientationFromQuat(Geometry::Quat const& q);
 
         // overwrite WorldObject function for proper name localization
         const char* GetNameForLocaleIdx(int32 locale_idx) const override;
@@ -738,7 +738,7 @@ class GameObject : public WorldObject
 
         void SendGameObjectCustomAnim(uint32 animId = 0);
         void SendObjectDeSpawnAnim() override;
-        float GetObjectBoundingRadius() const override;     // overwrite WorldObject version
+        float ComputeBoundingRadius() const override;     // overwrite WorldObject version
 
         void Use(Unit* user);
 

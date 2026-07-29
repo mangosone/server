@@ -22,9 +22,11 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Map.h"
 #include "TemporarySummon.h"
 #include "Log.h"
 #include "CreatureAI.h"
+#include "Corpse.h"
 
 /**
  * @brief Creates a temporary summon instance.

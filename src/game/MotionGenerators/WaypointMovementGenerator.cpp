@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
+#include "Utilities/MathDefines.h"
 #include "WaypointMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
@@ -593,7 +595,6 @@ bool WaypointMovementGenerator::GetResetPosition(Unit& owner, float& x, float& y
         return false;
     }
 
-    // Not const: GetCombatStartPosition is a non-const accessor on Creature.
     Creature& creature = static_cast<Creature&>(owner);
 
     // Prefer resuming from the point where combat pulled the creature off its path (its
@@ -602,14 +603,16 @@ bool WaypointMovementGenerator::GetResetPosition(Unit& owner, float& x, float& y
     // re-walks the leg it was already on. A zero sentinel means no combat start was
     // recorded, and we fall back below.
     float combatX, combatY, combatZ;
-    creature.GetCombatStartPosition(combatX, combatY, combatZ);
+    combatX = creature.CombatAnchor().x;
+    combatY = creature.CombatAnchor().y;
+    combatZ = creature.CombatAnchor().z;
 
     if (combatX != 0.0f || combatY != 0.0f || combatZ != 0.0f)
     {
         x = combatX;
         y = combatY;
         z = combatZ;
-        o = creature.GetOrientation();
+        o = creature.Where().Facing();
 
         // Face the waypoint it was heading for, so it keeps moving forward on resume.
         WaypointPath::const_iterator nextPoint = m_path->find(m_currentNode);

@@ -43,6 +43,7 @@
  * @see SpawnedPoolData for pool state tracking
  */
 
+#include "Utilities/Errors.h"
 #include "PoolManager.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"

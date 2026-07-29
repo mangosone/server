@@ -38,7 +38,8 @@
  * for the requested object type.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <vector>
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -53,6 +54,7 @@
 #include "SQLStorages.h"
 #include <ctime>
 #include <string>
+#include "Corpse.h"
 
 /**
  * @brief Sends an in-memory name query response for a player.
@@ -348,9 +350,9 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recv_data*/)
     }
 
     uint32 corpsemapid = corpse->GetMapId();
-    float x = corpse->GetPositionX();
-    float y = corpse->GetPositionY();
-    float z = corpse->GetPositionZ();
+    float x = corpse->Where().X();
+    float y = corpse->Where().Y();
+    float z = corpse->Where().Z();
     int32 mapid = corpsemapid;
 
     // if corpse at different map
@@ -362,12 +364,13 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recv_data*/)
             if (corpseMapEntry->IsDungeon() && corpseMapEntry->CorpseMapID >= 0)
             {
                 // if corpse map have entrance
-                if (FusedTerrain const* entranceMap = sTerrainMgr.LoadTerrain(corpseMapEntry->CorpseMapID))
+                if (TerrainInfo const* entranceMap = sTerrainMgr.LoadTerrain(corpseMapEntry->CorpseMapID))
                 {
                     mapid = corpseMapEntry->CorpseMapID;
                     x = corpseMapEntry->Corpse_0;
                     y = corpseMapEntry->Corpse_1;
-                    z = entranceMap->GetHeightStatic(x, y, MAX_HEIGHT);
+                    const auto entranceFloor = entranceMap->StaticFloor(x, y, MAX_HEIGHT);
+                    z = entranceFloor ? *entranceFloor : INVALID_HEIGHT;
                 }
             }
         }

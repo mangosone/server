@@ -25,6 +25,7 @@
 #ifndef MANGOSSERVER_MOVEPLINE_H
 #define MANGOSSERVER_MOVEPLINE_H
 
+#include "Utilities/Errors.h"
 #include "spline.h"
 #include "MoveSplineInitArgs.h"
 #include <ctime>

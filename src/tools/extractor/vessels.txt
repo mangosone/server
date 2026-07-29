@@ -1,0 +1,21 @@
+# mangos-extractor vessel list: <mapId> <displayId>   # name (entry N)
+#
+# Each line gives one vessel map the id of the hull model to bake into it. The map id must
+# be the one THE SERVER resolves for that vessel, or the baker writes the hull under a
+# number nobody looks for and the ship silently carries nobody:
+#
+#   - Blizzard's own id, from the Map.dbc row whose directory is "Transport<entry>";
+#   - otherwise VESSEL_MAP_BASE + entry, which is what Transport::RegisterVesselMap mints.
+#
+# Generated from one_world.transports and the 2.4.3 client's Map.dbc.
+# Regenerate if either changes.
+
+593      3015   # Ratchet and Booty Bay (entry 20808)
+591      3031   # Orgrimmar and Undercity (entry 164871)
+589      3031   # Grom'Gol Base Camp and Orgrimmar (entry 175080)
+584      3015   # Menethil Harbor and Theramore Isle (entry 176231)
+582      7087   # Teldrassil and Auberdine (entry 176244)
+588      3015   # Menethil Harbor and Auberdine (entry 176310)
+590      3031   # Grom'Gol Base Camp and Undercity (entry 176495)
+587      7087   # Forgotton Coast and Feathermoon Stronghold (entry 177233)
+1181646  7087   # Azuremyst and Auberdine (entry 181646)

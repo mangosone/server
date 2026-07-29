@@ -5,9 +5,9 @@ permissions:
 
 on:
   push:
-    branches: [master, devel]
+    branches: [master, united, devel]
   pull_request:
-    branches: [master]
+    branches: [master, united]
 
 concurrency:
   group: codestyle-${{ github.ref }}
@@ -15,11 +15,14 @@ concurrency:
 
 jobs:
   check-codestyle:
+    strategy:
+      fail-fast: false
+
     runs-on: ubuntu-latest
     name: Check Codestyling
     steps:
-      # v2 runs on a long-deprecated Node runtime and is scheduled for removal.
+      # v2 runs on a long-deprecated Node runtime.
       - uses: actions/checkout@v4
 
       - name: Check Codestyling
-        run: source ./apps/ci/ci-codestyle.sh
+        run: source ./.github/apps/ci/ci-codestyle.sh

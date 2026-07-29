@@ -39,6 +39,7 @@
  * players who can see the object.
  */
 
+#include "Utilities/Errors.h"
 #include "Object.h"
 #include "SharedDefines.h"
 #include "WorldPacket.h"
@@ -201,6 +202,7 @@ void Object::_ReCreate(uint32 entry)
 void Object::SetObjectScale(float newScale)
 {
     SetFloatValue(OBJECT_FIELD_SCALE_X, newScale);
+    OnScaleChanged();
 }
 
 
@@ -264,7 +266,6 @@ WorldObject::WorldObject() :
 #ifdef ENABLE_ELUNA
     elunaEvents(nullptr),
 #endif /* ENABLE_ELUNA */
-    m_transportInfo(NULL),
     m_currMap(NULL),
     m_mapId(0), m_InstanceId(0),
     m_isActiveObject(false),

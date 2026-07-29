@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "OutfitAction.h"
@@ -186,7 +187,7 @@ ItemIds OutfitAction::parseItems(string &text)
         }
 
         string idC = text.substr(pos, endPos - pos);
-        uint32 id = atol(idC.c_str());
+        uint32 id = std::strtoul(idC.c_str(), NULL, 10);
         pos = endPos + 1;
         if (id)
         {

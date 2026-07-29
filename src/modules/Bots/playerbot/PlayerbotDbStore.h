@@ -1,7 +1,7 @@
 #ifndef _PlayerbotDbStore_H
 #define _PlayerbotDbStore_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "PlayerbotAIBase.h"
 #include "PlayerbotMgr.h"
 

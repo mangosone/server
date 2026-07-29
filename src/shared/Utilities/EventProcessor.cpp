@@ -22,8 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "EventProcessor.h"
 #include <utility>
+#include "EventProcessor.h"
 
 /**
  * @brief Construct a new Event Processor::Event Processor object

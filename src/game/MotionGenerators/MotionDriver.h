@@ -25,7 +25,7 @@
 #ifndef MANGOS_MOTIONDRIVER_H
 #define MANGOS_MOTIONDRIVER_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "MotionFrame.h"
 #include "MovementIntent.h"
 

@@ -22,12 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "DatabaseEnv.h"
-#include <algorithm>
-#include <sstream>
 #include <stdexcept>
-#include <string>
 #include <utility>
+#include <string>
+#include <sstream>
+#include "Utilities/Errors.h"
+#include <algorithm>
+#include "DatabaseEnv.h"
 
 /**
  * @brief Constructor to reserve memory for parameters.

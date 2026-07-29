@@ -25,8 +25,9 @@
 #ifndef MANGOS_WAYPOINTMANAGER_H
 #define MANGOS_WAYPOINTMANAGER_H
 
-#include "Common.h"
-#include "Utilities/UnorderedMapSet.h"
+#include <unordered_map>
+#include "Platform/Define.h"
+#include <vector>
 #include <map>
 #include <set>
 #include <string>
@@ -206,7 +207,7 @@ class WaypointManager
 
         void _clearPath(WaypointPath& path);
 
-        typedef UNORDERED_MAP < uint32 /*guidOrEntry*/, WaypointPath > WaypointPathMap;
+        typedef std::unordered_map < uint32 /*guidOrEntry*/, WaypointPath > WaypointPathMap;
         WaypointPathMap m_pathMap;
         WaypointPathMap m_pathTemplateMap;
         WaypointPathMap m_externalPathTemplateMap;

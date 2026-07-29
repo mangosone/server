@@ -43,6 +43,7 @@
  * @see ScriptedInstance for instance script base
  */
 
+#include "Utilities/Errors.h"
 #include "ScriptMgr.h"
 #include "Policies/Singleton.h"
 #include "Log.h"
@@ -312,7 +313,9 @@ bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool
             }
             else                                            // Use the go, because GOs don't move
             {
-                opvp = sOutdoorPvPMgr.GetScript(((GameObject*)source)->GetZoneId());
+                GameObject const* go = static_cast<GameObject*>(source);
+                opvp = sOutdoorPvPMgr.GetScript(go->GetTerrain()->GetZoneId(
+                           go->Where().X(), go->Where().Y(), go->Where().Z()));
             }
         }
 

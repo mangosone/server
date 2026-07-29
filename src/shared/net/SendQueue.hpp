@@ -24,29 +24,21 @@
 
 #pragma once
 
-// One connection's outbound byte stream, shared by every backend (IOCP, epoll,
-// kqueue, io_uring). Producers append bytes from any thread; the transport drains
-// them to the socket. Two properties matter, and both come from the same trick.
+// One connection's outbound byte stream, shared by every backend. Producers append into
+// m_pending from any thread while the transport drains m_inflight to the socket; the two
+// are swapped once drained.
 //
-// COALESCING. A world tick emits a great many small packets — movement, chat, spell
-// updates — often to the same client. A queue-of-buffers would make that one heap
-// allocation and one syscall per packet, which is exactly the cost the ACE-era
-// The former world protocol path built a 64 KB output buffer (and a 10 ms cork) to avoid. Here,
-// producers append into `m_pending` while the socket drains `m_inflight`; when the
-// in-flight span is fully written the two are swapped. So every packet queued during
-// one write completes in the *next* single write, and both vectors keep their
-// capacity across clear() — after warm-up the send path allocates nothing at all.
+// That swap buys both properties this needs. COALESCING: everything queued during one
+// write leaves in the next single write, and both vectors keep their capacity across
+// clear(), so after warm-up the send path allocates nothing -- a world tick emits a great
+// many small packets and a queue-of-buffers would cost an allocation and a syscall each.
+// STABLE STORAGE: a proactor hands the kernel a pointer and collects a completion later,
+// and producers never touch m_inflight, so that memory cannot move under it. m_off then
+// makes a partial write safe by resuming where the kernel stopped rather than dropping
+// the remainder.
 //
-// STABLE BUFFERS. A proactor (WSASend / io_uring SQE) hands the kernel a pointer and
-// gets a completion later; that memory must not move in the meantime. It cannot:
-// producers only ever touch `m_pending`, so `m_inflight`'s storage is untouched for
-// the whole duration of the in-flight write. `m_off` then makes a *partial* write
-// safe — the remainder is simply re-posted from where the kernel stopped, rather
-// than being silently dropped.
-//
-// Lives inside the per-connection SendChannel, which is a shared_ptr the session
-// captures — so the buffers (and the FlowGate) outlive the socket, and a producer
-// parked on backpressure can never be woken into freed memory.
+// It lives in the per-connection SendChannel, a shared_ptr the session captures, so the
+// buffers outlive the socket and a parked producer cannot wake into freed memory.
 
 #include "net/FlowControl.hpp"
 

@@ -32,6 +32,7 @@
 #include "World.h"
 #include "SocialMgr.h"
 #include <string>
+#include "PlayerRegistry.h"
 
 void WorldSession::HandleInspectArenaTeamsOpcode(WorldPacket& recv_data)
 {
@@ -101,7 +102,7 @@ void WorldSession::HandleArenaTeamInviteOpcode(WorldPacket& recv_data)
             return;
         }
 
-        player = sObjectAccessor.FindPlayerByName(Invitedname.c_str());
+        player = sPlayerRegistry.FindByName(Invitedname.c_str());
     }
 
     if (!player)

@@ -45,6 +45,8 @@
 
 
 
+#include <algorithm>
+#include "Utilities/MathDefines.h"
 #include "ScriptMgr.h"
 #include "Log.h"
 #include "ObjectMgr.h"
@@ -61,6 +63,7 @@
 #include "SQLStorages.h"
 #include "BattleGround/BattleGround.h"
 #include "OutdoorPvP/OutdoorPvP.h"
+#include "CorpseManager.h"
 #ifdef CLASSIC
 #include "LFGMgr.h"
 #endif /* CLASSIC */
@@ -102,7 +105,7 @@ bool ScriptAction::GetScriptCommandObject(const ObjectGuid guid, bool includeIte
             resultObject = m_map->GetGameObject(guid);
             break;
         case HIGHGUID_CORPSE:
-            resultObject = sObjectAccessor.FindCorpse(guid);
+            resultObject = sCorpseManager.Find(guid);
             break;
         case HIGHGUID_ITEM:
             // case HIGHGUID_CONTAINER: ==HIGHGUID_ITEM
@@ -450,7 +453,7 @@ bool ScriptAction::HandleScriptStep()
             // Just turn around
             if ((m_script->x == 0.0f && m_script->y == 0.0f && m_script->z == 0.0f) ||
                 // Check point-to-point distance, hence revert effect of bounding radius
-                ((Unit*)pSource)->IsWithinDist3d(m_script->x, m_script->y, m_script->z, 0.01f - ((Unit*)pSource)->GetObjectBoundingRadius()))
+                ((Unit*)pSource)->Where().WithinDist(Geometry::Vector3(m_script->x, m_script->y, m_script->z), 0.01f - ((Unit*)pSource)->Where().Extent()))
             {
                 ((Unit*)pSource)->SetFacingTo(m_script->o);
                 break;
@@ -459,7 +462,7 @@ bool ScriptAction::HandleScriptStep()
             // For command additional teleport the unit
             if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
             {
-                ((Unit*)pSource)->NearTeleportTo(m_script->x, m_script->y, m_script->z, m_script->o != 0.0f ? m_script->o : ((Unit*)pSource)->GetOrientation());
+                ((Unit*)pSource)->NearTeleportTo(m_script->x, m_script->y, m_script->z, m_script->o != 0.0f ? m_script->o : ((Unit*)pSource)->Where().Facing());
                 break;
             }
 
@@ -545,7 +548,7 @@ bool ScriptAction::HandleScriptStep()
             {
                 failQuest = true;
             }
-            else if (m_script->questExplored.distance != 0 && !pWorldObject->IsWithinDistInMap(pPlayer, float(m_script->questExplored.distance)))
+            else if (m_script->questExplored.distance != 0 && !InReach(*pWorldObject, *pPlayer, float(m_script->questExplored.distance)))
             {
                 failQuest = true;
             }
@@ -818,7 +821,7 @@ bool ScriptAction::HandleScriptStep()
                 }
                 else if (m_script->playSound.flags & (4 | 8))
                 {
-                    m_map->PlayDirectSoundToMap(m_script->playSound.soundId, (m_script->playSound.flags & 8) ? pSource->GetZoneId() : 0);
+                    m_map->PlayDirectSoundToMap(m_script->playSound.soundId, (m_script->playSound.flags & 8) ? pSource->GetTerrain()->GetZoneId(pSource->Where().X(), pSource->Where().Y(), pSource->Where().Z()) : 0);
                 }
                 else
                 {
@@ -891,12 +894,17 @@ bool ScriptAction::HandleScriptStep()
                 case RANDOM_MOTION_TYPE:
                     if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
                     {
-                        ((Creature*)pSource)->GetMotionMaster()->MoveRandomAroundPoint(pSource->GetPositionX(), pSource->GetPositionY(), pSource->GetPositionZ(), float(m_script->movement.wanderDistance));
+                        ((Creature*)pSource)->GetMotionMaster()->MoveRandomAroundPoint(pSource->Where().X(), pSource->Where().Y(), pSource->Where().Z(), float(m_script->movement.wanderDistance));
                     }
                     else
                     {
                         float respX, respY, respZ, respO, wander_distance;
-                        ((Creature*)pSource)->GetRespawnCoord(respX, respY, respZ, &respO, &wander_distance);
+                        Creature* pRespawnOwner = (Creature*)pSource;
+                        respX = pRespawnOwner->Spawn().X();
+                        respY = pRespawnOwner->Spawn().Y();
+                        respZ = pRespawnOwner->Spawn().Z();
+                        respO = pRespawnOwner->Spawn().Facing();
+                        wander_distance = pRespawnOwner->GetRespawnRadius();
                         wander_distance = m_script->movement.wanderDistance ? m_script->movement.wanderDistance : wander_distance;
                         ((Creature*)pSource)->GetMotionMaster()->MoveRandomAroundPoint(respX, respY, respZ, wander_distance);
                     }
@@ -1272,7 +1280,7 @@ bool ScriptAction::HandleScriptStep()
                 break;
             }
             //note for self: this command has different impl. and usage in other core(s)
-            ((Unit*)pSource)->SetFacingTo(pSource->GetAngle(pTarget));
+            ((Unit*)pSource)->SetFacingTo(pSource->Where().BearingTo(pTarget->Where()));
             break;
         }
         case SCRIPT_COMMAND_MOVE_DYNAMIC:                   // 37
@@ -1294,24 +1302,26 @@ bool ScriptAction::HandleScriptStep()
                     sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, _MOVE_DYNAMIC called with maxDist == 0, but resultingSource == resultingTarget (== %s)", m_type, m_script->id, pSource->GetGuidStr().c_str());
                     break;
                 }
-                pTarget->GetContactPoint(pSource, x, y, z);
+                ContactPointNear(*pTarget, pSource, x, y, z);
             }
             else                                            // Calculate position
             {
                 float orientation;
                 if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
                 {
-                    orientation = pSource->GetOrientation() + m_script->o + 2 * M_PI_F;
+                    orientation = pSource->Where().Facing() + m_script->o + 2 * M_PI_F;
                 }
                 else
                 {
                     orientation = m_script->o;
                 }
 
-                pSource->GetRandomPoint(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), m_script->moveDynamic.maxDist, x, y, z,
-                                        m_script->moveDynamic.minDist, (orientation == 0.0f ? NULL : &orientation));
-                z = std::max(z, pTarget->GetPositionZ());
-                pSource->UpdateAllowedPositionZ(x, y, z);
+                const Geometry::Vector3 spot = RandomGroundPointNear(*pSource, pTarget->Where().Pos(), m_script->moveDynamic.maxDist, m_script->moveDynamic.minDist, (orientation == 0.0f ? NULL : &orientation));
+                x = spot.x;
+                y = spot.y;
+                z = spot.z;
+                z = std::max(z, pTarget->Where().Z());
+                ClampToAllowedZ(*pSource, x, y, z);
             }
             ((Creature*)pSource)->GetMotionMaster()->MovePoint(1, x, y, z);
             break;

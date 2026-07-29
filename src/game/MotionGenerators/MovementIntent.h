@@ -25,7 +25,7 @@
 #ifndef MANGOS_MOVEMENTINTENT_H
 #define MANGOS_MOVEMENTINTENT_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "ObjectGuid.h"
 #include "movement/MoveSplineInitArgs.h"
 

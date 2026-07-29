@@ -43,6 +43,8 @@
  * @see MapPersistentState for individual instance state
  */
 
+#include "Utilities/Errors.h"
+#include <algorithm>
 #include "MapPersistentStateMgr.h"
 
 #include "SQLStorages.h"
