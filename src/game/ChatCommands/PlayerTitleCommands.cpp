@@ -24,6 +24,8 @@
 
 #include "Common/Locales.h"
 #include "Chat.h"
+#include "Player.h"
+#include "DBCStores.h"
 #include "Language.h"
 #include "World.h"
 #include <cstdio>
