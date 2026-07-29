@@ -394,8 +394,6 @@ class ChatHandler
         //-----------------------Npc Commands-----------------------
         bool HandleNpcAddCommand(char* args);
 
-        // .trans npc add — author a crew member on the vessel the GM is standing on.
-
         // The transport half of .gps: deck offsets and what the baked mesh says is under
         // them. No-op when the object is not aboard anything.
         void ReportTransportPosition(WorldObject* obj);
