@@ -1901,19 +1901,6 @@ void Map::SendInitSelf(Player* player)
  *
  * @param player The player receiving transport initialization data.
  */
-/**
- * @brief Advertise the map's transports -- and their crews -- to a player who just arrived.
- *
- * This used to hand every transport on the map to every player who entered it, once, and
- * then never reconsider: a transport is in no grid cell, so the grid's visibility pass has
- * never had anything to say about it, and a ship on the far side of a continent stayed at
- * your client for as long as you were on the map.
- *
- * Now it advertises only the ones actually near you, and each vessel keeps its own observer
- * set from then on (Transport::UpdateVisibility) -- adding you when you sail into range,
- * dropping you when you leave. The crew ride in the vessel's packet, because the vessel is
- * the only thing that knows they exist.
- */
 void Map::SendInitTransports(Player* player)
 {
     // A player joining a map takes possession of every vessel on it -- one of the four
@@ -1928,24 +1915,22 @@ void Map::SendInitTransports(Player* player)
         return;
     }
 
-    MapManager::TransportsByMapType& tmap = sMapMgr.m_TransportsByMap;
-
-    // no transports at map
-    if (tmap.find(player->GetMapId()) == tmap.end())
+    MapManager::TransportsByMapType::const_iterator vessels = sMapMgr.m_TransportsByMap.find(i_id);
+    if (vessels == sMapMgr.m_TransportsByMap.end())
     {
         return;
     }
 
-    MapManager::TransportSet& tset = tmap[player->GetMapId()];
-
-    for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
+    for (Transport* vessel : vessels->second)
     {
         // Our own vessel came from SendInitSelf, ahead of our own body, so we already
         // stand on something by the time our block lands. Skip it here.
-        if ((*i) != player->GetTransport() && (*i)->GetMapId() == i_id)
+        if (vessel == player->GetTransport() || vessel->GetMapId() != i_id)
         {
-            TransportMap::AnnounceVessel(*i, player);
+            continue;
         }
+
+        TransportMap::AnnounceVessel(vessel, player);
     }
 }
 
@@ -1956,6 +1941,7 @@ void Map::SendInitTransports(Player* player)
  */
 void Map::SendRemoveTransports(Player* player)
 {
+    // Hack to send out transports
     MapManager::TransportsByMapType& tmap = sMapMgr.m_TransportsByMap;
 
     // no transports at map
@@ -1971,17 +1957,10 @@ void Map::SendRemoveTransports(Player* player)
     // except used transport
     for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
     {
-        Transport* transport = *i;
-
-        if (transport == player->GetTransport() || transport->GetMapId() == i_id)
+        if ((*i) != player->GetTransport() && (*i)->GetMapId() != i_id)
         {
-            continue;
+            (*i)->BuildOutOfRangeUpdateBlock(&transData);
         }
-
-        // The crew leave with their ship. They are in no cell of this map, so the player's
-        // ordinary visibility pass will never notice they are gone -- and the vessel is the
-        // only thing that can retract them, in the right order.
-        TransportMap::RetractVessel(transport, player);
     }
 
     WorldPacket packet;

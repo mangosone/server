@@ -299,6 +299,14 @@ void Creature::AddToWorld()
 
     Unit::AddToWorld();
 
+    // Index it on the vessel whose deck this map is. NOT a registration -- being aboard is
+    // what having this map MEANS, and every consumer derives it. This list exists only so
+    // the seam can hand out destroy blocks in the right order.
+    if (TransportMap* hull = GetMap()->AsTransport())
+    {
+        hull->EnlistCrew(this);
+    }
+
     // Make active if required
     if (sWorld.isForceLoadMap(GetMapId()) ||
         (GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE) ||

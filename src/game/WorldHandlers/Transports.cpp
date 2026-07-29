@@ -321,6 +321,32 @@ namespace
     /// different world each time.
     std::unordered_map<uint32, uint32> s_vesselMapByEntry;
     std::unordered_set<uint32> s_vesselMapIds;
+
+    /// Blizzard's own naming: a vessel's map directory is "Transport<goEntry>". Built once,
+    /// before anything is injected.
+    std::unordered_map<uint32, uint32> const& ShippedVesselMaps()
+    {
+        static const std::unordered_map<uint32, uint32> shipped = []
+        {
+            std::unordered_map<uint32, uint32> byEntry;
+            for (uint32 i = 0; i < sMapStore.GetNumRows(); ++i)
+            {
+                MapEntry const* entry = sMapStore.LookupEntry(i);
+                if (!entry || !entry->Directory)
+                {
+                    continue;
+                }
+
+                uint32 owner = 0;
+                if (std::sscanf(entry->Directory, "Transport%u", &owner) == 1 && owner)
+                {
+                    byEntry[owner] = entry->MapID;
+                }
+            }
+            return byEntry;
+        }();
+        return shipped;
+    }
 }
 
 void Transport::RegisterVesselMap(uint32 goEntry, char const* vesselName)
@@ -330,21 +356,32 @@ void Transport::RegisterVesselMap(uint32 goEntry, char const* vesselName)
         return;
     }
 
-    // EVERY VESSEL MAP HERE IS MINTED. Blizzard keys a hull's map by its directory string,
-    // "Transport<entry>" -- and this core's Map.dbc format string skips that field, so the
-    // server never loads it and there is nothing to match against. The hull is in the
-    // client all the same, so it gets a map of its own: an id minted here and a Map.dbc
-    // entry injected to carry it. Nothing on the wire ever carries this number.
-    //
-    // The baker must agree, which is what tools/vessels.txt is for -- every line in it is
-    // a minted id for the same reason.
+    std::unordered_map<uint32, uint32> const& shipped = ShippedVesselMaps();
+    const auto found = shipped.find(goEntry);
+
+    if (found != shipped.end())
+    {
+        s_vesselMapByEntry[goEntry] = found->second;
+        s_vesselMapIds.insert(found->second);
+        return;
+    }
+
+    // No row of Blizzard's for this hull -- plenty of legitimate ships have none, and some
+    // of the rows that do exist are named for a route, which names no vessel we can key on.
+    // The hull is in the client all the same, so it gets a map of its own: an id minted
+    // here and a Map.dbc entry injected to carry it. Nothing on the wire carries this.
     const uint32 minted = world::terrain::MintedVesselMapId(goEntry);
 
     MapEntry* row = new MapEntry();
     row->MapID = minted;
+    row->Directory = const_cast<char*>("");
     row->InstanceType = MAP_COMMON;
     row->AreaTableID = 0;
     row->LoadingScreenID = 0;
+    row->CorpseMapID = -1;
+    row->Corpse_0 = 0.0f;
+    row->Corpse_1 = 0.0f;
+    row->ExpansionID = 0;
 
     static std::list<std::string> s_names;
     s_names.push_back(vesselName ? vesselName : "Vessel");
