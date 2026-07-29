@@ -22,29 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <cstdint>
+#include "Common/Locales.h"
+#include <cstring>
+#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <vector>
 
 #include "DBCFileLoader.h"
-#include <cassert>
-#include <cstdint>
 
-/// WDBC header: magic, then recordCount, fieldCount, recordSize, stringSize.
-static const size_t DBC_HEADER_SIZE = 20;
-static const uint32_t DBC_MAGIC_WDBC = 0x43424457;
+
+// Ceilings for the two sizes AutoProduceData takes from file content. Both are far above
+// anything a real client ships -- the largest DBC here is a few megabytes -- and exist so
+// a corrupt file fails the load instead of sizing an allocation.
+static const uint64 MAX_DBC_INDEX       = 16u * 1024u * 1024u;
+static const uint64 MAX_DBC_TABLE_BYTES = 512u * 1024u * 1024u;
 
 DBCFileLoader::DBCFileLoader()
 {
-    recordSize = 0;
-    recordCount = 0;
-    fieldCount = 0;
-    stringSize = 0;
-    data = nullptr;
-    stringTable = nullptr;
-    fieldsOffset = nullptr;
+    data = NULL;
+    fieldsOffset = NULL;
 }
 
 bool DBCFileLoader::Load(const char* filename, const char* fmt)
@@ -55,84 +54,74 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
         return false;
     }
 
-    if (fseek(f, 0, SEEK_END) != 0)
+    fseek(f, 0, SEEK_END);
+    const long length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (length <= 0)
     {
         fclose(f);
         return false;
     }
 
-    const long fileSize = ftell(f);
-    if (fileSize < 0 || fseek(f, 0, SEEK_SET) != 0)
-    {
-        fclose(f);
-        return false;
-    }
-
-    std::vector<unsigned char> image(static_cast<size_t>(fileSize));
-    // An empty DBC cannot carry even a header, so the short-read check below rejects it.
-    if (!image.empty() && fread(image.data(), image.size(), 1, f) != 1)
-    {
-        fclose(f);
-        return false;
-    }
-
+    // Not `bytes(size_t(length))`: that is a function declaration, not a vector.
+    std::vector<unsigned char> bytes(static_cast<size_t>(length));
+    const size_t got = fread(bytes.data(), 1, bytes.size(), f);
     fclose(f);
-    return LoadFromMemory(image.data(), image.size(), fmt);
+    if (got != bytes.size())
+    {
+        return false;
+    }
+
+    return LoadFromMemory(bytes.data(), bytes.size(), fmt);
 }
 
+// The offline baker reads its DBCs out of the client MPQs, where there is no file to
+// open. Sharing this path with Load keeps the baker's column layout identical to the
+// server's -- one parser, one set of format strings, nothing to drift.
 bool DBCFileLoader::LoadFromMemory(const void* bytes, size_t size, const char* fmt)
 {
-    // Loading twice must not leak the previous image.
     delete[] data;
-    data = nullptr;
-    stringTable = nullptr;
+    data = NULL;
     delete[] fieldsOffset;
-    fieldsOffset = nullptr;
+    fieldsOffset = NULL;
 
-    if (!bytes || size < DBC_HEADER_SIZE)
+    if (!bytes || size < 20)
     {
         return false;
     }
 
-    const unsigned char* image = static_cast<const unsigned char*>(bytes);
-
-    uint32_t header;
-    memcpy(&header, image, 4);
+    const unsigned char* p = static_cast<const unsigned char*>(bytes);
+    uint32 header;
+    memcpy(&header, p, 4);
     EndianConvert(header);
-    if (header != DBC_MAGIC_WDBC)
+    if (header != 0x43424457)                               //'WDBC'
     {
         return false;
     }
 
-    memcpy(&recordCount, image + 4, 4);
+    memcpy(&recordCount, p + 4, 4);
     EndianConvert(recordCount);
-    memcpy(&fieldCount, image + 8, 4);
+    memcpy(&fieldCount, p + 8, 4);
     EndianConvert(fieldCount);
-    memcpy(&recordSize, image + 12, 4);
+    memcpy(&recordSize, p + 12, 4);
     EndianConvert(recordSize);
-    memcpy(&stringSize, image + 16, 4);
+    memcpy(&stringSize, p + 16, 4);
     EndianConvert(stringSize);
 
-    // A zero field count would make fieldsOffset[0] a write past a zero-length array, and
-    // the record/string arithmetic below must not wrap. Reject rather than trust the file.
-    if (fieldCount == 0 || strlen(fmt) < fieldCount)
-    {
-        return false;
-    }
-    if (recordCount != 0 && recordSize > (SIZE_MAX - stringSize) / recordCount)
+    if (!fieldCount || strlen(fmt) < fieldCount)
     {
         return false;
     }
 
-    const size_t payloadSize = size_t(recordSize) * recordCount + stringSize;
-    if (payloadSize > size - DBC_HEADER_SIZE)               // truncated file
+    const uint64 payload = uint64(recordSize) * recordCount + stringSize;
+    if (payload + 20 > size)
     {
         return false;
     }
 
-    fieldsOffset = new uint32_t[fieldCount];
+    fieldsOffset = new uint32[fieldCount];
     fieldsOffset[0] = 0;
-    for (uint32_t i = 1; i < fieldCount; ++i)
+    for (uint32 i = 1; i < fieldCount; ++i)
     {
         fieldsOffset[i] = fieldsOffset[i - 1];
         if (fmt[i - 1] == 'b' || fmt[i - 1] == 'X')         // byte fields
@@ -145,10 +134,9 @@ bool DBCFileLoader::LoadFromMemory(const void* bytes, size_t size, const char* f
         }
     }
 
-    data = new unsigned char[payloadSize];
-    stringTable = data + size_t(recordSize) * recordCount;
-    memcpy(data, image + DBC_HEADER_SIZE, payloadSize);
-
+    data = new unsigned char[size_t(payload)];
+    stringTable = data + recordSize * recordCount;
+    memcpy(data, p + 20, size_t(payload));
     return true;
 }
 
@@ -164,11 +152,11 @@ DBCFileLoader::Record DBCFileLoader::getRecord(size_t id)
     return Record(*this, data + id * recordSize);
 }
 
-uint32_t DBCFileLoader::GetFormatRecordSize(const char* format, int32_t* index_pos)
+uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
 {
-    uint32_t recordsize = 0;
-    int32_t i = -1;
-    for (uint32_t x = 0; format[x]; ++ x)
+    uint32 recordsize = 0;
+    int32 i = -1;
+    for (uint32 x = 0; format[x]; ++ x)
     {
         switch (format[x])
         {
@@ -176,7 +164,7 @@ uint32_t DBCFileLoader::GetFormatRecordSize(const char* format, int32_t* index_p
                 recordsize += sizeof(float);
                 break;
             case DBC_FF_INT:
-                recordsize += sizeof(uint32_t);
+                recordsize += sizeof(uint32);
                 break;
             case DBC_FF_STRING:
                 recordsize += sizeof(char*);
@@ -186,10 +174,10 @@ uint32_t DBCFileLoader::GetFormatRecordSize(const char* format, int32_t* index_p
                 break;
             case DBC_FF_IND:
                 i = x;
-                recordsize += sizeof(uint32_t);
+                recordsize += sizeof(uint32);
                 break;
             case DBC_FF_BYTE:
-                recordsize += sizeof(uint8_t);
+                recordsize += sizeof(uint8);
                 break;
             case DBC_FF_LOGIC:
                 assert(false && "Attempted to load DBC files that do not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
@@ -211,46 +199,54 @@ uint32_t DBCFileLoader::GetFormatRecordSize(const char* format, int32_t* index_p
     return recordsize;
 }
 
-char* DBCFileLoader::AutoProduceData(const char* format, uint32_t& records, char**& indexTable)
+char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**& indexTable)
 {
-    /**
-     * format STRING, NA, FLOAT,NA,INT <=>
-     * struct{
-     *     char* field0,
-     *     float field1,
-     *     int field2
-     * } entry;
-     *
-     * this func will generate  entry[rows] data;
-     */
+    /*
+    format STRING, NA, FLOAT,NA,INT <=>
+    struct{
+    char* field0,
+    float field1,
+    int field2
+    }entry;
+
+    this func will generate  entry[rows] data;
+    */
 
     typedef char* ptr;
     if (strlen(format) != fieldCount)
     {
-        return nullptr;
+        return NULL;
     }
 
     // get struct size and index pos
-    int32_t i;
-    uint32_t recordsize = GetFormatRecordSize(format, &i);
+    int32 i;
+    uint32 recordsize = GetFormatRecordSize(format, &i);
 
     if (i >= 0)
     {
-        uint32_t maxi = 0;
+        uint32 maxi = 0;
         // find max index
-        for (uint32_t y = 0; y < recordCount; ++y)
+        for (uint32 y = 0; y < recordCount; ++y)
         {
-            uint32_t ind = getRecord(y).getUInt(i);
+            uint32 ind = getRecord(y).getUInt(i);
             if (ind > maxi)
             {
                 maxi = ind;
             }
         }
 
+        // maxi comes from record CONTENT, so it is whatever the file says. Refuse a
+        // wrapped or absurd count rather than allocating from it: ++maxi on 0xFFFFFFFF
+        // is 0, which would allocate nothing and then be written through by every row.
+        if (maxi == 0xFFFFFFFFu || uint64(maxi) + 1 > MAX_DBC_INDEX)
+        {
+            return NULL;
+        }
+
         ++maxi;
         records = maxi;
         indexTable = new ptr[maxi];
-        memset(indexTable, 0, maxi * sizeof(ptr));
+        memset(indexTable, 0, size_t(maxi) * sizeof(ptr));
     }
     else
     {
@@ -258,11 +254,22 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32_t& records, char
         indexTable = new ptr[recordCount];
     }
 
-    char* dataTable = new char[recordCount * recordsize];
+    // In 64 bits, so a large record count times a wide format cannot wrap. The header
+    // check bounded recordCount against the FILE's record size; recordsize here is the
+    // FORMAT's, and the two need not agree.
+    const uint64 tableBytes = uint64(recordCount) * recordsize;
+    if (tableBytes > MAX_DBC_TABLE_BYTES)
+    {
+        delete[] indexTable;
+        indexTable = NULL;
+        return NULL;
+    }
 
-    uint32_t offset = 0;
+    char* dataTable = new char[size_t(tableBytes)];
 
-    for (uint32_t y = 0; y < recordCount; ++y)
+    uint32 offset = 0;
+
+    for (uint32 y = 0; y < recordCount; ++y)
     {
         if (i >= 0)
         {
@@ -273,7 +280,7 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32_t& records, char
             indexTable[y] = &dataTable[offset];
         }
 
-        for (uint32_t x = 0; x < fieldCount; ++x)
+        for (uint32 x = 0; x < fieldCount; ++x)
         {
             switch (format[x])
             {
@@ -283,15 +290,15 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32_t& records, char
                     break;
                 case DBC_FF_IND:
                 case DBC_FF_INT:
-                    *((uint32_t*)(&dataTable[offset])) = getRecord(y).getUInt(x);
-                    offset += sizeof(uint32_t);
+                    *((uint32*)(&dataTable[offset])) = getRecord(y).getUInt(x);
+                    offset += sizeof(uint32);
                     break;
                 case DBC_FF_BYTE:
-                    *((uint8_t*)(&dataTable[offset])) = getRecord(y).getUInt8(x);
-                    offset += sizeof(uint8_t);
+                    *((uint8*)(&dataTable[offset])) = getRecord(y).getUInt8(x);
+                    offset += sizeof(uint8);
                     break;
                 case DBC_FF_STRING:
-                    *((char**)(&dataTable[offset])) = nullptr; // will replace non-empty or "" strings in AutoProduceStrings
+                    *((char**)(&dataTable[offset])) = NULL; // will replace non-empty or "" strings in AutoProduceStrings
                     offset += sizeof(char*);
                     break;
                 case DBC_FF_LOGIC:
@@ -315,17 +322,17 @@ char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
 {
     if (strlen(format) != fieldCount)
     {
-        return nullptr;
+        return NULL;
     }
 
     char* stringPool = new char[stringSize];
     memcpy(stringPool, stringTable, stringSize);
 
-    uint32_t offset = 0;
+    uint32 offset = 0;
 
-    for (uint32_t y = 0; y < recordCount; ++y)
+    for (uint32 y = 0; y < recordCount; ++y)
     {
-        for (uint32_t x = 0; x < fieldCount; ++x)
+        for (uint32 x = 0; x < fieldCount; ++x)
         {
             switch (format[x])
             {
@@ -334,10 +341,10 @@ char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
                     break;
                 case DBC_FF_IND:
                 case DBC_FF_INT:
-                    offset += sizeof(uint32_t);
+                    offset += sizeof(uint32);
                     break;
                 case DBC_FF_BYTE:
-                    offset += sizeof(uint8_t);
+                    offset += sizeof(uint8);
                     break;
                 case DBC_FF_STRING:
                 {

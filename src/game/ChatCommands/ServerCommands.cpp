@@ -44,6 +44,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include "CorpseManager.h"
 
 /**
  * @brief Handler for HandleServerInfoCommand command.
@@ -425,7 +426,7 @@ bool ChatHandler::HandleServerLogLevelCommand(char* args)
  */
 bool ChatHandler::HandleServerCorpsesCommand(char* /*args*/)
 {
-    sObjectAccessor.RemoveOldCorpses();
+    sCorpseManager.RemoveOldCorpses();
     return true;
 }
 

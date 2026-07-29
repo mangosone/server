@@ -52,7 +52,9 @@
 #ifndef MANGOSSERVER_GROUP_H
 #define MANGOSSERVER_GROUP_H
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
+#include <map>
 #include "ObjectGuid.h"
 #include "GroupReference.h"
 #include "GroupRefManager.h"
@@ -184,7 +186,7 @@ class Roll : public LootValidatorRef
         uint32 itemid;
         int32  itemRandomPropId;
         uint32 itemRandomSuffix;
-        typedef UNORDERED_MAP<ObjectGuid, RollVote> PlayerVote;
+        typedef std::unordered_map<ObjectGuid, RollVote> PlayerVote;
         PlayerVote playerVote;                              // vote position correspond with player position (in group)
         uint8 totalPlayersRolling;
         uint8 totalNeed;
@@ -227,7 +229,7 @@ class Group
         typedef std::list<MemberSlot> MemberSlotList;
         typedef MemberSlotList::const_iterator member_citerator;
 
-        typedef UNORDERED_MAP < uint32 /*mapId*/, InstanceGroupBind > BoundInstancesMap;
+        typedef std::unordered_map < uint32 /*mapId*/, InstanceGroupBind > BoundInstancesMap;
     protected:
         typedef MemberSlotList::iterator member_witerator;
         typedef std::set<Player*> InvitesList;

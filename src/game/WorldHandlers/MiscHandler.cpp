@@ -48,7 +48,8 @@
  */
 
 #include <zlib.h>
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -64,12 +65,14 @@
 #include "LootMgr.h"
 #include "Chat.h"
 #include "ScriptMgr.h"
-#include "ObjectAccessor.h"
+#include "PlayerRegistry.h"
+#include "ObjectLookup.h"
 #include "Object.h"
 #include "BattleGround/BattleGround.h"
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Pet.h"
 #include "SocialMgr.h"
+#include "Corpse.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <ctime>
@@ -202,7 +205,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     data << uint32(matchcount);                             // placeholder, count of players matching criteria
     data << uint32(displaycount);                           // placeholder, count of players displayed
 
-    sObjectAccessor.DoForAllPlayers([&](Player* pl)
+    sPlayerRegistry.ForEach([&](Player* pl)
     {
         if (security == SEC_PLAYER)
         {
@@ -252,7 +255,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             return;
         }
 
-        uint32 pzoneid = pl->GetZoneId();
+        uint32 pzoneid = pl->GetTerrain()->GetZoneId(pl->Where().X(), pl->Where().Y(), pl->Where().Z());
         uint8 gender = pl->getGender();
 
         bool z_show = true;
@@ -401,8 +404,8 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     // not set flags if player can't free move to prevent lost state at logout cancel
     if (GetPlayer()->CanFreeMove())
     {
-        float height = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(), GetPlayer()->GetPositionY(), GetPlayer()->GetPositionZ());
-        if ((GetPlayer()->GetPositionZ() < height + 0.1f) && !(GetPlayer()->IsInWater()))
+        float height = GetPlayer()->GetMap()->GetHeight(GetPlayer()->Where().X(), GetPlayer()->Where().Y(), GetPlayer()->Where().Z());
+        if ((GetPlayer()->Where().Z() < height + 0.1f) && !(GetPlayer()->IsInWater()))
         {
             GetPlayer()->SetStandState(UNIT_STAND_STATE_SIT);
         }
@@ -509,7 +512,7 @@ void WorldSession::HandleZoneUpdateOpcode(WorldPacket& recv_data)
 
     // use server side data
     uint32 newzone, newarea;
-    GetPlayer()->GetZoneAndAreaId(newzone, newarea);
+    GetPlayer()->GetTerrain()->GetZoneAndAreaId(newzone, newarea, GetPlayer()->Where().X(), GetPlayer()->Where().Y(), GetPlayer()->Where().Z());
     GetPlayer()->UpdateZone(newzone, newarea);
 }
 
@@ -527,7 +530,7 @@ void WorldSession::HandleSetTargetOpcode(WorldPacket& recv_data)
     _player->SetTargetGuid(guid);
 
     // update reputation list if need
-    Unit* unit = sObjectAccessor.GetUnit(*_player, guid);   // can select group members at diff maps
+    Unit* unit = ObjectLookup::GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)
     {
         return;
@@ -558,7 +561,7 @@ void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
     }
 
     // update reputation list if need
-    Unit* unit = sObjectAccessor.GetUnit(*_player, guid);   // can select group members at diff maps
+    Unit* unit = ObjectLookup::GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)
     {
         return;
@@ -665,7 +668,7 @@ void WorldSession::HandleReclaimCorpseOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (!corpse->IsWithinDistInMap(GetPlayer(), CORPSE_RECLAIM_RADIUS, true))
+    if (!InReach(*corpse, *(GetPlayer()), CORPSE_RECLAIM_RADIUS, true))
     {
         return;
     }
@@ -742,7 +745,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     const float delta = 5.0f;
 
     // check if player in the range of areatrigger
-    if (!IsPointInAreaTriggerZone(atEntry, player->GetMapId(), player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), delta))
+    if (!IsPointInAreaTriggerZone(atEntry, player->GetMapId(), player->Where().X(), player->Where().Y(), player->Where().Z(), delta))
     {
         DEBUG_LOG("Player '%s' (GUID: %u) too far, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
         return;

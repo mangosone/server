@@ -26,7 +26,30 @@
 #include "MoveSpline.h"
 #include "packet_builder.h"
 #include "Unit.h"
-#include "TransportSystem.h"
+#include "Transports.h"
+#include "TransportMap.h"
+#include "Map.h"
+
+namespace
+{
+    /// The vessel whose deck this unit is standing on, or an empty guid. Derived from the
+    /// map, so a spline goes out as SMSG_MONSTER_MOVE_TRANSPORT for anything on a deck --
+    /// crew, pet or totem alike -- without anyone having registered it as anything.
+    ObjectGuid DeckVesselGuidOf(Unit const& unit)
+    {
+        if (Map* on = unit.GetMap())
+        {
+            if (TransportMap* hull = on->AsTransport())
+            {
+                if (Transport* vessel = hull->Vessel())
+                {
+                    return vessel->GetObjectGuid();
+                }
+            }
+        }
+        return ObjectGuid();
+    }
+}
 
 namespace Movement
 {
@@ -79,15 +102,12 @@ namespace Movement
     int32 MoveSplineInit::Launch()
     {
         MoveSpline& move_spline = *unit.movespline;
-        TransportInfo* transportInfo = unit.GetTransportInfo();
 
-        Location real_position(unit.GetPositionX(), unit.GetPositionY(), unit.GetPositionZ(), unit.GetOrientation());
+        // A DECK IS NOT A SEAT. The unit's map is the vessel and its position is already
+        // deck-local, so Where() is the answer and nothing is composed or looked up.
+        const ObjectGuid vesselGuid = DeckVesselGuidOf(unit);
 
-        // If boarded use current local position
-        if (transportInfo)
-        {
-            transportInfo->GetLocalPosition(real_position.x, real_position.y, real_position.z, real_position.orientation);
-        }
+        Location real_position(unit.Where().X(), unit.Where().Y(), unit.Where().Z(), unit.Where().Facing());
 
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
@@ -132,10 +152,10 @@ namespace Movement
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit.GetPackGUID();
 
-        if (transportInfo)
+        if (!vesselGuid.IsEmpty())
         {
             data.SetOpcode(SMSG_MONSTER_MOVE_TRANSPORT);
-            data << transportInfo->GetTransportGuid().WriteAsPacked();
+            data << vesselGuid.WriteAsPacked();
         }
 
         PacketBuilder::WriteMonsterMove(move_spline, data);
@@ -157,19 +177,13 @@ namespace Movement
             return;
         }
 
-        TransportInfo* transportInfo = unit.GetTransportInfo();
+        const ObjectGuid vesselGuid = DeckVesselGuidOf(unit);
 
-        Location real_position(unit.GetPositionX(), unit.GetPositionY(), unit.GetPositionZ(), unit.GetOrientation());
-
-        // If boarded use current local position
-        if (transportInfo)
-        {
-            transportInfo->GetLocalPosition(real_position.x, real_position.y, real_position.z, real_position.orientation);
-        }
+        Location real_position(unit.Where().X(), unit.Where().Y(), unit.Where().Z(), unit.Where().Facing());
 
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
-        if (!move_spline.Finalized() && !transportInfo)
+        if (!move_spline.Finalized())
         {
             real_position = move_spline.ComputePosition();
         }
@@ -189,10 +203,10 @@ namespace Movement
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit.GetPackGUID();
 
-        if (transportInfo)
+        if (!vesselGuid.IsEmpty())
         {
             data.SetOpcode(SMSG_MONSTER_MOVE_TRANSPORT);
-            data << transportInfo->GetTransportGuid().WriteAsPacked();
+            data << vesselGuid.WriteAsPacked();
         }
 
         data << real_position.x << real_position.y << real_position.z;

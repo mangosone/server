@@ -51,7 +51,13 @@
 #ifndef MANGOS_H_PLAYER
 #define MANGOS_H_PLAYER
 
-#include "Common.h"
+#include <unordered_map>
+#include <queue>
+#include "Common/ServerDefines.h"
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include <vector>
 #include "ItemPrototype.h"
 #include "Unit.h"
 #include "Item.h"
@@ -174,7 +180,7 @@ struct PlayerSpell
     bool disabled : 1;          ///< First rank has been learned as a result of talent learn but currently talent unlearned, save max learned ranks
 };
 
-typedef UNORDERED_MAP<uint32, PlayerSpell> PlayerSpellMap;
+typedef std::unordered_map<uint32, PlayerSpell> PlayerSpellMap;
 
 /**
  * @brief Spell modifier structure
@@ -704,7 +710,7 @@ struct SkillStatusData
     SkillUpdateState uState; // Update state of the skill
 };
 
-typedef UNORDERED_MAP<uint32, SkillStatusData> SkillStatusMap;
+typedef std::unordered_map<uint32, SkillStatusData> SkillStatusMap;
 
 // Player slots for items
 enum PlayerSlots
@@ -1246,7 +1252,7 @@ class Player : public Unit
         bool IsUnderWater() const override; // Check if the player is underwater
         bool IsFalling() // Check if the player is falling
         {
-            return GetPositionZ() < m_lastFallZ;
+            return Where().Z() < m_lastFallZ;
         }
 
         void SendInitialPacketsBeforeAddToMap(); // Send initial packets before adding the player to the map
@@ -2154,6 +2160,27 @@ class Player : public Unit
         // Get the zone ID from the database
         static uint32 GetZoneIdFromDB(ObjectGuid guid);
 
+        /// Zone and area for wherever this player stands -- inherited from the vessel when
+        /// he is aboard one, because a deck map carries no area table of its own.
+        void GetZoneAndAreaAboardOrHere(uint32& zone, uint32& area) const;
+
+        /// Map and position for world-level lookups (graveyards, area triggers) -- the
+        /// vessel's when aboard one, because a deck map has no area table.
+        void GetWorldAnchor(uint32& mapId, float& x, float& y, float& z) const;
+
+        /// THE MAP HE IS ACTUALLY ADDED TO when he enters the world -- at login, and on
+        /// the far side of a teleport. Aboard a vessel that is HER map, never the one he
+        /// was just told about: the client is handed the world map she sails and nothing
+        /// else, ever, and the server puts him where he really stands.
+        Map* BoardingMap() const;
+
+        /// Terrain for world-level questions -- the vessel's map when aboard one.
+        TerrainInfo const* AnchorTerrain() const;
+
+        /// Mirror this player's transport state onto his minions -- for a type-11 LIFT,
+        /// which nobody boards and which the client animates on its own.
+        void UpdateLiftMinions();
+
         // Get the level from the database
         static uint32 GetLevelFromDB(ObjectGuid guid);
 
@@ -2318,7 +2345,7 @@ class Player : public Unit
         uint8 unReadMails; // Number of unread mails
         time_t m_nextMailDelivereTime; // Time of the next mail delivery
 
-        typedef UNORDERED_MAP<uint32, Item*> ItemMap;
+        typedef std::unordered_map<uint32, Item*> ItemMap;
 
         ItemMap mMitems; // Map of mailed items
 
@@ -3705,10 +3732,10 @@ class Player : public Unit
         void SetHomebindToLocation(WorldLocation const& loc, uint32 area_id);
 
         // Relocate the player to the homebind location
-        void RelocateToHomebind() { SetLocationMapId(m_homebindMapId); Relocate(m_homebindX, m_homebindY, m_homebindZ); }
+        void RelocateToHomebind() { SetLocationMapId(m_homebindMapId); Place().MoveTo(m_homebindX, m_homebindY, m_homebindZ); }
 
         // Teleport the player to the homebind location
-        bool TeleportToHomebind(uint32 options = 0) { return TeleportTo(m_homebindMapId, m_homebindX, m_homebindY, m_homebindZ, GetOrientation(), options); }
+        bool TeleportToHomebind(uint32 options = 0) { return TeleportTo(m_homebindMapId, m_homebindX, m_homebindY, m_homebindZ, Where().Facing(), options); }
 
         // Get an object by type mask
         Object* GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask);
@@ -3780,7 +3807,7 @@ class Player : public Unit
         /***                 INSTANCE SYSTEM                   ***/
         /*********************************************************/
 
-        typedef UNORDERED_MAP < uint32 /*mapId*/, InstancePlayerBind > BoundInstancesMap;
+        typedef std::unordered_map < uint32 /*mapId*/, InstancePlayerBind > BoundInstancesMap;
 
         // Update the homebind time
         void UpdateHomebindTime(uint32 time);

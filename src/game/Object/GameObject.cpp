@@ -23,7 +23,7 @@
  */
 
 #include "GameObject.h"
-#include "terrain/Geometry/Quat.h"
+#include "Geometry/Quat.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
 #include "PoolManager.h"
@@ -50,6 +50,8 @@
 #include "SQLStorages.h"
 #include "GameObjectAI.h"
 #include <memory>
+#include "PlayerRegistry.h"
+#include "ObjectLookup.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -156,7 +158,7 @@ void GameObject::RemoveFromWorld()
 #endif /* ENABLE_ELUNA */
 
         // Notify the outdoor pvp script
-        if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
+        if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z())))
         {
             outdoorPvP->HandleGameObjectRemove(this);
         }
@@ -164,7 +166,7 @@ void GameObject::RemoveFromWorld()
         // Remove GO from owner
         if (ObjectGuid owner_guid = GetOwnerGuid())
         {
-            if (Unit* owner = sObjectAccessor.GetUnit(*this, owner_guid))
+            if (Unit* owner = ObjectLookup::GetUnit(*this, owner_guid))
             {
                 owner->RemoveGameObject(this, false);
             }
@@ -244,11 +246,11 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
     Geometry::Quat q(r0, r1, r2, r3);
     q.unitize();
 
-    float o = GetOrientationFromQuat(q);
-    Relocate(x, y, z, o);
+    float o = Geometry::YawOf(q);
+    Place().MoveTo(x, y, z, o);
     SetMap(map);
 
-    if (!IsPositionValid())
+    if (!IsPlaceable(*this))
     {
         sLog.outError("Gameobject (GUID: %u Entry: %u ) not created. Suggested coordinates are invalid (X: %f Y: %f)", guidlow, name_id, x, y);
         return false;
@@ -301,7 +303,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
     {
         ((BattleGroundMap*)map)->GetBG()->HandleGameObjectCreate(this);
     }
-    else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
+    else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z())))
     {
         outdoorPvP->HandleGameObjectCreate(this);
     }
@@ -617,7 +619,7 @@ bool GameObject::IsTransport() const
  */
 Unit* GameObject::GetOwner() const
 {
-    return sObjectAccessor.GetUnit(*this, GetOwnerGuid());
+    return ObjectLookup::GetUnit(*this, GetOwnerGuid());
 }
 
 /**
@@ -648,7 +650,7 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
     }
 
     // Transport always visible at this step implementation
-    if (IsTransport() && IsInMap(u))
+    if (IsTransport() && Where().ShareFrame(u->Where()))
     {
         return true;
     }
@@ -747,7 +749,7 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
     }
 
     // check distance
-    return IsWithinDistInMap(viewPoint, GetMap()->GetVisibilityDistance() +
+    return InReach(*this, *viewPoint, GetMap()->GetVisibilityDistance() +
                              (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
 }
 
@@ -885,7 +887,7 @@ void GameObject::SummonLinkedTrapIfAny()
 
     GameObject* linkedGO = new GameObject;
     if (!linkedGO->Create(GetMap()->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), linkedEntry, GetMap(),
-                          GetPositionX(), GetPositionY(), GetPositionZ(), GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
+                          Where().X(), Where().Y(), Where().Z(), Where().Facing(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
     {
         delete linkedGO;
         return;
@@ -1098,7 +1100,7 @@ void GameObject::SetQuaternion(Geometry::Quat const& q)
     SetFloatValue(GAMEOBJECT_ROTATION + 1, q.y);
     SetFloatValue(GAMEOBJECT_ROTATION + 2, q.z);
     SetFloatValue(GAMEOBJECT_ROTATION + 3, q.w);
-    SetFloatValue(GAMEOBJECT_FACING, GetOrientationFromQuat(q));
+    SetFloatValue(GAMEOBJECT_FACING, Geometry::YawOf(q));
     if (m_model)
     {
         // Re-pose the collision body; while in world this also re-files it into the
@@ -1125,19 +1127,6 @@ void GameObject::GetQuaternion(Geometry::Quat& q) const
     q.y = GetFloatValue(GAMEOBJECT_ROTATION + 1);
     q.z = GetFloatValue(GAMEOBJECT_ROTATION + 2);
     q.w = GetFloatValue(GAMEOBJECT_ROTATION + 3);
-}
-
-/**
- * @brief Converts a quaternion rotation to a facing orientation.
- *
- * @param q The quaternion to evaluate.
- * @return The normalized orientation angle.
- */
-float GameObject::GetOrientationFromQuat(Geometry::Quat const& q)
-{
-    double t1 = +2.0f * (q.w * q.z + q.x * q.y);
-    double t2 = +1.0f - 2.0f * (q.y * q.y + q.z * q.z);
-    return MapManager::NormalizeOrientation(std::atan2(t1, t2));
 }
 
 /**
@@ -1318,7 +1307,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 2047;
-                if ((GetZoneId() == 46) || (GetZoneId() == 51)) // roll for darkiron spawn in burning steppes and searing gorge
+                if ((GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z()) == 46) || (GetTerrain()->GetZoneId(Where().X(), Where().Y(), Where().Z()) == 51)) // roll for darkiron spawn in burning steppes and searing gorge
                     {
                         if (urand (0,3) < 1)
                         {
@@ -1479,7 +1468,7 @@ void GameObject::StopGroupLoot()
  */
 Player* GameObject::GetOriginalLootRecipient() const
 {
-    return m_lootRecipientGuid ? sObjectAccessor.FindPlayer(m_lootRecipientGuid) : NULL;
+    return m_lootRecipientGuid ? sPlayerRegistry.Find(m_lootRecipientGuid) : NULL;
 }
 
 /**
@@ -1571,7 +1560,7 @@ void GameObject::SetLootRecipient(Unit* pUnit)
  *
  * @return The default game object radius.
  */
-float GameObject::GetObjectBoundingRadius() const
+float GameObject::ComputeBoundingRadius() const
 {
     // FIXME:
     // 1. This is clearly hack way because we usually need this to check range, but a box just is no ball

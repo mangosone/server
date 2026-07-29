@@ -1,3 +1,5 @@
+#include "Utilities/MathDefines.h"
+#include <cmath>
 #include "../botpch.h"
 #include "playerbot.h"
 #include "FleeManager.h"
@@ -81,7 +83,7 @@ void FleeManager::calculatePossibleDestinations(list<FleePoint*> &points)
             }
 
             Map* map = bot->GetMap();
-            const FusedTerrain* terrain = map->GetTerrain();
+            const TerrainInfo* terrain = map->GetTerrain();
             if (terrain && terrain->IsInWater(x, y, z))
             {
                 continue;

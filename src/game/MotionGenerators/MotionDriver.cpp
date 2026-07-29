@@ -23,7 +23,7 @@
  */
 
 #include "MotionDriver.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "Unit.h"
 #include "movement/MoveSpline.h"
 #include "movement/MoveSplineInit.h"
@@ -187,7 +187,7 @@ bool MotionDriver::LayLeg(Unit& owner, Motion::MoveIntent const& intent)
             break;
 
         case Motion::Facing::Mode::Target:
-            if (Unit* target = sObjectAccessor.GetUnit(owner, intent.facing.target))
+            if (Unit* target = ObjectLookup::GetUnit(owner, intent.facing.target))
             {
                 init.SetFacing(target);
             }
@@ -233,8 +233,8 @@ void MotionDriver::ReconcileHold(Unit& owner, Motion::MoveIntent const& intent)
     {
         case Motion::Facing::Mode::Target:
         {
-            Unit* target = sObjectAccessor.GetUnit(owner, intent.facing.target);
-            if (target && !owner.HasInArc(FACING_EPSILON, target))
+            Unit* target = ObjectLookup::GetUnit(owner, intent.facing.target);
+            if (target && !owner.Where().HasInArc(target->Where(), FACING_EPSILON))
             {
                 owner.SetInFront(target);
             }
@@ -242,7 +242,7 @@ void MotionDriver::ReconcileHold(Unit& owner, Motion::MoveIntent const& intent)
         }
         case Motion::Facing::Mode::Angle:
         {
-            if (std::fabs(owner.GetOrientation() - intent.facing.angle) > FACING_EPSILON)
+            if (std::fabs(owner.Where().Facing() - intent.facing.angle) > FACING_EPSILON)
             {
                 owner.SetFacingTo(intent.facing.angle);
             }
@@ -250,8 +250,8 @@ void MotionDriver::ReconcileHold(Unit& owner, Motion::MoveIntent const& intent)
         }
         case Motion::Facing::Mode::Spot:
         {
-            const float angle = owner.GetAngle(intent.facing.spot.x, intent.facing.spot.y);
-            if (std::fabs(owner.GetOrientation() - angle) > FACING_EPSILON)
+            const float angle = owner.Where().BearingTo(Geometry::Vector2(intent.facing.spot.x, intent.facing.spot.y));
+            if (std::fabs(owner.Where().Facing() - angle) > FACING_EPSILON)
             {
                 owner.SetFacingTo(angle);
             }

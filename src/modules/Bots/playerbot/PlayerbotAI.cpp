@@ -1,3 +1,9 @@
+#include "ObjectLookup.h"
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <vector>
+#include <cstdlib>
 #include "../botpch.h"
 #include "PlayerbotMgr.h"
 #include "playerbot.h"
@@ -41,7 +47,7 @@ uint32 PlayerbotChatHandler::extractQuestId(string str)
 {
     char* source = (char*)str.c_str();
     char* cId = ExtractKeyFromLink(&source,"Hquest");
-    return cId ? atol(cId) : 0;
+    return cId ? std::strtoul(cId, NULL, 10) : 0;
 }
 
 /**
@@ -840,7 +846,7 @@ Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
         return NULL;
     }
 
-    return sObjectAccessor.GetUnit(*bot, guid);
+    return ObjectLookup::GetUnit(*bot, guid);
 }
 
 /**

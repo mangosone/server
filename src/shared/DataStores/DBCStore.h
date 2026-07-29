@@ -25,91 +25,77 @@
 #ifndef DBCSTORE_H
 #define DBCSTORE_H
 
-#include "DBCFileLoader.h"
-
-// Pulled in explicitly: these used to arrive by accident, through the Platform/Define.h
-// chain that DBCFileLoader.h no longer has.
-#include <cassert>
 #include <cstdint>
+#include "Common/Locales.h"
+#include <cassert>
 #include <list>
 #include <map>
+#include "DBCFileLoader.h"
 
 template<class T>
-
 /**
  * @brief
  *
  */
 class DBCStorage
 {
-
-    /**
-     * @brief
-     *
-     */
-    typedef std::list<char*> StringPoolList;
-
+        /**
+         * @brief
+         *
+         */
+        typedef std::list<char*> StringPoolList;
     public:
         /**
          * @brief
          *
          * @param f
          */
-        // `loaded` gates LookupEntry's override map; leaving it uninitialised made every
-        // lookup read an indeterminate value before the first SetEntry call.
-        explicit DBCStorage(const char* f)
-            : nCount(0), fieldCount(0), fmt(f), indexTable(nullptr), m_dataTable(nullptr),
-              loaded(false) {}
-
+        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(NULL), m_dataTable(NULL) { }
         /**
          * @brief
          *
          */
-        ~DBCStorage()
-        {
-            Clear();
-        }
+        ~DBCStorage() { Clear(); }
 
         /**
-         * @brief
-         *
-         * @return uint32_t
-         */
-        uint32_t  GetNumRows() const { return loaded ? data.size() : nCount; }
-
+        * @brief
+        *
+        * @return uint32
+        */
+        //uint32  GetNumRows() const { return nCount; }
+        uint32  GetNumRows() const { return loaded ? data.size() : nCount; }
         /**
          * @brief
          *
          * @return const char
          */
         char const* GetFormat() const { return fmt; }
-
         /**
          * @brief
          *
-         * @return uint32_t
+         * @return uint32
          */
-        uint32_t GetFieldCount() const { return fieldCount; }
+        uint32 GetFieldCount() const { return fieldCount; }
 
         /**
-         * @brief
-         *
-         * @param id
-         * @return const T
-         */
-        T const* LookupEntry(uint32_t id) const
+        * @brief
+        *
+        * @param id
+        * @return const T
+        */
+        //T const* LookupEntry(uint32 id) const { return (id >= nCount) ? NULL : indexTable[id]; }
+        T const* LookupEntry(uint32 id) const
         {
             if (loaded)
             {
-                typename std::map<uint32_t, T const*>::const_iterator it = data.find(id);
+                typename std::map<uint32, T const*>::const_iterator it = data.find(id);
                 if (it != data.end())
                 {
                     return it->second;
                 }
             }
-            return (id >= nCount) ? nullptr : indexTable[id];
+            return (id >= nCount) ? NULL : indexTable[id];
         }
-
         /**
          * @brief
          *
@@ -133,15 +119,15 @@ class DBCStorage
             // load strings from dbc data
             m_stringPoolList.push_back(dbc.AutoProduceStrings(fmt, (char*)m_dataTable));
 
-            // error in dbc file at loading if nullptr
-            return indexTable != nullptr;
+            // error in dbc file at loading if NULL
+            return indexTable != NULL;
         }
 
-        void SetEntry(uint32_t id, T* t) // Cryptic they say..
+        void SetEntry(uint32 id, T* t) // Cryptic they say..
         {
             if (!loaded)
             {
-                for (uint32_t i = 0; i < nCount; ++i)
+                for (uint32 i = 0; i < nCount; ++i)
                 {
                     T const* node = LookupEntry(i);
                     if (!node)
@@ -200,9 +186,9 @@ class DBCStorage
             }
 
             delete[]((char*)indexTable);
-            indexTable = nullptr;
+            indexTable = NULL;
             delete[]((char*)m_dataTable);
-            m_dataTable = nullptr;
+            m_dataTable = NULL;
 
             while (!m_stringPoolList.empty())
             {
@@ -217,23 +203,22 @@ class DBCStorage
          *
          * @param id
          */
-        void EraseEntry(uint32_t id) { assert(id < nCount && "Entry to be erased must be in bounds!") ; indexTable[id] = nullptr; }
-
+        void EraseEntry(uint32 id) { assert(id < nCount && "Entry to be erased must be in bounds!") ; indexTable[id] = NULL; }
         /**
          * @brief
          *
          * @param entry
          * @param id
          */
-        void InsertEntry(T* entry, uint32_t id) { assert(id < nCount && "Entry to be inserted must be in bounds!"); indexTable[id] = entry; }
+        void InsertEntry(T* entry, uint32 id) { assert(id < nCount && "Entry to be inserted must be in bounds!"); indexTable[id] = entry; }
 
     private:
-        uint32_t nCount; /**< TODO */
-        uint32_t fieldCount; /**< TODO */
+        uint32 nCount; /**< TODO */
+        uint32 fieldCount; /**< TODO */
         char const* fmt; /**< TODO */
         T** indexTable; /**< TODO */
         T* m_dataTable; /**< TODO */
-        std::map<uint32_t, T const*> data;
+        std::map<uint32, T const*> data;
         bool loaded;
         StringPoolList m_stringPoolList; /**< TODO */
 };

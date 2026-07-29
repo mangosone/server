@@ -22,225 +22,271 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <string>
+#include <mutex>
+#include "Utilities/Errors.h"
+#include "MapManager.h"
+
 /**
  * @file GridMap.cpp
- * @brief Server-facing terrain queries + the per-map FusedTerrain registry.
+ * @brief Map grid data loading and management
  *
- * The old ADT (.map) heightfield loader and the TerrainInfo query wrapper are
- * retired: static terrain, liquid, area and WMO/M2 collision are fused into one
- * .tile served by FusedTerrain (engine side in FusedTerrain.cpp). This file is the
- * game-only half of FusedTerrain -- the methods that translate its raw answers into
- * MaNGOS's DBC world (AreaTable / WMOAreaTable) -- plus TerrainManager, the registry
- * that shares one FusedTerrain per map id, and the per-grid navmesh (MMAP) lifecycle.
+ * This file implements GridMap which loads and manages terrain data
+ * for a single map grid (64x64 yard cell). Features:
+ *
+ * - Height map loading from .map files
+ * - Area/zone ID loading
+ * - Liquid data (water, lava) loading
+ * - Hole data for terrain gaps
+ * - Terrain height queries
+ * - Area ID queries
+ * - Liquid level queries
+ *
+ * GridMaps are loaded on-demand and cached by the Map system.
+ *
+ * @see GridMap for the grid class
+ * @see Map for the map container
  */
 
 #include "Log.h"
+#include "GridStates.h"
+#include "CellImpl.h"
+#include "Map.h"
 #include "DBCEnums.h"
 #include "DBCStores.h"
 #include "GridMap.h"
+#include "terrain/TileSerializer.hpp"
 #include "MoveMap.h"
 #include "World.h"
 #include "Policies/Singleton.h"
-#include <mutex>
+#include "Util.h"
 
-using world::terrain::LiquidInfo;
-using world::terrain::LiquidKind;
+char const* MAP_MAGIC         = "MAPS";
+char const* MAP_VERSION_MAGIC = "v1.5";
+char const* MAP_AREA_MAGIC    = "AREA";
+char const* MAP_HEIGHT_MAGIC  = "MHGT";
+char const* MAP_LIQUID_MAGIC  = "MLIQ";
 
-/**
- * @brief Checks whether a WMO group is flagged as outdoors.
- */
-static inline bool IsOutdoorWMO(uint32 mogpFlags, uint32 mapId)
+static uint16 holetab_h[4] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+static uint16 holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
+namespace
 {
-    // in flyable areas mounting up is also allowed if 0x0008 flag is set
-    if (mapId == 530)
+    using world::terrain::FusedTerrain;
+    using world::terrain::LiquidInfo;
+
+    // Ids the client hard-codes rather than reads from the DBC.
+    const uint32 OUTLAND_MAP_ID = 530;
+    const uint32 LIQUID_OCEAN_ROW = 2;
+    const uint32 LIQUID_OUTLAND_OCEAN_ROW = 15;
+    const uint32 LIQUID_FIRST_OVERRIDABLE_ROW = 21;
+
+    // MAP_LIQUID_TYPE_* is one bit per family in the order water, ocean, magma, slime.
+    // 2.4.3 has no SoundBank column -- that arrives in 3.3.5a -- so the family comes from
+    // LiquidType.dbc's Type, which uses a DIFFERENT encoding: 0 magma, 2 slime, 3 water.
+    // Ocean is not expressible there at all and the row id decides it instead.
+    uint32 LiquidFlagsOfRow(uint32 entry, uint32& soundBank)
     {
-        return mogpFlags & 0x8008;
+        soundBank = 0;
+        if (LiquidTypeEntry const* liq = sLiquidTypeStore.LookupEntry(entry))
+        {
+            switch (liq->Type)
+            {
+                case 0:  soundBank = 2; break;              // magma
+                case 2:  soundBank = 3; break;              // slime
+                default: soundBank = (entry == LIQUID_OCEAN_ROW ||
+                                      entry == LIQUID_OUTLAND_OCEAN_ROW) ? 1 : 0; break;
+            }
+        }
+        return 1u << soundBank;
     }
 
-    return mogpFlags & 0x8000;
+    // The tile names an area by its AreaTable.dbc id; the server passes area BITS.
+    uint16 AreaBitOfId(uint16 areaId)
+    {
+        if (!areaId)
+        {
+            return 0;
+        }
+        AreaTableEntry const* entry = GetAreaEntryByAreaID(areaId);
+        return entry ? uint16(entry->AreaBit) : uint16(0);
+    }
+
+    bool IsOutdoorWMO(uint32 mogpFlags, WMOAreaTableEntry const* wmoEntry,
+                      AreaTableEntry const* atEntry)
+    {
+        // 3.3.5a lets AreaTable.dbc override the WMO's own answer through
+        // AREA_FLAG_INSIDE/OUTSIDE. Those bits do not exist in 2.4.3 -- its area flags stop
+        // at 0x00100000 -- so the WMO's group flags are the only authority here.
+        (void)atEntry;
+
+        bool outdoor = (mogpFlags & 0x8) != 0;
+        if (wmoEntry)
+        {
+            if (wmoEntry->Flags & 4)
+            {
+                return true;
+            }
+            if (wmoEntry->Flags & 2)
+            {
+                outdoor = false;
+            }
+        }
+        return outdoor;
+    }
 }
 
-//////////////////////////////////////////////////////////////////////////
-// FusedTerrain -- server-facing queries (engine answers -> MaNGOS DBC world)
-//////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief Liquid interaction status at a world position.
- *
- * Fold of the old GridMap + VMAP liquid paths into the one fused query. The tile
- * carries both the liquid *kind* (water/ocean/magma/slime), from which type_flags
- * are reconstructed, and the LiquidType.dbc row that names it -- the latter only
- * matters for the liquid's aura spell (see Player::HandleDrowning).
- *
- * Still not carried: the dark-water bit, and the Hyjal/Coilfang area overrides.
- */
-GridMapLiquidStatus FusedTerrain::getLiquidStatus(float x, float y, float z, uint8 ReqLiquidType,
-                                                  GridMapLiquidData* data) const
+TerrainInfo::TerrainInfo(uint32 mapid) : m_mapId(mapid), m_terrain(mapid), m_refMutex()
 {
-    return LiquidStatusAtGround_(x, y, z, ReqLiquidType,
-                                 GetHeightStatic(x, y, z, true, DEFAULT_WATER_SEARCH), data);
+    for (int k = 0; k < MAX_NUMBER_OF_GRIDS; ++k)
+    {
+        for (int i = 0; i < MAX_NUMBER_OF_GRIDS; ++i)
+        {
+            m_GridRef[i][k] = 0;
+        }
+    }
+
+    i_timer.SetInterval(60 * 1000);
+    i_timer.SetCurrent(urand(20, 40) * 1000);
 }
 
-/**
- * @brief getLiquidStatus for a caller that already knows the column's floor Z.
- *
- * The floor is what decides whether the liquid we found is real (a surface below the
- * ground is not water you can swim in) and it is what fills depth_level -- but deriving
- * it means a full-depth column raycast, and the water-level callers below have already
- * paid for exactly that. Passing it in halves their cost: GetWaterLevel and
- * GetWaterOrGroundLevel used to call GetHeightStatic themselves and then have
- * getLiquidStatus call it a second time, behind their backs, to rediscover the very
- * floor they had just handed it as the query Z.
- */
-GridMapLiquidStatus FusedTerrain::LiquidStatusAtGround_(float x, float y, float z,
-                                                        uint8 ReqLiquidType, float ground_level,
-                                                        GridMapLiquidData* data) const
+TerrainInfo::~TerrainInfo()
 {
-    LiquidInfo liq;
-    if (!GetLiquid(x, y, z, liq))
-    {
-        return LIQUID_MAP_NO_WATER;
-    }
-
-    uint32 typeFlag = 0;
-    switch (liq.kind)
-    {
-        case LiquidKind::Water: typeFlag = MAP_LIQUID_TYPE_WATER; break;
-        case LiquidKind::Ocean: typeFlag = MAP_LIQUID_TYPE_OCEAN; break;
-        case LiquidKind::Magma: typeFlag = MAP_LIQUID_TYPE_MAGMA; break;
-        case LiquidKind::Slime: typeFlag = MAP_LIQUID_TYPE_SLIME; break;
-        default: return LIQUID_MAP_NO_WATER;
-    }
-
-    // Check requested liquid type mask
-    if (ReqLiquidType && !(ReqLiquidType & typeFlag))
-    {
-        return LIQUID_MAP_NO_WATER;
-    }
-
-    float liquid_level = liq.level;
-
-    // Check water level and ground level
-    if (liquid_level <= ground_level || z < ground_level - 2)
-    {
-        return LIQUID_MAP_NO_WATER;
-    }
-
-    if (data)
-    {
-        data->level = liquid_level;
-        data->depth_level = ground_level;
-        data->entry = liq.entry;    // LiquidType.dbc row, resolved by the baker
-        data->type_flags = typeFlag;
-    }
-
-    // For speed check as int values
-    int delta = int((liquid_level - z) * 10);
-
-    if (delta > 20)                                          // Under water
-    {
-        return LIQUID_MAP_UNDER_WATER;
-    }
-    if (delta > 0)                                           // In water
-    {
-        return LIQUID_MAP_IN_WATER;
-    }
-    if (delta > -1)                                          // Walk on water
-    {
-        return LIQUID_MAP_WATER_WALK;
-    }
-    return LIQUID_MAP_ABOVE_WATER;
+    MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId);
 }
 
-/**
- * @brief True when liquid is present in the column at the position.
- */
-bool FusedTerrain::IsInWater(float x, float y, float z, GridMapLiquidData* data) const
+bool TerrainInfo::ExistTile(uint32 mapid, int gx, int gy)
 {
-    GridMapLiquidData liquid_status;
-    GridMapLiquidData* liquid_ptr = data ? data : &liquid_status;
-    return getLiquidStatus(x, y, z, MAP_ALL_LIQUIDS, liquid_ptr) != LIQUID_MAP_NO_WATER;
-}
-
-/**
- * @brief True when the position is fully submerged in water/ocean.
- */
-bool FusedTerrain::IsUnderWater(float x, float y, float z) const
-{
-    return (getLiquidStatus(x, y, z, MAP_LIQUID_TYPE_WATER | MAP_LIQUID_TYPE_OCEAN)
-            & LIQUID_MAP_UNDER_WATER) != 0;
-}
-
-/**
- * @brief Liquid surface level at a position, or an invalid marker when dry.
- */
-float FusedTerrain::GetWaterLevel(float x, float y, float z, float* pGround /*= nullptr*/) const
-{
-    float ground_z = GetHeightStatic(x, y, z, true, DEFAULT_WATER_SEARCH);
-    if (pGround)
+    if (FusedTerrain::HasTile(mapid, gx, gy))
     {
-        *pGround = ground_z;
+        return true;
+    }
+    sLog.outError("Please check for the existence of terrain tile '%s/%s'",
+                  FusedTerrain::TileDir().c_str(),
+                  world::terrain::TileFileName(mapid, gx, gy).c_str());
+    return false;
+}
+
+bool TerrainInfo::Load(const uint32 x, const uint32 y)
+{
+    MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
+    MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
+
+    bool firstReference = false;
+    {
+        std::lock_guard<LOCK_TYPE> lock(m_refMutex);
+        firstReference = (++m_GridRef[x][y] == 1);
     }
 
-    // Hand the floor we just found straight to the liquid check: probing from ground_z
-    // would only rediscover ground_z, at the cost of another full column raycast.
-    GridMapLiquidData liquid_status;
-    if (!LiquidStatusAtGround_(x, y, ground_z, MAP_ALL_LIQUIDS, ground_z, &liquid_status))
+    // Pins the cell's tile against the cache sweep for as long as a grid stands on it.
+    // The tile data itself still loads lazily, on the first query that reaches it.
+    m_terrain.PinCell(int(x), int(y));
+
+    // The navmesh tile is loaded by the FIRST referent only -- the refcount above is what
+    // makes several owners of one grid legal, and Unload already releases on the last.
+    // Loading unconditionally made every second owner ask for a tile the first had already
+    // brought in, which the mmap manager rejects and logs. Common now that a vessel is an
+    // active object holding grids a player then walks into.
+    if (firstReference)
     {
-        return INVALID_HEIGHT_VALUE;
+        MMAP::MMapFactory::createOrGetMMapManager()->loadMap(m_mapId, x, y);
     }
-    return liquid_status.level;
+    return true;
 }
 
-/**
- * Function find higher of water or ground for the current floor.
- *
- * @param swim  when true, in-water returns a level 2yd below the surface so the
- *              client does not treat a swimming unit as standing on the water.
- */
-float FusedTerrain::GetWaterOrGroundLevel(float x, float y, float z, float* pGround /*= nullptr*/,
-                                          bool swim /*= false*/) const
+void TerrainInfo::Unload(const uint32 x, const uint32 y)
 {
-    float ground_z = GetHeightStatic(x, y, z, true, DEFAULT_WATER_SEARCH);
-    if (pGround)
+    MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
+    MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
+
+    bool released = false;
     {
-        *pGround = ground_z;
+        std::lock_guard<LOCK_TYPE> lock(m_refMutex);
+        if (m_GridRef[x][y] > 0)
+        {
+            released = (--m_GridRef[x][y] == 0);
+        }
     }
 
-    GridMapLiquidData liquid_status;
-    GridMapLiquidStatus res =
-        LiquidStatusAtGround_(x, y, ground_z, MAP_ALL_LIQUIDS, ground_z, &liquid_status);
-    return res ? (swim ? liquid_status.level - 2.0f : liquid_status.level) : ground_z;
+    if (released)
+    {
+        m_terrain.UnpinCell(int(x), int(y));
+    }
 }
 
-/**
- * @brief WMO area triple at a position (the old TerrainInfo 4-out signature).
- */
-bool FusedTerrain::GetAreaInfo(float x, float y, float z, uint32& flags, int32& adtId,
-                               int32& rootId, int32& groupId) const
+void TerrainInfo::CleanUpGrids(const uint32 diff)
 {
-    float groundZ;
-    return GetAreaInfo(x, y, z, flags, adtId, rootId, groupId, groundZ);
+    m_terrain.Update(diff);
+
+    i_timer.Update(diff);
+    if (!i_timer.Passed())
+    {
+        return;
+    }
+
+    for (int y = 0; y < MAX_NUMBER_OF_GRIDS; ++y)
+    {
+        for (int x = 0; x < MAX_NUMBER_OF_GRIDS; ++x)
+        {
+            std::lock_guard<LOCK_TYPE> lock(m_refMutex);
+            if (m_GridRef[x][y] == 0)
+            {
+                MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId, x, y);
+            }
+        }
+    }
+
+    i_timer.Reset();
 }
 
-/**
- * @brief Resolved area explore flag (AreaTable AreaBit) for a position.
- *
- * WMO group -> WMOAreaTable -> AreaTable when a WMO covers the point; otherwise the
- * ADT MCNK's AreaTable id (converted to its explore AreaBit), falling back to the
- * map default. Also reports indoor/outdoor from the WMO group flags.
- */
-uint16 FusedTerrain::GetAreaFlag(float x, float y, float z, bool* isOutdoors) const
+world::terrain::Column TerrainInfo::ColumnAt(float x, float y, float zTop, float zBottom,
+                                             const world::terrain::ILiveGeometry* live,
+                                             uint32 phasemask) const
 {
-    uint32 mogpFlags;
-    int32 adtId, rootId, groupId;
+    return m_terrain.ColumnAt(x, y, zTop, zBottom, live, phasemask);
+}
+
+std::optional<float> TerrainInfo::StaticFloor(float x, float y, float z) const
+{
+    return ColumnAt(x, y, z + FLOOR_BURIED_LIFT, z - FLOOR_SEARCH_DOWN)
+           .Floor(z, FLOOR_SEARCH_UP);
+}
+
+bool TerrainInfo::GetAreaInfo(float x, float y, float z, uint32& flags, int32& adtId,
+                              int32& rootId, int32& groupId) const
+{
+    float groundZ = 0.0f;
+    return m_terrain.GetAreaInfo(x, y, z, flags, adtId, rootId, groupId, groundZ);
+}
+
+bool TerrainInfo::IsOutdoors(float x, float y, float z) const
+{
+    uint32 mogpFlags = 0;
+    int32 adtId = 0, rootId = 0, groupId = 0;
+    if (!GetAreaInfo(x, y, z, mogpFlags, adtId, rootId, groupId))
+    {
+        return true;
+    }
+
+    AreaTableEntry const* atEntry = 0;
+    WMOAreaTableEntry const* wmoEntry = GetWMOAreaTableEntryByTripple(rootId, adtId, groupId);
+    if (wmoEntry)
+    {
+        atEntry = GetAreaEntryByAreaID(wmoEntry->areaId);
+    }
+    return IsOutdoorWMO(mogpFlags, wmoEntry, atEntry);
+}
+
+uint16 TerrainInfo::GetAreaFlag(float x, float y, float z, bool* isOutdoors) const
+{
+    uint32 mogpFlags = 0;
+    int32 adtId = 0, rootId = 0, groupId = 0;
     WMOAreaTableEntry const* wmoEntry = 0;
     AreaTableEntry const* atEntry = 0;
-    bool haveAreaInfo = false;
 
-    if (GetAreaInfo(x, y, z, mogpFlags, adtId, rootId, groupId))
+    const bool haveAreaInfo = GetAreaInfo(x, y, z, mogpFlags, adtId, rootId, groupId);
+    if (haveAreaInfo)
     {
-        haveAreaInfo = true;
         wmoEntry = GetWMOAreaTableEntryByTripple(rootId, adtId, groupId);
         if (wmoEntry)
         {
@@ -253,102 +299,218 @@ uint16 FusedTerrain::GetAreaFlag(float x, float y, float z, bool* isOutdoors) co
     {
         areaflag = atEntry->AreaBit;
     }
+    else if (uint16 bit = AreaBitOfId(m_terrain.GetAreaId(x, y)))
+    {
+        areaflag = bit;
+    }
     else
     {
-        // ADT MCNK area id (a real AreaTable.dbc id) -> its explore AreaBit.
-        int32 flag = GetAreaFlagByAreaID(GetAreaId(x, y));
-        areaflag = (flag >= 0) ? uint16(flag) : GetAreaFlagByMapId(GetMapId());
+        areaflag = GetAreaFlagByMapId(m_mapId);
     }
 
     if (isOutdoors)
     {
-        *isOutdoors = haveAreaInfo ? IsOutdoorWMO(mogpFlags, GetMapId()) : true;
+        *isOutdoors = haveAreaInfo ? IsOutdoorWMO(mogpFlags, wmoEntry, atEntry) : true;
     }
     return areaflag;
 }
 
-/**
- * @brief Liquid category flags at a position, independent of height (rarely used).
- */
-uint8 FusedTerrain::GetTerrainType(float x, float y) const
+uint8 TerrainInfo::GetTerrainType(float x, float y) const
 {
-    // ADT surface liquid is height-independent, so a nominal z suffices to classify
-    // the column's liquid category. (This mirror of the old GridMap::getTerrainType
-    // has no live callers; kept for API completeness.)
-    LiquidInfo liq;
-    if (!GetLiquid(x, y, 0.0f, liq))
+    const auto liquid = ColumnAt(x, y, MAX_HEIGHT, -MAX_HEIGHT).HighestLiquid();
+    if (!liquid || !liquid->liquidEntry)
     {
         return 0;
     }
-    switch (liq.kind)
-    {
-        case LiquidKind::Water: return MAP_LIQUID_TYPE_WATER;
-        case LiquidKind::Ocean: return MAP_LIQUID_TYPE_OCEAN;
-        case LiquidKind::Magma: return MAP_LIQUID_TYPE_MAGMA;
-        case LiquidKind::Slime: return MAP_LIQUID_TYPE_SLIME;
-        default: return 0;
-    }
+    uint32 soundBank = 0;
+    return uint8(LiquidFlagsOfRow(liquid->liquidEntry, soundBank));
 }
 
-/**
- * @brief Area id at a position (AreaTable.dbc id).
- */
-uint32 FusedTerrain::GetAreaId(float x, float y, float z) const
+uint32 TerrainInfo::GetAreaId(float x, float y, float z) const
 {
     return TerrainManager::GetAreaIdByAreaFlag(GetAreaFlag(x, y, z), m_mapId);
 }
 
-/**
- * @brief Zone id at a position (parent area, or the area itself).
- */
-uint32 FusedTerrain::GetZoneId(float x, float y, float z) const
+uint32 TerrainInfo::GetZoneId(float x, float y, float z) const
 {
     return TerrainManager::GetZoneIdByAreaFlag(GetAreaFlag(x, y, z), m_mapId);
 }
 
-/**
- * @brief Both zone id and area id for a position.
- */
-void FusedTerrain::GetZoneAndAreaId(uint32& zoneid, uint32& areaid, float x, float y, float z) const
+void TerrainInfo::GetZoneAndAreaId(uint32& zoneid, uint32& areaid, float x, float y,
+                                   float z) const
 {
     TerrainManager::GetZoneAndAreaIdByAreaFlag(zoneid, areaid, GetAreaFlag(x, y, z), m_mapId);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// FusedTerrain -- per-grid navmesh (MMAP) lifecycle
-//////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief Takes a reference on a grid cell: loads its navmesh tile on the first one,
- *        and pins its terrain tile against the cache sweep for as long as it is held.
- */
-bool FusedTerrain::LoadGrid(int gx, int gy)
+GridMapLiquidStatus TerrainInfo::getLiquidStatus(float x, float y, float z,
+                                                 uint8 ReqLiquidType,
+                                                 GridMapLiquidData* data) const
 {
-    std::lock_guard<std::mutex> lk(m_gridRefMutex);
-    if (m_gridRef[gx][gy]++ == 0)
+    // One sweep answers both halves of this: the liquid surface AND the floor under it,
+    // which the depth and the "is there really water here" test below both need.
+    const world::terrain::Column column =
+        ColumnAt(x, y, z + FLOOR_BURIED_LIFT, z - FLOOR_SEARCH_DOWN);
+
+    const auto liquid = column.HighestLiquid();
+    if (!liquid || !liquid->liquidEntry)
     {
-        MMAP::MMapFactory::createOrGetMMapManager()->loadMap(m_mapId, gx, gy);
+        return LIQUID_MAP_NO_WATER;
+    }
+    const LiquidInfo info = liquid->AsLiquid();
+
+    uint32 entry = info.entry;
+    // Hard-coded in the client: Outland's ocean is its own row.
+    if (m_mapId == OUTLAND_MAP_ID && entry == LIQUID_OCEAN_ROW)
+    {
+        entry = LIQUID_OUTLAND_OCEAN_ROW;
+    }
+
+    uint32 soundBank = 0;
+    uint32 typeFlags = LiquidFlagsOfRow(entry, soundBank);
+
+    // An area may override the liquid row for its own family, which is what gives a
+    // zone's water its aura. Only the canonical rows are overridable.
+    if (entry < LIQUID_FIRST_OVERRIDABLE_ROW)
+    {
+        if (AreaTableEntry const* area =
+                GetAreaEntryByAreaFlagAndMap(GetAreaFlag(x, y, z), m_mapId))
+        {
+            uint32 overrideLiquid = area->LiquidTypeID_0;
+            if (!overrideLiquid && area->ParentAreaID)
+            {
+                if (AreaTableEntry const* parent = GetAreaEntryByAreaID(area->ParentAreaID))
+                {
+                    overrideLiquid = parent->LiquidTypeID_0;
+                }
+            }
+            if (overrideLiquid && sLiquidTypeStore.LookupEntry(overrideLiquid))
+            {
+                entry = overrideLiquid;
+                typeFlags = LiquidFlagsOfRow(entry, soundBank);
+            }
+        }
+    }
+
+    if (info.deep)
+    {
+        typeFlags |= MAP_LIQUID_TYPE_DARK_WATER;
+    }
+
+    if (ReqLiquidType && !(typeFlags & ReqLiquidType))
+    {
+        return LIQUID_MAP_NO_WATER;
+    }
+
+    const auto floor = column.Floor(z, FLOOR_SEARCH_UP);
+    const float groundZ = floor ? *floor : INVALID_HEIGHT;
+    if (info.level <= groundZ || z <= groundZ - 2.0f)
+    {
+        return LIQUID_MAP_NO_WATER;
+    }
+
+    if (data)
+    {
+        data->level = info.level;
+        data->depth_level = groundZ;
+        data->entry = entry;
+        data->type_flags = typeFlags;
+    }
+
+    // Compared as ints for speed, exactly as the original did.
+    const int delta = int((info.level - z) * 10);
+    if (delta > 20)
+    {
+        return LIQUID_MAP_UNDER_WATER;
+    }
+    if (delta > 0)
+    {
+        return LIQUID_MAP_IN_WATER;
+    }
+    if (delta > -1)
+    {
+        return LIQUID_MAP_WATER_WALK;
+    }
+    return LIQUID_MAP_ABOVE_WATER;
+}
+
+bool TerrainInfo::IsInWater(float x, float y, float pZ, GridMapLiquidData* data) const
+{
+    GridMapLiquidData liquidStatus;
+    GridMapLiquidData* out = data ? data : &liquidStatus;
+    return (getLiquidStatus(x, y, pZ, MAP_ALL_LIQUIDS, out) &
+            (LIQUID_MAP_IN_WATER | LIQUID_MAP_UNDER_WATER)) != 0;
+}
+
+bool TerrainInfo::IsAboveWater(float x, float y, float z, float* pWaterZ) const
+{
+    GridMapLiquidData liquidStatus;
+    if (!(getLiquidStatus(x, y, z, MAP_ALL_LIQUIDS, &liquidStatus) &
+          (LIQUID_MAP_ABOVE_WATER | LIQUID_MAP_WATER_WALK)))
+    {
+        return false;
+    }
+    if (pWaterZ)
+    {
+        *pWaterZ = liquidStatus.level;
     }
     return true;
 }
 
-/**
- * @brief Drops a grid cell reference; at the last one unloads the navmesh tile and
- *        unpins the terrain tile, which the sweep may then reclaim once it goes idle.
- */
-void FusedTerrain::UnloadGrid(int gx, int gy)
+bool TerrainInfo::IsUnderWater(float x, float y, float z) const
 {
-    std::lock_guard<std::mutex> lk(m_gridRefMutex);
-    if (m_gridRef[gx][gy] > 0 && --m_gridRef[gx][gy] == 0)
-    {
-        MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId, gx, gy);
-    }
+    return (getLiquidStatus(x, y, z, MAP_LIQUID_TYPE_WATER | MAP_LIQUID_TYPE_OCEAN) &
+            LIQUID_MAP_UNDER_WATER) != 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// TerrainManager -- one shared FusedTerrain per map id
-//////////////////////////////////////////////////////////////////////////
+std::optional<float> TerrainInfo::GetWaterLevel(float x, float y, float z,
+                                                float* pGround) const
+{
+    const auto floor = StaticFloor(x, y, z);
+    const float groundZ = floor ? *floor : INVALID_HEIGHT;
+    if (pGround)
+    {
+        *pGround = groundZ;
+    }
 
+    GridMapLiquidData liquidStatus;
+    if (!(getLiquidStatus(x, y, groundZ, MAP_ALL_LIQUIDS, &liquidStatus) &
+          (LIQUID_MAP_ABOVE_WATER | LIQUID_MAP_IN_WATER | LIQUID_MAP_UNDER_WATER)))
+    {
+        return std::nullopt;
+    }
+    return liquidStatus.level;
+}
+
+float TerrainInfo::GetWaterOrGroundLevel(float x, float y, float z, float* pGround,
+                                         bool swim) const
+{
+    const auto floor = StaticFloor(x, y, z);
+    const float groundZ = floor ? *floor : INVALID_HEIGHT;
+    if (pGround)
+    {
+        *pGround = groundZ;
+    }
+
+    GridMapLiquidData liquid_status;
+    if (!(getLiquidStatus(x, y, groundZ, MAP_ALL_LIQUIDS, &liquid_status) &
+          (LIQUID_MAP_ABOVE_WATER | LIQUID_MAP_IN_WATER | LIQUID_MAP_UNDER_WATER)))
+    {
+        return groundZ;
+    }
+    return swim ? liquid_status.level - 2.0f : liquid_status.level;
+}
+
+bool TerrainInfo::IsInLineOfSight(float x1, float y1, float z1, float x2, float y2,
+                                  float z2) const
+{
+    return m_terrain.IsInLineOfSight(x1, y1, z1, x2, y2, z2);
+}
+
+float TerrainInfo::NearestHitFraction(float x1, float y1, float z1, float x2, float y2,
+                                      float z2) const
+{
+    return m_terrain.NearestHitFraction(x1, y1, z1, x2, y2, z2);
+}
 
 TerrainManager::TerrainManager() : m_mutex()
 {
@@ -363,16 +525,19 @@ TerrainManager::~TerrainManager()
 }
 
 /**
- * @brief Loads or returns the shared terrain for a map.
+ * @brief Loads or creates terrain information for a map.
+ *
+ * @param mapId The map id.
+ * @return The terrain info instance.
  */
-FusedTerrain* TerrainManager::LoadTerrain(const uint32 mapId)
+TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
 {
     std::lock_guard<LOCK_TYPE> _guard(m_mutex);
 
     TerrainDataMap::const_iterator iter = i_TerrainMap.find(mapId);
     if (iter == i_TerrainMap.end())
     {
-        FusedTerrain* ti = new FusedTerrain(mapId);
+        TerrainInfo* ti = new TerrainInfo(mapId);
         i_TerrainMap[mapId] = ti;
         return ti;
     }
@@ -381,7 +546,9 @@ FusedTerrain* TerrainManager::LoadTerrain(const uint32 mapId)
 }
 
 /**
- * @brief Frees a map's terrain (and its navmesh) once no Map references it.
+ * @brief Unloads terrain information for a map when no longer referenced.
+ *
+ * @param mapId The map id.
  */
 void TerrainManager::UnloadTerrain(const uint32 mapId)
 {
@@ -395,41 +562,37 @@ void TerrainManager::UnloadTerrain(const uint32 mapId)
     TerrainDataMap::iterator iter = i_TerrainMap.find(mapId);
     if (iter != i_TerrainMap.end())
     {
-        FusedTerrain* ptr = (*iter).second;
+        TerrainInfo* ptr = (*iter).second;
+        // lets check if this object can be actually freed
         if (ptr->IsReferenced() == false)
         {
             i_TerrainMap.erase(iter);
-            MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(mapId);
             delete ptr;
         }
     }
 }
 
 /**
- * @brief Periodic tick: ages each map's tile cache and lets it reclaim what it can.
+ * @brief Updates terrain cleanup timers for all loaded maps.
  *
- * A FusedTerrain caches .tile data lazily and, until now, forever -- grid unload only
- * released the navmesh. Ticking it lets the sweep drop tiles no active grid pins and
- * nothing has queried lately (see FusedTerrain::Update).
+ * @param diff Elapsed update time in milliseconds.
  */
 void TerrainManager::Update(const uint32 diff)
 {
-    std::lock_guard<LOCK_TYPE> _guard(m_mutex);
-
-    for (TerrainDataMap::iterator it = i_TerrainMap.begin(); it != i_TerrainMap.end(); ++it)
+    // global garbage collection for GridMap objects and VMaps
+    for (TerrainDataMap::iterator iter = i_TerrainMap.begin(); iter != i_TerrainMap.end(); ++iter)
     {
-        it->second->Update(diff);
+        iter->second->CleanUpGrids(diff);
     }
 }
 
 /**
- * @brief Unloads all cached terrain and navmeshes.
+ * @brief Unloads all cached terrain information.
  */
 void TerrainManager::UnloadAll()
 {
     for (TerrainDataMap::iterator it = i_TerrainMap.begin(); it != i_TerrainMap.end(); ++it)
     {
-        MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(it->first);
         delete it->second;
     }
 
@@ -438,6 +601,10 @@ void TerrainManager::UnloadAll()
 
 /**
  * @brief Resolves an area id from an explore flag and map id.
+ *
+ * @param areaflag The area explore flag.
+ * @param map_id The map id.
+ * @return The resolved area id.
  */
 uint32 TerrainManager::GetAreaIdByAreaFlag(uint16 areaflag, uint32 map_id)
 {
@@ -447,11 +614,18 @@ uint32 TerrainManager::GetAreaIdByAreaFlag(uint16 areaflag, uint32 map_id)
     {
         return entry->ID;
     }
-    return 0;
+    else
+    {
+        return 0;
+    }
 }
 
 /**
  * @brief Resolves a zone id from an explore flag and map id.
+ *
+ * @param areaflag The area explore flag.
+ * @param map_id The map id.
+ * @return The resolved zone id.
  */
 uint32 TerrainManager::GetZoneIdByAreaFlag(uint16 areaflag, uint32 map_id)
 {
@@ -461,11 +635,19 @@ uint32 TerrainManager::GetZoneIdByAreaFlag(uint16 areaflag, uint32 map_id)
     {
         return (entry->ParentAreaID != 0) ? entry->ParentAreaID : entry->ID;
     }
-    return 0;
+    else
+    {
+        return 0;
+    }
 }
 
 /**
  * @brief Resolves both zone id and area id from an explore flag and map id.
+ *
+ * @param zoneid Receives the zone id.
+ * @param areaid Receives the area id.
+ * @param areaflag The area explore flag.
+ * @param map_id The map id.
  */
 void TerrainManager::GetZoneAndAreaIdByAreaFlag(uint32& zoneid, uint32& areaid, uint16 areaflag, uint32 map_id)
 {

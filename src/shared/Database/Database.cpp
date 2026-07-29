@@ -22,6 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <functional>
+#include <mutex>
+#include <cassert>
+#include <string>
+#include "Common/TimeConstants.h"
+#include <algorithm>
+#include "Threading/Threading.h"
+#include "Utilities/Errors.h"
 #include "DatabaseEnv.h"
 #include "Config/Config.h"
 #include "Database/SqlOperations.h"
@@ -31,13 +39,6 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
-#include <algorithm>
-#include <cassert>
-#include <cstdarg>
-#include <cstdio>
-#include <functional>
-#include <string>
-#include <utility>
 
 #define MIN_CONNECTION_POOL_SIZE 1
 #define MAX_CONNECTION_POOL_SIZE 16
@@ -221,7 +222,7 @@ void Database::InitDelayThread()
 
     // New delay thread for delay execute
     m_threadBody = CreateDelayThread();              // will deleted at m_delayThread delete
-    m_TransStorage = new MaNGOS::ThreadLocalStore<Database::TransHelper>();
+    m_TransStorage = new DBTransHelperTSS();
     m_delayThread = new MaNGOS::Thread(m_threadBody);
 }
 
@@ -264,12 +265,14 @@ void Database::escape_string(std::string& str)
         return;
     }
 
-    char* buf = new char[str.size() * 2 + 1];
-    // we don't care what connection to use - escape string will be the same
+    // It DOES matter which connection, and it matters that the lock is held:
+    // mysql_real_escape_string reads the connection's character set, and connection
+    // zero may be running a query on another thread at the same moment. The old
+    // comment said the choice was free -- the sharing was the problem, not the choice.
+    std::unique_ptr<char[]> buf(new char[str.size() * 2 + 1]);
     SqlConnection::Lock guard(m_pQueryConnections[0]);
-    guard->escape_string(buf, str.c_str(), str.size());
-    str = buf;
-    delete[] buf;
+    guard->escape_string(buf.get(), str.c_str(), str.size());
+    str = buf.get();
 }
 
 SqlConnection* Database::getQueryConnection()
@@ -327,9 +330,10 @@ bool Database::PExecuteLog(const char* format, ...)
     {
         time_t curr;
         time(&curr);                                        // get current time_t value
-        std::tm local = safe_localtime(curr);                        // dereference and assign
+        const std::tm local = safe_localtime(curr);
         char fName[128];
-        sprintf(fName, "%04d-%02d-%02d_logSQL.sql", local.tm_year + 1900, local.tm_mon + 1, local.tm_mday);
+        snprintf(fName, sizeof(fName), "%04d-%02d-%02d_logSQL.sql",
+                 local.tm_year + 1900, local.tm_mon + 1, local.tm_mday);
 
         FILE* log_file;
         std::string logsDir_fname = m_logsDir + fName;
@@ -565,6 +569,52 @@ bool Database::CommitTransactionDirect()
     return true;
 }
 
+bool Database::CommitTransactionChecked()
+{
+    if (!m_pAsyncConn)
+    {
+        return false;
+    }
+
+    if (!(*m_TransStorage)->get())
+    {
+        return false;
+    }
+
+    // Async not available (startup, or -t): run it here and return the REAL result.
+    // Not CommitTransactionDirect(), which discards that bool. detach() clears the TSS
+    // slot so the next BeginTransaction() does not trip the assert in TransHelper::init().
+    if (!m_bAllowAsyncTransactions)
+    {
+        SqlTransaction* pTrans = (*m_TransStorage)->detach();
+        bool res = pTrans->Execute(m_pAsyncConn);
+        delete pTrans;
+        return res;
+    }
+
+    // If the delay thread has stopped, enqueuing a blocking transaction onto it would
+    // block this caller forever: nothing will drain the queue or fulfil the promise.
+    // Checked BEFORE the promise is built -- abandoning a stack-frame promise while a
+    // queued op still holds its address is a use-after-free, so a timeout is not an
+    // option. The residual race is closed by shutdown ordering: the world thread is torn
+    // down before the delay thread, so no world caller is here while it stops.
+    if (!m_threadBody->IsRunning())
+    {
+        SqlTransaction* t = (*m_TransStorage)->detach();
+        bool r = t->Execute(m_pAsyncConn);
+        delete t;
+        return r;
+    }
+
+    // Queued like every other write, so ordering holds, then blocked on the result. The
+    // promise and future live on THIS parked frame, which is why they outlive the op.
+    std::promise<bool> prom;
+    std::future<bool> fut = prom.get_future();
+    SqlTransaction* pTrans = (*m_TransStorage)->detach();
+    m_threadBody->Delay(new SqlTransactionResultSignal(pTrans, &prom));
+    return fut.get();
+}
+
 bool Database::RollbackTransaction()
 {
     if (!m_pAsyncConn)
@@ -763,8 +813,8 @@ SqlStatement Database::CreateStatement(SqlStatementID& index, const char* fmt)
         // count input parameters
         int nParams = std::count(szFmt.begin(), szFmt.end(), '?');
         // find existing or add a new record in registry
-        // std::lock_guard blocks until it holds the lock, so there is nothing to assert:
-        // the ACE guard this replaces could fail to acquire and had to be checked.
+        // std::lock_guard is unconditionally holding the mutex once constructed,
+        // so the old ACE_Guard::locked() assertion has nothing left to check.
         LOCK_GUARD _guard(m_stmtGuard);
         PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.find(szFmt);
         if (iter == m_stmtRegistry.end())
@@ -792,16 +842,16 @@ std::string Database::GetStmtString(const int stmtId) const
     }
 
     LOCK_GUARD _guard(m_stmtGuard);
-
-    PreparedStmtRegistry::const_iterator iter_last = m_stmtRegistry.end();
-    for (PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.begin(); iter != iter_last; ++iter)
     {
-        if (iter->second == stmtId)
+        PreparedStmtRegistry::const_iterator iter_last = m_stmtRegistry.end();
+        for (PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.begin(); iter != iter_last; ++iter)
         {
-            return iter->first;
+            if (iter->second == stmtId)
+            {
+                return iter->first;
+            }
         }
     }
-
     return std::string();
 }
 

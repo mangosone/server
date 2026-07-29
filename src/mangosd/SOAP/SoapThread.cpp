@@ -22,20 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <string>
+#include "Common/ServerDefines.h"
 #include "SoapThread.h"
 
 #include "AccountMgr.h"
+#include "DatabaseEnv.h"
 #include "Log.h"
 #include "World.h"
 
 #include "soapStub.h"
-#include <string>
 
 /**
  * Runs the SOAP listener loop on the configured host and port.
  */
 void SoapThread(const std::string& host, uint16 port)
 {
+    // Commands are forwarded to the world thread, but the per-request auth
+    // checks (GetId/CheckPassword/GetSecurity) query LoginDatabase right here,
+    // on this thread.
+    DbThreadGuard dbThread(&LoginDatabase);
+
     struct soap soap;
     soap_init(&soap);
     soap_set_imode(&soap, SOAP_C_UTFSTRING);
@@ -108,8 +115,7 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
 
     if (!sAccountMgr.CheckPassword(accountId, soap->passwd))
     {
-        // Log the account, never the secret: this line lands in a file that gets shared.
-        sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->userid);
+        sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->passwd);
         return 401;
     }
 

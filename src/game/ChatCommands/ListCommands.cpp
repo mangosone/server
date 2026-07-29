@@ -38,6 +38,7 @@
 #include "SpellAuras.h"
 #include <sstream>
 #include <string>
+#include "PlayerRegistry.h"
 
 /**
  * @brief Handler for HandleListAurasCommand command.
@@ -454,7 +455,7 @@ bool ChatHandler::HandleListPlayersCommand(char* args)
     PSendSysMessage("Online Players (Limit %u):", limit);
     PSendSysMessage("===========================================");
 
-    sObjectAccessor.DoForAllPlayers([&](Player* player)
+    sPlayerRegistry.ForEach([&](Player* player)
     {
         if (count >= limit)
         {
@@ -462,7 +463,7 @@ bool ChatHandler::HandleListPlayersCommand(char* args)
         }
 
         uint32 mapId = player->GetMapId();
-        uint32 zoneId = player->GetZoneId();
+        uint32 zoneId = player->GetTerrain()->GetZoneId(player->Where().X(), player->Where().Y(), player->Where().Z());
 
         AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zoneId);
 
@@ -529,7 +530,7 @@ bool ChatHandler::HandleListObjectCommand(char* args)
     {
         Player* pl = m_session->GetPlayer();
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map`, (POW(`position_x` - '%f', 2) + POW(`position_y` - '%f', 2) + POW(`position_z` - '%f', 2)) AS order_ FROM `gameobject` WHERE `id` = '%u' ORDER BY `order_` ASC LIMIT %u",
-                                      pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), go_id, uint32(count));
+                                      pl->Where().X(), pl->Where().Y(), pl->Where().Z(), go_id, uint32(count));
     }
     else
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map` FROM `gameobject` WHERE `id` = '%u' LIMIT %u",
@@ -614,7 +615,7 @@ bool ChatHandler::HandleListCreatureCommand(char* args)
     {
         Player* pl = m_session->GetPlayer();
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map`, (POW(`position_x` - '%f', 2) + POW(`position_y` - '%f', 2) + POW(`position_z` - '%f', 2)) AS order_ FROM `creature` WHERE `id` = '%u' ORDER BY `order_` ASC LIMIT %u",
-                                      pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), cr_id, uint32(count));
+                                      pl->Where().X(), pl->Where().Y(), pl->Where().Z(), cr_id, uint32(count));
     }
     else
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map` FROM `creature` WHERE `id` = '%u' LIMIT %u",

@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <algorithm>
 #include "RandomMovementGenerator.h"
 #include "Creature.h"
 #include "MotionFrame.h"
@@ -57,7 +58,11 @@ RandomMovementGenerator::RandomMovementGenerator(float x, float y, float z, floa
 RandomMovementGenerator::RandomMovementGenerator(Creature const& creature)
 {
     float x, y, z, o, wanderDistance;
-    creature.GetRespawnCoord(x, y, z, &o, &wanderDistance);
+    x = creature.Spawn().X();
+    y = creature.Spawn().Y();
+    z = creature.Spawn().Z();
+    o = creature.Spawn().Facing();
+    wanderDistance = creature.GetRespawnRadius();
 
     m_centre = Motion::Vector3(x, y, z);
     m_radius = std::max(wanderDistance, MIN_WANDER_RADIUS);

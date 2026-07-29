@@ -36,7 +36,9 @@
  * - Premade group matching
  */
 
-#include "Common.h"
+#include "Utilities/Util.h"
+#include "Platform/Define.h"
+#include <mutex>
 #include "SharedDefines.h"
 #include "Player.h"
 #include "BattleGroundMgr.h"

@@ -53,7 +53,7 @@
 #ifndef MANGOSSERVER_ITEM_H
 #define MANGOSSERVER_ITEM_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "Object.h"
 #include "LootMgr.h"
 #include "ItemPrototype.h"

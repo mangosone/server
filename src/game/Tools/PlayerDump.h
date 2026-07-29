@@ -25,7 +25,8 @@
 #ifndef MANGOS_H_PLAYER_DUMP
 #define MANGOS_H_PLAYER_DUMP
 
-#include "Common.h"     // uint32, used throughout the declarations below
+#include <map>
+#include "Platform/Define.h"
 
 #include <set>
 #include <string>

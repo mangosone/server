@@ -35,6 +35,7 @@
 #include "ItemEnchantmentMgr.h"
 #include <limits>
 #include <utility>
+#include "PlayerRegistry.h"
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
 {
@@ -823,7 +824,7 @@ void Loot::NotifyItemRemoved(uint8 lootIndex)
     {
         i_next = i;
         ++i_next;
-        if (Player* pl = sObjectAccessor.FindPlayer(*i))
+        if (Player* pl = sPlayerRegistry.Find(*i))
         {
             pl->SendNotifyLootItemRemoved(lootIndex);
         }
@@ -845,7 +846,7 @@ void Loot::NotifyMoneyRemoved()
     {
         i_next = i;
         ++i_next;
-        if (Player* pl = sObjectAccessor.FindPlayer(*i))
+        if (Player* pl = sPlayerRegistry.Find(*i))
         {
             pl->SendNotifyLootMoneyRemoved();
         }
@@ -873,7 +874,7 @@ void Loot::NotifyQuestItemRemoved(uint8 questIndex)
     {
         i_next = i;
         ++i_next;
-        if (Player* pl = sObjectAccessor.FindPlayer(*i))
+        if (Player* pl = sPlayerRegistry.Find(*i))
         {
             QuestItemMap::const_iterator pq = m_playerQuestItems.find(pl->GetGUIDLow());
             if (pq != m_playerQuestItems.end() && pq->second)

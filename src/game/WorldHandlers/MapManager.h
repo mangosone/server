@@ -25,7 +25,7 @@
 #ifndef MANGOS_MAPMANAGER_H
 #define MANGOS_MAPMANAGER_H
 
-#include "Common.h"
+#include "Utilities/MathDefines.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
 #include "Map.h"
@@ -128,28 +128,12 @@ class MapManager : public MaNGOS::Singleton<MapManager>
             return IsValidMapCoord(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
         }
 
-        // modulos a radian orientation to the range of 0..2PI
-        static float NormalizeOrientation(float o)
-        {
-            // fmod only supports positive numbers. Thus we have
-            // to emulate negative numbers
-            if (o < 0)
-            {
-                float mod = o * -1;
-                mod = fmod(mod, 2.0f * M_PI_F);
-                mod = -mod + 2.0f * M_PI_F;
-                return mod;
-            }
-            return fmod(o, 2.0f * M_PI_F);
-        }
-
         void RemoveAllObjectsInRemoveList();
 
         void LoadTransports();
 
         /// Crew rosters from `creature_transport`, in deck-local coordinates. Must run
         /// BEFORE LoadTransports, which spawns each vessel's crew as it creates it.
-        void LoadTransportCrew();
 
         /// Destroy every vessel and its crew. Must run while the maps are still alive.
         void DestroyTransports();
@@ -157,8 +141,8 @@ class MapManager : public MaNGOS::Singleton<MapManager>
         typedef std::set<Transport*> TransportSet;
         TransportSet m_Transports;
 
-        typedef std::map<uint32, TransportSet> TransportMap;
-        TransportMap m_TransportsByMap;
+        typedef std::map<uint32, TransportSet> TransportsByMapType;
+        TransportsByMapType m_TransportsByMap;
 
         uint32 GenerateInstanceId() { return ++i_MaxInstanceId; }
         void InitMaxInstanceId();

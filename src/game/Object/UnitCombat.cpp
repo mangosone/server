@@ -24,6 +24,7 @@
 
 
 
+#include "Utilities/MathDefines.h"
 #include "Unit.h"
 #include "Log.h"
 #include "Opcodes.h"
@@ -40,7 +41,6 @@
 #include "Group.h"
 #include "SpellAuras.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "CreatureAI.h"
 #include "TemporarySummon.h"
 #include "Formulas.h"
@@ -237,7 +237,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(const Unit* pVictim, WeaponAttackT
         return MELEE_HIT_CRIT;
     }
 
-    bool from_behind = !pVictim->HasInArc(M_PI_F, this);
+    bool from_behind = !pVictim->Where().HasInArc(this->Where(), M_PI_F);
 
     if (from_behind)
     {
@@ -504,7 +504,7 @@ void Unit::SendMeleeAttackStop(Unit* victim)
  */
 bool Unit::IsSpellBlocked(Unit* pCaster, SpellEntry const* spellEntry, WeaponAttackType attackType)
 {
-    if (!HasInArc(M_PI_F, pCaster))
+    if (!Where().HasInArc(pCaster->Where(), M_PI_F))
     {
         return false;
     }
@@ -658,7 +658,7 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit* pVictim, SpellEntry const* spell)
         return SPELL_MISS_NONE;
     }
 
-    bool from_behind = !pVictim->HasInArc(M_PI_F, this);
+    bool from_behind = !pVictim->Where().HasInArc(this->Where(), M_PI_F);
 
     // Check for attack from behind
     if (from_behind)

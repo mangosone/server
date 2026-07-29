@@ -24,20 +24,15 @@
 
 #pragma once
 
-// Reusable backpressure gate owned by each connection's net::SendQueue, so the
-// three transports (IOCP / reactor / io_uring) share one correct implementation of
-// the FlowControl contract. The SendQueue calls onQueued()/onSent() as bytes enter
-// and leave the outbound buffer, and onClosed() once at teardown; a bulk producer
-// thread parks in awaitWritable().
+// Byte-counted backpressure gate owned by each connection's net::SendQueue, so all three
+// transports share one implementation of the contract. The queue calls onQueued()/onSent()
+// as bytes enter and leave the outbound buffer and onClosed() once at teardown; a bulk
+// producer parks in awaitWritable().
 //
-// The ceiling is measured in BYTES. The SendQueue coalesces queued packets into one
-// contiguous stream, so "number of outstanding buffers" is not a meaningful quantity
-// — and a memory ceiling is what a producer actually wants to bound anyway.
-//
-// The transport hot path is lock-free unless a producer is actually parked: the
-// common case (world clients, request/response auth) never waits, so onSent() is
-// an atomic subtract plus one flag check. Only a bulk producer that is currently
-// blocked makes onSent() take the lock to signal it.
+// The ceiling is BYTES, not buffers: the queue coalesces packets into one contiguous
+// stream, so a buffer count would measure nothing, and memory is what a producer wants
+// bounded. The hot path is lock-free unless a producer is actually parked -- only a
+// blocked one makes onSent() take the lock to signal it.
 
 #include "net/ISession.hpp"
 

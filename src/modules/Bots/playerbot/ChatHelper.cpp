@@ -1,3 +1,6 @@
+#include "Common/Locales.h"
+#include <string>
+#include <cstdlib>
 #include "../botpch.h"
 #include "playerbot.h"
 #include "ChatHelper.h"
@@ -217,17 +220,17 @@ uint32 ChatHelper::parseMoney(string& text)
     {
         if (text[i] == 'g')
         {
-            copper += (atol(acum.c_str()) * 100 * 100);
+            copper += (std::strtoul(acum.c_str(), NULL, 10) * 100 * 100);
             acum = "";
         }
         else if (text[i] == 'c')
         {
-            copper += atol(acum.c_str());
+            copper += std::strtoul(acum.c_str(), NULL, 10);
             acum = "";
         }
         else if (text[i] == 's')
         {
-            copper += (atol(acum.c_str()) * 100);
+            copper += (std::strtoul(acum.c_str(), NULL, 10) * 100);
             acum = "";
         }
         else if (text[i] == ' ')
@@ -266,7 +269,7 @@ ItemIds ChatHelper::parseItems(string& text)
             break;
         }
         string idC = text.substr(pos, endPos - pos);
-        uint32 id = atol(idC.c_str());
+        uint32 id = std::strtoul(idC.c_str(), NULL, 10);
         pos = endPos;
         if (id)
         {
@@ -390,7 +393,7 @@ list<ObjectGuid> ChatHelper::parseGameobjects(string& text)
         }
 
         std::string entryC = text.substr(pos, endPos - pos);     // get string within window i.e entry
-        uint32 entry = atol(entryC.c_str());     // convert ascii to float
+        uint32 entry = std::strtoul(entryC.c_str(), NULL, 10);     // convert ascii to float
 
         ObjectGuid lootCurrent = ObjectGuid(guid);
 

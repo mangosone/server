@@ -24,6 +24,7 @@
 
 
 
+#include "Utilities/Errors.h"
 #include "Player.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
@@ -47,7 +48,6 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
 #include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
@@ -222,7 +222,7 @@ Player* Player::GetNextRandomRaidMember(float radius)
         Player* Target = itr->getSource();
 
         // IsHostileTo check duel and controlled by enemy
-        if (Target && Target != this && IsWithinDistInMap(Target, radius) &&
+        if (Target && Target != this && InReach(*this, *Target, radius) &&
             !Target->HasInvisibilityAura() && !IsHostileTo(Target))
             {
                 nearMembers.push_back(Target);

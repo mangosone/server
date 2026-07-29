@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_ARENATEAM
 #define MANGOS_H_ARENATEAM
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include <list>

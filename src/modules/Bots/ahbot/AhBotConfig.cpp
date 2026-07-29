@@ -1,3 +1,5 @@
+#include <string>
+#include <vector>
 #include "../botpch.h"
 #include "AhBotConfig.h"
 #include "SystemConfig.h"

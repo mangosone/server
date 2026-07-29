@@ -25,7 +25,10 @@
 #ifndef MANGOSSERVER_CHAT_H
 #define MANGOSSERVER_CHAT_H
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
+#include <cstring>
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
 #include "Language.h"
@@ -391,7 +394,6 @@ class ChatHandler
         bool HandleNpcAddCommand(char* args);
 
         // .trans npc add — author a crew member on the vessel the GM is standing on.
-        bool HandleTransNpcAddCommand(char* args);
 
         // The transport half of .gps: deck offsets and what the baked mesh says is under
         // them. No-op when the object is not aboard anything.

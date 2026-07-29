@@ -60,7 +60,7 @@ Motion::Vector3 TargetedMovementGenerator::ComputeDestination(Unit& owner) const
     // Chase with no angle: close on the bearing we are already approaching from, so a
     // pursuer runs straight at its victim instead of arcing around to one side of it.
     //
-    // The bearing is taken between FRAME positions, not with target.GetAngle(&owner). On a
+    // The bearing is taken between FRAME positions, not with target.Where().BearingTo(owner.Where()). On a
     // deck the latter would read two world positions that are only caches of an estimated
     // vessel pose, and hand back a bearing rotated by the ship's yaw — aiming the chase at
     // open water.
@@ -71,7 +71,7 @@ Motion::Vector3 TargetedMovementGenerator::ComputeDestination(Unit& owner) const
         ? Motion::AngleBetween(frame.ObjectPosition(owner, target), frame.MoverPosition(owner))
         : frame.ObjectOrientation(owner, target) + m_angle;
 
-    return frame.NearPoint(owner, target, owner.GetObjectBoundingRadius(),
+    return frame.NearPoint(owner, target, owner.Where().Extent(),
                            TargetDistance(owner, false), absAngle);
 }
 
@@ -101,7 +101,7 @@ bool TargetedMovementGenerator::RequiresNewPosition(Unit& owner,
     // The bounding radius is folded into the tolerance exactly as WorldObject's own
     // IsWithinDist2d/3d fold it in, so this stays the same test it always was for the
     // (overwhelmingly common) world-frame case.
-    const float maxdist = allowed + i_target->GetObjectBoundingRadius();
+    const float maxdist = allowed + i_target->Where().Extent();
     return !(distSq < maxdist * maxdist);
 }
 
@@ -240,7 +240,7 @@ bool ChaseMovementGenerator::LostTarget(Unit& owner) const
 
 void ChaseMovementGenerator::ReachTarget(Unit& owner)
 {
-    if (owner.CanReachWithMeleeAttack(GetTarget()))
+    if (InMeleeReach(owner, *(GetTarget())))
     {
         owner.Attack(GetTarget(), true);
     }
@@ -250,11 +250,11 @@ float ChaseMovementGenerator::TargetDistance(Unit& owner, bool forRangeCheck) co
 {
     if (!forRangeCheck)
     {
-        return m_offset + CHASE_RANGE * i_target->GetCombatReach(&owner);
+        return m_offset + CHASE_RANGE * CombatReachBetween(*i_target.getTarget(), owner);
     }
 
-    return CHASE_RECHASE_RANGE * i_target->GetCombatReach(&owner) -
-           i_target->GetObjectBoundingRadius();
+    return CHASE_RECHASE_RANGE * CombatReachBetween(*i_target.getTarget(), owner) -
+           i_target->Where().Extent();
 }
 
 //----- Follow
@@ -316,15 +316,15 @@ float FollowMovementGenerator::TargetDistance(Unit& owner, bool forRangeCheck) c
 {
     if (!forRangeCheck)
     {
-        return m_offset + owner.GetObjectBoundingRadius() +
-               i_target->GetObjectBoundingRadius();
+        return m_offset + owner.Where().Extent() +
+               i_target->Where().Extent();
     }
 
     float allowed = sWorld.getConfig(CONFIG_FLOAT_RATE_TARGET_POS_RECALCULATION_RANGE) -
-                    i_target->GetObjectBoundingRadius();
+                    i_target->Where().Extent();
 
     allowed += FOLLOW_RECALCULATE_FACTOR *
-               (owner.GetObjectBoundingRadius() + i_target->GetObjectBoundingRadius());
+               (owner.Where().Extent() + i_target->Where().Extent());
 
     if (m_offset > FOLLOW_DIST_GAP_FOR_DIST_FACTOR)
     {

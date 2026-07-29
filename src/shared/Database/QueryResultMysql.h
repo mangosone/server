@@ -27,8 +27,8 @@
 #if !defined(QUERYRESULTMYSQL_H)
 #define QUERYRESULTMYSQL_H
 
-#include "Common/Common.h"
-#include "QueryResult.h"    // the base class: derived from, so it must be complete
+#include "QueryResult.h"
+#include "Platform/Define.h"
 
 #ifdef WIN32
 #include <winsock2.h>

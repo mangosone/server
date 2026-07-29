@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,18 +29,17 @@
 #include "RASession.h"
 
 #include "AccountMgr.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "Language.h"
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "World.h"
 
 #include <cstring>
-#include <utility>
-#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 RASession::RASession()
@@ -88,7 +87,6 @@ void RASession::onClose()
     m_closed.store(true);
 }
 
-/// Greet the peer with the MOTD and the username prompt.
 std::vector<uint8_t> RASession::onConnect()
 {
     sLog.outRALog("Incoming connection from %s.", m_address.c_str());
@@ -100,12 +98,6 @@ std::vector<uint8_t> RASession::onConnect()
     return {};
 }
 
-/**
- * @brief Split the incoming byte stream into lines (network thread).
- *
- * Telnet is a stream like any other, so a read may carry a partial line, several lines,
- * or both; whatever is left over stays in m_input for the next read.
- */
 std::vector<uint8_t> RASession::onData(const uint8_t* data, size_t len)
 {
     if (m_closed.load())
@@ -125,7 +117,7 @@ std::vector<uint8_t> RASession::onData(const uint8_t* data, size_t len)
 
         const std::string line = m_input.substr(0, eol);
 
-        // Swallow the whole line terminator, however the client spells it (\r, \n, \r\n).
+        // Swallow the whole line terminator, however the client spells it.
         std::string::size_type next = m_input.find_first_not_of("\r\n", eol);
         m_input.erase(0, next == std::string::npos ? m_input.size() : next);
 
@@ -243,9 +235,8 @@ void RASession::HandleCommand(const std::string& line)
     }
 
     {
-        // The command runs later, on the world thread, and is handed a bare pointer back
-        // to us. Keep ourselves alive until it reports finished, so a peer that
-        // disconnects mid-command cannot pull the session out from under the callback.
+        // The command runs later, on the world thread, and is handed a bare pointer
+        // back to us. Keep ourselves alive until it reports finished.
         std::lock_guard<std::mutex> guard(m_commandLock);
 
         if (m_commandsPending++ == 0)
@@ -261,8 +252,7 @@ void RASession::HandleCommand(const std::string& line)
 
 void RASession::ReleaseCommand()
 {
-    // Drop the self-reference outside the lock: it may be the last one, and destroying
-    // the session while holding its own mutex would be a fine way to crash.
+    // Drop the self-reference outside the lock: it may be the last one.
     std::shared_ptr<RASession> expiring;
 
     {
@@ -330,3 +320,4 @@ void RaServer::Stop()
     m_server.stop();
     m_started = false;
 }
+/// @}

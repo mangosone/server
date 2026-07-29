@@ -25,7 +25,6 @@
 #ifndef MANGOS_OBJECTGRIDLOADER_H
 #define MANGOS_OBJECTGRIDLOADER_H
 
-#include "Common.h"
 #include "Platform/Define.h"
 #include "GridDefines.h"
 #include "Cell.h"

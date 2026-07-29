@@ -25,8 +25,9 @@
 #ifndef MANGOSSERVER_SPLINE_H
 #define MANGOSSERVER_SPLINE_H
 
+#include "Utilities/Errors.h"
 #include "typedefs.h"
-#include "terrain/Geometry/Vector3.h"
+#include "Geometry/Vector3.h"
 #include <limits>
 #include <vector>
 

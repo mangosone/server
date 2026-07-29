@@ -46,7 +46,9 @@
 #ifndef MANGOS_H_BATTLEGROUND
 #define MANGOS_H_BATTLEGROUND
 
-#include "Common.h"
+#include <queue>
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
 #include "SharedDefines.h"
 #include "Map.h"
 #include "ByteBuffer.h"

@@ -37,23 +37,12 @@
  * through the delay thread system for improved server performance.
  */
 
+#include <vector>
+#include "Utilities/Util.h"
 #include "SqlOperations.h"
 #include "SqlDelayThread.h"
 #include "DatabaseEnv.h"
-#include <cstdarg>
-#include <cstdio>
-#include <vector>
 
-/// ---- BASE ----
-
-/**
- * @brief Run an operation, holding the connection's lock for its duration.
- *
- * The one place a connection lock is taken for an operation. Everything below
- * implements ExecuteLocked() and assumes the lock is already held, which is what
- * lets SqlTransaction hold it once across all of its statements instead of each
- * statement re-locking the same connection.
- */
 bool SqlOperation::Execute(SqlConnection* conn)
 {
     SqlConnection::Lock guard(conn);
@@ -114,8 +103,10 @@ bool SqlTransaction::ExecuteLocked(SqlConnection* conn)
         return true;
     }
 
-
-    conn->BeginTransaction();
+    if (!conn->BeginTransaction())
+    {
+        return false;
+    }
 
     const int nItems = m_queue.size();
     for (int i = 0; i < nItems; ++i)
@@ -124,7 +115,10 @@ bool SqlTransaction::ExecuteLocked(SqlConnection* conn)
 
         if (!pStmt->ExecuteLocked(conn))
         {
-            conn->RollbackTransaction();
+            if (!conn->RollbackTransaction())
+            {
+                sLog.outError("SqlTransaction: rollback failed");
+            }
             return false;
         }
     }
@@ -265,7 +259,7 @@ bool SqlQueryHolder::SetQuery(size_t index, const char* sql)
     if (m_queries[index].first != NULL)
     {
         sLog.outError("Attempt assign query to holder index (%zu) where other query stored (Old: [%s] New: [%s])",
-            index, m_queries[index].first, sql);
+                      index, m_queries[index].first, sql);
         return false;
     }
 
@@ -432,4 +426,34 @@ bool SqlQueryHolderEx::ExecuteLocked(SqlConnection* conn)
     m_queue->add(m_callback);
 
     return true;
+}
+
+bool SqlTransactionResultSignal::ExecuteLocked(SqlConnection* conn)
+{
+    // The promise must be fulfilled on EVERY path -- a missed set_value() hangs the
+    // blocked caller forever -- and the wrapped transaction must always be freed. So an
+    // exception from Execute() is reported and swallowed rather than rethrown: the delay
+    // thread has to survive it, and an unset promise would deadlock the caller anyway.
+    bool ok = false;
+    try
+    {
+        ok = m_trans->ExecuteLocked(conn);
+    }
+    catch (std::exception& e)
+    {
+        sLog.outError("CommitTransactionChecked: exception during transaction execute: %s", e.what());
+        ok = false;
+    }
+    catch (...)
+    {
+        sLog.outError("CommitTransactionChecked: unknown exception during transaction execute");
+        ok = false;
+    }
+
+    delete m_trans;
+    m_trans = NULL;
+    // Set BEFORE the worker deletes this op: the caller's promise lives on its still
+    // blocked stack frame, which is what makes the hand-off race-free.
+    m_result->set_value(ok);
+    return ok;
 }

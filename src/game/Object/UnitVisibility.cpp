@@ -24,6 +24,7 @@
 
 
 
+#include "Utilities/MathDefines.h"
 #include "Unit.h"
 #include "Log.h"
 #include "Opcodes.h"
@@ -40,7 +41,6 @@
 #include "Group.h"
 #include "SpellAuras.h"
 #include "MapManager.h"
-#include "ObjectAccessor.h"
 #include "CreatureAI.h"
 #include "TemporarySummon.h"
 #include "Formulas.h"
@@ -58,7 +58,6 @@
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
 #include "GameTime.h"
-#include "TransportSystem.h"
 #include "Transports.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -69,33 +68,6 @@
 #ifdef ENABLE_ELUNA
 #include "ElunaEventMgr.h"
 #endif /* ENABLE_ELUNA */
-
-namespace
-{
-    /// The vessel an object is standing on, whichever of the two ways it is aboard.
-    ///
-    /// A crew member or a boarded pet is a TransportBase passenger and carries a
-    /// TransportInfo. A PLAYER is not one: it rides Player::m_transport, because its own
-    /// client is authoritative for where it stands and tells us so in every packet.
-    Transport const* BoardedVessel(WorldObject const* obj)
-    {
-        if (TransportInfo const* info = obj->GetTransportInfo())
-        {
-            WorldObject const* vessel = info->GetTransport();
-
-            return vessel->GetTypeId() == TYPEID_GAMEOBJECT
-                       ? static_cast<Transport const*>(vessel)
-                       : NULL;
-        }
-
-        if (obj->GetTypeId() == TYPEID_PLAYER)
-        {
-            return static_cast<Player const*>(obj)->GetTransport();
-        }
-
-        return NULL;
-    }
-}
 
 /**
  * @brief Checks whether the unit is visible to or detectable by another unit.
@@ -109,7 +81,7 @@ namespace
  */
 bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, bool detect, bool inVisibleList, bool is3dDistance) const
 {
-    if (!u || !IsInMap(u))
+    if (!u || !Where().ShareFrame(u->Where()))
     {
         return false;
     }
@@ -120,32 +92,13 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
         return true;
     }
 
-    // Aboard the same vessel -- visible to each other, and out of reach of the distance gate
-    // below. This used to be a PLAYER-to-PLAYER test, and widening it is what makes a crew
-    // visible at all.
-    //
-    // A server-driven passenger (crew, boarded pet) has no measured world position: the one
-    // it carries is a CACHE composed from the vessel's pose, which the server only estimates
-    // (see TransportBase::UpdateGlobalPositionOf and the class comment in Transports.h).
-    // Measuring a deck-mate against that cache fails the gate below -- and a failed gate is
-    // not merely "not shown": Player::UpdateVisibilityOf answers it by sending an
-    // out-of-range block, so every deckhand was created and then immediately DESTROYED at the
-    // client, over and over.
-    //
-    // Two things standing on the same deck are within sight of each other by construction,
-    // and that deck is the only frame in which the question even has a meaning. So they skip
-    // the gate, exactly as two players aboard always did.
-    Transport const* myVessel = BoardedVessel(this);
-    bool at_same_transport = myVessel && myVessel == BoardedVessel(u);
-
-    // ...but a player still must not be shown to its deck-mates while it is logging out or
-    // still loading in. That was the point of the old test's session guards; keep them.
-    if (at_same_transport && GetTypeId() == TYPEID_PLAYER && u->GetTypeId() == TYPEID_PLAYER)
-    {
-        at_same_transport =
-            !((Player*)this)->GetSession()->PlayerLogout() && !((Player*)u)->GetSession()->PlayerLogout() &&
-            !((Player*)this)->GetSession()->PlayerLoading() && !((Player*)u)->GetSession()->PlayerLoading();
-    }
+    // player visible for other player if not logout and at same transport
+    // including case when player is out of world
+    bool at_same_transport =
+        GetTypeId() == TYPEID_PLAYER &&  u->GetTypeId() == TYPEID_PLAYER &&
+        !((Player*)this)->GetSession()->PlayerLogout() && !((Player*)u)->GetSession()->PlayerLogout() &&
+        !((Player*)this)->GetSession()->PlayerLoading() && !((Player*)u)->GetSession()->PlayerLoading() &&
+        ((Player*)this)->GetTransport() && ((Player*)this)->GetTransport() == ((Player*)u)->GetTransport();
 
     // not in world
     if (!at_same_transport && (!IsInWorld() || !u->IsInWorld()))
@@ -188,7 +141,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     if (u->IsTaxiFlying())                                  // what see player in flight
     {
         // use object grey distance for all (only see objects any way)
-        if (!IsWithinDistInMap(viewPoint, World::GetMaxVisibleDistanceInFlight() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), is3dDistance))
+        if (!InReach(*this, *viewPoint, World::GetMaxVisibleDistanceInFlight() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), is3dDistance))
         {
             return false;
         }
@@ -204,7 +157,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
         }
 
         // Any units far than max visible distance for viewer or not in our map are not visible too
-        if (!IsWithinDistInMap(viewPoint, visibilityDistance + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
+        if (!InReach(*this, *viewPoint, visibilityDistance + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
         {
             return false;
         }
@@ -326,7 +279,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     }
 
     // If there is collision rogue is seen regardless of level difference
-    if (IsWithinDist(u, 0.24f))
+    if (Where().WithinDist(u->Where(), 0.24f))
     {
         return true;
     }
@@ -341,7 +294,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     float visibleDistance = (u->GetTypeId() == TYPEID_PLAYER) ? MAX_PLAYER_STEALTH_DETECT_RANGE : ((Creature const*)u)->GetAttackDistance(this);
 
     // Always invisible from back (when stealth detection is on), also filter max distance cases
-    bool isInFront = viewPoint->IsInFrontInMap(this, visibleDistance);
+    bool isInFront = InFrontPhased(*viewPoint, *this, visibleDistance, M_PI_F);
     if (!isInFront)
     {
         return false;
@@ -372,7 +325,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
         visibleDistance = visibleDistance > MAX_PLAYER_STEALTH_DETECT_RANGE ? MAX_PLAYER_STEALTH_DETECT_RANGE : visibleDistance;
 
         // recheck new distance
-        if (visibleDistance <= 0 || !IsWithinDist(viewPoint, visibleDistance))
+        if (visibleDistance <= 0 || !Where().WithinDist(viewPoint->Where(), visibleDistance))
         {
             return false;
         }
@@ -380,8 +333,10 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
 
     // Now check is target visible with LoS
     float ox, oy, oz;
-    viewPoint->GetPosition(ox, oy, oz);
-    return IsWithinLOS(ox, oy, oz);
+    ox = viewPoint->Where().X();
+    oy = viewPoint->Where().Y();
+    oz = viewPoint->Where().Z();
+    return HasLineOfSight(*this, Geometry::Vector3(ox, oy, oz));
 }
 
 /**

@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,96 +22,86 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_H_GAMEOBJECTMODEL
-#define MANGOS_H_GAMEOBJECTMODEL
+#ifndef MANGOSSERVER_GAMEOBJECTMODEL_H
+#define MANGOSSERVER_GAMEOBJECTMODEL_H
 
-// A game object's collision body: a placement (world Transform) over an immutable,
-// shared collision model baked by displayId (gomodels/go_<displayId>.tile).
-//
-// This is deliberately the SAME shape as world::terrain::StaticInstance -- transform +
-// shared model + world bounds -- because a game object is nothing more than a static
-// instance whose transform can change. That symmetry is what lets the dynamic and the
-// baked-terrain queries share one narrowphase: the binned-SAH BVH the baker built over the
-// model's collidable faces -- a WMO's (doors, bridges, ships) or an M2 hull's -- raycast in
-// model-local space.
-//
-// Replaces the old VMAP::WorldModel-backed model: no G3D, no .vmo model store, no BIH.
+// One game object's collidable body: a shared model, a placement, and the world box it
+// occupies. The geometry itself is held once per display id by GoModelStore -- a keep's
+// gate appears hundreds of times over and is stored once.
 
-#include "terrain/Geometry.hpp"
+#include "Platform/Define.h"
+#include "terrain/Column.hpp"
 #include "terrain/ICollisionModel.hpp"
 
+#include <cfloat>
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
 class GameObject;
+class DynamicCollision;
 
 class GameObjectModel
 {
     public:
-        // Directory of the baked per-display models (<DataDir>/gomodels). Set once at
-        // startup, before any map loads.
-        static void SetModelDir(const std::string& dir);
+        ~GameObjectModel() = default;
 
-        // Builds a collision body for a game object, or NULL when its display has no
-        // baked model (most game objects are decorative and never collide).
-        static GameObjectModel* Create(GameObject const* owner);
+        static GameObjectModel* Create(const GameObject* pGo);
 
-        // The shared, immutable model baked for a display, straight from the store --
-        // no placement, no world transform, no DynamicCollision membership.
-        //
-        // A MO transport wants exactly this. It is not a body IN the world: it is a
-        // little world of its own, and its deck is queried in the space the mesh was
-        // baked in. Posing that mesh into world coordinates would mean knowing the
-        // vessel's true pose, which the server does not (the client runs the Catmull
-        // path; we only estimate it) -- so we never do. NULL when the display has no
-        // baked geometry.
-        static std::shared_ptr<const world::terrain::ICollisionModel>
-            AcquireModel(uint32_t displayId);
+        // A body with no GameObject behind it: the pose is given rather than read.
+        // The owner is only ever a source of position, rotation and scale, so nothing
+        // else in this class needs one -- which is also what makes it testable without
+        // standing up a world.
+        static GameObjectModel* CreateStandalone(
+            std::shared_ptr<const world::terrain::ICollisionModel> model,
+            const Geometry::Transform& xf, uint32 phaseMask);
 
-        GameObject const* GetOwner() const { return m_owner; }
-        const world::terrain::Aabb& GetBounds() const { return m_worldBounds; }
-
+        const Geometry::Aabb& GetBounds() const { return m_bounds; }
+        const Geometry::Vector3& GetPosition() const { return m_xf.pos; }
+        const GameObject* GetOwner() const { return m_owner; }
+        uint32 GetPhaseMask() const { return m_phaseMask; }
         bool IsCollidable() const { return m_collidable; }
+
         void SetCollidable(bool enabled) { m_collidable = enabled; }
+        void SetPhaseMask(uint32 phaseMask = 0) { m_phaseMask = phaseMask; }
 
-        // Transports and elevators re-pose every tick; everything else is pose-frozen
-        // between (rare) rotation/teleport events. DynamicCollision partitions on this.
-        bool IsMover() const { return m_mover; }
-
-        // Recompute the world transform + bounds from the owner's current pose.
+        // Re-derives the placement and the world box from the owner's current pose.
+        // Defined in GameObjectModelOwner.cpp -- the only part of this class that knows
+        // what a GameObject is.
         void UpdatePose();
 
-        // Nearest hit of the world-space ray (origin, dir) within tMax, as a distance
-        // along dir. nullopt when the ray misses (or the body is non-collidable).
-        std::optional<float> Raycast(const world::terrain::Vec3& origin,
-                                     const world::terrain::Vec3& dir,
-                                     float tMax) const;
+        // Sets the placement directly and re-derives the world box.
+        void SetPose(const Geometry::Transform& xf);
 
-        // --- DynamicCollision bookkeeping (bucket membership + per-query dedup) ---
-        std::vector<uint32_t>& Cells() { return m_cells; }
-        const std::vector<uint32_t>& Cells() const { return m_cells; }
-        uint32_t GetEpoch() const { return m_epoch; }
-        void SetEpoch(uint32_t e) const { m_epoch = e; }
+        // Nearest hit of the world segment a->b as a fraction of it, or a value above 1
+        // when this body does not block. The ray is pulled into model space rather than
+        // the geometry pushed into world space.
+        float SegmentHitFraction(const Geometry::Vector3& a, const Geometry::Vector3& b) const;
+
+        // Appends every surface of this body crossing the window over (x,y).
+        void AddSurfaces(float x, float y, float zTop, float zBottom,
+                         world::terrain::Column& out) const;
 
     private:
-        GameObjectModel() = default;
+        friend class DynamicCollision;
 
-        GameObject const* m_owner = nullptr;
-        std::shared_ptr<const world::terrain::ICollisionModel> m_model;
-        world::terrain::Transform m_xf;
-        world::terrain::Aabb m_worldBounds;
+        GameObjectModel() = default;
+        bool Initialize(const GameObject* pGo, uint32 displayId);
+        void DeriveBounds();
 
         bool m_collidable = false;
-        bool m_mover = false;
+        uint32 m_phaseMask = 0;
+        std::shared_ptr<const world::terrain::ICollisionModel> m_model;
+        const GameObject* m_owner = nullptr;
 
-        // Tile buckets this body is currently filed under (frozen bodies only).
+        Geometry::Transform m_xf;
+        Geometry::Aabb m_bounds;
+
+        // Which grid cells this body is filed under, and a stamp so one query visits it
+        // once however many cells it spans. Owned by DynamicCollision.
         std::vector<uint32_t> m_cells;
-        // Last query that visited this body, so a body spanning several tiles is
-        // narrowphase-tested at most once per query.
         mutable uint32_t m_epoch = 0;
 };
 
-#endif // MANGOS_H_GAMEOBJECTMODEL
+#endif

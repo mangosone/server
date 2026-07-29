@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/Errors.h"
 #include "CreatureAI.h"
 #include "Creature.h"
 #include "DBCStores.h"
@@ -103,7 +104,7 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         }
     }
 
-    if (!m_creature->IsWithinLOSInMap(pTarget))
+    if (!HasLineOfSight(*m_creature, *pTarget))
     {
         return CAST_FAIL_NO_LOS;
     }
@@ -113,7 +114,7 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         if (pTarget != m_creature)
         {
             // pTarget is out of range of this spell (also done by Spell::CheckCast())
-            float fDistance = m_creature->GetCombatDistance(pTarget, pSpell->RangeIndex == SPELL_RANGE_IDX_COMBAT);
+            float fDistance = CombatDistanceBetween(*m_creature, *pTarget, pSpell->RangeIndex == SPELL_RANGE_IDX_COMBAT);
 
             if (fDistance > pSpellRange->RangeMax)
             {
@@ -253,7 +254,7 @@ void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=fals
                 default:
                     break;
             }
-            creatureMotion->MoveChase(m_creature->getVictim(), m_attackDistance, m_creature->GetAngle(m_creature->getVictim()));
+            creatureMotion->MoveChase(m_creature->getVictim(), m_attackDistance, m_creature->Where().BearingTo(m_creature->getVictim()->Where()));
         }
         else if (creatureMotion->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
         {

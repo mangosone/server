@@ -32,6 +32,7 @@
  * - Ticket notification system
  */
 
+#include <algorithm>
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
@@ -41,6 +42,7 @@
 #include <cstring>
 #include <ctime>
 #include <string>
+#include "PlayerRegistry.h"
 
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
@@ -201,7 +203,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
 
 
     // Send system Message to All Connected GMs to inform them the ticket has been closed
-    sObjectAccessor.DoForAllPlayers([&](Player* player)
+    sPlayerRegistry.ForEach([&](Player* player)
         {
             if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
             {
@@ -536,7 +538,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     sTicketMgr.Delete(ticket->GetPlayerGuid());
 
     // Send system Message to All Connected GMs to informe them the ticket has been closed
-    sObjectAccessor.DoForAllPlayers([&](Player* player)
+    sPlayerRegistry.ForEach([&](Player* player)
         {
             if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
             {

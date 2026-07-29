@@ -1,7 +1,7 @@
 #ifndef _GuildTaskMgr_H
 #define _GuildTaskMgr_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include "PlayerbotAIBase.h"
 
 using namespace std;

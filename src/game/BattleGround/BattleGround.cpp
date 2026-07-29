@@ -53,6 +53,7 @@
 #include "Formulas.h"
 #include "GridNotifiersImpl.h"
 #include "Chat.h"
+#include "PlayerRegistry.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <cstdarg>
@@ -230,7 +231,7 @@ void BattleGround::BroadcastWorker(Do& _do)
 {
     for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
     {
-        if (Player* plr = sObjectAccessor.FindPlayer(itr->first))
+        if (Player* plr = sPlayerRegistry.Find(itr->first))
         {
             _do(plr);
         }
@@ -461,7 +462,7 @@ void BattleGround::Update(uint32 diff)
                     {
                         float x, y, z, o;
                         GetTeamStartLoc(player->GetTeam(), x, y, z, o);
-                        if (!player->IsWithinDist3d(x, y, z, maxDist))
+                        if (!player->Where().WithinDist(Geometry::Vector3(x, y, z), maxDist))
                         {
                             player->TeleportTo(GetMapId(), x, y, z, o);
                         }
@@ -1561,7 +1562,7 @@ void BattleGround::SetBgRaid(Team team, Group* bg_raid)
  */
 WorldSafeLocsEntry const* BattleGround::GetClosestGraveYard(Player* player)
 {
-    return sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), player->GetTeam());
+    return sObjectMgr.GetClosestGraveYard(player->Where().X(), player->Where().Y(), player->Where().Z(), player->GetMapId(), player->GetTeam());
 }
 
 /**

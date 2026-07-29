@@ -731,7 +731,7 @@ struct MailTemplateEntry
 struct MapEntry
 {
     uint32  MapID;                                          // 0        m_ID
-    // char*       internalname;                            // 1        m_Directory
+    char*   Directory;                                      // 1        m_Directory
     uint32  InstanceType;                                       // 2        m_InstanceType  (was map_type)
     // uint32 isPvP;                                        // 3        m_PVP 0 or 1 for battlegrounds (not arenas)
     char*   MapName_lang[16];                                       // 4-19     m_MapName_lang  (was name)

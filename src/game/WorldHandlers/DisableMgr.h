@@ -76,12 +76,6 @@ namespace DisableMgr
     void CheckQuestDisables();
     bool IsVMAPDisabledFor(uint32 entry, uint8 flags);
     bool IsPathfindingEnabled(uint32 mapId);
-
-    // Spells exempted from the line-of-sight check by config (`vmap.ignoreSpellIds`,
-    // a comma-separated id list). The config-driven twin of a `disables` row with
-    // DISABLE_TYPE_SPELL + SPELL_DISABLE_LOS. Previously VMAP::VMapFactory's job.
-    void LoadLoSIgnoredSpells(const char* spellIdList);
-    bool IsSpellLoSChecked(uint32 spellId);
 }
 
 #endif //TRINITY_DISABLEMGR_H

@@ -26,6 +26,8 @@
 #define MANGOS_H_CONSOLELOGWRITER
 
 #include <atomic>
+
+#include <atomic>
 #include "LockedQueue/LockedQueue.h"
 #include "Threading/Threading.h"
 #include "Log.h"
@@ -89,7 +91,7 @@ class ConsoleLogWriter : public MaNGOS::Runnable
 
         typedef MaNGOS::LockedQueue<ConsoleLogRecord> Queue;
         Queue m_queue; /**< Unbounded backing queue (capacity enforced via m_depth) */
-        std::atomic<long> m_depth; /**< Approximate pending count */
+        std::atomic<long> m_depth;   /**< Approximate pending count */
         std::atomic<long> m_dropped; /**< Records dropped on overflow */
         std::atomic<bool> m_running; /**< Cooperative stop flag (cross-thread: set by Stop(), read by run()) */
         static const long MAX_CONSOLE_QUEUE = 16384; /**< Overflow threshold */

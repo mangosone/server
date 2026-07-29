@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/PackedValues.h"
 #include "HonorMgr.h"
 #include "Player.h"
 #include "Creature.h"

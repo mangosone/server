@@ -51,7 +51,7 @@
 #include "CreatureAISelector.h"
 #include "SQLStorages.h"
 #include "GameObjectAI.h"
-#include "terrain/Geometry/Quat.h"
+#include "Geometry/Quat.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include <list>

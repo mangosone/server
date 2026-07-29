@@ -38,7 +38,6 @@
  * 5. Duel ends by forfeit, death, or distance
  */
 
-#include "Common.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Log.h"

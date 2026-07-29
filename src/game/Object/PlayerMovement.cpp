@@ -47,7 +47,6 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
-#include "ObjectAccessor.h"
 #include "CreatureAI.h"
 #include "Formulas.h"
 #include "Group.h"
@@ -177,7 +176,7 @@ void Player::SetFeatherFall(bool enable)
     // start fall from current height
     if (!enable)
     {
-        SetFallInformation(0, GetPositionZ());
+        SetFallInformation(0, Where().Z());
     }
 }
 

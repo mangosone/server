@@ -123,6 +123,12 @@ namespace GameTime
         return GameMSTime;
     }
 
+    uint64 GetAbsoluteTimeMS()
+    {
+        return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
+                          GameTimeSystemPoint.time_since_epoch()).count());
+    }
+
     /**
      * @brief Get system clock time point
      * @return Current system clock time

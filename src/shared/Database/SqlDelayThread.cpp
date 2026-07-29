@@ -32,9 +32,11 @@
  * improving server responsiveness.
  */
 
+#include "Threading/Threading.h"
 #include "Database/SqlDelayThread.h"
 #include "Database/SqlOperations.h"
 #include "DatabaseEnv.h"
+#include "Timer.h"
 
 /**
  * @brief Constructor for SqlDelayThread
@@ -78,14 +80,11 @@ SqlDelayThread::~SqlDelayThread()
  */
 void SqlDelayThread::run()
 {
-    // Register this thread with the client library before its first query.
-    //
-    // This used to call mysql_thread_init() directly, behind a #ifndef DO_POSTGRESQL — which
-    // hardcoded one backend into a file that is otherwise backend-agnostic, and bypassed the
-    // Database::ThreadStart()/ThreadEnd() virtuals that exist for precisely this. The virtual
-    // dispatches to mysql_thread_init() on a MySQL engine and does nothing on any other, so
-    // the #ifdef was doing by hand what the vtable already does correctly.
-    m_dbEngine->ThreadStart();
+    // Register this thread with the client library for as long as it runs. RAII, not a
+    // matching pair of calls: the end hook must run even if the loop leaves by an
+    // unexpected path, because a thread that skips it corrupts MySQL's per-thread state
+    // instead of failing cleanly.
+    DbThreadGuard dbThread(m_dbEngine);
 
     const uint32 loopSleepms = 10; /**< Sleep interval between processing cycles in milliseconds */
 
@@ -100,7 +99,15 @@ void SqlDelayThread::run()
         // empty the queue before exiting
         MaNGOS::Thread::Sleep(loopSleepms);
 
+        // A delay thread that stalls looks exactly like a server that has stopped
+        // saving, with nothing in the log to say so. Time it and say when it does.
+        const uint32 start = getMSTime();
         ProcessRequests();
+        const uint32 elapsed = getMSTimeDiff(start, getMSTime());
+        if (elapsed > 5000)
+        {
+            sLog.outError("SqlDelayThread: ProcessRequests took %u ms", elapsed);
+        }
 
         // Send periodic ping to keep connection alive
         if ((loopCounter++) >= pingEveryLoop)
@@ -109,11 +116,6 @@ void SqlDelayThread::run()
             m_dbEngine->Ping();
         }
     }
-
-    // Release the client library's thread-local state. This is the pairing that actually
-    // matters: delay threads come and go, so skipping it here would leak per thread — unlike
-    // the main thread, whose block is reclaimed by mysql_library_end() at process teardown.
-    m_dbEngine->ThreadEnd();
 }
 
 /**

@@ -26,7 +26,7 @@
 #ifndef _WARDEN_MODULE_WIN_H
 #define _WARDEN_MODULE_WIN_H
 
-#include "Common.h"     // uint8, the type of every field of the module blob below
+#include "Platform/Define.h"
 
 /*
 Seed: 4D808D2C77D905C41A6380EC08586AFE (0x05 packet)

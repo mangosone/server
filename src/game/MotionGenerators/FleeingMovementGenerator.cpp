@@ -22,11 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "Utilities/MathDefines.h"
 #include "FleeingMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
 #include "MotionFrame.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "Util.h"
 #include <cmath>
 
@@ -53,12 +54,12 @@ std::optional<Motion::Vector3> FleeingMovementGenerator::PickFleePoint(Unit& own
     float distFromCaster = 0.0f;
     float angleToCaster = frand(0, 2 * M_PI_F);
 
-    if (Unit const* fright = sObjectAccessor.GetUnit(owner, m_frightGuid))
+    if (Unit const* fright = ObjectLookup::GetUnit(owner, m_frightGuid))
     {
         // The DISTANCE needs no correction: a rigid transform preserves lengths, so how
         // far away the fear source is reads the same in either frame. The BEARING does —
         // the deck is rotated under us — so it is taken between frame positions.
-        distFromCaster = fright->GetDistance(&owner);
+        distFromCaster = fright->Where().DistanceTo(owner.Where());
         if (distFromCaster > 0.2f)
         {
             angleToCaster = Motion::AngleBetween(frame.ObjectPosition(owner, *fright),

@@ -25,7 +25,7 @@
 #ifndef MANGOS_MOTIONMASTER_H
 #define MANGOS_MOTIONMASTER_H
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include <stack>
 #include <vector>
 #include <sstream>

@@ -1,3 +1,7 @@
+#include <optional>
+#include <algorithm>
+#include <vector>
+#include <map>
 #include "Config/Config.h"
 #include "../botpch.h"
 #include "playerbot.h"
@@ -366,14 +370,20 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
             continue;
         }
 
-        const FusedTerrain * terrain = map->GetTerrain();
+        const TerrainInfo * terrain = map->GetTerrain();
         if (!terrain->IsOutdoors(x, y, z) ||
             +terrain->IsUnderWater(x, y, z) ||
             +terrain->IsInWater(x, y, z))
             continue;
 
         sLog.outDetail("Random teleporting bot %s to %u %f,%f,%f", bot->GetName(), loc.mapid, x, y, z);
-        z = 0.05f + map->GetTerrain()->GetHeightStatic(x, y, 0.05f + z, true, MAX_HEIGHT);
+        std::optional<float> floor = map->GetTerrain()->StaticFloor(x, y, 0.05f + z);
+        if (!floor)
+        {
+            continue;
+        }
+
+        z = 0.05f + *floor;
         bot->TeleportTo(loc.mapid, x, y, z, 0);
         return;
     }
@@ -647,7 +657,7 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     Map* map = sMapMgr.FindMap(mapId);
     if (!map)
         return false;
-    FusedTerrain const* terrain = map->GetTerrain();
+    TerrainInfo const* terrain = map->GetTerrain();
     if (!terrain)
         return false;
 

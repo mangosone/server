@@ -45,7 +45,10 @@
  * @see OpcodeTable.cpp for opcode registration
  */
 
-#include "Common.h"
+#include <zlib.h>
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
+#include "Common/Locales.h"
 #include "Database/DatabaseEnv.h"
 #include "IClientLink.h"
 #include "Log.h"
@@ -60,7 +63,6 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "World.h"
-#include "ObjectAccessor.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
@@ -163,7 +165,7 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0), m_npcWatchLastGuid(),
-    m_lastPingTime(0), m_overSpeedPings(0)
+    m_pingTracker()
 {
     if (m_link)
         m_Address = m_link->GetRemoteAddress();
@@ -779,40 +781,21 @@ void WorldSession::KickPlayer()
  */
 void WorldSession::HandlePingOpcode(WorldPacket& recv_data)
 {
-    uint32 ping;
-    uint32 latency;
-
+    uint32 ping = 0;
+    uint32 latency = 0;
     recv_data >> ping;
     recv_data >> latency;
 
-    time_t curTime = time(nullptr);
-    if (m_lastPingTime == 0)
+    const uint32 fastRun = m_pingTracker.Record(SessionPingTracker::Clock::now());
+    if (m_pingTracker.ShouldKick(sWorld.getConfig(CONFIG_UINT32_MAX_OVERSPEED_PINGS),
+                                 GetSecurity() == SEC_PLAYER))
     {
-        m_lastPingTime = curTime; // for 1st ping
-    }
-    else
-    {
-        time_t diffTime = curTime - m_lastPingTime;
-        m_lastPingTime = curTime;
-
-        if (diffTime < 27)
-        {
-            ++m_overSpeedPings;
-
-            uint32 max_count = sWorld.getConfig(CONFIG_UINT32_MAX_OVERSPEED_PINGS);
-
-            if (max_count && m_overSpeedPings > max_count && GetSecurity() == SEC_PLAYER)
-            {
-                sLog.outError("WorldSession::HandlePingOpcode: Player kicked for overspeeded pings address = %s",
-                              GetRemoteAddress().c_str());
-                KickPlayer();
-                return;
-            }
-        }
-        else
-        {
-            m_overSpeedPings = 0;
-        }
+        sLog.outError(
+            "WorldSession::HandlePingOpcode: account %u kicked for overspeeded "
+            "pings (%u in a row), address = %s",
+            GetAccountId(), fastRun, GetRemoteAddress().c_str());
+        KickPlayer();
+        return;
     }
 
     SetLatency(latency);

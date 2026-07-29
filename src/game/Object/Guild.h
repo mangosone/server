@@ -28,9 +28,11 @@
 #define WITHDRAW_MONEY_UNLIMITED    0xFFFFFFFF
 #define WITHDRAW_SLOT_UNLIMITED     0xFFFFFFFF
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
+#include <ctime>
 #include "Item.h"
-#include "ObjectAccessor.h"
+#include "PlayerRegistry.h"
 #include "SharedDefines.h"
 #include <cstring>
 #include <list>
@@ -312,7 +314,7 @@ class Guild
         void Disband();
 
         void DeleteGuildBankItems(bool alsoInDB = false);
-        typedef UNORDERED_MAP<uint32, MemberSlot> MemberList;
+        typedef std::unordered_map<uint32, MemberSlot> MemberList;
         typedef std::vector<RankInfo> RankList;
 
         uint32 GetId() { return m_Id; }
@@ -366,7 +368,7 @@ class Guild
         {
             for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
             {
-                if (Player* player = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
+                if (Player* player = sPlayerRegistry.Find(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
                     if (player != except)
                     {
                         _do(player);

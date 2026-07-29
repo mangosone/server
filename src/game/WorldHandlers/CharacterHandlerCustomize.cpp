@@ -41,7 +41,8 @@
 
 
 
-#include "Common.h"
+#include "Common/ServerDefines.h"
+#include "Platform/Define.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "SharedDefines.h"
@@ -55,7 +56,6 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "UpdateMask.h"
-#include "ObjectAccessor.h"
 #include "Group.h"
 #include "PlayerDump.h"
 #include "SocialMgr.h"

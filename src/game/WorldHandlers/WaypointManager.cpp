@@ -185,7 +185,9 @@ void WaypointManager::Load()
 
                 if (result1)
                 {
-                    node.z = sTerrainMgr.LoadTerrain(result1->Fetch()[1].GetUInt32())->GetHeightStatic(node.x, node.y, node.z);
+                    const auto wpFloor = sTerrainMgr.LoadTerrain(result1->Fetch()[1].GetUInt32())
+                                            ->StaticFloor(node.x, node.y, node.z);
+                    node.z = wpFloor ? *wpFloor : node.z;
                     delete result1;
                 }
 

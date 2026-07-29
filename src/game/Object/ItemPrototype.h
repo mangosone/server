@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_ITEMPROTOTYPE
 #define MANGOS_H_ITEMPROTOTYPE
 
-#include "Common.h"
+#include "Platform/Define.h"
 #include <string>
 #include <vector>
 

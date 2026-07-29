@@ -42,7 +42,13 @@
  * @see Spell for spell casting
  */
 
-#include "Common.h"
+#include "Geometry/Placement.h"
+#include <iterator>
+#include "Utilities/Errors.h"
+#include "Platform/Define.h"
+#include "Common/TimeConstants.h"
+#include "Utilities/MathDefines.h"
+#include <cstdlib>
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -57,7 +63,7 @@
 #include "DynamicObject.h"
 #include "Group.h"
 #include "UpdateData.h"
-#include "ObjectAccessor.h"
+#include "ObjectLookup.h"
 #include "Policies/Singleton.h"
 #include "Totem.h"
 #include "Creature.h"
@@ -511,7 +517,7 @@ SingleEnemyTargetAura::~SingleEnemyTargetAura()
  */
 Unit* SingleEnemyTargetAura::GetTriggerTarget() const
 {
-    return sObjectAccessor.GetUnit(*(m_spellAuraHolder->GetTarget()), m_castersTargetGuid);
+    return ObjectLookup::GetUnit(*(m_spellAuraHolder->GetTarget()), m_castersTargetGuid);
 }
 
 /**
@@ -637,12 +643,12 @@ void AreaAura::Update(uint32 diff)
                             Player* Target = itr->getSource();
                             if (Target && Target->IsAlive() && Target->GetSubGroup() == subgroup && caster->IsFriendlyTo(Target))
                             {
-                                if (caster->IsWithinDistInMap(Target, m_radius))
+                                if (InReach(*caster, *Target, m_radius))
                                 {
                                     targets.push_back(Target);
                                 }
                                 Pet* pet = Target->GetPet();
-                                if (pet && pet->IsAlive() && caster->IsWithinDistInMap(pet, m_radius))
+                                if (pet && pet->IsAlive() && InReach(*caster, *pet, m_radius))
                                 {
                                     targets.push_back(pet);
                                 }
@@ -652,13 +658,13 @@ void AreaAura::Update(uint32 diff)
                     else
                     {
                         // add owner
-                        if (owner != caster && caster->IsWithinDistInMap(owner, m_radius))
+                        if (owner != caster && InReach(*caster, *owner, m_radius))
                         {
                             targets.push_back(owner);
                         }
                         // add caster's pet
                         Unit* pet = caster->GetPet();
-                        if (pet && caster->IsWithinDistInMap(pet, m_radius))
+                        if (pet && InReach(*caster, *pet, m_radius))
                         {
                             targets.push_back(pet);
                         }
@@ -682,7 +688,7 @@ void AreaAura::Update(uint32 diff)
                 case AREA_AURA_OWNER:
                 case AREA_AURA_PET:
                 {
-                    if (owner != caster && caster->IsWithinDistInMap(owner, m_radius))
+                    if (owner != caster && InReach(*caster, *owner, m_radius))
                     {
                         targets.push_back(owner);
                     }
@@ -810,7 +816,7 @@ void AreaAura::Update(uint32 diff)
         if (!caster ||
             caster->hasUnitState(UNIT_STAT_ISOLATED)               ||
             !caster->HasAura(originalRankSpellId, GetEffIndex())   ||
-            !caster->IsWithinDistInMap(target, m_radius)           ||
+            !InReach(*caster, *target, m_radius)           ||
             caster->IsFriendlyTo(target) != needFriendly
            )
         {
@@ -864,7 +870,7 @@ void PersistentAreaAura::Update(uint32 diff)
         DynamicObject* dynObj = caster->GetDynObject(GetId(), GetEffIndex());
         if (dynObj)
         {
-            if (!GetTarget()->IsWithinDistInMap(dynObj, dynObj->GetRadius()))
+            if (!InReach(*(GetTarget()), *dynObj, dynObj->GetRadius()))
             {
                 remove = true;
                 dynObj->RemoveAffected(GetTarget());        // let later reapply if target return to range
@@ -1088,7 +1094,7 @@ void Aura::ReapplyAffectedPassiveAuras()
         for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
         {
             if (Player* member = itr->getSource())
-                if (member != GetTarget() && member->IsInMap(GetTarget()))
+                if (member != GetTarget() && member->Where().ShareFrame((GetTarget())->Where()))
                 {
                     ReapplyAffectedPassiveAuras(member, false);
                 }
@@ -1335,18 +1341,18 @@ void Aura::TriggerSpell()
                         uint32 tick = (GetAuraTicks() + 7/*-1*/) % 8;
 
                         // casted in left/right (but triggered spell have wide forward cone)
-                        float forward = target->GetOrientation();
+                        float forward = target->Where().Facing();
                         if (tick <= 3)
                         {
-                            target->SetOrientation(forward + 0.75f * M_PI_F - tick * M_PI_F / 8);        // Left
+                            target->Place().Face(forward + 0.75f * M_PI_F - tick * M_PI_F / 8);        // Left
                         }
                         else
                         {
-                            target->SetOrientation(forward - 0.75f * M_PI_F + (8 - tick) * M_PI_F / 8);  // Right
+                            target->Place().Face(forward - 0.75f * M_PI_F + (8 - tick) * M_PI_F / 8);  // Right
                         }
 
                         triggerTarget->CastSpell(triggerTarget, spellForTick[tick], true, NULL, this, casterGUID);
-                        target->SetOrientation(forward);
+                        target->Place().Face(forward);
                         return;
                     }
 //                    // Stink Trap
@@ -1364,7 +1370,7 @@ void Aura::TriggerSpell()
                     case 26009:                             // Rotate 360
                     case 26136:                             // Rotate -360
                     {
-                        float newAngle = target->GetOrientation();
+                        float newAngle = target->Where().Facing();
 
                         if (auraId == 26009)
                         {
@@ -1375,7 +1381,7 @@ void Aura::TriggerSpell()
                             newAngle -= M_PI_F / 40;
                         }
 
-                        newAngle = MapManager::NormalizeOrientation(newAngle);
+                        newAngle = Geometry::Placement::NormalizeOrientation(newAngle);
 
                         target->SetFacingTo(newAngle);
 
@@ -1419,7 +1425,7 @@ void Aura::TriggerSpell()
                     {
                         // X-Chain is casted by Tesla to X, so: caster == Tesla, target = X
                         Unit* pCaster = GetCaster();
-                        if (pCaster && pCaster->GetTypeId() == TYPEID_UNIT && !pCaster->IsWithinDistInMap(target, 60.0f))
+                        if (pCaster && pCaster->GetTypeId() == TYPEID_UNIT && !InReach(*pCaster, *target, 60.0f))
                         {
                             pCaster->InterruptNonMeleeSpells(true);
                             ((Creature*)pCaster)->SetInCombatWithZone();
@@ -1436,7 +1442,7 @@ void Aura::TriggerSpell()
                         Unit* pCaster = GetCaster();
                         if (pCaster && pCaster->GetTypeId() == TYPEID_UNIT)
                         {
-                            if (pCaster->getVictim() && !pCaster->IsWithinDistInMap(target, 60.0f))
+                            if (pCaster->getVictim() && !InReach(*pCaster, *target, 60.0f))
                             {
                                 if (Unit* pTarget = ((Creature*)pCaster)->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                                 {
@@ -1542,7 +1548,7 @@ void Aura::TriggerSpell()
                     case 31373:                             // Spellcloth
                     {
                         // Summon Elemental after create item
-                        triggerTarget->SummonCreature(17870, 0.0f, 0.0f, 0.0f, triggerTarget->GetOrientation(), TEMPSPAWN_DEAD_DESPAWN, 0);
+                        triggerTarget->SummonCreature(17870, 0.0f, 0.0f, 0.0f, triggerTarget->Where().Facing(), TEMPSPAWN_DEAD_DESPAWN, 0);
                         return;
                     }
 //                    // Bloodmyst Tesla
@@ -1646,7 +1652,7 @@ void Aura::TriggerSpell()
                     case 37429:                             // Spout (left)
                     case 37430:                             // Spout (right)
                     {
-                        float newAngle = target->GetOrientation();
+                        float newAngle = target->Where().Facing();
 
                         if (auraId == 37429)
                         {
@@ -1657,7 +1663,7 @@ void Aura::TriggerSpell()
                             newAngle -= 2 * M_PI_F / 100;
                         }
 
-                        newAngle = MapManager::NormalizeOrientation(newAngle);
+                        newAngle = Geometry::Placement::NormalizeOrientation(newAngle);
 
                         target->SetFacingTo(newAngle);
 
@@ -1713,8 +1719,8 @@ void Aura::TriggerSpell()
                     case 39105:                             // Activate Nether-wraith Beacon (31742 Nether-wraith Beacon item)
                     {
                         float fX, fY, fZ;
-                        triggerTarget->GetClosePoint(fX, fY, fZ, triggerTarget->GetObjectBoundingRadius(), 20.0f);
-                        triggerTarget->SummonCreature(22408, fX, fY, fZ, triggerTarget->GetOrientation(), TEMPSPAWN_DEAD_DESPAWN, 0);
+                        ClosePointNear(*triggerTarget, fX, fY, fZ, triggerTarget->Where().Extent(), 20.0f);
+                        triggerTarget->SummonCreature(22408, fX, fY, fZ, triggerTarget->Where().Facing(), TEMPSPAWN_DEAD_DESPAWN, 0);
                         return;
                     }
 //                    // Drain World Tree Visual
@@ -1786,7 +1792,7 @@ void Aura::TriggerSpell()
                     case 42581:                             // Spout (left)
                     case 42582:                             // Spout (right)
                     {
-                        float newAngle = target->GetOrientation();
+                        float newAngle = target->Where().Facing();
 
                         if (auraId == 42581)
                         {
@@ -1797,7 +1803,7 @@ void Aura::TriggerSpell()
                             newAngle -= 2 * M_PI_F / 100;
                         }
 
-                        newAngle = MapManager::NormalizeOrientation(newAngle);
+                        newAngle = Geometry::Placement::NormalizeOrientation(newAngle);
 
                         target->SetFacingTo(newAngle);
 
@@ -2094,7 +2100,7 @@ void Aura::TriggerSpell()
     if (triggeredSpellInfo)
     {
         if (triggerTargetObject)
-            triggerCaster->CastSpell(triggerTargetObject->GetPositionX(), triggerTargetObject->GetPositionY(), triggerTargetObject->GetPositionZ(),
+            triggerCaster->CastSpell(triggerTargetObject->Where().X(), triggerTargetObject->Where().Y(), triggerTargetObject->Where().Z(),
                                      triggeredSpellInfo, true, NULL, this, casterGUID);
         else
         {
@@ -3377,7 +3383,7 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
     else
     {
         // remove this assert when not unit casters will be supported
-        MANGOS_ASSERT(caster->isType(TYPEMASK_UNIT))
+        MANGOS_ASSERT(caster->isType(TYPEMASK_UNIT));
         m_casterGuid = caster->GetObjectGuid();
     }
 
@@ -3852,7 +3858,7 @@ Unit* SpellAuraHolder::GetCaster() const
         return m_target;
     }
 
-    return sObjectAccessor.GetUnit(*m_target, m_casterGuid);// player will search at any maps
+    return ObjectLookup::GetUnit(*m_target, m_casterGuid);// player will search at any maps
 }
 
 /**
@@ -4205,7 +4211,7 @@ void SpellAuraHolder::Update(uint32 diff)
                 modOwner->ApplySpellMod(GetId(), SPELLMOD_RANGE, max_range, NULL);
             }
 
-            if (!caster->IsWithinDistInMap(m_target, max_range))
+            if (!InReach(*caster, *m_target, max_range))
             {
                 caster->InterruptSpell(CURRENT_CHANNELED_SPELL);
                 return;

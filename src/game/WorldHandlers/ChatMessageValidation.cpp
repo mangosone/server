@@ -43,6 +43,7 @@
 
 
 
+#include "Common/Locales.h"
 #include "Chat.h"
 #include "Log.h"
 #include "World.h"

@@ -46,6 +46,7 @@
 #include "ObjectMgr.h"
 #include "World.h"
 #include <string>
+#include "PlayerRegistry.h"
 
 static void AttemptJoin(Player* _player)
 {
@@ -56,7 +57,7 @@ static void AttemptJoin(Player* _player)
     }
 
     // TODO: Guard Player Map
-    sObjectAccessor.DoForAllPlayers([&](Player* pl)
+    sPlayerRegistry.ForEach([&](Player* pl)
     {
         // skip enemies and self
         if (!pl || pl == _player || pl->GetTeam() != _player->GetTeam())
@@ -128,7 +129,7 @@ static void AttemptAddMore(Player* _player)
     }
 
     // TODO: Guard Player map
-    sObjectAccessor.DoForAllPlayers([&](Player* pl)
+    sPlayerRegistry.ForEach([&](Player* pl)
     {
 
         // skip enemies and self
@@ -322,7 +323,7 @@ void WorldSession::SendLfgResult(LfgType type, uint32 entry, LfgMode lfg_mode)
     data << uint32(0);                                      // count again, strange, placeholder
 
     // TODO: Guard Player map
-    sObjectAccessor.DoForAllPlayers([&](Player* pl)
+    sPlayerRegistry.ForEach([&](Player* pl)
     {
 
         if (!pl || pl->GetTeam() != _player->GetTeam())
@@ -344,7 +345,7 @@ void WorldSession::SendLfgResult(LfgType type, uint32 entry, LfgMode lfg_mode)
 
         data << pl->GetObjectGuid().WriteAsPacked();       // packed guid
         data << uint32(pl->getLevel());                    // level
-        data << uint32(pl->GetZoneId());                   // current zone
+        data << uint32(pl->GetTerrain()->GetZoneId(pl->Where().X(), pl->Where().Y(), pl->Where().Z()));                   // current zone
         data << uint8(lfg_mode);                            // 0x00 - LFG, 0x01 - LFM
 
         for (uint8 j = 0; j < MAX_LOOKING_FOR_GROUP_SLOT; ++j)

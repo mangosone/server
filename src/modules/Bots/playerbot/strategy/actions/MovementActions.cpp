@@ -1,3 +1,5 @@
+#include "Utilities/MathDefines.h"
+#include <cmath>
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "../values/LastMovementValue.h"
@@ -345,9 +347,11 @@ bool MoveRandomAction::Execute(Event event)
         WorldObject* target = ai->GetUnit(*i);
         if (target && bot->GetDistance(target) > sPlayerbotAIConfig.tooCloseDistance)
         {
-            WorldLocation loc;
-            target->GetPosition(loc);
-            locs.push_back(loc);
+            locs.push_back(WorldLocation(target->GetMapId(),
+                                         target->Where().X(),
+                                         target->Where().Y(),
+                                         target->Where().Z(),
+                                         target->Where().Facing()));
         }
     }
 
@@ -357,9 +361,11 @@ bool MoveRandomAction::Execute(Event event)
         WorldObject* target = ai->GetUnit(*i);
         if (target && bot->GetDistance(target) > sPlayerbotAIConfig.tooCloseDistance)
         {
-            WorldLocation loc;
-            target->GetPosition(loc);
-            locs.push_back(loc);
+            locs.push_back(WorldLocation(target->GetMapId(),
+                                         target->Where().X(),
+                                         target->Where().Y(),
+                                         target->Where().Z(),
+                                         target->Where().Facing()));
         }
     }
 
@@ -370,9 +376,11 @@ bool MoveRandomAction::Execute(Event event)
 
         if (target && bot->GetDistance(target) > sPlayerbotAIConfig.tooCloseDistance)
         {
-            WorldLocation loc;
-            target->GetPosition(loc);
-            locs.push_back(loc);
+            locs.push_back(WorldLocation(target->GetMapId(),
+                                         target->Where().X(),
+                                         target->Where().Y(),
+                                         target->Where().Z(),
+                                         target->Where().Facing()));
         }
     }
 
@@ -387,7 +395,7 @@ bool MoveRandomAction::Execute(Event event)
         y += urand(0, distance) - distance / 2;
         bot->UpdateGroundPositionZ(x, y, z);
 
-        const FusedTerrain* terrain = map->GetTerrain();
+        const TerrainInfo* terrain = map->GetTerrain();
         if (terrain->IsUnderWater(x, y, z) ||
             terrain->IsInWater(x, y, z))
             continue;

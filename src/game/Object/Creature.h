@@ -47,7 +47,8 @@
 #ifndef MANGOSSERVER_CREATURE_H
 #define MANGOSSERVER_CREATURE_H
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
 #include "Unit.h"
 #include "SharedDefines.h"
 #include "LootMgr.h"
@@ -484,7 +485,7 @@ struct TrainerSpell
     bool isProvidedReqLevel;
 };
 
-typedef UNORDERED_MAP < uint32 /*spellid*/, TrainerSpell > TrainerSpellMap;
+typedef std::unordered_map < uint32 /*spellid*/, TrainerSpell > TrainerSpellMap;
 
 struct TrainerSpellData
 {
@@ -537,7 +538,7 @@ struct CreatureCreatePos
     public:
         Map* GetMap() const { return m_map; }
         void SelectFinalPoint(Creature* cr);
-        bool Relocate(Creature* cr) const;
+        bool PlaceOn(Creature* cr) const;
 
         // read only after SelectFinalPoint
         Position m_pos;
@@ -879,19 +880,23 @@ class Creature : public Unit
             }
         }
 
-        void SetCombatStartPosition(float x, float y, float z) { m_combatStartX = x; m_combatStartY = y; m_combatStartZ = z; }
-        void GetCombatStartPosition(float& x, float& y, float& z) { x = m_combatStartX; y = m_combatStartY; z = m_combatStartZ; }
+        /// Where combat began, in the frame it began in. The leash point, and nothing
+        /// composes it -- a creature pulled on a deck leashes to a deck spot.
+        Geometry::Vector3 const& CombatAnchor() const { return m_combatStart; }
+        void SetCombatAnchor(Geometry::Vector3 const& at) { m_combatStart = at; }
 
-        void SetRespawnCoord(CreatureCreatePos const& pos) { m_respawnPos = pos.m_pos; }
-        void SetRespawnCoord(float x, float y, float z, float ori) { m_respawnPos.x = x; m_respawnPos.y = y; m_respawnPos.z = z; m_respawnPos.o = ori; }
-        void GetRespawnCoord(float& x, float& y, float& z, float* ori = NULL, float* dist = NULL) const;
+        /// Where this creature belongs: its spawn pose, in the frame it spawned in.
+        /// Home movement, wander and leashing all read it, and nothing composes it.
+        Geometry::Placement const& Spawn() const { return m_spawn; }
+        void SetSpawn(CreatureCreatePos const& pos);
+        void SetSpawn(Geometry::Vector3 const& at, float facing);
 
         /// Go home -- in whichever world this creature lives in. For a CREW member the respawn
         /// coord is a deck offset, not a map coordinate, and must not be handed to the grid. A
         /// boarded MINION is the opposite case: its home is a place on the map, so going home
         /// means going ashore, and it leaves the vessel on the way.
         void RelocateToRespawnPoint();
-        void ResetRespawnCoord();
+        void ResetSpawn();
 
         void SetDeadByDefault(bool death_state) { m_IsDeadByDefault = death_state; }
 
@@ -951,17 +956,18 @@ class Creature : public Unit
         SpellSchoolMask m_meleeDamageSchoolMask;
         uint32 m_originalEntry;
 
-        float m_combatStartX;
-        float m_combatStartY;
-        float m_combatStartZ;
+        Geometry::Vector3 m_combatStart;
 
-        Position m_respawnPos;
+        Geometry::Placement m_spawn;
 
         bool DisableReputationGain;
 
     private:
         GridReference<Creature> m_gridRef;
         CreatureInfo const* m_creatureInfo;                 // in heroic mode can different from sObjectMgr::GetCreatureTemplate(GetEntry())
+#ifdef MANGOS_SCRIPT_COMPAT
+#include "Object/ScriptApiCompatCreature.inl"
+#endif
 };
 
 class ForcedDespawnDelayEvent : public BasicEvent

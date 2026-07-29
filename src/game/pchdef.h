@@ -47,7 +47,6 @@
 // unit must already include what it uses. Do not "fix" a missing include by adding a header
 // here.
 
-#include "Common.h"
 #include "Map.h"
 #include "Log.h"
 #include "ObjectMgr.h"

@@ -25,7 +25,8 @@
 #ifndef MANGOS_OBJECT_GUID_H
 #define MANGOS_OBJECT_GUID_H
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include <functional>
 #include "ByteBuffer.h"
 #include <list>
 #include <set>
@@ -270,7 +271,8 @@ ByteBuffer& operator>> (ByteBuffer& buf, PackedGuidReader const& guid);
 
 inline PackedGuid ObjectGuid::WriteAsPacked() const { return PackedGuid(*this); }
 
-HASH_NAMESPACE_START
+namespace std
+{
 
 template<>
 class hash<ObjectGuid>
@@ -283,6 +285,6 @@ class hash<ObjectGuid>
         }
 };
 
-HASH_NAMESPACE_END
+}
 
 #endif

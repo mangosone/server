@@ -136,7 +136,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
 
     Map* map = owner->GetMap();
 
-    CreatureCreatePos pos(owner, owner->GetOrientation(), PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+    CreatureCreatePos pos(owner, owner->Where().Facing(), PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
 
     uint32 guid = pos.GetMap()->GenerateLocalLowGuid(HIGHGUID_PET);
     if (!Create(guid, pos, creatureInfo, pet_number))
@@ -235,13 +235,13 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
         int index;
         for (iter = tokens.begin(), index = 0; index < 4; ++iter, ++index)
         {
-            uint32 tmp = atol((*iter).c_str());
+            uint32 tmp = std::strtoul((*iter).c_str(), NULL, 10);
 
             ++iter;
 
             if (tmp)
             {
-                AddTeachSpell(tmp, atol((*iter).c_str()));
+                AddTeachSpell(tmp, std::strtoul((*iter).c_str(), NULL, 10));
             }
             else
             {

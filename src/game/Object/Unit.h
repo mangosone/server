@@ -57,7 +57,8 @@
 #ifndef MANGOS_H_UNIT
 #define MANGOS_H_UNIT
 
-#include "Common.h"
+#include <unordered_map>
+#include "Platform/Define.h"
 #include "Object.h"
 #include "Opcodes.h"
 #include "SpellAuraDefines.h"
@@ -1049,7 +1050,7 @@ struct GlobalCooldown
     uint32 cast_time;
 };
 
-typedef UNORDERED_MAP < uint32 /*category*/, GlobalCooldown > GlobalCooldownList;
+typedef std::unordered_map < uint32 /*category*/, GlobalCooldown > GlobalCooldownList;
 
 class GlobalCooldownMgr                                     // Shared by Player and CharmInfo
 {
@@ -1235,6 +1236,14 @@ enum PowerDefaults
 
 struct SpellProcEventEntry;                                 // used only privately
 
+// Combat reach is a GAME RULE about two units, not a property of either, so it is a
+// free function over both rather than a method one of them owns. The spatial
+// component measures centre to centre; these supply the gap that counts as touching.
+float CombatReachBetween(Unit const& attacker, Unit const& victim, bool forMeleeRange = true,
+                         float flat_mod = 0.0f);
+float CombatDistanceBetween(Unit const& attacker, Unit const& target, bool forMeleeRange);
+bool InMeleeReach(Unit const& attacker, Unit const& victim, float flat_mod = 0.0f);
+
 class Unit : public WorldObject
 {
     public:
@@ -1287,7 +1296,7 @@ class Unit : public WorldObject
          */
         void CleanupsBeforeDelete() override;
 
-        float GetObjectBoundingRadius() const override      // overwrite WorldObject version
+        float ComputeBoundingRadius() const override      // overwrite WorldObject version
         {
             return m_floatValues[UNIT_FIELD_BOUNDINGRADIUS];
         }
@@ -1401,26 +1410,6 @@ class Unit : public WorldObject
          * \see EUnitFields
          * \see GetFloatValue
          */
-        float GetCombatReach(Unit const* pVictim, bool forMeleeRange = true, float flat_mod = 0.0f) const;
-        /**
-         * Returns the remaining combat distance between two mobs (CombatReach substracted).
-         * Does this by getting the radius of combat/aggro between them and then subtracting their
-         * actual distance between them. Ie: dist between - radius for aggro. If this becomes less
-         * than zero zero is returned and the mobs should probably aggro each other/the player
-         * @param target The target to check against
-         * @param forMeleeRange If we want to check melee range instead
-         * @return The reach between them left until one of the creatures could/should aggro
-         */
-        float GetCombatDistance(Unit const* target, bool forMeleeRange) const;
-        /**
-         * Returns if the Unit can reach a victim with Melee Attack. Does so by using
-         * Unit::GetCombatReach for melee and checking if the distance from the target is less than
-         * the reach.
-         * @param pVictim Who we want to reach with a melee attack.
-         * @param flat_mod The same as sent to Unit::GetCombatReach
-         * @return true if we can reach pVictim with a melee attack
-         */
-        bool CanReachWithMeleeAttack(Unit const* pVictim, float flat_mod = 0.0f) const;
         uint32 m_extraAttacks;
 
         /**
@@ -2519,7 +2508,6 @@ class Unit : public WorldObject
          * @param distanceZ is the distance from the creature's current Z ordinate to the destination Z ordinate
          *
          */
-        bool IsNearWaypoint(float currentPositionX, float currentPositionY, float currentPositionZ, float destinationPositionX, float destinationPositionY, float destinationPositionZ, float distanceX, float distanceY, float distanceZ);
 
 
         /**
@@ -3037,6 +3025,12 @@ class Unit : public WorldObject
          * in the same \ref Cell
          */
         void SendHeartBeat();
+
+        /// Serialise this unit's movement AS THE WIRE MUST SEE IT. Decided here, at the
+        /// instant of writing, from the map: aboard a vessel our coordinates are that
+        /// map's and the client has never heard of it, so it gets no world position at
+        /// all -- only the vessel's guid and those same coordinates as an offset.
+        void WriteMovementInfo(ByteBuffer& out) const;
 
         /**
          * Checks if this \ref Unit has the movement flag \ref MovementFlags::MOVEFLAG_LEVITATING

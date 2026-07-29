@@ -41,7 +41,9 @@
 #ifndef CREATURE_LINKING_MGR_H
 #define CREATURE_LINKING_MGR_H
 
-#include "Common.h"
+#include <unordered_set>
+#include "Platform/Define.h"
+#include <functional>
 #include "Policies/Singleton.h"
 #include "ObjectGuid.h"
 #include <map>
@@ -137,8 +139,8 @@ class CreatureLinkingMgr
         CreatureLinkingMap m_creatureLinkingGuidMap;
 
         // Lookup Storage for fast access:
-        UNORDERED_SET<uint32> m_eventTriggers;              // master by entry
-        UNORDERED_SET<uint32> m_eventGuidTriggers;          // master by guid
+        std::unordered_set<uint32> m_eventTriggers;              // master by entry
+        std::unordered_set<uint32> m_eventGuidTriggers;          // master by guid
 
         // Check-routine
         static bool IsLinkingEntryValid(uint32 slaveEntry, CreatureLinkingInfo* pInfo, bool byEntry);

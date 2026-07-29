@@ -22,7 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
+#include "Platform/Define.h"
+#include "Utilities/MathDefines.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -53,7 +54,7 @@
 #include "Util.h"
 #include "TemporarySummon.h"
 #include "ScriptMgr.h"
-#include "terrain/Geometry/Vector3.h"
+#include "Geometry/Vector3.h"
 #include <random>
 
 #ifdef ENABLE_ELUNA
@@ -306,7 +307,7 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
         // Summon in dest location
         if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
         {
-            spawnCreature->Relocate(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation() + M_PI_F);
+            spawnCreature->Place().MoveTo(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->Where().Facing() + M_PI_F);
         }
 
         // set timer for unsummon
@@ -319,11 +320,11 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
     }
 
     // Summon in dest location
-    CreatureCreatePos pos(m_caster->GetMap(), m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation() + M_PI_F);
+    CreatureCreatePos pos(m_caster->GetMap(), m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->Where().Facing() + M_PI_F);
 
     if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION))
     {
-        pos = CreatureCreatePos(m_caster, m_caster->GetOrientation() + M_PI_F);
+        pos = CreatureCreatePos(m_caster, m_caster->Where().Facing() + M_PI_F);
     }
 
     Map* map = m_caster->GetMap();
@@ -335,7 +336,7 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
         return;
     }
 
-    spawnCreature->SetRespawnCoord(pos);
+    spawnCreature->SetSpawn(pos);
 
     // set timer for unsummon
     if (m_duration > 0)
