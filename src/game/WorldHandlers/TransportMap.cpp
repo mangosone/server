@@ -130,6 +130,19 @@ namespace
         // Whatever leg it was on was planned in the map it is leaving; none of it survives.
         c->StopMoving();
 
+        // TELL EVERY CLIENT TO DROP IT FIRST. Without this the ones already holding it get
+        // only a heartbeat at the far side and interpolate the difference -- which a player
+        // sees as his pet swimming up through the hull. A destroy makes the arrival a
+        // CREATE at the new spot, which is what a teleport looks like on the wire.
+        for (Map::PlayerList::const_iterator itr = c->GetMap()->GetPlayers().begin();
+             itr != c->GetMap()->GetPlayers().end(); ++itr)
+        {
+            if (Player* watcher = itr->getSource())
+            {
+                c->DestroyForPlayer(watcher);
+            }
+        }
+
         c->GetMap()->Remove(c, false);
         c->Place().MoveTo(x, y, z, master->Where().Facing());
         dest->Add(c);
