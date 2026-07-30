@@ -59,6 +59,7 @@
 #include "GameTime.h"
 #include "Transports.h"
 #include "TransportMap.h"
+#include "MapManager.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include "ElunaConfig.h"
@@ -3206,9 +3207,50 @@ Pet* Unit::GetPet() const
 {
     if (ObjectGuid pet_guid = GetPetGuid())
     {
-        if (Pet* pet = GetMap()->GetPet(pet_guid))
+        Map* on = FindMap();
+        if (!on)
+        {
+            return NULL;
+        }
+
+        if (Pet* pet = on->GetPet(pet_guid))
         {
             return pet;
+        }
+
+        // ACROSS THE DECK BOUNDARY. A master and his minion stand on two maps for as long
+        // as one of them has crossed and the other has not, and the owner's map alone
+        // cannot find it. Giving up here did not lose the pet -- it was alive the whole
+        // time, on the other side -- it made the OWNER FORGET IT, because the line below
+        // clears the guid, and after that nothing ever reclaims it.
+        if (TransportMap* hull = on->AsTransport())
+        {
+            Transport* vessel = hull->Vessel();
+            if (Map* sailed = vessel ? vessel->GetMap() : NULL)
+            {
+                if (Pet* pet = sailed->GetPet(pet_guid))
+                {
+                    return pet;
+                }
+            }
+        }
+        else
+        {
+            MapManager::TransportsByMapType::const_iterator vessels =
+                sMapMgr.m_TransportsByMap.find(on->GetId());
+            if (vessels != sMapMgr.m_TransportsByMap.end())
+            {
+                for (Transport* vessel : vessels->second)
+                {
+                    if (TransportMap* deck = vessel->AsMap())
+                    {
+                        if (Pet* pet = deck->GetPet(pet_guid))
+                        {
+                            return pet;
+                        }
+                    }
+                }
+            }
         }
 
         sLog.outError("Unit::GetPet: %s not exist.", pet_guid.GetString().c_str());
