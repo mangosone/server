@@ -379,9 +379,9 @@ void Creature::RemoveFromWorld()
  */
 void Creature::CleanupsBeforeDelete()
 {
-    if (GetMap())
+    if (Map* on = FindMap())
     {
-        if (TransportMap* hull = GetMap()->AsTransport())
+        if (TransportMap* hull = on->AsTransport())
         {
             hull->DelistCrew(this);
         }
