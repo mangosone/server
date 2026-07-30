@@ -136,6 +136,21 @@ namespace
         c->GetMotionMaster()->Initialize();
         c->SendHeartBeat();
     }
+
+    /// Every minion this master controls, moved to `dest` beside him. The reconciler does
+    /// the same sweep once per tick; this is the immediate half, so nothing is ever seen
+    /// standing where its master no longer is.
+    void DrawMinionsTo(Player* master, Map* dest)
+    {
+        if (!master || !dest)
+        {
+            return;
+        }
+
+        master->CallForAllControlledUnits(
+            [master, dest](Unit* minion) { DrawMinionTo(minion, master, dest); },
+            CONTROLLED_PET | CONTROLLED_MINIPET | CONTROLLED_GUARDIANS | CONTROLLED_TOTEMS);
+    }
 }
 
 /* ******************************** The hull ******************************************* */
@@ -342,6 +357,12 @@ void TransportMap::Embark(Player* passenger)
     // world's grid at all, they are added straight to this map.
     passenger->GetMap()->Remove(passenger, false);
     Add(passenger);
+
+    // His minions come with him, NOW. UpdateMinions reconciles this once per tick and is
+    // the safety net for the half-dozen other ways one arrives -- but a pet that waits a
+    // tick is a pet standing at the rail while its master walks off, which is what a player
+    // actually sees. Retail teleports it beside him on the spot; so does this.
+    DrawMinionsTo(passenger, this);
 }
 
 void TransportMap::Disembark(Player* passenger, float x, float y, float z, float o)
@@ -368,6 +389,9 @@ void TransportMap::Disembark(Player* passenger, float x, float y, float z, float
     passenger->SetTransport(NULL);
 
     sailed->Add(passenger);
+
+    // And they follow him ashore in the same tick, for the same reason.
+    DrawMinionsTo(passenger, sailed);
 }
 
 void TransportMap::VesselLeavingWorld(Map* oldWorld, uint32 newMapId,
