@@ -1,4 +1,6 @@
 /**
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * multiple client versions.
  *
