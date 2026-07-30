@@ -106,6 +106,19 @@ void Pet::AddToWorld()
     }
 
     Unit::AddToWorld();
+
+    // Index it on the vessel whose deck this map is -- Creature::AddToWorld does this for
+    // everything else, and a pet reaches Unit::AddToWorld directly, so it was the one thing
+    // aboard that never joined the crew. TransportMap::UpdateMinions walks that list to find
+    // minions whose master has gone ashore, so a pet was simply never a candidate: it stayed
+    // at the rail while its master walked off, and was forgotten from there.
+    if (Map* on = FindMap())
+    {
+        if (TransportMap* hull = on->AsTransport())
+        {
+            hull->EnlistCrew(this);
+        }
+    }
 }
 
 /**
@@ -117,6 +130,16 @@ void Pet::RemoveFromWorld()
     if (IsInWorld())
     {
         GetMap()->GetObjectsStore().erase<Pet>(GetObjectGuid(), (Pet*)NULL);
+    }
+
+    // Off the vessel's crew index, since AddToWorld put it there. The list holds raw
+    // pointers and must not outlive the pet.
+    if (Map* on = FindMap())
+    {
+        if (TransportMap* hull = on->AsTransport())
+        {
+            hull->DelistCrew(this);
+        }
     }
 
     ///- Don't call the function for Creature, normal mobs + totems go in a different storage
