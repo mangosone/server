@@ -194,9 +194,12 @@ void Player::SaveToDB()
         Transport* vessel = m_transport;
         if (!vessel)
         {
-            if (TransportMap* hull = GetMap()->AsTransport())
+            if (Map* on = FindMap())
             {
-                vessel = hull->Vessel();
+                if (TransportMap* hull = on->AsTransport())
+                {
+                    vessel = hull->Vessel();
+                }
             }
         }
 
