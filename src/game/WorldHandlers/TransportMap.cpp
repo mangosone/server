@@ -146,7 +146,21 @@ namespace
         c->Place().MoveTo(x, y, z, master->Where().Facing());
         dest->Add(c);
 
-        c->GetMotionMaster()->Initialize();
+        // AND THE MOTION, in the frame it now stands in. Initialize() alone restores the
+        // creature's DEFAULT generator -- for a pet that is not following anybody, which is
+        // a pet teleported neatly to its master's side and then standing there. The whole
+        // stack is dropped because every leg on it was planned in the map just left.
+        c->GetMotionMaster()->Clear(false, true);
+
+        if (c->GetCharmInfo() && c->GetCharmInfo()->HasCommandState(COMMAND_STAY))
+        {
+            c->GetMotionMaster()->MoveIdle();
+        }
+        else
+        {
+            c->GetMotionMaster()->MoveFollow(master, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+        }
+
         c->SendHeartBeat();
     }
 
