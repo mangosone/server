@@ -5339,6 +5339,11 @@ void Unit::InterruptMoving(bool forceSendStop /*=false*/)
         Movement::Location loc = movespline->ComputePosition();
         movespline->_Interrupt();
         Place().MoveTo(loc.x, loc.y, loc.z, loc.orientation);
+
+        // The stop packet below, and every create block until the client speaks again, are
+        // written from the movement state -- so it follows the placement whenever the
+        // server is the one that moved the unit.
+        m_movementInfo.ChangePosition(loc.x, loc.y, loc.z, loc.orientation);
         isMoving = true;
     }
 
