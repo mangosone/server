@@ -294,7 +294,13 @@ bool TransportMap::Add(Player* passenger)
     passenger->BuildCreateUpdateBlockForPlayer(&data, passenger);
 
     WorldPacket packet;
-    data.BuildPacket(&packet);
+    // hasTransport, and it must be true: this packet carries the vessel and a
+    // passenger whose own block names her. The byte is written on CLASSIC and TBC
+    // only -- mangos_two omits the argument because there the field does not exist,
+    // and copying that form here told the client there was no transport in a packet
+    // that was nothing but transport. It then had nothing to compose him against and
+    // never left the loading screen.
+    data.BuildPacket(&packet, true);
     passenger->GetSession()->SendPacket(&packet);
 
     // And the OTHER ships on the water she is crossing. His client is drawing that map, so
