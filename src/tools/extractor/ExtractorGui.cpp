@@ -38,6 +38,7 @@
 #include <commctrl.h>
 #include <commdlg.h>
 #include <shlobj.h>
+#include <olectl.h>
 
 #include <string>
 #include <vector>
@@ -430,6 +431,141 @@ namespace
         }
     }
 
+
+    /* ------------------------------------------------------------------ header badge */
+
+    const int kBandH   = 92;    ///< the header band, above everything else
+    const int kBadge   = 68;    ///< the logo, square, drawn inside it
+    const int kMargin  = 14;
+
+    IPicture* g_badge = nullptr;
+
+    /// Decode the embedded JPEG once. A JPEG cannot be a BITMAP resource, so it ships as
+    /// raw bytes and OleLoadPicture does the decoding -- no image library is linked.
+    IPicture* Badge()
+    {
+        static bool tried = false;
+        if (tried)
+        {
+            return g_badge;
+        }
+        tried = true;
+
+        HMODULE self = GetModuleHandleA(nullptr);
+        HRSRC found = FindResourceA(self, "MANGOSLOGO", RT_RCDATA);
+        if (!found)
+        {
+            return nullptr;
+        }
+
+        const DWORD size = SizeofResource(self, found);
+        HGLOBAL res = LoadResource(self, found);
+        void* bytes = res ? LockResource(res) : nullptr;
+        if (!bytes || !size)
+        {
+            return nullptr;
+        }
+
+        HGLOBAL mem = GlobalAlloc(GMEM_MOVEABLE, size);
+        if (!mem)
+        {
+            return nullptr;
+        }
+        if (void* dst = GlobalLock(mem))
+        {
+            memcpy(dst, bytes, size);
+            GlobalUnlock(mem);
+
+            IStream* stream = nullptr;
+            if (SUCCEEDED(CreateStreamOnHGlobal(mem, TRUE, &stream)) && stream)
+            {
+                OleLoadPicture(stream, LONG(size), FALSE, IID_IPicture,
+                               reinterpret_cast<void**>(&g_badge));
+                stream->Release();
+                return g_badge;      // the stream owns `mem` now
+            }
+        }
+
+        GlobalFree(mem);
+        return nullptr;
+    }
+
+    void PaintHeader(HWND w, HDC dc, RECT const& client)
+    {
+        RECT band{0, 0, client.right, kBandH};
+
+        // A band a shade off the dialog face, so the form below reads as the working area.
+        HBRUSH back = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
+        FillRect(dc, &band, back);
+        DeleteObject(back);
+
+        // The rule that closes it. One pixel, the 3D shadow colour: enough to separate,
+        // not enough to draw attention.
+        HPEN rule = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DSHADOW));
+        HGDIOBJ oldPen = SelectObject(dc, rule);
+        MoveToEx(dc, 0, kBandH - 1, nullptr);
+        LineTo(dc, client.right, kBandH - 1);
+        SelectObject(dc, oldPen);
+        DeleteObject(rule);
+
+        const int by = (kBandH - kBadge) / 2;
+
+        if (IPicture* pic = Badge())
+        {
+            OLE_XSIZE_HIMETRIC cx = 0;
+            OLE_YSIZE_HIMETRIC cy = 0;
+            pic->get_Width(&cx);
+            pic->get_Height(&cy);
+
+            // Keep it square-true whatever the source is: fit the longer side to the box.
+            int dw = kBadge, dh = kBadge;
+            if (cx > 0 && cy > 0)
+            {
+                if (cx >= cy)
+                {
+                    dh = int(double(kBadge) * double(cy) / double(cx));
+                }
+                else
+                {
+                    dw = int(double(kBadge) * double(cx) / double(cy));
+                }
+            }
+
+            const int dx = kMargin + (kBadge - dw) / 2;
+            const int dy = by + (kBadge - dh) / 2;
+
+            const int mode = SetStretchBltMode(dc, HALFTONE);
+            SetBrushOrgEx(dc, 0, 0, nullptr);
+            pic->Render(dc, dx, dy, dw, dh, 0, cy, cx, -cy, nullptr);
+            SetStretchBltMode(dc, mode);
+        }
+
+        const int tx = kMargin + kBadge + 16;
+
+        LOGFONTA lf{};
+        HFONT base = UiFont();
+        GetObjectA(base, sizeof(lf), &lf);
+
+        LOGFONTA big = lf;
+        big.lfHeight = LONG(double(lf.lfHeight) * 1.7);
+        big.lfWeight = FW_SEMIBOLD;
+        HFONT title = CreateFontIndirectA(&big);
+
+        SetBkMode(dc, TRANSPARENT);
+        HGDIOBJ oldFont = SelectObject(dc, title);
+        SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
+        TextOutA(dc, tx, by + 6, "MaNGOS client baker", 19);
+
+        SelectObject(dc, base);
+        SetTextColor(dc, GetSysColor(COLOR_GRAYTEXT));
+        TextOutA(dc, tx, by + 38,
+                 "Tiles, collision, DBC and navmesh, straight from the client.", 60);
+
+        SelectObject(dc, oldFont);
+        DeleteObject(title);
+        (void)w;
+    }
+
     void BuildUi(HWND w)
     {
         const int labelW = 130;
@@ -437,7 +573,7 @@ namespace
         const int editW = 400;
         const int btnX = editX + editW + 10;
         const int btnW = 90;
-        int y = 14;
+        int y = kBandH + 12;
 
         struct Row
         {
@@ -515,6 +651,20 @@ namespace
     {
         switch (msg)
         {
+        case WM_ERASEBKGND:
+        {
+            HDC dc = (HDC)wp;
+            RECT client{};
+            GetClientRect(w, &client);
+
+            RECT below{0, kBandH, client.right, client.bottom};
+            HBRUSH face = (HBRUSH)(COLOR_BTNFACE + 1);
+            FillRect(dc, &below, face);
+
+            PaintHeader(w, dc, client);
+            return 1;
+        }
+
         case WM_CREATE:
             BuildUi(w);
             return 0;
@@ -643,7 +793,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE, LPSTR, int show)
         return 1;
     }
 
-    RECT wanted{0, 0, 680, 640};
+    RECT wanted{0, 0, 680, 640 + kBandH};
     AdjustWindowRect(&wanted, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                      FALSE);
 

@@ -172,7 +172,7 @@ if(WIN32)
     add_executable(mangos-extractor-gui WIN32
         ExtractorGui.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/mangos-extractor-gui.rc)
-    target_link_libraries(mangos-extractor-gui PRIVATE shell32 ole32 comctl32 comdlg32)
+    target_link_libraries(mangos-extractor-gui PRIVATE shell32 ole32 oleaut32 comctl32 comdlg32)
     # The .rc includes revision_data.h, which genrev writes into the build tree.
     target_include_directories(mangos-extractor-gui PRIVATE ${CMAKE_BINARY_DIR}/src/shared)
     if(TARGET revision_data.h)
