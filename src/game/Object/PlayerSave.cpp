@@ -177,12 +177,29 @@ void Player::SaveToDB()
 
     if (!IsBeingTeleported())
     {
-        uberInsert.addUInt32(GetMapId());
+        // What goes in this row is what the client will be handed at the next login, so it
+        // is the map the ship SAILS and a point on it -- never the deck map, which the
+        // client cannot load. Where he actually stands is the deck position saved in the
+        // transport columns below, and that is the one that survives the voyage intact.
+        uint32 savedMap = GetMapId();
+        float savedX = Where().X(), savedY = Where().Y();
+        float savedZ = Where().Z(), savedO = Where().Facing();
+
+        if (m_transport)
+        {
+            savedMap = m_transport->GetMapId();
+            savedX = m_transport->Where().X();
+            savedY = m_transport->Where().Y();
+            savedZ = m_transport->Where().Z();
+            savedO = m_transport->Where().Facing();
+        }
+
+        uberInsert.addUInt32(savedMap);
         uberInsert.addUInt32(uint32(GetDifficulty()));
-        uberInsert.addFloat(finiteAlways(Where().X()));
-        uberInsert.addFloat(finiteAlways(Where().Y()));
-        uberInsert.addFloat(finiteAlways(Where().Z()));
-        uberInsert.addFloat(finiteAlways(Where().Facing()));
+        uberInsert.addFloat(finiteAlways(savedX));
+        uberInsert.addFloat(finiteAlways(savedY));
+        uberInsert.addFloat(finiteAlways(savedZ));
+        uberInsert.addFloat(finiteAlways(savedO));
     }
     else
     {
