@@ -81,7 +81,7 @@
  */
 bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, bool detect, bool inVisibleList, bool is3dDistance) const
 {
-    if (!u || !Where().ShareFrame(u->Where()))
+    if (!u || !CanBeSeen(*this, *u))
     {
         return false;
     }
