@@ -542,7 +542,16 @@ void Unit::WriteMovementInfo(ByteBuffer& out) const
 
     if (!vessel)
     {
-        m_movementInfo.Write(out);
+        // BOTH BRANCHES READ Where(), and the asymmetry was the bug. A pose set by
+        // Place().MoveTo -- how anything is teleported, minions across a deck boundary
+        // above all -- never reaches m_movementInfo, so writing that struct as-is sent
+        // the position the unit held BEFORE the move. Coming off a ship that is a
+        // deck-local coordinate in a world position field, and the client walks the pet
+        // to (-3, -8, 6) on the continent. Boarding was never affected, because the deck
+        // branch below had always taken its numbers from Where().
+        MovementInfo ashore = m_movementInfo;
+        ashore.ChangePosition(Where().X(), Where().Y(), Where().Z(), Where().Facing());
+        ashore.Write(out);
         return;
     }
 

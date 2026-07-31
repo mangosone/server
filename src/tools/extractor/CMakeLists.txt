@@ -31,6 +31,23 @@
 #   extractor_mpq     the StormLib container reader.
 # =============================================================================
 
+# =============================================================================
+# WHICH CLIENT THIS BAKER IS FOR. MANGOS_EXP (cmake/MangosParams.cmake) is the one
+# place the expansion is named; this maps it to something a person reads, so the
+# window and the --help banner cannot drift from what the tool actually parses.
+# =============================================================================
+if("${MANGOS_EXP}" STREQUAL "CLASSIC")
+    set(MANGOS_CLIENT_NAME "World of Warcraft 1.12.x")
+elseif("${MANGOS_EXP}" STREQUAL "TBC")
+    set(MANGOS_CLIENT_NAME "The Burning Crusade 2.4.3")
+elseif("${MANGOS_EXP}" STREQUAL "WOTLK")
+    set(MANGOS_CLIENT_NAME "Wrath of the Lich King 3.3.5a")
+elseif("${MANGOS_EXP}" STREQUAL "CATA")
+    set(MANGOS_CLIENT_NAME "Cataclysm 4.3.4")
+else()
+    set(MANGOS_CLIENT_NAME "unknown client")
+endif()
+
 set(SRC_GRP_CLIENT
     client/AdtParser.cpp
     client/AdtParser.hpp
@@ -127,6 +144,9 @@ add_executable(mangos-extractor
 target_include_directories(mangos-extractor
     PRIVATE ${CMAKE_SOURCE_DIR}/src/shared/Console)
 
+target_compile_definitions(mangos-extractor
+    PRIVATE MANGOS_CLIENT_NAME="${MANGOS_CLIENT_NAME}")
+
 target_link_libraries(mangos-extractor
     PRIVATE
         extractor_mpq
@@ -178,6 +198,8 @@ if(WIN32)
     if(TARGET revision_data.h)
         add_dependencies(mangos-extractor-gui revision_data.h)
     endif()
+    target_compile_definitions(mangos-extractor-gui
+        PRIVATE MANGOS_CLIENT_NAME="${MANGOS_CLIENT_NAME}")
     set_target_properties(mangos-extractor-gui PROPERTIES FOLDER "tools")
     install(TARGETS mangos-extractor-gui DESTINATION ${BIN_DIR}/tools)
 endif()
