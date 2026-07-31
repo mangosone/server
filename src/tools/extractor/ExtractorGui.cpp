@@ -39,6 +39,9 @@
 #include <shlobj.h>
 #include <olectl.h>
 
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -52,6 +55,10 @@
 #endif
 
 
+#ifndef MANGOS_CLIENT_NAME
+#define MANGOS_CLIENT_NAME "unknown client"
+#endif
+
 namespace
 {
     enum : int
@@ -61,6 +68,8 @@ namespace
         ID_VESSELS, ID_VESSELS_BROWSE,
         ID_OFFMESH, ID_OFFMESH_BROWSE,
         ID_MAP,
+        ID_LOCALE, ID_CHK_ALLLOC,
+        ID_CHK_SHUTDOWN, ID_TIMES,
         ID_CHK_DBC, ID_CHK_GOMODELS, ID_CHK_TILES, ID_CHK_TRANS, ID_CHK_NAV,
         ID_ALL, ID_NONE,
         ID_START, ID_CLOSE,
@@ -76,6 +85,8 @@ namespace
     HWND g_status = nullptr;
     HANDLE g_worker = nullptr;
     volatile LONG g_running = 0;
+    SYSTEMTIME g_startedAt{};
+    ULONGLONG g_startedTick = 0;
 
     struct Control
     {
@@ -225,6 +236,101 @@ namespace
         return "\"" + s + "\"";
     }
 
+    /// The languages a client actually carries, by the same test the baker uses: a folder
+    /// is a locale only if it holds the archive named after it.
+    std::vector<std::string> FindLocales(const std::string& dataDir)
+    {
+        std::vector<std::string> found;
+        if (dataDir.empty())
+        {
+            return found;
+        }
+
+        WIN32_FIND_DATAA fd{};
+        HANDLE h = FindFirstFileA((dataDir + "\\*").c_str(), &fd);
+        if (h == INVALID_HANDLE_VALUE)
+        {
+            return found;
+        }
+        do
+        {
+            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || fd.cFileName[0] == '.')
+            {
+                continue;
+            }
+            const std::string name = fd.cFileName;
+            const std::string mpq = dataDir + "\\" + name + "\\locale-" + name + ".MPQ";
+            if (GetFileAttributesA(mpq.c_str()) != INVALID_FILE_ATTRIBUTES)
+            {
+                found.push_back(name);
+            }
+        }
+        while (FindNextFileA(h, &fd));
+        FindClose(h);
+
+        std::sort(found.begin(), found.end());
+        return found;
+    }
+
+    /// Refill the language list from whatever the client box currently points at. Called
+    /// on every edit of it, so browsing to another client re-reads rather than going stale.
+    void RefreshLocales()
+    {
+        HWND box = Find(ID_LOCALE);
+        if (!box)
+        {
+            return;
+        }
+
+        const std::string previous = GetText(ID_LOCALE);
+        SendMessageA(box, CB_RESETCONTENT, 0, 0);
+        SendMessageA(box, CB_ADDSTRING, 0, (LPARAM)"(detect)");
+
+        int pick = 0;
+        int i = 1;
+        for (const std::string& loc : FindLocales(GetText(ID_SRC)))
+        {
+            SendMessageA(box, CB_ADDSTRING, 0, (LPARAM)loc.c_str());
+            if (loc == previous)
+            {
+                pick = i;
+            }
+            ++i;
+        }
+        SendMessageA(box, CB_SETCURSEL, WPARAM(pick), 0);
+    }
+
+    /// snprintf, NOT wsprintf. wsprintf understands no 64-bit length modifier at all:
+    /// given "%llum" it consumed the conversion and printed the literal tail, so a nine
+    /// second run reported "Took 1um 1us". It has no way to report that it did not
+    /// understand the format, which is why the output looked like a unit and not an error.
+    std::string Clock(const SYSTEMTIME& t)
+    {
+        char buf[16];
+        std::snprintf(buf, sizeof(buf), "%02u:%02u:%02u",
+                      unsigned(t.wHour), unsigned(t.wMinute), unsigned(t.wSecond));
+        return buf;
+    }
+
+    std::string Elapsed(ULONGLONG ms)
+    {
+        const unsigned s = unsigned(ms / 1000);
+        char buf[32];
+        if (s >= 3600)
+        {
+            std::snprintf(buf, sizeof(buf), "%uh %02um", s / 3600, (s % 3600) / 60);
+        }
+        else if (s >= 60)
+        {
+            std::snprintf(buf, sizeof(buf), "%um %02us", s / 60, s % 60);
+        }
+        else
+        {
+            std::snprintf(buf, sizeof(buf), "%us", s);
+        }
+        return buf;
+    }
+
     /// The command line, exactly as a person would have typed it.
     std::string BuildCommand()
     {
@@ -255,6 +361,18 @@ namespace
         if (!vessels.empty()) { cmd += " --vessels " + Quote(vessels); }
         if (!offmesh.empty()) { cmd += " --offmesh " + Quote(offmesh); }
         if (!map.empty())     { cmd += " --map " + map; }
+
+        // "all" is the extractor's own word for every language on the disc; a named
+        // one pins it; "(detect)" sends nothing and lets the baker choose.
+        const std::string locale = GetText(ID_LOCALE);
+        if (Checked(ID_CHK_ALLLOC))
+        {
+            cmd += " --locale all";
+        }
+        else if (!locale.empty() && locale != "(detect)")
+        {
+            cmd += " --locale " + locale;
+        }
 
         cmd += " --no-menu";
         return cmd;
@@ -351,7 +469,7 @@ namespace
     {
         static const int gated[] = {
             ID_START, ID_SRC_BROWSE, ID_DEST_BROWSE, ID_VESSELS_BROWSE,
-            ID_OFFMESH_BROWSE, ID_ALL, ID_NONE,
+            ID_OFFMESH_BROWSE, ID_ALL, ID_NONE, ID_LOCALE, ID_CHK_ALLLOC,
             ID_CHK_DBC, ID_CHK_GOMODELS, ID_CHK_TILES, ID_CHK_TRANS, ID_CHK_NAV
         };
         for (int id : gated)
@@ -382,6 +500,33 @@ namespace
 
         SetWindowTextA(g_status, busy ? "Baking -- the navmesh can take hours."
                                       : "Idle.");
+    }
+
+
+    /// Ask Windows to shut down, the way a scheduled task would: a delay long enough to
+    /// abort by hand, and the privilege it needs, which a process does not hold by default.
+    void ShutdownPc()
+    {
+        HANDLE token = nullptr;
+        if (OpenProcessToken(GetCurrentProcess(),
+                             TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token))
+        {
+            TOKEN_PRIVILEGES tp{};
+            tp.PrivilegeCount = 1;
+            tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+            if (LookupPrivilegeValueA(nullptr, SE_SHUTDOWN_NAME, &tp.Privileges[0].Luid))
+            {
+                AdjustTokenPrivileges(token, FALSE, &tp, 0, nullptr, nullptr);
+            }
+            CloseHandle(token);
+        }
+
+        InitiateSystemShutdownExA(nullptr,
+                                  const_cast<char*>("The client bake has finished."),
+                                  60, FALSE, FALSE,
+                                  SHTDN_REASON_MAJOR_APPLICATION |
+                                  SHTDN_REASON_MINOR_MAINTENANCE |
+                                  SHTDN_REASON_FLAG_PLANNED);
     }
 
     void OnStart()
@@ -418,6 +563,10 @@ namespace
 
         Job* job = new Job{BuildCommand()};
         AppendLog("> " + job->command);
+
+        GetLocalTime(&g_startedAt);
+        g_startedTick = GetTickCount64();
+        SetWindowTextA(Find(ID_TIMES), ("Started " + Clock(g_startedAt)).c_str());
 
         InterlockedExchange(&g_running, 1);
         SetBusy(true);
@@ -553,12 +702,23 @@ namespace
         SetBkMode(dc, TRANSPARENT);
         HGDIOBJ oldFont = SelectObject(dc, title);
         SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
-        TextOutA(dc, tx, by + 6, "MaNGOS client baker", 19);
 
+        // Measured, not counted by hand. The literals used to carry their own lengths as
+        // magic numbers, so editing the text silently truncated it or ran off the end.
+        const char* heading = "MaNGOS client baker";
+        TextOutA(dc, tx, by + 6, heading, int(std::strlen(heading)));
+
+        // WHICH CLIENT THIS BUILD BAKES. One baker cannot read two expansions -- the DBC
+        // layouts and the archive set both differ -- so the version is not decoration, it
+        // is the first thing that has to match the folder in the box below.
         SelectObject(dc, base);
+        SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
+        const char* clientName = MANGOS_CLIENT_NAME;
+        TextOutA(dc, tx, by + 34, clientName, int(std::strlen(clientName)));
+
         SetTextColor(dc, GetSysColor(COLOR_GRAYTEXT));
-        TextOutA(dc, tx, by + 38,
-                 "Tiles, collision, DBC and navmesh, straight from the client.", 60);
+        const char* blurb = "Tiles, collision, DBC and navmesh, straight from the client.";
+        TextOutA(dc, tx, by + 52, blurb, int(std::strlen(blurb)));
 
         SelectObject(dc, oldFont);
         DeleteObject(title);
@@ -600,6 +760,13 @@ namespace
 
         Add(w, "STATIC", "Map id (blank = all)", SS_LEFT, 14, y + 4, labelW, 20, 0);
         Add(w, "EDIT", "", WS_BORDER | WS_TABSTOP | ES_NUMBER, editX, y, 80, 24, ID_MAP);
+
+        Add(w, "STATIC", "Language", SS_LEFT, editX + 100, y + 4, 70, 20, 0);
+        // Tall on purpose: a combo's height is its DROPPED height, not the box you see.
+        Add(w, "COMBOBOX", "", WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST,
+            editX + 172, y, 110, 240, ID_LOCALE);
+        Add(w, "BUTTON", "All languages", WS_TABSTOP | BS_AUTOCHECKBOX,
+            editX + 292, y + 2, 120, 22, ID_CHK_ALLLOC);
         y += 40;
 
         Add(w, "BUTTON", "Extract", BS_GROUPBOX, 14, y, btnX + btnW - 14, 96, 0);
@@ -618,6 +785,8 @@ namespace
             ID_ALL);
         Add(w, "BUTTON", "Clear", WS_TABSTOP | BS_PUSHBUTTON, 138, cy + 30, 100, 24,
             ID_NONE);
+        Add(w, "BUTTON", "Shut down the PC when finished", WS_TABSTOP | BS_AUTOCHECKBOX,
+            256, cy + 32, 230, 22, ID_CHK_SHUTDOWN);
         y += 108;
 
         g_progress = Add(w, PROGRESS_CLASSA, "", PBS_MARQUEE, 14, y,
@@ -635,6 +804,10 @@ namespace
                     14, y, btnX + btnW - 14, 220, ID_LOG);
         y += 230;
 
+        // The gap left of the buttons, which was empty: when a nav bake runs for six
+        // hours unattended, what it says is the only record of how long it took.
+        Add(w, "STATIC", "", SS_LEFT, 14, y + 8, btnX + btnW - 220, 20, ID_TIMES);
+
         Add(w, "BUTTON", "Start", WS_TABSTOP | BS_DEFPUSHBUTTON,
             btnX + btnW - 200, y, 90, 28, ID_START);
         Add(w, "BUTTON", "Close", WS_TABSTOP | BS_PUSHBUTTON,
@@ -644,6 +817,13 @@ namespace
         Check(ID_CHK_GOMODELS, true);
         SetWindowTextA(Find(ID_SRC), (ExeDir() + "\\Data").c_str());
         SetWindowTextA(Find(ID_DEST), (ExeDir() + "\\extracted_data").c_str());
+
+        // Both ship beside the exe and both are what the extractor would default to
+        // anyway. Showing them beats an empty box that looks like something is missing.
+        SetWindowTextA(Find(ID_VESSELS), (ExeDir() + "\\vessels.txt").c_str());
+        SetWindowTextA(Find(ID_OFFMESH), (ExeDir() + "\\offmesh.txt").c_str());
+
+        RefreshLocales();
     }
 
     LRESULT CALLBACK WndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp)
@@ -689,6 +869,23 @@ namespace
             AppendLog(code == 0 ? "-- finished --"
                                 : "-- failed, exit code " + std::to_string(code) + " --");
             SetWindowTextA(g_status, code == 0 ? "Done." : "Failed -- see the log.");
+
+            SYSTEMTIME done{};
+            GetLocalTime(&done);
+            const std::string span = "Started " + Clock(g_startedAt) +
+                                     "   Finished " + Clock(done) +
+                                     "   Took " + Elapsed(GetTickCount64() - g_startedTick);
+            SetWindowTextA(Find(ID_TIMES), span.c_str());
+            AppendLog(span);
+
+            // ASKED FOR, AND STILL ASKED AGAIN. A six-hour bake ends while nobody is
+            // watching, so the countdown is what a person who walked back in gets to
+            // cancel -- and a failed run never triggers it at all.
+            if (code == 0 && Checked(ID_CHK_SHUTDOWN))
+            {
+                AppendLog("-- shutting down in 60 seconds; run `shutdown /a` to stop it --");
+                ShutdownPc();
+            }
             return 0;
         }
 
@@ -702,6 +899,13 @@ namespace
                 if (PickFolder(w, "Choose the client's Data folder", picked))
                 {
                     SetWindowTextA(Find(ID_SRC), picked.c_str());
+                    RefreshLocales();
+                }
+                return 0;
+            case ID_SRC:
+                if (HIWORD(wp) == EN_KILLFOCUS)
+                {
+                    RefreshLocales();
                 }
                 return 0;
             case ID_DEST_BROWSE:
@@ -785,6 +989,9 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE, LPSTR, int show)
     wc.lpfnWndProc = WndProc;
     wc.hInstance = inst;
     wc.hCursor = LoadCursorA(nullptr, IDC_ARROW);
+    // Resource 1, the icon Explorer already draws for this exe. Leaving it null
+    // is what put the generic white page in the title bar and the task switcher.
+    wc.hIcon = LoadIconA(inst, MAKEINTRESOURCEA(1));
     wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
     wc.lpszClassName = "MangosExtractorGui";
     if (!RegisterClassA(&wc))
@@ -792,11 +999,12 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE, LPSTR, int show)
         return 1;
     }
 
-    RECT wanted{0, 0, 680, 640 + kBandH};
+    RECT wanted{0, 0, 680, 680 + kBandH};
     AdjustWindowRect(&wanted, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                      FALSE);
 
-    g_main = CreateWindowExA(0, wc.lpszClassName, "MaNGOS client baker",
+    g_main = CreateWindowExA(0, wc.lpszClassName,
+                             "MaNGOS client baker -- " MANGOS_CLIENT_NAME,
                              WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                              CW_USEDEFAULT, CW_USEDEFAULT,
                              wanted.right - wanted.left, wanted.bottom - wanted.top,
