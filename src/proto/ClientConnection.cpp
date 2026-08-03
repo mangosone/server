@@ -12,9 +12,17 @@
 
 namespace proto
 {
+std::atomic<uint32> ClientConnection::s_openConnections{0};
+
 ClientConnection::ClientConnection(IWorldGateway& gateway)
     : m_gateway(gateway), m_seed(rand32())
 {
+    s_openConnections.fetch_add(1, std::memory_order_relaxed);
+}
+
+ClientConnection::~ClientConnection()
+{
+    s_openConnections.fetch_sub(1, std::memory_order_relaxed);
 }
 
 std::vector<uint8_t> ClientConnection::onConnect()

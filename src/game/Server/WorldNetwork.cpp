@@ -1,6 +1,7 @@
 #include <string>
 #include "WorldNetwork.h"
 
+#include "ClientConnection.h"
 #include "Log.h"
 #include "OpcodeTable.h"
 
@@ -38,4 +39,9 @@ void WorldNetwork::Stop()
 
     m_listener.Stop();
     m_started = false;
+}
+
+uint32 WorldNetwork::GetOpenConnectionCount() const
+{
+    return proto::ClientConnection::GetOpenConnectionCount();
 }
