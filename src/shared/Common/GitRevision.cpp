@@ -25,6 +25,10 @@
 
 #include "GitRevision.h"
 
+// The generated header lands HERE and nowhere else: it changes on every commit, and
+// anything that includes it is rebuilt with it.
+#include "revision_data.h"
+
 char const* GitRevision::GetHash()
 {
     return REVISION_HASH;
