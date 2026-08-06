@@ -175,7 +175,32 @@ bool Master::StartDatabases()
         return false;
     }
 
-    sLog.outString("Realm running as realm ID %u", realmID);
+    // The console header is stamped HERE, not where the UI starts: that runs before this
+    // function and would read realmID while it is still its initialiser, which is how it
+    // came to say "realm 0". The name is worth the one query -- an id alone tells you
+    // nothing when several realms share a box.
+    std::string realmName;
+    {
+        std::unique_ptr<QueryResult> result(LoginDatabase.PQuery(
+            "SELECT `name` FROM `realmlist` WHERE `id` = '%u'", realmID));
+        if (result)
+        {
+            realmName = (*result)[0].GetCppString();
+        }
+    }
+
+    MaNGOS::Console::ConsoleUI::Instance().SetHeaderRight(
+        realmName.empty() ? ("realm " + std::to_string(realmID))
+                          : (realmName + " (realm " + std::to_string(realmID) + ")"));
+
+    if (realmName.empty())
+    {
+        sLog.outError("Realm ID %u has no row in `realmlist`; the client will not list it.",
+                      realmID);
+    }
+
+    sLog.outString("Realm running as realm ID %u (%s)", realmID,
+                   realmName.empty() ? "unnamed" : realmName.c_str());
     return true;
 }
 
