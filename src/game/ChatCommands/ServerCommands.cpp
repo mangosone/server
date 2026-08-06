@@ -41,7 +41,6 @@
 #include "GitRevision.h"
 #include "SystemConfig.h"
 #include "UpdateTime.h"
-#include "revision_data.h"
 #include <cstdlib>
 #include <cstring>
 #include <string>
