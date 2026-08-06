@@ -13,7 +13,7 @@ class WorldGateway final : public proto::IWorldGateway
 {
 public:
     bool FilterAuthPacket(WorldPacket& packet) override;
-    void TracePacket(const WorldPacket& packet, bool incoming) override;
+    void TracePacket(proto::SessionId session, const WorldPacket& packet, bool incoming) override;
     proto::AuthLookup LookupAccount(const proto::AuthRequest& request) override;
     proto::SessionId Attach(const proto::AuthRequest& request,
         const std::shared_ptr<proto::IClientLink>& link,

@@ -34,7 +34,7 @@ std::vector<uint8_t> ClientConnection::onConnect()
     {
         WorldPacket challenge(SMSG_AUTH_CHALLENGE, 4);
         challenge << m_seed;
-        m_gateway.TracePacket(challenge, false);
+        m_gateway.TracePacket(INVALID_SESSION_ID, challenge, false);
         return EncodePacket(challenge);
     }
     catch (...)
@@ -67,7 +67,8 @@ std::vector<uint8_t> ClientConnection::onData(const uint8_t* data, std::size_t l
 
         for (size_t i = 0; i < packets.size() && !m_closed.load(); ++i)
         {
-            m_gateway.TracePacket(packets[i], true);
+            m_gateway.TracePacket(m_traceSession.load(std::memory_order_relaxed),
+                                  packets[i], true);
             if (!HandlePacket(packets[i]))
             {
                 Close();
@@ -92,6 +93,7 @@ void ClientConnection::onClose()
         session = m_session;
         m_session = INVALID_SESSION_ID;
     }
+    m_traceSession.store(INVALID_SESSION_ID, std::memory_order_relaxed);
     if (session != INVALID_SESSION_ID)
     {
         try
@@ -112,7 +114,7 @@ void ClientConnection::SendPacket(const WorldPacket& packet)
         if (m_closed.load() || !m_sender)
             return;
 
-        m_gateway.TracePacket(packet, false);
+        m_gateway.TracePacket(m_traceSession.load(std::memory_order_relaxed), packet, false);
         std::vector<uint8> const frame = PacketCodec::Encode(packet,
             [this](uint8* header, std::size_t len) { m_crypt.EncryptSend(header, len); });
         m_sender(frame.data(), frame.size());
@@ -223,6 +225,7 @@ bool ClientConnection::HandleAuthSession(WorldPacket& packet)
         m_gateway.Detach(session);
         return false;
     }
+    m_traceSession.store(session, std::memory_order_relaxed);
     return true;
 }
 
