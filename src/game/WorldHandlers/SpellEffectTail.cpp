@@ -309,15 +309,35 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
             fx = near_.x;
             fy = near_.y;
 
-            GridMapLiquidData liqData;
-            if (!m_caster->GetTerrain()->IsInWater(fx, fy, m_caster->Where().Z() + 1.f, &liqData))
+            // "Is there water where the bobber lands", NOT "is the fisherman submerged".
+            //
+            // IsInWater is only true for IN_WATER|UNDER_WATER, and getLiquidStatus grants
+            // those only when the probe z is BELOW the surface. Asking it at the bobber's
+            // x/y but at the CASTER's z therefore answers a question about the caster: on
+            // a bank or a dock he stands above the surface, the status comes back
+            // ABOVE_WATER, and the cast fails with "you can't fish here" until he wades in
+            // far enough to submerge himself. That is the reported symptom exactly --
+            // fishing only works from waist-deep water.
+            //
+            // IsAboveWater asks the right way round: true when there IS liquid at that
+            // column and its surface lies below the probe, which is the case from a dock,
+            // from a bank, and standing in the shallows. No liquid at all still fails,
+            // and it hands back the surface height, which is where the bobber floats.
+            //
+            // 02_mangos_two probes at Z + waistHeight + 0.5f, from
+            // GetModelMidpoint(displayId), and adds SPELL_FAILED_ONLY_ABOVEWATER when the
+            // caster is submerged past the waist. That refinement is NOT taken here: it
+            // needs CreatureModelData.dbc, which this core does not load, and
+            // CreatureDisplayInfoEntry here does not even read the modelID column. The
+            // fixed lift keeps the defect closed; only the "too deep to fish" threshold is
+            // coarser.
+            if (!m_caster->GetTerrain()->IsAboveWater(fx, fy, m_caster->Where().Z() + 1.f, &fz))
             {
                 SendCastResult(SPELL_FAILED_NOT_FISHABLE);
                 SendChannelUpdate(0);
                 return;
             }
 
-            fz = liqData.level;
             // finally, check LoS
             if (!HasLineOfSight(*m_caster, Geometry::Vector3(fx, fy, fz), world::terrain::ModelIgnoreFlags::M2))
             {
