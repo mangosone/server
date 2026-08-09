@@ -362,7 +362,16 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recv_data*/)
         // search entrance map for proper show entrance
         if (MapEntry const* corpseMapEntry = sMapStore.LookupEntry(corpsemapid))
         {
-            if (corpseMapEntry->IsDungeon() && corpseMapEntry->CorpseMapID >= 0)
+            // The zero-coordinate screen is the same one ObjectMgr::GetClosestGraveYard
+            // applies, and for the same reason: a valid CorpseMapID with no entrance
+            // coordinates is Map.dbc saying it has no entrance, not saying the entrance
+            // is at the origin. Without it, this answers the corpse query with the
+            // continent's (0, 0) -- for Kalimdor the Mulgore/Stonetalon/Barrens junction,
+            // which is what a player sees as "my corpse is in Stonetalon" after dying
+            // somewhere else entirely. In a clean 2.4.3 Map.dbc that is Naxxramas (533),
+            // the four Tempest Keep wings (550, 552, 553, 554) and Sunwell5Man (598).
+            if (corpseMapEntry->IsDungeon() && corpseMapEntry->CorpseMapID >= 0 &&
+                (corpseMapEntry->Corpse_0 != 0.0f || corpseMapEntry->Corpse_1 != 0.0f))
             {
                 // if corpse map have entrance
                 if (TerrainInfo const* entranceMap = sTerrainMgr.LoadTerrain(corpseMapEntry->CorpseMapID))
