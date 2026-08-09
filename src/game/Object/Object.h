@@ -30,6 +30,7 @@
 #include "Utilities/Errors.h"
 #include "Platform/Define.h"
 #include "Utilities/MathDefines.h"
+#include "terrain/ICollisionModel.hpp"
 #include <set>
 #include "ByteBuffer.h"
 #include "UpdateFields.h"
@@ -37,6 +38,7 @@
 #include "ObjectGuid.h"
 #include "Camera.h"
 #include "GameTime.h"
+#include "SimulationTime.h"
 #include "Geometry/Placement.h"
 #ifdef ENABLE_ELUNA
 #include "LuaValue.h"
@@ -159,40 +161,33 @@ struct WorldLocation
 
 
 /**
- * @brief World update counter
+ * @brief Simulated time between one object's own updates.
  *
- * Measures time between world update ticks.
- * Essential for units updating their spells after cells become active.
+ * Routinely far larger than one tick, and must be: a cell nobody was standing in still
+ * owes its auras the time that passed. That is why this is a clock reading rather than
+ * the tick's diff.
  */
 class WorldUpdateCounter
 {
     public:
-        /**
-         * @brief Constructor
-         */
-        WorldUpdateCounter() : m_tmStart(0) {}
-
-        /**
-         * @brief Get elapsed time since start
-         * @return Elapsed time in milliseconds
-         */
-        time_t timeElapsed()
+        /// Saturates below INT32_MAX, not at the unsigned range: the durations this feeds
+        /// are signed counts clamped at zero, and UINT32_MAX wraps them back to positive.
+        uint32 timeElapsed()
         {
-            if (!m_tmStart)
+            if (!m_started)
             {
-                m_tmStart = GameTime::GetGameTimeMS();
+                Reset();
             }
 
-            return getMSTimeDiff(m_tmStart, GameTime::GetGameTimeMS());
+            const uint64 elapsed = Simulation::Now() - m_last;
+            return elapsed > 0x7FFFFFFFull ? 0x7FFFFFFFu : uint32(elapsed);
         }
 
-        /**
-         * @brief Reset the counter
-         */
-        void Reset() { m_tmStart = GameTime::GetGameTimeMS(); }
+        void Reset() { m_last = Simulation::Now(); m_started = true; }
 
     private:
-        uint32 m_tmStart; ///< Start time in milliseconds
+        uint64 m_last = 0;
+        bool m_started = false; ///< False until the first update, which elapses nothing
 };
 
 /**
@@ -832,8 +827,10 @@ bool SeenWithin(WorldObject const& seen, WorldObject const& viewer, float dist, 
 bool InReach(WorldObject const& a, WorldObject const& b, float dist, bool is3D = true);
 bool InFrontPhased(WorldObject const& a, WorldObject const& b, float dist, float arc);
 bool InBackPhased(WorldObject const& a, WorldObject const& b, float dist, float arc);
-bool HasLineOfSight(WorldObject const& a, WorldObject const& b);
-bool HasLineOfSight(WorldObject const& a, Geometry::Vector3 const& point);
+bool HasLineOfSight(WorldObject const& a, WorldObject const& b,
+                    world::terrain::ModelIgnoreFlags ignore = world::terrain::ModelIgnoreFlags::Nothing);
+bool HasLineOfSight(WorldObject const& a, Geometry::Vector3 const& point,
+                    world::terrain::ModelIgnoreFlags ignore = world::terrain::ModelIgnoreFlags::Nothing);
 bool IsPlaceable(WorldObject const& obj);
 
 // Terrain and grid answers about a position. The component supplies the geometry; the

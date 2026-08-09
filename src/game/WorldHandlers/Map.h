@@ -53,6 +53,7 @@
 #define MANGOS_MAP_H
 
 #include "Utilities/Errors.h"
+#include "terrain/ICollisionModel.hpp"
 #include <mutex>
 #include <shared_mutex>
 #include <list>
@@ -392,7 +393,8 @@ class Map : public GridRefManager<NGridType>
         std::optional<float> FloorNear(float x, float y, float z, float maxSearchDist = 4.0f) const;
         float GetHeight(float x, float y, float z) const;
         bool GetHeightInRange(float x, float y, float& z, float maxSearchDist = 4.0f) const;
-        bool IsInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2) const;
+        bool IsInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2,
+                             world::terrain::ModelIgnoreFlags ignore = world::terrain::ModelIgnoreFlags::Nothing) const;
         bool GetHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, float modifyDist) const;
 
         // Game-object collision body registration (see DynamicCollision)

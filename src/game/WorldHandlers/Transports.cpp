@@ -839,12 +839,12 @@ void Transport::CompleteCrossing()
 }
 
 /**
- * @brief Updates global transport position along its generated path.
+ * @brief Advances the vessel along her route, then runs her deck.
  *
- * @param update_diff The elapsed update time.
- * @param p_time The current path time parameter.
+ * @param update_diff Unused: the route is keyed off absolute time, not elapsed time.
+ * @param p_time The tick of the world map she sails.
  */
-void Transport::Update(uint32 update_diff, uint32 /*p_time*/)
+void Transport::Update(uint32 /*update_diff*/, uint32 p_time)
 {
     // Between two world maps: she belongs to neither until the barrier hands her over, and
     // her own map does not tick without her.
@@ -909,9 +909,15 @@ void Transport::Update(uint32 update_diff, uint32 /*p_time*/)
     // thread of the world map she sails and after that map has finished walking its own
     // containers -- which is what lets everything it sends go straight out, with no queue
     // and no tick of latency.
+    //
+    // The TICK of the map she sails, not this vessel's own elapsed time. A deck is a map,
+    // and a map's diff paces splines, weather and grid state; handing it a catch-up value
+    // would jump all three forward after a crossing, while everyone aboard would ALSO be
+    // catching up through their own counters. The two are not the same number whenever the
+    // vessel skipped a tick, and only one of them is a tick.
     if (m_map)
     {
-        m_map->Update(update_diff);
+        m_map->Update(p_time);
     }
 }
 

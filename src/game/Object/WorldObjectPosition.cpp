@@ -394,14 +394,16 @@ bool InBackPhased(WorldObject const& a, WorldObject const& b, float dist, float 
            pa.IsInBack(pb, dist, arc);
 }
 
-bool HasLineOfSight(WorldObject const& a, Geometry::Vector3 const& point)
+bool HasLineOfSight(WorldObject const& a, Geometry::Vector3 const& point,
+                    world::terrain::ModelIgnoreFlags ignore)
 {
     // The two-yard lift is eye height: a sight line is cast between heads, not feet.
     return a.GetMap()->IsInLineOfSight(a.Where().X(), a.Where().Y(), a.Where().Z() + 2.0f,
-                                       point.x, point.y, point.z + 2.0f);
+                                       point.x, point.y, point.z + 2.0f, ignore);
 }
 
-bool HasLineOfSight(WorldObject const& a, WorldObject const& b)
+bool HasLineOfSight(WorldObject const& a, WorldObject const& b,
+                    world::terrain::ModelIgnoreFlags ignore)
 {
     if (!CanInteract(a, b))
     {
@@ -419,10 +421,10 @@ bool HasLineOfSight(WorldObject const& a, WorldObject const& b)
         }
         return !hull->IsBlocked(
             Geometry::Vector3(pa.X(), pa.Y(), pa.Z() + 2.0f),
-            Geometry::Vector3(pb.X(), pb.Y(), pb.Z() + 2.0f));
+            Geometry::Vector3(pb.X(), pb.Y(), pb.Z() + 2.0f), ignore);
     }
 
-    return HasLineOfSight(a, b.Where().Pos());
+    return HasLineOfSight(a, b.Where().Pos(), ignore);
 }
 
 bool IsPlaceable(WorldObject const& obj)

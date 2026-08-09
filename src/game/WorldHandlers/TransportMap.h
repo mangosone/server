@@ -27,6 +27,7 @@
 #define MANGOS_TRANSPORT_MAP_H
 
 #include "Map.h"
+#include "terrain/ICollisionModel.hpp"
 
 #include <optional>
 #include <string>
@@ -134,7 +135,8 @@ class TransportMap : public Map
                                        float searchUp, float searchDown) const;
 
         /// True when the hull's own geometry stands between two points on it.
-        bool IsBlocked(Geometry::Vector3 const& from, Geometry::Vector3 const& to) const;
+        bool IsBlocked(Geometry::Vector3 const& from, Geometry::Vector3 const& to,
+                       world::terrain::ModelIgnoreFlags ignore = world::terrain::ModelIgnoreFlags::Nothing) const;
 
         /**
          * @brief A spot `distance2d` yards from `master` at its facing plus `angle`.
@@ -156,6 +158,21 @@ class TransportMap : public Map
         /// has been sent the vessel -- it must never be told this map id, having no terrain
         /// for it, and dies in CMap::LoadWdt() looking for one.
         void Embark(Player* passenger);
+
+        /**
+         * @brief Bring a player aboard FROM ANYWHERE, at a named spot on this deck.
+         *
+         * Embark is for the man who walked up the gangplank and whose client already holds
+         * the vessel. This is every other way of arriving -- a teleport, a summon, a script.
+         * The spot goes into his movement state, his client is sent to the WATER she sails
+         * because that is the only map id it can load, and BoardingMap puts him on this map
+         * once the world-port is acked. That is the login path, unchanged.
+         *
+         * @param x,y,z,o A position on THIS map, composed with nothing.
+         * @return false when she cannot take him, and then he has not moved: no hull, bad
+         *         coordinates, or she is mid-seam.
+         */
+        bool Board(Player* passenger, float x, float y, float z, float o, uint32 options = 0);
 
         /// Put him down on the map the ship sails, at the point the CALLER names. Never
         /// called on unregistering: whoever ends the voyage owns the destination.

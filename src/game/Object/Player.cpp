@@ -32,6 +32,7 @@
 #include "Log.h"
 #include "Opcodes.h"
 #include "SpellMgr.h"
+#include "Timer.h"
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -401,6 +402,7 @@ Player::Player(WorldSession* session): Unit(), m_petMgr(this), m_honorMgr(this),
     m_speakCount = 0;
 
     m_visibilityObserverSweepTimer = World::GetVisibilityObserverSweepInterval();
+    m_vesselCrossing = false;
 
     m_objectType |= TYPEMASK_PLAYER;
     m_objectTypeId = TYPEID_PLAYER;
@@ -617,6 +619,8 @@ Player::Player(WorldSession* session): Unit(), m_petMgr(this), m_honorMgr(this),
     m_playerbotMgr = NULL;
 #endif
 
+    // Player::Update reads m_timeSyncTimer, so it cannot wait for the login path to set it.
+    ResetTimeSync();
 }
 
 /**
@@ -1688,6 +1692,26 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         m_cinematicFlyover->Stop();
     }
 
+    // A DECK IS A MAP THE CLIENT CANNOT LOAD, and naming one is asking to be put ABOARD her.
+    // The coordinates are a real place on that map; it is the map ID that must never go on
+    // the wire, because the client dies in CMap::LoadWdt() looking for terrain it has none of.
+    // Board re-enters here naming the water she sails, which is not a vessel map, so this
+    // branch cannot recurse.
+    if (Transport::IsVesselMapId(mapid))
+    {
+        Map* const deck = sMapMgr.FindMap(mapid);
+        TransportMap* const hull = deck ? deck->AsTransport() : NULL;
+        if (!hull)
+        {
+            sLog.outError("TeleportTo: vessel map %u has no hull; %s not moved.",
+                          mapid, GetGuidStr().c_str());
+            return false;
+        }
+
+        // False is ORDINARY here, not a fault -- she may be mid-seam -- and he stays put.
+        return hull->Board(this, x, y, z, orientation, options);
+    }
+
     if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
     {
         sLog.outError("TeleportTo: invalid map %d or absent instance template.", mapid);
@@ -1929,16 +1953,10 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
             Position const* transportPosition = m_movementInfo.GetTransportPos();
 
-            if (m_transport)
-            {
-                final_x += transportPosition->x;
-                final_y += transportPosition->y;
-                final_z += transportPosition->z;
-                final_o += transportPosition->o;
-            }
-
+            // Never composed with the deck offset: BoardingMap()->Add restores him from that
+            // offset on the ack anyway, so the sum's only lasting effect was the fall height.
             m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
-            SetFallInformation(0, final_z);
+            SetFallInformation(0, m_transport ? transportPosition->z : final_z);
             // if the player is saved before worldport ack (at logout for example)
             // this will be used instead of the current location in SaveToDB
 
@@ -6255,7 +6273,7 @@ void Player::ResetTimeSync()
     m_timeSyncCounter = 0;
     m_timeSyncTimer = 0;
     m_timeSyncClient = 0;
-    m_timeSyncServer = GameTime::GetGameTimeMS();
+    m_timeSyncServer = getMSTime();
 }
 
 void Player::SendTimeSync()
@@ -6266,7 +6284,10 @@ void Player::SendTimeSync()
 
     // Schedule next sync in 10 sec
     m_timeSyncTimer = 10000;
-    m_timeSyncServer = GameTime::GetGameTimeMS();
+    // Live clock, not GameTime::GetGameTimeMS(): that one is resampled once per world tick, so
+    // the round trip this stamp anchors would quantise to the tick and the sample filter in
+    // WorldSession::PushTimeSyncSample would see every sample as equally good.
+    m_timeSyncServer = getMSTime();
 }
 
 /**
