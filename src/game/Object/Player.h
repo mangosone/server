@@ -1033,6 +1033,18 @@ class PlayerTaxi
             return m_TaxiDestinations.size() < 2 ? 0 : m_TaxiDestinations[1];
         }
 
+        // Number of nodes still booked, source node included
+        size_t GetDestinationCount() const
+        {
+            return m_TaxiDestinations.size();
+        }
+
+        // Booked node by position, 0 being the source node
+        uint32 GetDestination(size_t idx) const
+        {
+            return idx < m_TaxiDestinations.size() ? m_TaxiDestinations[idx] : 0;
+        }
+
         // Get the current taxi path
         uint32 GetCurrentTaxiPath() const;
 
@@ -1309,6 +1321,11 @@ class Player : public Unit
 
         // Continue the taxi flight
         void ContinueTaxiFlight();
+
+        // Weld the booked legs sharing one mount model into a single flyable route.
+        // Leaves both outputs empty when nothing merges, meaning "fly the single leg".
+        void BuildTaxiRoute(uint32 firstPath, uint32 startNode, uint32 mount,
+                            TaxiPathNodeList& route, std::vector<uint32>& junctions) const;
 
         // Check if the player accepts tickets
         bool isAcceptTickets() const { return GetSession()->GetSecurity() >= SEC_GAMEMASTER && (m_ExtraFlags & PLAYER_EXTRA_GM_ACCEPT_TICKETS); }
@@ -3766,6 +3783,12 @@ class Player : public Unit
         // Get the player's camera
         Camera& GetCamera() { return m_camera; }
 
+        /// Set only for the instant TransportMap has him off both maps. The removal half of
+        /// a crossing must tell nobody: he is out of world just then, so every observer would
+        /// be handed a destroy for a man they are about to be given straight back.
+        bool IsCrossingVessel() const { return m_vesselCrossing; }
+        void SetCrossingVessel(bool crossing) { m_vesselCrossing = crossing; }
+
         // Get the cinematic flyover manager
         CinematicFlyover* GetCinematicFlyover() { return m_cinematicFlyover.get(); }
 
@@ -4291,6 +4314,9 @@ class Player : public Unit
 
         // Countdown (ms) for the periodic observer-side visibility sweep
         uint32 m_visibilityObserverSweepTimer;
+
+        /// True only while TransportMap carries him between a deck and the shore.
+        bool m_vesselCrossing;
 
         // Grid reference for the player
         GridReference<Player> m_gridRef;

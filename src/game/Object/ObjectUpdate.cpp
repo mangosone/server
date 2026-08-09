@@ -298,7 +298,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
         }
 
         // Update movement info time
-        unit->m_movementInfo.UpdateTime(GameTime::GetGameTimeMS());
+        unit->m_movementInfo.UpdateTime(MovementStreamTime());
 
         // A boarded unit has no world position worth sending: the client places it from
         // the vessel's own interpolated pose and the deck offset. A composed world

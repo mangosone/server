@@ -1853,16 +1853,49 @@ const char* Map::GetMapName() const
 /**
  * @brief Updates visibility changes for players around the specified object.
  *
+ * The object-side mirror of Camera::UpdateVisibilityForOwner's relay: a deck and its shore
+ * are two maps, and a cell visit of one reaches no camera on the other.
+ *
  * @param obj The object whose visibility changed.
  * @param cell The cell used as the visit origin.
  * @param cellpair The cell coordinates corresponding to the object.
  */
 void Map::UpdateObjectVisibility(WorldObject* obj, Cell cell, CellPair cellpair)
 {
+    // Mid-crossing he is off both maps for an instant, and out of world means invisible:
+    // notifying now destroys him for everyone who is about to be handed him back unchanged.
+    // The client needs none of it -- the transport change rides the movement broadcast.
+    if (obj->GetTypeId() == TYPEID_PLAYER && ((Player*)obj)->IsCrossingVessel())
+    {
+        return;
+    }
+
     cell.SetNoCreate();
     MaNGOS::VisibleChangesNotifier notifier(*obj);
     TypeContainerVisitor<MaNGOS::VisibleChangesNotifier, WorldTypeMapContainer > player_notifier(notifier);
     cell.Visit(cellpair, player_notifier, *this, *obj, GetVisibilityDistance());
+
+    // PASSENGERS ONLY: creating through this path stamps m_clientGUIDs, and the crew are
+    // deliberately kept out of it -- that would hand them to the distance-based elimination
+    // and empty the deck the first time her waypoint estimate flickered out of reach.
+    TransportMap const* hull = AsTransport();
+    if (!hull || obj->GetTypeId() != TYPEID_PLAYER)
+    {
+        return;
+    }
+
+    // Not mid-seam, as TransportMap::Add also refuses: she still names the map she is
+    // leaving, whose watchers are about to lose her outright.
+    Transport* vessel = hull->Vessel();
+    Map* const sailed = (vessel && !vessel->IsCrossing()) ? vessel->GetMap() : NULL;
+    if (!sailed)
+    {
+        return;
+    }
+
+    Cell::VisitWorldObjects(vessel->Where().X(), vessel->Where().Y(), sailed, notifier,
+                            sailed->GetVisibilityDistance() + hull->HullRadius() +
+                            vessel->NodeSlack());
 }
 
 /**
@@ -3284,11 +3317,14 @@ void Map::PlayDirectSoundToMap(uint32 soundId, uint32 zoneId /*=0*/) const
 /**
  * Function to check if a point is in line of sight from an other point
  */
-bool Map::IsInLineOfSight(float srcX, float srcY, float srcZ, float destX, float destY, float destZ) const
+bool Map::IsInLineOfSight(float srcX, float srcY, float srcZ, float destX, float destY, float destZ,
+                          world::terrain::ModelIgnoreFlags ignore) const
 {
     // Static world (fused terrain + WMO/M2 BVH) first, then the game-object bodies.
     // No pull-back is involved here, so short-circuiting on the static answer is exact.
-    return m_TerrainData->IsInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ)
+    // `ignore` reaches the static side only: a game object is a placed body, never an
+    // M2 doodad, so there is no Mesh category on the dynamic path to filter.
+    return m_TerrainData->IsInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ, ignore)
            && m_dynCollision.IsInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ, PHASE_ANY);
 }
 

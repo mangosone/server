@@ -336,7 +336,8 @@ std::optional<float> TransportMap::SurfaceAt(float x, float y, float z,
            .HighestSolidAtOrBelow(z + searchUp);
 }
 
-bool TransportMap::IsBlocked(Geometry::Vector3 const& from, Geometry::Vector3 const& to) const
+bool TransportMap::IsBlocked(Geometry::Vector3 const& from, Geometry::Vector3 const& to,
+                             world::terrain::ModelIgnoreFlags ignore) const
 {
     const Geometry::Vector3 seg = to - from;
     const float len = std::sqrt(seg.x * seg.x + seg.y * seg.y + seg.z * seg.z);
@@ -345,7 +346,7 @@ bool TransportMap::IsBlocked(Geometry::Vector3 const& from, Geometry::Vector3 co
         return false;
     }
 
-    return !GetTerrain()->IsInLineOfSight(from.x, from.y, from.z, to.x, to.y, to.z);
+    return !GetTerrain()->IsInLineOfSight(from.x, from.y, from.z, to.x, to.y, to.z, ignore);
 }
 
 std::optional<Geometry::Placement> TransportMap::PositionOf(WorldObject const& obj) const
@@ -407,6 +408,11 @@ bool TransportMap::Add(Player* passenger)
     // position on this map, composed with nothing.
     Position const* aboard = passenger->m_movementInfo.GetTransportPos();
     passenger->Place().MoveTo(aboard->x, aboard->y, aboard->z, aboard->o);
+
+    // The reset TeleportTo ends with, put where every door passes: walking aboard, logging in
+    // aboard and riding a seam across all arrive here, and only the teleport cleared them. A
+    // stale run flag leaves him running on the spot for anyone ashore until he moves again.
+    passenger->m_movementInfo.SetMovementFlags(MOVEFLAG_ONTRANSPORT);
 
     passenger->GetMapRef().link(this, passenger);
     passenger->SetMap(this);
@@ -475,7 +481,12 @@ void TransportMap::Embark(Player* passenger)
     DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
                      "Embark: %s", DescribeSpatially(passenger).c_str());
 
+    passenger->SetCrossingVessel(true);
     passenger->GetMap()->Remove(passenger, false);
+    passenger->SetCrossingVessel(false);
+
+    // The add DOES speak: whoever is already aboard has never seen him, while whoever ashore
+    // still holds him is told nothing, because nothing about him changed for them.
     Add(passenger);
 
     // His minions come with him, NOW. UpdateMinions reconciles this once per tick and is
@@ -483,6 +494,66 @@ void TransportMap::Embark(Player* passenger)
     // tick is a pet standing at the rail while its master walks off, which is what a player
     // actually sees. Retail teleports it beside him on the spot; so does this.
     DrawMinionsTo(passenger, this);
+}
+
+bool TransportMap::Board(Player* passenger, float x, float y, float z, float o, uint32 options)
+{
+    Map* const sailed = m_vessel ? m_vessel->GetMap() : NULL;
+    if (!m_commissioned || !sailed || !MapManager::IsValidMapCoord(GetId(), x, y, z, o))
+    {
+        return false;
+    }
+
+    // Mid-seam she names the map she is LEAVING, so his client would be sent to load water
+    // she is about to be off. Refused here, before a single field is written.
+    if (m_vessel->IsCrossing())
+    {
+        return false;
+    }
+
+    Transport* const wasOn = passenger->GetTransport();
+    ObjectGuid const wasGuid = passenger->m_movementInfo.GetTransportGuid();
+    Position const wasAt = *passenger->m_movementInfo.GetTransportPos();
+
+    // Both, and BEFORE the teleport: TeleportTo reads m_transport to know this is a port that
+    // keeps its passenger, and the offset is what actually places him. Same order as login.
+    passenger->SetTransport(m_vessel);
+    passenger->m_movementInfo.SetTransportData(m_vessel->GetObjectGuid(), x, y, z, o, 0);
+
+    // ALREADY ON THE WATER SHE SAILS: there is no world to port to. TeleportTo only takes the
+    // near path when m_transport is NULL, and it is not -- we just set it -- so it would take
+    // the far one and try to add him to the map he is standing on. Map::CanEnter refuses,
+    // the far path has nowhere to put him, and the world goes down. Walking aboard IS the
+    // operation here, and Embark is what does it.
+    if (passenger->GetMap() == sailed)
+    {
+        Embark(passenger);
+        return true;
+    }
+
+    // Her world pose is coarse and it only names the grid his client must load. It is never
+    // where he ends up -- the deck offset above is.
+    if (passenger->TeleportTo(sailed->GetId(),
+                              m_vessel->Where().X(), m_vessel->Where().Y(),
+                              m_vessel->Where().Z(), m_vessel->Where().Facing(),
+                              options | TELE_TO_NOT_LEAVE_TRANSPORT))
+    {
+        return true;
+    }
+
+    // A refused port must not leave him holding a ship he is not standing on: every question
+    // about where he is would then answer from her deck while his body is somewhere else.
+    passenger->SetTransport(wasOn);
+    if (wasOn)
+    {
+        passenger->m_movementInfo.SetTransportData(wasGuid, wasAt.x, wasAt.y, wasAt.z, wasAt.o, 0);
+    }
+    else
+    {
+        passenger->m_movementInfo.ClearTransportData();
+    }
+
+    return false;
 }
 
 void TransportMap::Disembark(Player* passenger, float x, float y, float z, float o)
@@ -501,7 +572,10 @@ void TransportMap::Disembark(Player* passenger, float x, float y, float z, float
     DEBUG_FILTER_LOG(LOG_FILTER_DECK_MINIONS,
                      "Disembark: %s", DescribeSpatially(passenger).c_str());
 
+    passenger->SetCrossingVessel(true);
     Remove(passenger, false);
+    passenger->SetCrossingVessel(false);
+
     passenger->Place().MoveTo(x, y, z, o);
 
     // BEFORE the add, not after. Map::Add sends SendInitTransports, whose loop skips
@@ -517,6 +591,51 @@ void TransportMap::Disembark(Player* passenger, float x, float y, float z, float
     DrawMinionsTo(passenger, sailed);
 }
 
+namespace
+{
+/// Everyone for whom `world` is the water they are looking at: those standing on it, and
+/// those on the deck of any other vessel sailing it. A deck is its own map, so the second
+/// group is in no player list of the first -- and a vessel that changed map without telling
+/// them stayed drawn on their horizon for good.
+template<typename Fn>
+void ForEachWatcherOf(Map* world, Transport const* skip, Fn fn)
+{
+    Map::PlayerList const& ashore = world->GetPlayers();
+    for (Map::PlayerList::const_iterator itr = ashore.begin(); itr != ashore.end(); ++itr)
+    {
+        if (Player* watcher = itr->getSource())
+        {
+            fn(watcher);
+        }
+    }
+
+    MapManager::TransportsByMapType::const_iterator vessels =
+        sMapMgr.m_TransportsByMap.find(world->GetId());
+    if (vessels == sMapMgr.m_TransportsByMap.end())
+    {
+        return;
+    }
+
+    for (Transport* other : vessels->second)
+    {
+        TransportMap* hull = (other == skip) ? NULL : other->AsMap();
+        if (!hull || other->GetMap() != world)
+        {
+            continue;
+        }
+
+        Map::PlayerList const& aboard = hull->GetPlayers();
+        for (Map::PlayerList::const_iterator itr = aboard.begin(); itr != aboard.end(); ++itr)
+        {
+            if (Player* watcher = itr->getSource())
+            {
+                fn(watcher);
+            }
+        }
+    }
+}
+}
+
 void TransportMap::VesselLeavingWorld(Map* oldWorld, uint32 newMapId,
                                       float x, float y, float z, float o)
 {
@@ -526,15 +645,11 @@ void TransportMap::VesselLeavingWorld(Map* oldWorld, uint32 newMapId,
     }
 
     // From EVERYONE there, not from a range: possession of a vessel is map membership, and
-    // this is the moment membership ends.
-    PlayerList const& ashore = oldWorld->GetPlayers();
-    for (PlayerList::const_iterator itr = ashore.begin(); itr != ashore.end(); ++itr)
-    {
-        if (Player* leaving = itr->getSource())
-        {
-            RetractVessel(m_vessel, leaving);
-        }
-    }
+    // this is the moment membership ends. Decks included -- they were announced her by
+    // TransportMap::Add and nothing else will ever take her away from them.
+    Transport* const vessel = m_vessel;
+    ForEachWatcherOf(oldWorld, vessel,
+                     [vessel](Player* leaving) { RetractVessel(vessel, leaving); });
 
     // Snapshotted: TeleportTo takes the player off this map, and the reference manager being
     // walked is the one it edits.
@@ -570,15 +685,11 @@ void TransportMap::VesselEnteredWorld(Map* newWorld)
     }
 
     // The same channel that took her away gives her back: everyone on the new map gains her
-    // by membership, here and now, with no distance asked.
-    PlayerList const& arriving = newWorld->GetPlayers();
-    for (PlayerList::const_iterator itr = arriving.begin(); itr != arriving.end(); ++itr)
-    {
-        if (Player* found = itr->getSource())
-        {
-            AnnounceVessel(m_vessel, found);
-        }
-    }
+    // by membership, here and now, with no distance asked -- decks included, for the same
+    // reason they are in the retraction.
+    Transport* const vessel = m_vessel;
+    ForEachWatcherOf(newWorld, vessel,
+                     [vessel](Player* found) { AnnounceVessel(vessel, found); });
 }
 
 void TransportMap::EnlistCrew(Creature* crew)

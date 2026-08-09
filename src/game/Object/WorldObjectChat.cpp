@@ -424,9 +424,53 @@ void WorldObject::SendMessageToSetInRange(WorldPacket* data, float dist, bool /*
 void WorldObject::SendMessageToSetExcept(WorldPacket* data, Player const* skipped_receiver) const
 {
     // if object is in world, map for it already created!
-    if (IsInWorld())
+    if (!IsInWorld())
     {
-        MaNGOS::MessageDelivererExcept notifier(data, skipped_receiver);
-        Cell::VisitWorldObjects(this, notifier, GetMap()->GetBroadcastRadius());
+        return;
+    }
+
+    MaNGOS::MessageDelivererExcept notifier(data, skipped_receiver);
+    Cell::VisitWorldObjects(this, notifier, GetMap()->GetBroadcastRadius());
+
+    // BOTH RELAYS THAT SendMessageToSet CARRIES, for the reasons spelled out there. Their
+    // absence here is why a deckhand's MOVEMENT froze for the pier while his emotes did not:
+    // movement is the one thing that broadcasts through this overload.
+    if (GetMap()->AsTransport())
+    {
+        for (Player* observer : GetMap()->ExternalObservers())
+        {
+            if (observer && observer != skipped_receiver && observer->GetSession())
+            {
+                observer->GetSession()->SendPacket(data);
+            }
+        }
+
+        return;
+    }
+
+    MapManager::TransportsByMapType::const_iterator vessels =
+        sMapMgr.m_TransportsByMap.find(GetMapId());
+    if (vessels == sMapMgr.m_TransportsByMap.end())
+    {
+        return;
+    }
+
+    for (Transport* vessel : vessels->second)
+    {
+        TransportMap* hull = vessel->AsMap();
+        if (!hull || vessel->GetMap() != GetMap())
+        {
+            continue;
+        }
+
+        Map::PlayerList const& aboard = hull->GetPlayers();
+        for (Map::PlayerList::const_iterator itr = aboard.begin(); itr != aboard.end(); ++itr)
+        {
+            Player* passenger = itr->getSource();
+            if (passenger && passenger != skipped_receiver && passenger->GetSession())
+            {
+                passenger->GetSession()->SendPacket(data);
+            }
+        }
     }
 }
