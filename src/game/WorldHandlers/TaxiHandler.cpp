@@ -171,7 +171,20 @@ void WorldSession::SendDoFlight(uint32 mountDisplayId, uint32 path, uint32 pathN
         _player->Mount(mountDisplayId);
     }
 
-    _player->GetMotionMaster()->MoveTaxiFlight(path, pathNode);
+    // Every hub sharing this mount model is flown straight through on one spline; the next
+    // one that changes the model ends this generator, and lands and remounts you there.
+    TaxiPathNodeList route;
+    std::vector<uint32> junctions;
+    _player->BuildTaxiRoute(path, pathNode, mountDisplayId, route, junctions);
+
+    if (junctions.empty())
+    {
+        _player->GetMotionMaster()->MoveTaxiFlight(path, pathNode);
+    }
+    else
+    {
+        _player->GetMotionMaster()->MoveTaxiFlight(route, junctions);
+    }
 }
 
 /**

@@ -311,10 +311,11 @@ TEST(TileRoundTripPreservesTheBakedBvhAndItsQueries)
     }
     CHECK_EQ(mismatches, size_t(0));
 
-    const auto liquid = readWmo->LiquidLocal(Vec3{-2.f, -2.f, 0.f});
-    REQUIRE(liquid.has_value());
-    CHECK_EQ(liquid->z, 2.5f);
-    CHECK_EQ(liquid->entry, uint16_t(19));
+    std::vector<ICollisionModel::LocalLiquid> liquid;
+    readWmo->LiquidsLocal(Vec3{-2.f, -2.f, 0.f}, liquid);
+    REQUIRE(liquid.size() == size_t(1));
+    CHECK_EQ(liquid[0].z, 2.5f);
+    CHECK_EQ(liquid[0].entry, uint16_t(19));
 
     REQUIRE(back->instances[2].model->Kind() == ModelKind::Mesh);
     CHECK(back->instances[2].model->RaycastNearest(Vec3{0, 0, 20}, Vec3{0, 0, -1}, 100.f)

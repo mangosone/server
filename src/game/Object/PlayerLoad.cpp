@@ -501,19 +501,18 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
         Position const* transportPosition = m_movementInfo.GetTransportPos();
 
-        if (!MaNGOS::IsValidMapCoord(
-                    Where().X() + transportPosition->x, Where().Y() + transportPosition->y,
-                    Where().Z() + transportPosition->z, Where().Facing() + transportPosition->o) ||
-            // The saved place on the deck map, bounded the same way and symmetrically:
-            // the old test read the positive side only, so a character who logged out
-            // forward of the mast was sent to his homebind.
-                std::fabs(transportPosition->x) > MAX_DECK_EXTENT ||
-                std::fabs(transportPosition->y) > MAX_DECK_EXTENT ||
-                std::fabs(transportPosition->z) > MAX_DECK_EXTENT)
+        // The saved place on the DECK MAP, and nothing else: bounded symmetrically, because
+        // the old test read the positive side only and sent a character who logged out
+        // forward of the mast to his homebind. What it used to test first -- world position
+        // PLUS this offset -- named no map at all, and the world half of that sum is the
+        // ship's coarse waypoint estimate written by the branch fifty lines below.
+        if (std::fabs(transportPosition->x) > MAX_DECK_EXTENT ||
+            std::fabs(transportPosition->y) > MAX_DECK_EXTENT ||
+            std::fabs(transportPosition->z) > MAX_DECK_EXTENT)
         {
             sLog.outError("%s have invalid transport coordinates (X: %f Y: %f Z: %f O: %f). Teleport to default race/class locations.",
-                          guid.GetString().c_str(), Where().X() + transportPosition->x, Where().Y() + transportPosition->y,
-                          Where().Z() + transportPosition->z, Where().Facing() + transportPosition->o);
+                          guid.GetString().c_str(), transportPosition->x, transportPosition->y,
+                          transportPosition->z, transportPosition->o);
 
             RelocateToHomebind();
 

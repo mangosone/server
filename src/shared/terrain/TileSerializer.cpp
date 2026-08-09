@@ -368,12 +368,11 @@ namespace world::terrain
                 }
 
                 std::vector<uint16_t> triGroup;
+                Bvh bvh;
                 ok = ok && RVec(f, soup.verts) && RVec(f, soup.tris) &&
                      RVec(f, triGroup) && RVec(f, nodes) &&
-                     triGroup.size() == soup.tris.size() && soup.IndicesValid();
-
-                Bvh bvh;
-                ok = ok && bvh.Adopt(std::move(nodes), soup.tris.size());
+                     triGroup.size() == soup.tris.size() && soup.IndicesValid() &&
+                     bvh.Adopt(std::move(nodes), soup.tris.size());
                 if (ok)
                 {
                     models[i] = std::make_shared<WmoModel>(std::move(soup),
@@ -384,11 +383,10 @@ namespace world::terrain
             }
             else if (kind == uint8_t(ModelKind::Mesh))
             {
-                ok = RVec(f, soup.verts) && RVec(f, soup.tris) && RVec(f, nodes) &&
-                     soup.IndicesValid();
-
                 Bvh bvh;
-                ok = ok && bvh.Adopt(std::move(nodes), soup.tris.size());
+                ok = RVec(f, soup.verts) && RVec(f, soup.tris) && RVec(f, nodes) &&
+                     soup.IndicesValid() &&
+                     bvh.Adopt(std::move(nodes), soup.tris.size());
                 if (ok)
                 {
                     models[i] = std::make_shared<CollisionModel>(std::move(soup),

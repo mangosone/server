@@ -604,7 +604,7 @@ void Spell::update(uint32 difftime)
     if (m_targets.getUnitTarget() && (m_targets.getUnitTarget() != m_caster) && IsSingleTargetSpell(m_spellInfo) &&
         !IsNextMeleeSwingSpell() && !IsAutoRepeat() && !m_IsTriggeredSpell)
     {
-        if (!HasLineOfSight(*m_caster, *m_targets.getUnitTarget()))
+        if (!HasLineOfSight(*m_caster, *m_targets.getUnitTarget(), world::terrain::ModelIgnoreFlags::M2))
         {
             cancel();
             return;

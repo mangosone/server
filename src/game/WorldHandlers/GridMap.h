@@ -225,8 +225,11 @@ class TerrainInfo : public Referencable<AtomicLong>
         // Static line of sight, and the nearest static hit along a segment as a fraction
         // of it (> 1 when nothing blocks). Both take the segment VERBATIM -- any
         // agent-height lift is the caller's, and every caller already applies its own.
-        bool IsInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2) const;
-        float NearestHitFraction(float x1, float y1, float z1, float x2, float y2, float z2) const;
+        bool IsInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2,
+                             world::terrain::ModelIgnoreFlags ignore = world::terrain::ModelIgnoreFlags::Nothing) const;
+        float NearestHitFraction(float x1, float y1, float z1, float x2, float y2, float z2,
+                                 world::terrain::ModelIgnoreFlags ignore =
+                                     world::terrain::ModelIgnoreFlags::Nothing) const;
 
         // Ages the tile cache and reclaims what no active grid holds.
         void CleanUpGrids(const uint32 diff);

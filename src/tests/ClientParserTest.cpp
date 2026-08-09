@@ -685,7 +685,7 @@ TEST(WmoGroupKeepsDetailFacesThatAlsoCollide)
     Blob group = MakeMogpGroup(0, 15, 4242, nested);
 
     WmoGroupData g;
-    REQUIRE(ParseWmoGroup(group.b, 0, g));
+    REQUIRE(ParseWmoGroup(group.b, 0, g) == WmoGroupParse::Loaded);
     CHECK_EQ(g.groupWmoId, uint32_t(4242));
     CHECK_EQ(g.verts.size(), size_t(4));
     CHECK_EQ(g.tris.size(), size_t(2));
@@ -716,7 +716,7 @@ TEST(WmoGroupLiquidUsesWotlkRows)
         Blob group = MakeMogpGroup(e.mogpFlags, e.groupLiquid, 0, nested);
 
         WmoGroupData g;
-        REQUIRE(ParseWmoGroup(group.b, 0, g));
+        REQUIRE(ParseWmoGroup(group.b, 0, g) == WmoGroupParse::Loaded);
         REQUIRE(g.hasLiquid);
         CHECK_EQ(g.liquid.entry, e.entry);
         CHECK_EQ(g.liquid.tilesX, uint32_t(2));
@@ -732,7 +732,7 @@ TEST(WmoGroupLiquidTakesRawDbcIdWhenRootSaysSo)
     Blob group = MakeMogpGroup(0, 41, 0, nested);
 
     WmoGroupData g;
-    REQUIRE(ParseWmoGroup(group.b, 0x4, g));
+    REQUIRE(ParseWmoGroup(group.b, 0x4, g) == WmoGroupParse::Loaded);
     REQUIRE(g.hasLiquid);
     CHECK_EQ(g.liquid.entry, uint16_t(41));
 }
@@ -744,18 +744,21 @@ TEST(WmoGroupLiquidFallsBackToTileNibble)
     Blob group = MakeMogpGroup(0, 15, 0, nested);
 
     WmoGroupData g;
-    REQUIRE(ParseWmoGroup(group.b, 0, g));
+    REQUIRE(ParseWmoGroup(group.b, 0, g) == WmoGroupParse::Loaded);
     REQUIRE(g.hasLiquid);
     CHECK_EQ(g.liquid.entry, uint16_t(19));
 }
 
-TEST(WmoGroupWithoutGeometryOrLiquidIsRejected)
+TEST(WmoGroupWithoutGeometryOrLiquidIsEmptyNotMalformed)
 {
+    // The ordinary render-only, portal or ambient group. It is skipped, and the
+    // building it belongs to still loads -- which is the whole point of the
+    // distinction: most groups in any WMO land here.
     Blob nested;
     Blob group = MakeMogpGroup(0, 15, 0, nested);
 
     WmoGroupData g;
-    CHECK(!ParseWmoGroup(group.b, 0, g));
+    CHECK(ParseWmoGroup(group.b, 0, g) == WmoGroupParse::Empty);
 }
 
 TEST(WmoRootReadsHeaderAndDoodadNameOffsets)

@@ -157,7 +157,7 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
     {
         sLog.outString("%d/%d Bot %s logged in", playerBots.size(), sRandomPlayerbotMgr.GetMaxAllowedBotCount(), bot->GetName());
-        if (sConfig.GetBoolDefault("BeepAtStart", true) && playerBots.size() == sRandomPlayerbotMgr.GetMaxAllowedBotCount())
+        if (sConfig.GetBoolDefault("Console.BeepAtStart", true) && playerBots.size() == sRandomPlayerbotMgr.GetMaxAllowedBotCount())
         {
             printf("\a");
         }

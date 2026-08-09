@@ -15,9 +15,24 @@ namespace world::terrain
     // derives from CollisionModel, so a cast chain would silently depend on its order.
     enum class ModelKind : uint8_t
     {
-        Mesh = 0,
+        Mesh = 0,   ///< an M2 doodad's hull
         Wmo = 1
     };
+
+    /// Which model categories a ray test skips. Spell-side line of sight passes M2 so
+    /// decorative doodads -- banners, pews, candle holders -- do not block a spell the
+    /// way structural WMO geometry does. In a baked tile that category IS
+    /// ModelKind::Mesh, so the filter needs no per-instance tag of its own.
+    enum class ModelIgnoreFlags : uint32_t
+    {
+        Nothing = 0x00,
+        M2      = 0x01
+    };
+
+    inline ModelIgnoreFlags operator&(ModelIgnoreFlags a, ModelIgnoreFlags b)
+    {
+        return ModelIgnoreFlags(uint32_t(a) & uint32_t(b));
+    }
 
     class ICollisionModel
     {
@@ -49,10 +64,15 @@ namespace world::terrain
             bool deep = false;
         };
 
-        virtual std::optional<LocalLiquid> LiquidLocal(const Vec3& pModel) const
+        // EVERY surface over the point, appended, never one chosen from among them. A
+        // model cannot tell which of its stacked rooms the query is in -- it is handed a
+        // point on the sweep column, not the queried position -- and choosing here once
+        // put a player dry on the ground floor into the pool one storey above. Which
+        // surface a question means is a selection over the whole gather, made by Column.
+        virtual void LiquidsLocal(const Vec3& pModel, std::vector<LocalLiquid>& out) const
         {
             (void)pModel;
-            return std::nullopt;
+            (void)out;
         }
     };
 }

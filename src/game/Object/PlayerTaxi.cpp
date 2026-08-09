@@ -212,3 +212,102 @@ uint32 PlayerTaxi::GetCurrentTaxiPath() const
 
     return path;
 }
+
+/**
+ * @brief Welds the booked legs that share a mount model into one flyable route.
+ *
+ * @param firstPath  Taxi path id of the leg about to be flown.
+ * @param startNode  First node of that leg to fly from.
+ * @param mount      Mount model already in use for this leg; legs that want another one end it.
+ * @param route      Receives the concatenated nodes, already sliced to startNode.
+ * @param junctions  Receives the route index of each hub that is now flown through.
+ */
+void Player::BuildTaxiRoute(uint32 firstPath, uint32 startNode, uint32 mount,
+                            TaxiPathNodeList& route, std::vector<uint32>& junctions) const
+{
+    route.clear();
+    junctions.clear();
+
+    if (firstPath >= sTaxiPathNodesByPath.size())
+    {
+        return;
+    }
+
+    std::vector<TaxiPathNodeEntry const*> nodes;
+
+    TaxiPathNodeList const& first = sTaxiPathNodesByPath[firstPath];
+    bool mergeable = true;
+
+    for (size_t i = startNode; i < first.size(); ++i)
+    {
+        nodes.push_back(&first[i]);
+        if (first[i].ContinentID != GetMapId())
+        {
+            // A leg that leaves this map keeps its own spline: the teleport handshake in
+            // HandleMoveSplineDoneOpcode indexes the very leg it is flying.
+            mergeable = false;
+        }
+    }
+
+    if (nodes.empty())
+    {
+        return;
+    }
+
+    for (size_t leg = 1; mergeable && leg + 1 < m_taxi.GetDestinationCount(); ++leg)
+    {
+        const uint32 src = m_taxi.GetDestination(leg);
+
+        // A hub that hands out a different mount model is where the flight is SUPPOSED to
+        // break -- you land, dismount and remount there. Every other hub is flown through.
+        // Same lookup flags HandleMoveSplineDoneOpcode would have used for this leg.
+        if (sObjectMgr.GetTaxiMountDisplayId(src, GetTeam()) != mount)
+        {
+            break;
+        }
+
+        uint32 path, cost;
+        sObjectMgr.GetTaxiPath(src, m_taxi.GetDestination(leg + 1), path, cost);
+
+        if (!path || path >= sTaxiPathNodesByPath.size())
+        {
+            break;
+        }
+
+        TaxiPathNodeList const& next = sTaxiPathNodesByPath[path];
+        if (next.size() < 2)
+        {
+            break;
+        }
+
+        bool sameMap = true;
+        for (size_t i = 0; i < next.size() && sameMap; ++i)
+        {
+            sameMap = (next[i].ContinentID == GetMapId());
+        }
+
+        if (!sameMap)
+        {
+            break;
+        }
+
+        junctions.push_back(uint32(nodes.size() - 1));
+
+        // Node 0 is the hub itself, already the last node of the leg just appended.
+        for (size_t i = 1; i < next.size(); ++i)
+        {
+            nodes.push_back(&next[i]);
+        }
+    }
+
+    if (junctions.empty())
+    {
+        return;
+    }
+
+    route.resize(uint32(nodes.size()));
+    for (size_t i = 0; i < nodes.size(); ++i)
+    {
+        route.set(i, TaxiPathNodePtr(nodes[i]));
+    }
+}

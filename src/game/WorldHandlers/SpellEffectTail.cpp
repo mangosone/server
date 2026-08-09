@@ -319,7 +319,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
             fz = liqData.level;
             // finally, check LoS
-            if (!HasLineOfSight(*m_caster, Geometry::Vector3(fx, fy, fz)))
+            if (!HasLineOfSight(*m_caster, Geometry::Vector3(fx, fy, fz), world::terrain::ModelIgnoreFlags::M2))
             {
                 SendCastResult(SPELL_FAILED_LINE_OF_SIGHT);
                 SendChannelUpdate(0);

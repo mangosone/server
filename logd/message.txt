@@ -1,0 +1,24 @@
+R1 : No snap-backs at all (rubber banding)
+R2 : M appears and moves smoothly — no stall, no backward slide
+R3 : No Difference
+R4 : Cast completes; the root visibly holds
+R5 : Both clients see M on the surface
+R6 : No position jump when the ACK lands
+
+R7 : Arrive aboard, on the deck, at the right spot (however following a player onto the boat the first player phases and disappears and reappears on the boat running in place then you walk on the boat and they run in place till they move.  Same when leaving the boat, but if you are on the boat when they board they phase and appear on the boat but do not run in place if you are on the boat first, or on the dock first.  
+
+However boat rides are fine.  Same rules apply for Zeplin rides except one difference the Zep from Org You can see your target get on the Zep but then does not move till you get on.  The Zep to Stranglethorn you cannot see the target on the Zep till after you board it.  So in both cases you cannot see the target walk it either.  Getting off and on the Zeplins as individuals you are in the right spot on both.  However on any boat, zeplin whatever you will not see the targets true position till they move then they pop into the spot.
+
+R8 : Back on the deck, not at homebind
+R9 : M's own pose and flags are unchanged after release
+R10 : No disconnect, no error spam
+
+F1 : I was not sure which boat to reference so I did both the traveling boat and large boat in Tanaris with mob on it.  Travel boat no once you get on the boat you stand still and the target does not move according to the other player unless you are on the boat.  If its a fixed boat like in Tanaris yes you can see the target walk the entire distance.
+
+F2 : Melee lands and loot works: the server pose tracks the client (7.1, 7.2) (again not sure which boat, I used the tanaris one.
+F3 : No fall damage on disembark (7.5, 7.9)
+F4 : No fall damage aboard, and none carried ashore afterwards (7.5)
+F5 : Land on the dock, not in the middle of Lordamere Lake
+F6 : It moves on the deck, not at a continent coordinate (7.7)
+F7 : No kick and no rubber-band. This path is unchanged — it is the baseline
+F8 : The create block shows flying immediately, not only after the ACK (7.10)

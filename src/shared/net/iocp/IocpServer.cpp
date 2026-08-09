@@ -470,6 +470,12 @@ void IocpServer::handleAccept(AcceptOv* aov, DWORD /*bytes*/) {
     setsockopt(aov->clientSock, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
                reinterpret_cast<char*>(&listenSnapshot), sizeof(listenSnapshot));
 
+    // Nagle holds a movement relay back until the peer's delayed ACK fires, ~200ms, which on
+    // a LAN is the whole of the stutter. The listener sets no options for accept to inherit.
+    const int one = 1;
+    setsockopt(aov->clientSock, IPPROTO_TCP, TCP_NODELAY,
+               reinterpret_cast<const char*>(&one), sizeof(one));
+
     auto* ctx  = new ConnCtx(m_factory);
     ctx->sock  = aov->clientSock;
     ctx->owner = this;
