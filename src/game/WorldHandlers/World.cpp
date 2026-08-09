@@ -1374,9 +1374,6 @@ void World::Update(uint32 diff)
     sRandomPlayerbotMgr.UpdateSessions(diff);
 #endif
 
-    /// <li> Handle session updates
-    UpdateSessions(diff);
-
     /// <li> Update uptime table
     if (m_timers[WUPDATE_UPTIME].Passed())
     {
@@ -1388,8 +1385,6 @@ void World::Update(uint32 diff)
     }
 
     /// <li> Handle all other objects
-    ///- Update objects (maps, transport, creatures,...)
-    sMapMgr.Update(diff);
     sBattleGroundMgr.Update(diff);
     sOutdoorPvPMgr.Update(diff);
 
@@ -2090,6 +2085,23 @@ void World::ShutdownCancel()
         e->OnShutdownCancel();
     }
 #endif /* ENABLE_ELUNA */
+}
+
+/**
+ * @brief Drains the session mailboxes and runs the maps. The player-visible half of a tick.
+ *
+ * Kept apart from Update() because movement is drained inside Map::Update (PROCESS_THREADSAFE,
+ * via MapSessionFilter) and relayed from there, so a map update IS the movement relay. While
+ * the two shared a beat that relay could only fire in whole multiples of the world heartbeat:
+ * a 2026-08-02 trace showed arrivals a median 15ms apart leaving on a 100ms grid, in bursts of
+ * up to 17 packets, each burst collapsing ~50ms of client movement into one instant.
+ *
+ * Sessions before maps, as when the two lived in one function.
+ */
+void World::UpdateSimulation(uint32 diff)
+{
+    UpdateSessions(diff);
+    sMapMgr.Update(diff);
 }
 
 /**

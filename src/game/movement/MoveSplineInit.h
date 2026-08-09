@@ -56,7 +56,7 @@ namespace Movement
             /**
              * @brief Stops any creature movement.
              */
-            void Stop();
+            void Stop(bool forceSend = false);
 
             /**
              * @brief Adds final facing animation.

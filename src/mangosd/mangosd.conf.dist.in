@@ -140,12 +140,29 @@ BindIP                       = "0.0.0.0"
 #        Default: 300000 (5 min)
 #
 #    MapUpdateInterval
-#        Map update interval (in milliseconds)
-#        Default: 100
+#        How often the simulation runs, in milliseconds: maps, creatures, and the session
+#        mailboxes that feed them. Movement packets are drained and relayed inside a map
+#        update, so this is directly the granularity at which other players' positions
+#        arrive on a client -- raise it and they will look steppy, whatever the ping says.
+#        Independent of the world heartbeat, which keeps auctions, mail and events on its
+#        own 50ms beat. Floored at 10; there is nothing to gain below that, since a 2.4.3
+#        client emits movement about every 15ms.
+#        Default: 10
 #
 #    MapUpdateThreads
 #        Number of map update threads to run
 #        Default: 2
+#
+#    MovementPacketDelay
+#        Playout buffer for relayed movement, in milliseconds. A movement packet is
+#        rebroadcast with its timestamp moved into the near future by this much, so the
+#        observing client interpolates towards a position it already holds instead of
+#        dead-reckoning past the last one it got. Set it to 0 and remote players overshoot
+#        every stop and every hard turn, then snap back.
+#        Raising it costs a visible delay on remote units; lowering it costs smoothness.
+#        TrinityCore uses the same 500 and documents it as inferred, not measured, so this
+#        is the one value here genuinely worth A/B testing on your own players.
+#        Default: 500
 #
 #    ChangeWeatherInterval
 #        Weather update interval (in milliseconds)
@@ -227,8 +244,9 @@ MaxOverspeedPings                 = 2
 GridUnload                        = 1
 LoadAllGridsOnMaps                = ""
 GridCleanUpDelay                  = 300000
-MapUpdateInterval                 = 100
+MapUpdateInterval                 = 10
 MapUpdateThreads                  = 2
+MovementPacketDelay               = 500
 ChangeWeatherInterval             = 600000
 PlayerSave.Interval               = 900000
 PlayerSave.Stats.MinLevel         = 0
@@ -858,8 +876,6 @@ StartPlayerLevel                          = 1
 StartPlayerMoney                          = 0
 MaxHonorPoints                            = 75000
 StartHonorPoints                          = 0
-MinHonorKills                             = 15
-MaintenanceDay                            = 3
 InstantLogout                             = 1
 AllFlightPaths                            = 0
 InstantFlightPaths                        = 0
@@ -1763,24 +1779,6 @@ OutdoorPvp.NAEnabled = 1
 ################################################################################
 # NETWORK CONFIG
 #
-#    Network.Threads
-#         Number of threads for network queue handling, we recommend a minimum of 3,
-#         additional threads will assist with greater numbers of players.
-#         Default: 3
-#
-#    Network.OutKBuff
-#         The size of the output kernel buffer used ( SO_SNDBUF socket option, tcp manual ).
-#         Default: -1 (Use system default setting)
-#
-#    Network.OutUBuff
-#         Userspace buffer for output. This is amount of memory reserved per each connection.
-#         Default: 65536
-#
-#    Network.TcpNoDelay:
-#         TCP Nagle algorithm setting
-#         Default: 0 (enable Nagle algorithm, less traffic, more latency)
-#                  1 (TCP_NO_DELAY, disable Nagle algorithm, more traffic but less latency)
-#
 #    Network.KickOnBadPacket
 #         Kick player on bad packet format.
 #         Default: 0 - do not kick
@@ -1788,10 +1786,6 @@ OutdoorPvp.NAEnabled = 1
 #
 ################################################################################
 
-Network.Threads         = 3
-Network.OutKBuff        = -1
-Network.OutUBuff        = 65536
-Network.TcpNodelay      = 1
 Network.KickOnBadPacket = 0
 
 ################################################################################
@@ -1991,12 +1985,6 @@ Realm.RecommendedOrNew = 0
 #       Default:     true  - (enabled)
 #                    false - (disabled)
 #
-#   Eluna.CompatibilityMode
-#       Description: Toggles Eluna between compatibility mode (single-threaded) or multistate mode.
-#                    Compatibility mode limits the core to a single map update thread.
-#       Default:     true  - (enabled)
-#                    false - (disabled)
-#
 #   Eluna.OnlyOnMaps
 #       Description: When Eluna is enabled, a state will only be created for a list of specified maps
 #                    This only works for multistate mode.
@@ -2017,7 +2005,6 @@ Realm.RecommendedOrNew = 0
 ###################################################################################################
 
 Eluna.Enabled = true
-Eluna.CompatibilityMode = false
 Eluna.OnlyOnMaps = ""
 Eluna.TraceBack = false
 Eluna.ScriptPath = "lua_scripts"
