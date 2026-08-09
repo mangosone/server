@@ -275,7 +275,21 @@ void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
 {
     MotionMaster* creatureMotion = m_creature->GetMotionMaster();
     MovementGeneratorType mmgen = creatureMotion->GetCurrentMovementGeneratorType();
-    creatureMotion->MovementExpired(false);
+
+    // NOTHING IS POPPED HERE. A MovementExpired(false) on this line takes the top
+    // generator off the stack whatever it is -- including the ConfusedMovementGenerator
+    // a polymorph put there. Its Finalize clears UNIT_STAT_CONFUSED, MoveChase below
+    // pushes the chase, and the AURA is never touched: the creature keeps the sheep model
+    // and a debuff that goes on counting down while it walks over and hits you. That is
+    // the "sheep breaks but stays polymorphed" report, and the pop was the whole of it.
+    //
+    // MoveChase has no CC guard of its own -- MoveFollow directly below it in
+    // MotionMaster does, on UNIT_STAT_LOST_CONTROL, and that mask is FLEEING|CONTROLLED
+    // and does not even include CONFUSED -- so this line was the only thing standing
+    // between an AttackStart and a chase on top of live crowd control.
+    //
+    // Neither 00_mangos_zero nor 02_mangos_two has it; both go straight to the test
+    // below. It was local to this core.
 
     if (IsCombatMovement())
     {
