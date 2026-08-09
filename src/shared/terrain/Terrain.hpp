@@ -21,14 +21,37 @@ namespace world::terrain
 
     constexpr int FusedTerrainGridCount = 64;
 
+    /// What a segment query answers with when nothing was hit. Any value past 1.0 says
+    /// "beyond the far end"; naming it keeps every producer and every test on one word.
+    constexpr float NO_HIT_FRACTION = 2.0f;
+
     inline float GridCoord(float c) { return GRID_PER_TILE * (MAP_CENTER - c / TILE_SIZE); }
 
+    /// TWO defects, at opposite ends of the same axis. Both fixes are required; each
+    /// was found independently, and either one alone still answers wrongly at the end
+    /// it does not cover.
+    ///
     /// FLOOR, not truncate. The shift already floors for a negative grid coordinate,
     /// but the conversion to int in front of it truncates toward zero: a grid
     /// coordinate in (-1, 0) -- the 4.16-yard strip at the far corner of the map --
     /// became 0 >> 7 = tile 0 instead of tile -1, so a point off one edge was answered
     /// with the tile off the opposite one.
-    inline int TileIndex(float c) { return static_cast<int>(std::floor(GridCoord(c))) >> 7; }
+    ///
+    /// The grid is half-open everywhere except its far edge, which is a real coordinate:
+    /// c = -32 * TILE_SIZE lands exactly on 8192 and shifts to 64, one past the last
+    /// tile, so the extreme corner of a 64x64 map answered "no tile" instead of the tile
+    /// it is the corner of. Only that exact boundary folds -- anything further out stays
+    /// out of range, because a query off the map must not be served the edge tile.
+    ///
+    /// The two compose: flooring leaves an exact 8192 exactly 8192, so the boundary
+    /// still folds, and the fold's guard is false for every negative index, so the
+    /// floored value still shifts.
+    inline int TileIndex(float c)
+    {
+        const int g = static_cast<int>(std::floor(GridCoord(c)));
+        return g == GRID_PER_TILE * FusedTerrainGridCount ? FusedTerrainGridCount - 1
+                                                          : (g >> 7);
+    }
 
     enum class LiquidKind : uint8_t
     {
@@ -79,7 +102,12 @@ namespace world::terrain
         // Mirrors the reference GridMap: four triangles meeting at the V8 centre.
         std::optional<float> TerrainHeight(float x, float y) const
         {
-            if (!hasTerrain || v8.empty() || v9.empty())
+            // SIZE, not emptiness. V9 is indexed at (ix + 1, iy + 1) with a stride of
+            // V9_SIDE, so a grid that is present but short reads off the end -- ReadTile
+            // enforces the shape, and this is the same check for a tile built in memory
+            // by a test or a tool that never went through it.
+            if (!hasTerrain || v9.size() != size_t(V9_SIDE) * V9_SIDE ||
+                v8.size() != size_t(GRID_PER_TILE) * GRID_PER_TILE)
             {
                 return std::nullopt;
             }

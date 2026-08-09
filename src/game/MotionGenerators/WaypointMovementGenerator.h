@@ -31,8 +31,11 @@
 #include "WaypointManager.h"
 #include "movement/MoveSplineInitArgs.h"
 
+#include <cstddef>
 #include <sstream>
 #include <vector>
+
+class Player;
 
 /// How long a patroller waits after being force-stopped by a player talking to it.
 #define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)
@@ -161,7 +164,19 @@ class FlightPathMovementGenerator final : public MovementGenerator
     public:
         explicit FlightPathMovementGenerator(TaxiPathNodeList const& pathnodes,
                                              uint32 startNode = 0)
-            : m_path(&pathnodes), m_currentNode(startNode) {}
+            : m_path(&pathnodes), m_nextJunction(0), m_currentNode(startNode),
+              m_splineDuration(0), m_launchedAt(0) {}
+
+        /// One spline over several booked legs. `junctions` holds, in route order, the index
+        /// of the node at which each merged leg hands over to the next -- the hubs the flight
+        /// no longer lands at. The route is sliced already, so it always starts at node 0.
+        FlightPathMovementGenerator(TaxiPathNodeList const& route,
+                                    std::vector<uint32> const& junctions)
+            : m_owned(route), m_path(&m_owned), m_junctions(junctions),
+              m_nextJunction(0), m_currentNode(0), m_splineDuration(0), m_launchedAt(0) {}
+
+        FlightPathMovementGenerator(FlightPathMovementGenerator const&) = delete;
+        FlightPathMovementGenerator& operator=(FlightPathMovementGenerator const&) = delete;
 
         void Initialize(Unit& owner) override;
         void Finalize(Unit& owner) override;
@@ -185,8 +200,16 @@ class FlightPathMovementGenerator final : public MovementGenerator
         void SkipCurrentNode() { ++m_currentNode; }
 
     private:
+        /// Retires the leg just flown over: pops its destination and fires its arrival event.
+        void PassJunction(Player& player);
+
+        TaxiPathNodeList m_owned;           ///< Backs m_path only for a merged route.
         TaxiPathNodeList const* m_path;
+        std::vector<uint32> m_junctions;
+        size_t m_nextJunction;
         uint32 m_currentNode;
+        uint32 m_splineDuration;            ///< What Launch() computed AND sent to the client.
+        uint32 m_launchedAt;                ///< Wall clock at launch, to compare against it.
 };
 
 #endif // MANGOS_WAYPOINTMOVEMENTGENERATOR_H

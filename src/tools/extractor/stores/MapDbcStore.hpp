@@ -1,8 +1,6 @@
 #pragma once
 
-// Map.dbc -> { id : Directory }. The directory is what "World\Maps\<dir>\<dir>_x_y.adt"
-// is built from; the server's MapEntryfmt marks that column 'x', which costs nothing
-// here because getString reads it by offset regardless of the format char.
+// Map.dbc -> { id : Directory }. Directory is field 1 (fmt "nsix...").
 
 #include "MpqDbcLoader.hpp"
 

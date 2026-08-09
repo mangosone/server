@@ -216,7 +216,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
                 // fall through
             case SPELL_EFFECT_RESURRECT_NEW:
                 // player far away, maybe his corpse near?
-                if (target != m_caster && !HasLineOfSight(*target, *m_caster))
+                if (target != m_caster && !HasLineOfSight(*target, *m_caster, world::terrain::ModelIgnoreFlags::M2))
                 {
                     if (!m_targets.getCorpseTargetGuid())
                     {
@@ -234,7 +234,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
                         return false;
                     }
 
-                    if (!HasLineOfSight(*corpse, *m_caster))
+                    if (!HasLineOfSight(*corpse, *m_caster, world::terrain::ModelIgnoreFlags::M2))
                     {
                         return false;
                     }
@@ -249,7 +249,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
                 {
                     if (WorldObject* caster = GetCastingObject())
                     {
-                        if (!HasLineOfSight(*target, *caster))
+                        if (!HasLineOfSight(*target, *caster, world::terrain::ModelIgnoreFlags::M2))
                         {
                             return false;
                         }

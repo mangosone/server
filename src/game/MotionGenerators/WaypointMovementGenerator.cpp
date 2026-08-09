@@ -28,10 +28,16 @@
 #include "WaypointMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
+#include "DBCStores.h"
+#include "Map.h"
 #include "MotionFrame.h"
 #include "ObjectMgr.h"
+#include "Opcodes.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "Timer.h"
+#include "WorldPacket.h"
+#include "WorldSession.h"
 #include "WaypointManager.h"
 #include "WaypointSmoothing.h"
 #include "movement/MoveSpline.h"
@@ -767,7 +773,21 @@ void FlightPathMovementGenerator::Reset(Unit& owner)
     init.SetFirstPointId(m_currentNode);
     init.SetFly();
     init.SetVelocity(PLAYER_FLIGHT_SPEED);
-    init.Launch();
+
+    // Launch() returns the very number written into SMSG_MONSTER_MOVE, so the client is
+    // flying to this same clock. Anything other than 100% at Finalize is the server's own
+    // simulation clock running off, and the ratio says by how much.
+    m_splineDuration = uint32(init.Launch());
+    m_launchedAt = getMSTime();
+
+    // Same reason as the landing reset in Finalize: nothing else refreshes this while the
+    // client is a passenger, and a leg handover must not carry the old boarding altitude.
+    player.SetFallInformation(0, player.Where().Z());
+
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS,
+                     "TAXI launch %s: nodes %u..%u (%u pts), duration sent %ums",
+                     player.GetGuidStr().c_str(), m_currentNode, end,
+                     end - m_currentNode, m_splineDuration);
 }
 
 void FlightPathMovementGenerator::Interrupt(Unit& owner)
@@ -779,6 +799,13 @@ void FlightPathMovementGenerator::Finalize(Unit& owner)
 {
     Player& player = static_cast<Player&>(owner);
 
+    const uint32 flown = getMSTime() - m_launchedAt;
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS,
+                     "TAXI end %s: node %u of %u, duration sent %ums, server flew it in %ums (%u%%)",
+                     player.GetGuidStr().c_str(), m_currentNode, uint32(m_path->size()),
+                     m_splineDuration, flown,
+                     m_splineDuration ? flown * 100 / m_splineDuration : 0);
+
     // Clear the flag first, so no create-block for the flight state is built while the
     // generator is already off the top of the stack.
     player.clearUnitState(UNIT_STAT_TAXI_FLIGHT);
@@ -786,7 +813,13 @@ void FlightPathMovementGenerator::Finalize(Unit& owner)
     player.Unmount();
     player.RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE | UNIT_FLAG_TAXI_FLIGHT);
 
-    if (!player.m_taxi.empty())
+    // "Is a leg still to come", not "is anything booked". The last leg is only struck off
+    // in HandleMoveSplineDoneOpcode, half a round trip after the spline ends here, so
+    // `!empty()` was true at EVERY landing and the arrival below never ran once: no ground
+    // snap, no landing, and hostile references left switched off after the flight.
+    // A cross-map leg does not reach this at all -- its spline stops at the map edge with
+    // nodes still ahead, so Update() keeps the generator alive for the teleport handshake.
+    if (player.m_taxi.GetDestinationCount() > 2)
     {
         return;
     }
@@ -800,6 +833,47 @@ void FlightPathMovementGenerator::Finalize(Unit& owner)
     // Snap Z to the ground at the landing point. Without this a laggy client, whose
     // flight ended early, can be left hanging in the air.
     player.StopMoving(true);
+
+    // The client sends no movement packet for the whole flight, so m_lastFallZ still holds
+    // the altitude of the node you BOARDED at. Land anywhere lower -- Undercity is ~113
+    // below Hammerfall, ~174 below the Sepulcher -- and the first MSG_MOVE_FALL_LAND is
+    // charged the entire descent as a fall, which is well past the 100%-of-health cap.
+    // The IsTaxiFlying() guard on HandleFall cannot catch it: UNIT_STAT_TAXI_FLIGHT is
+    // cleared at the top of this function, packets arrive after.
+    player.SetFallInformation(0, player.Where().Z());
+}
+
+void FlightPathMovementGenerator::PassJunction(Player& player)
+{
+    // Something cleared the booking mid-flight; there is no leg left to retire and
+    // NextTaxiDestination() would pop an empty deque.
+    if (player.m_taxi.GetDestinationCount() < 2)
+    {
+        return;
+    }
+
+    // The spline flies straight through the hub, but the booking must not: a relog resumes
+    // from m_taxi, and GetCurrentTaxiPath() is what names the leg currently being flown.
+    // Retire it here, exactly as HandleMoveSplineDoneOpcode does for the last leg.
+    if (uint32 pathid = player.m_taxi.GetCurrentTaxiPath())
+    {
+        TaxiPathNodeList const& nlist = sTaxiPathNodesByPath[pathid];
+        if (uint32 eventid = nlist[nlist.size() - 1].ArrivalEventID)
+        {
+            if (!sScriptMgr.OnProcessEvent(eventid, &player, &player, false))
+            {
+                player.GetMap()->ScriptsStart(DBS_ON_EVENT, eventid, &player, &player);
+            }
+        }
+    }
+
+    player.m_taxi.NextTaxiDestination();
+
+    if (player.IsTaxiCheater() && player.m_taxi.SetTaximaskNode(player.m_taxi.GetTaxiSource()))
+    {
+        WorldPacket data(SMSG_NEW_TAXI_PATH, 0);
+        player.GetSession()->SendPacket(&data);
+    }
 }
 
 bool FlightPathMovementGenerator::Update(Unit& owner, uint32 /*diff*/)
@@ -815,6 +889,12 @@ bool FlightPathMovementGenerator::Update(Unit& owner, uint32 /*diff*/)
         {
             m_currentNode += uint32(departure);
             departure = !departure;
+        }
+
+        while (m_nextJunction < m_junctions.size() && m_currentNode >= m_junctions[m_nextJunction])
+        {
+            PassJunction(static_cast<Player&>(owner));
+            ++m_nextJunction;
         }
     }
 

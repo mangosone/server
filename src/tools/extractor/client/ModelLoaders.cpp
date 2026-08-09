@@ -36,16 +36,36 @@ namespace world::terrain
             return cached->second;
         }
 
+        // ABSENT IS NOT BROKEN -- the same distinction Wdt() draws, and null now MEANS
+        // broken to every caller. GameObjectDisplayInfo.dbc ships dead rows naming files
+        // the client never contained: a full 5.4.8 bake failed 21 of them, including
+        // `<empty>\KL_OnyxiasLair.wmo` and two `TestDoNotCommit` models. There is nothing
+        // to bake for those and nothing wrong with the install, so they answer as a model
+        // without collision. Only a file the archive HAS and cannot serve or parse fails.
         std::vector<uint8_t> rootBytes;
         if (!m_archive.Read(rootPath, rootBytes))
+        {
+            m_roots.emplace(rootPath, WmoRootData{});
+            if (m_archive.Contains(rootPath))
+            {
+                m_cache.emplace(rootPath, nullptr);
+                return nullptr;
+            }
+            auto absent = std::make_shared<CollisionModel>(TriSoup{});
+            m_cache.emplace(rootPath, absent);
+            return absent;
+        }
+
+        // No MOHD is not a WMO root. Ignoring that left nGroups at 0, so the loop below
+        // ran zero times and an EMPTY model was cached as loaded -- indistinguishable
+        // downstream from a building that genuinely has no collision.
+        WmoRootData root;
+        if (!ParseWmoRoot(rootBytes, root))
         {
             m_cache.emplace(rootPath, nullptr);
             m_roots.emplace(rootPath, WmoRootData{});
             return nullptr;
         }
-
-        WmoRootData root;
-        ParseWmoRoot(rootBytes, root);
         if (m_roots.find(rootPath) == m_roots.end())
         {
             m_roots.emplace(rootPath, root);
@@ -59,14 +79,29 @@ namespace world::terrain
 
         for (uint32_t g = 0; g < root.nGroups; ++g)
         {
+            // The root DECLARES its group count, so a group file the archive does not
+            // have is an incomplete client, not a group with nothing in it. Skipping it
+            // returns a model that is non-empty and therefore looks loaded, missing that
+            // wing's collision.
             std::vector<uint8_t> groupBytes;
             if (!m_archive.Read(WmoGroupPath(rootPath, g), groupBytes))
             {
-                continue;
+                m_cache.emplace(rootPath, nullptr);
+                return nullptr;
             }
 
+            // EMPTY IS NOT MALFORMED. A group with neither collidable geometry nor
+            // liquid is the ordinary case -- render-only, portal and ambient groups are
+            // most of any WMO -- and failing the model on those drops real buildings. A
+            // group that is BROKEN is a missing wing, and the building is not loaded.
             WmoGroupData parsed;
-            if (!ParseWmoGroup(groupBytes, root.flags, parsed))
+            const WmoGroupParse result = ParseWmoGroup(groupBytes, root.flags, parsed);
+            if (result == WmoGroupParse::Malformed)
+            {
+                m_cache.emplace(rootPath, nullptr);
+                return nullptr;
+            }
+            if (result == WmoGroupParse::Empty)
             {
                 continue;
             }
@@ -131,15 +166,32 @@ namespace world::terrain
             return cached->second;
         }
 
+        // Absent is not broken, as in WmoLoader::Load above: a display id naming an .mdx
+        // the client never shipped is a dead DBC row, not an incomplete install.
         std::vector<uint8_t> bytes;
         if (!m_archive.Read(key, bytes))
+        {
+            if (m_archive.Contains(key))
+            {
+                m_cache.emplace(key, nullptr);
+                return nullptr;
+            }
+            auto absent = std::make_shared<CollisionModel>(TriSoup{});
+            m_cache.emplace(key, absent);
+            return absent;
+        }
+
+        // A present file that is not an MD20, or is shorter than its own header, is a
+        // broken client -- not a doodad without collision. Ignoring the result cached an
+        // empty model as loaded, and every ADT placement, WMO doodad and game-object
+        // display using that file was then skipped at exit 0. ParseM2 answers TRUE for a
+        // valid MD20 whose collision block is absent, so this rejects only broken files.
+        M2Data parsed;
+        if (!ParseM2(bytes, parsed))
         {
             m_cache.emplace(key, nullptr);
             return nullptr;
         }
-
-        M2Data parsed;
-        ParseM2(bytes, parsed);
 
         TriSoup soup;
         soup.verts = std::move(parsed.verts);

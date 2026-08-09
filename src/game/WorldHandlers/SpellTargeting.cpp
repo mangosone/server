@@ -378,7 +378,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     break;
                 }
 
-                if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS) && !HasLineOfSight(*prev, *(*next)))
+                if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS) && !HasLineOfSight(*prev, *(*next), world::terrain::ModelIgnoreFlags::M2))
                 {
                     ++next;
                     continue;
@@ -465,7 +465,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                         break;
                     }
 
-                    if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS) && !HasLineOfSight(*prev, *(*next)))
+                    if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS) && !HasLineOfSight(*prev, *(*next), world::terrain::ModelIgnoreFlags::M2))
                     {
                         ++next;
                         continue;
@@ -1112,7 +1112,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                         break;
                     }
 
-                    if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS) && !HasLineOfSight(*prev, *(*next)))
+                    if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->ID, NULL, SPELL_DISABLE_LOS) && !HasLineOfSight(*prev, *(*next), world::terrain::ModelIgnoreFlags::M2))
                     {
                         ++next;
                         continue;
@@ -1231,7 +1231,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 
                 float _target_x, _target_y, _target_z;
                 ClosePointNear(*pTarget, _target_x, _target_y, _target_z, pTarget->Where().Extent(), radius, angle);
-                if (HasLineOfSight(*pTarget, Geometry::Vector3(_target_x, _target_y, _target_z)))
+                if (HasLineOfSight(*pTarget, Geometry::Vector3(_target_x, _target_y, _target_z), world::terrain::ModelIgnoreFlags::M2))
                 {
                     targetUnitMap.push_back(m_caster);
                     m_targets.setDestination(_target_x, _target_y, _target_z);

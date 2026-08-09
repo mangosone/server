@@ -152,7 +152,7 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                         return;
                     }
                     // Not let attack through obstructions
-                    if (!HasLineOfSight(*pet, *TargetUnit))
+                    if (!HasLineOfSight(*pet, *TargetUnit, world::terrain::ModelIgnoreFlags::M2))
                     {
                         return;
                     }

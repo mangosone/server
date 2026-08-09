@@ -5,11 +5,6 @@
 
 namespace world::terrain
 {
-    namespace
-    {
-        constexpr float LIQUID_TILE_SIZE = 533.333f / 128.f;
-    }
-
     WmoModel::WmoModel(TriSoup soup, std::vector<uint16_t> triGroup,
                        std::vector<Group> groups, uint32_t rootWmoId, Bvh bvh)
         : m_triGroup(std::move(triGroup)), m_groups(std::move(groups)), m_rootId(rootWmoId)
@@ -45,8 +40,8 @@ namespace world::terrain
             }
             const Vec3 c = g.liquid.corner;
             m_bounds.expand({c.x, c.y, zmin});
-            m_bounds.expand({c.x + g.liquid.tilesX * LIQUID_TILE_SIZE,
-                             c.y + g.liquid.tilesY * LIQUID_TILE_SIZE, zmax});
+            m_bounds.expand({c.x + g.liquid.tilesX * WMO_LIQUID_TILE_SIZE,
+                             c.y + g.liquid.tilesY * WMO_LIQUID_TILE_SIZE, zmax});
         }
     }
 
@@ -67,76 +62,85 @@ namespace world::terrain
         return AreaResult{m_groups[gi].groupWmoId, m_groups[gi].mogpFlags, *t};
     }
 
-    std::optional<ICollisionModel::LocalLiquid> WmoModel::LiquidLocal(const Vec3& p) const
+    std::optional<ICollisionModel::LocalLiquid> WmoModel::GroupLiquidAt(const Group& g,
+                                                                        const Vec3& p) const
     {
+        if (!g.hasLiquid)
+        {
+            return std::nullopt;
+        }
+        const Liquid& lq = g.liquid;
+        if (!lq.tilesX || !lq.tilesY || lq.heights.empty())
+        {
+            return std::nullopt;
+        }
+
+        // H() below indexes the corner grid unchecked, up to (tx+1, ty+1). That is
+        // only in bounds if the heights really are (tilesX+1) x (tilesY+1) -- so a
+        // group whose counts disagree with its vector is dropped rather than
+        // sampled off the end. The serializer screens this on load too; here is
+        // where the read would happen.
+        if (lq.heights.size() != size_t(lq.tilesX + 1) * size_t(lq.tilesY + 1))
+        {
+            return std::nullopt;
+        }
+
+        const float txf = (p.x - lq.corner.x) / WMO_LIQUID_TILE_SIZE;
+        const float tyf = (p.y - lq.corner.y) / WMO_LIQUID_TILE_SIZE;
+        // Stated POSITIVELY so a NaN falls out here rather than through: every
+        // comparison against a NaN is false, so "not outside" would have let one
+        // reach the conversion below.
+        if (!(txf >= 0.f && txf < float(lq.tilesX)) ||
+            !(tyf >= 0.f && tyf < float(lq.tilesY)))
+        {
+            return std::nullopt;
+        }
+        // Ranged in FLOAT before the conversion, not after: int(txf) for a point far
+        // outside the group -- which is most of the model, most of the time -- is a
+        // conversion that does not fit, and that is undefined, not a big number.
+        // Non-negative and in range here, so the truncation floors.
+        const int tx = int(txf), ty = int(tyf);
+
+        const size_t fi = size_t(tx) + size_t(ty) * lq.tilesX;
+        if (fi < lq.flags.size() && (lq.flags[fi] & 0x0F) == 0x0F)
+        {
+            return std::nullopt;
+        }
+
+        const float dx = txf - tx, dy = tyf - ty;
+        const uint32_t row = lq.tilesX + 1;
+        auto H = [&](int a, int b) { return lq.heights[size_t(a) + size_t(b) * row]; };
+
+        LocalLiquid out;
+        if (dx > dy)
+        {
+            const float sx = H(tx + 1, ty) - H(tx, ty);
+            const float sy = H(tx + 1, ty + 1) - H(tx + 1, ty);
+            out.z = H(tx, ty) + dx * sx + dy * sy;
+        }
+        else
+        {
+            const float sx = H(tx + 1, ty + 1) - H(tx, ty + 1);
+            const float sy = H(tx, ty + 1) - H(tx, ty);
+            out.z = H(tx, ty) + dx * sx + dy * sy;
+        }
+        out.entry = lq.entry;
+        out.kind = lq.kind;
+        return out;
+    }
+
+    void WmoModel::LiquidsLocal(const Vec3& p, std::vector<LocalLiquid>& out) const
+    {
+        // Every group with water over this column, in serialized order. Two previous
+        // attempts chose one here instead -- first in serialized order, then by nearest
+        // surface -- and both are unanswerable from inside the model: p is a point on the
+        // sweep column, not the queried position, so "which room" cannot be decided here.
         for (const Group& g : m_groups)
         {
-            if (!g.hasLiquid)
+            if (auto cur = GroupLiquidAt(g, p))
             {
-                continue;
+                out.push_back(*cur);
             }
-            const Liquid& lq = g.liquid;
-            if (!lq.tilesX || !lq.tilesY || lq.heights.empty())
-            {
-                continue;
-            }
-
-            // H() below indexes the corner grid unchecked, up to (tx+1, ty+1). That is
-            // only in bounds if the heights really are (tilesX+1) x (tilesY+1) -- so a
-            // group whose counts disagree with its vector is dropped rather than
-            // sampled off the end. The serializer screens this on load too; here is
-            // where the read would happen.
-            if (lq.heights.size() != size_t(lq.tilesX + 1) * size_t(lq.tilesY + 1))
-            {
-                continue;
-            }
-
-            const float txf = (p.x - lq.corner.x) / LIQUID_TILE_SIZE;
-            const float tyf = (p.y - lq.corner.y) / LIQUID_TILE_SIZE;
-            // Stated POSITIVELY so a NaN falls out here rather than through: every
-            // comparison against a NaN is false, so "not outside" would have let one
-            // reach the conversion below.
-            if (!(txf >= 0.f && txf < float(lq.tilesX)) ||
-                !(tyf >= 0.f && tyf < float(lq.tilesY)))
-            {
-                continue;
-            }
-            // Ranged in FLOAT before the conversion, not after: int(txf) for a point far
-            // outside the group -- which is most of the model, most of the time -- is a
-            // conversion that does not fit, and that is undefined, not a big number.
-            // Non-negative and in range here, so the truncation floors.
-            const int tx = int(txf), ty = int(tyf);
-
-            const size_t fi = size_t(tx) + size_t(ty) * lq.tilesX;
-            if (fi < lq.flags.size() && (lq.flags[fi] & 0x0F) == 0x0F)
-            {
-                continue;
-            }
-
-            const float dx = txf - tx, dy = tyf - ty;
-            const uint32_t row = lq.tilesX + 1;
-            auto H = [&](int a, int b) { return lq.heights[size_t(a) + size_t(b) * row]; };
-
-            float z;
-            if (dx > dy)
-            {
-                const float sx = H(tx + 1, ty) - H(tx, ty);
-                const float sy = H(tx + 1, ty + 1) - H(tx + 1, ty);
-                z = H(tx, ty) + dx * sx + dy * sy;
-            }
-            else
-            {
-                const float sx = H(tx + 1, ty + 1) - H(tx, ty + 1);
-                const float sy = H(tx, ty + 1) - H(tx, ty);
-                z = H(tx, ty) + dx * sx + dy * sy;
-            }
-
-            LocalLiquid out;
-            out.z = z;
-            out.entry = lq.entry;
-            out.kind = lq.kind;
-            return out;
         }
-        return std::nullopt;
     }
 }

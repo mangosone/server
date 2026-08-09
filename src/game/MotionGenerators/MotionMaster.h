@@ -27,6 +27,7 @@
 #define MANGOS_MOTIONMASTER_H
 
 #include "Platform/Define.h"
+#include "DBCStructure.h"                                   // TaxiPathNodeList, by value in the merged taxi route
 #include <stack>
 #include <vector>
 #include <sstream>
@@ -243,6 +244,7 @@ class MotionMaster : private std::stack<MovementGenerator*>
          * @param pathnode Node of the flight path.
          */
         void MoveTaxiFlight(uint32 path, uint32 pathnode);
+        void MoveTaxiFlight(TaxiPathNodeList const& route, std::vector<uint32> const& junctions);
 
         /**
          * @brief Makes the unit distract for a specified time.

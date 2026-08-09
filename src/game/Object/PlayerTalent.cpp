@@ -236,9 +236,15 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
  */
 void Player::UpdateFallInformationIfNeed(MovementInfo const& minfo, uint16 opcode)
 {
-    if (m_lastFallTime >= minfo.GetFallTime() || m_lastFallZ <= minfo.GetPos()->z || opcode == MSG_MOVE_FALL_LAND)
+    // Aboard, the world field is the (0, 0, 0) we told him he was at and he echoed back; the
+    // height he is really falling from is the one on the deck map. Both the test and the
+    // store read the same frame, so the first packet ashore re-seeds it from the world again.
+    const float height = minfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT)
+                       ? minfo.GetTransportPos()->z : minfo.GetPos()->z;
+
+    if (m_lastFallTime >= minfo.GetFallTime() || m_lastFallZ <= height || opcode == MSG_MOVE_FALL_LAND)
     {
-        SetFallInformation(minfo.GetFallTime(), minfo.GetPos()->z);
+        SetFallInformation(minfo.GetFallTime(), height);
     }
 }
 

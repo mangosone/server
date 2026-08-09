@@ -2,6 +2,7 @@
 #include <mutex>
 #include "ClientConnection.h"
 #include "Log/Log.h"
+#include "Utilities/Timer.h"
 
 #include "Auth/Sha1.h"
 #include "Opcodes.h"

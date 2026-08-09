@@ -16,9 +16,19 @@
 
 namespace world::terrain
 {
+    /// One MLIQ tile, in model space. Shared so the runtime lookup and the navmesh bake
+    /// index the same grid with the same number rather than each keeping its own copy.
+    constexpr float WMO_LIQUID_TILE_SIZE = 533.333f / 128.f;
+
     class WmoModel : public CollisionModel
     {
     public:
+        /// NO `deep` FIELD, DELIBERATELY. Dark water -- the fatigue timer -- is an ADT
+        /// attribute: the MCLQ per-cell dark bit, or an ocean cell whose MH2O instance
+        /// carries the deep attribute, both of which the tile's own liquidDeep grid
+        /// records. MLIQ has no equivalent, its tile-flag nibble says only which tiles
+        /// are dry, and vmap never produced fatigue from WMO liquid either. Adding one
+        /// here means inventing the source, so LocalLiquid::deep stays false on this path.
         struct Liquid
         {
             uint32_t tilesX = 0, tilesY = 0;
@@ -44,7 +54,7 @@ namespace world::terrain
 
         ModelKind Kind() const override { return ModelKind::Wmo; }
 
-        std::optional<LocalLiquid> LiquidLocal(const Vec3& pModel) const override;
+        void LiquidsLocal(const Vec3& pModel, std::vector<LocalLiquid>& out) const override;
 
         uint32_t RootId() const { return m_rootId; }
         const std::vector<Group>& Groups() const { return m_groups; }
@@ -62,6 +72,9 @@ namespace world::terrain
 
     private:
         void DeriveWmoBounds();
+
+        /// One group's liquid surface under @p pModel, if that group carries any there.
+        std::optional<LocalLiquid> GroupLiquidAt(const Group& g, const Vec3& pModel) const;
 
         std::vector<uint16_t> m_triGroup;
         std::vector<Group> m_groups;

@@ -271,6 +271,16 @@ TEST(TransformPreservesTheRayParameter)
     CHECK((back - hitWorld).magnitude() < 1e-2f);
 }
 
+namespace
+{
+    std::vector<ICollisionModel::LocalLiquid> Liquids(const WmoModel& m, const Vec3& p)
+    {
+        std::vector<ICollisionModel::LocalLiquid> out;
+        m.LiquidsLocal(p, out);
+        return out;
+    }
+}
+
 TEST(WmoLiquidRejectsPointsOutsideTheFootprint)
 {
     std::vector<WmoModel::Group> groups;
@@ -278,16 +288,41 @@ TEST(WmoLiquidRejectsPointsOutsideTheFootprint)
 
     WmoModel m(TriSoup{}, {}, std::move(groups), 0);
 
-    const auto inside = m.LiquidLocal(Vec3{1.f, 1.f, 0.f});
-    REQUIRE(inside.has_value());
-    CHECK_EQ(inside->z, 12.f);
-    CHECK_EQ(inside->entry, uint16_t(13));
+    const auto inside = Liquids(m, Vec3{1.f, 1.f, 0.f});
+    REQUIRE(inside.size() == size_t(1));
+    CHECK_EQ(inside[0].z, 12.f);
+    CHECK_EQ(inside[0].entry, uint16_t(13));
 
     // Truncating a negative offset to int yields 0, so a point up to one tile outside
     // the low corner used to land on tile (0,0) and report liquid that is not there.
-    CHECK(!m.LiquidLocal(Vec3{-1.f, 1.f, 0.f}).has_value());
-    CHECK(!m.LiquidLocal(Vec3{1.f, -1.f, 0.f}).has_value());
-    CHECK(!m.LiquidLocal(Vec3{1000.f, 1.f, 0.f}).has_value());
+    CHECK(Liquids(m, Vec3{-1.f, 1.f, 0.f}).empty());
+    CHECK(Liquids(m, Vec3{1.f, -1.f, 0.f}).empty());
+    CHECK(Liquids(m, Vec3{1000.f, 1.f, 0.f}).empty());
+}
+
+// Two groups over the same footprint at different heights -- a pool on an upper floor
+// above a flooded room. WHICH one a query is in is not answerable here: the model is
+// handed a point on the sweep column, not the queried position. Both previous attempts
+// to answer it anyway were wrong, the second one silently -- its fixture had no floors,
+// so it only ever exercised the fallback. The model reports every surface, and nothing
+// about the answer may depend on the Z it was probed at.
+TEST(WmoLiquidReportsEverySurfaceOverTheColumn)
+{
+    std::vector<WmoModel::Group> groups;
+    groups.push_back(FlatLiquidGroup(2, 2, 40.f, 0, 13, uint8_t(LiquidKind::Water)));
+    groups.push_back(FlatLiquidGroup(2, 2, 5.f, 0, 41, uint8_t(LiquidKind::Slime)));
+
+    WmoModel m(TriSoup{}, {}, std::move(groups), 0);
+
+    for (const float z : {2.f, 20.f, 38.f, 100.f})
+    {
+        const auto all = Liquids(m, Vec3{1.f, 1.f, z});
+        REQUIRE(all.size() == size_t(2));
+        CHECK_EQ(all[0].z, 40.f);
+        CHECK_EQ(all[0].entry, uint16_t(13));
+        CHECK_EQ(all[1].z, 5.f);
+        CHECK_EQ(all[1].entry, uint16_t(41));
+    }
 }
 
 TEST(WmoLiquidHonoursTheDryTileNibble)
@@ -296,7 +331,7 @@ TEST(WmoLiquidHonoursTheDryTileNibble)
     groups.push_back(FlatLiquidGroup(2, 2, 12.f, 0x0F, 13, uint8_t(LiquidKind::Water)));
 
     WmoModel m(TriSoup{}, {}, std::move(groups), 0);
-    CHECK(!m.LiquidLocal(Vec3{1.f, 1.f, 0.f}).has_value());
+    CHECK(Liquids(m, Vec3{1.f, 1.f, 0.f}).empty());
 }
 
 TEST(WmoLiquidOnlyGroupIsNotEmpty)

@@ -32,12 +32,21 @@ namespace world::terrain
     void CollisionModel::RaycastAll(const Vec3& origin, const Vec3& dir, float tMax,
                                     std::vector<float>& out) const
     {
-        thread_local std::vector<Bvh::Crossing> crossings;
+        // The scratch buffer is thread_local to keep the allocation out of the query, and
+        // it is SWAPPED OUT for the duration rather than used in place: held across the
+        // call, a second RaycastAll on the same thread -- one model's crossings driving a
+        // query into another -- would clear the buffer its caller is still filling.
+        thread_local std::vector<Bvh::Crossing> scratch;
+        std::vector<Bvh::Crossing> crossings;
+        crossings.swap(scratch);
         crossings.clear();
+
         m_bvh.RaycastAll(m_soup, origin, dir, tMax, crossings);
         for (const Bvh::Crossing& c : crossings)
         {
             out.push_back(c.t);
         }
+
+        crossings.swap(scratch);
     }
 }

@@ -576,6 +576,25 @@ void MotionMaster::MoveTaxiFlight(uint32 path, uint32 pathnode)
 }
 
 /**
+ * @brief Moves the unit along several booked taxi legs as one uninterrupted spline.
+ * @param route Concatenated path nodes, already sliced to the starting node.
+ * @param junctions Route indices of the hubs the flight passes through without landing.
+ */
+void MotionMaster::MoveTaxiFlight(TaxiPathNodeList const& route, std::vector<uint32> const& junctions)
+{
+    if (m_owner->GetTypeId() != TYPEID_PLAYER)
+    {
+        sLog.outError("%s attempt merged taxi route", m_owner->GetGuidStr().c_str());
+        return;
+    }
+
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s taxi over %u nodes, %u hubs flown through",
+                     m_owner->GetGuidStr().c_str(), uint32(route.size()), uint32(junctions.size()));
+
+    Mutate(new FlightPathMovementGenerator(route, junctions));
+}
+
+/**
  * @brief Makes the unit distracted for a specified time.
  * @param timer Time limit for the distraction.
  */

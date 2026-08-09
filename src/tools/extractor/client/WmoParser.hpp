@@ -57,11 +57,22 @@ namespace world::terrain
 
     bool ParseWmoRoot(const uint8_t* data, size_t size, WmoRootData& out);
 
+    /// THREE OUTCOMES, because two of them used to be one `false` and the caller could
+    /// not tell them apart: a group that is broken and a group that simply has nothing
+    /// to contribute. Most groups in any WMO are Empty -- render-only, portal, ambient --
+    /// so treating that as a failure drops real buildings, while treating Malformed as
+    /// Empty bakes a building with a wing missing and calls it loaded.
+    enum class WmoGroupParse : uint8_t
+    {
+        Malformed,   ///< not a group file: too short, no MOGP, or a chunk past the end
+        Empty,       ///< parsed, and carries neither collidable geometry nor liquid
+        Loaded,      ///< carries collision, liquid, or both
+    };
+
     // rootFlags is WmoRootData::flags; its bit 0x4 decides whether MOGP.groupLiquid is
-    // already a LiquidType.dbc row id. Returns false when the group carries neither
-    // collidable geometry nor liquid.
-    bool ParseWmoGroup(const uint8_t* data, size_t size, uint32_t rootFlags,
-                       WmoGroupData& out);
+    // already a LiquidType.dbc row id.
+    WmoGroupParse ParseWmoGroup(const uint8_t* data, size_t size, uint32_t rootFlags,
+                                WmoGroupData& out);
 
     // "X.wmo" -> "X_003.wmo"
     std::string WmoGroupPath(const std::string& root, uint32_t index);
@@ -71,8 +82,8 @@ namespace world::terrain
         return ParseWmoRoot(b.data(), b.size(), out);
     }
 
-    inline bool ParseWmoGroup(const std::vector<uint8_t>& b, uint32_t rootFlags,
-                              WmoGroupData& out)
+    inline WmoGroupParse ParseWmoGroup(const std::vector<uint8_t>& b, uint32_t rootFlags,
+                                       WmoGroupData& out)
     {
         return ParseWmoGroup(b.data(), b.size(), rootFlags, out);
     }

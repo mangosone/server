@@ -83,6 +83,11 @@ namespace
     const uint32 LIQUID_OUTLAND_OCEAN_ROW = 15;
     const uint32 LIQUID_FIRST_OVERRIDABLE_ROW = 21;
 
+    // MOGP group flag: the group is an interior. Outside (ADT) liquid must not
+    // reach a point inside one -- a dry hold under the sea -- only liquid the
+    // WMO itself carries counts there.
+    const uint32 MOGP_FLAG_INTERIOR = 0x2000;
+
     // MAP_LIQUID_TYPE_* is one bit per family in the order water, ocean, magma, slime.
     // 2.4.3 has no SoundBank column -- that arrives in 3.3.5a -- so the family comes from
     // LiquidType.dbc's Type, which uses a DIFFERENT encoding: 0 magma, 2 slime, 3 water.
@@ -294,6 +299,17 @@ world::terrain::Column TerrainInfo::ColumnAt(float x, float y, float zTop, float
                                              const world::terrain::ILiveGeometry* live,
                                              uint32 phasemask) const
 {
+    // The `disables` table turns collision off per map, and it is answered HERE because
+    // this one gather feeds every height, floor and liquid query. The split is the one
+    // the vmap path made: height drops the baked models and keeps the heightmap, liquid
+    // status drops what a model carries and keeps the tile's own water.
+    //
+    // Filtered AT THE SOURCE rather than dropped afterwards: SurfaceSources() turns the
+    // disable bits into the source mask the gather itself honours, so a disabled map
+    // never collects what it would only discard. It also reads the CACHED bits --
+    // DisableMgr::IsVMAPDisabledFor reaches its container through operator[], which
+    // inserts when the type is absent, so calling it from a map-update thread is a write
+    // racing `.reload disables` on the world thread. See DisableMgr::GetCollisionDisablesFor.
     return m_terrain.ColumnAt(x, y, zTop, zBottom, live, phasemask, SurfaceSources());
 }
 
@@ -410,10 +426,31 @@ GridMapLiquidStatus TerrainInfo::getLiquidStatus(float x, float y, float z,
     const world::terrain::Column column =
         ColumnAt(x, y, z + FLOOR_BURIED_LIFT, z - FLOOR_SEARCH_DOWN);
 
-    const auto liquid = column.HighestLiquid();
+    // The liquid the point is IN, not the highest anywhere in the column: the latter put
+    // a player in a cellar under a building into the lake outside, and a player standing
+    // on a bridge into the river under it. GetTerrainType above keeps HighestLiquid --
+    // it is a 2D query with no point to contain.
+    auto liquid = column.LiquidAt(z);
     if (!liquid || !liquid->liquidEntry)
     {
         return LIQUID_MAP_NO_WATER;
+    }
+
+    // Tile liquid is the OUTSIDE water. When the point sits inside a WMO
+    // interior group, drop it and keep only what the model itself carries.
+    if (liquid->fromAdt && column.HasStatic())
+    {
+        uint32 mogpFlags = 0;
+        int32 adtId = 0, rootId = 0, groupId = 0;
+        if (GetAreaInfo(x, y, z, mogpFlags, adtId, rootId, groupId) &&
+            (mogpFlags & MOGP_FLAG_INTERIOR))
+        {
+            liquid = column.LiquidAt(z, false);
+            if (!liquid || !liquid->liquidEntry)
+            {
+                return LIQUID_MAP_NO_WATER;
+            }
+        }
     }
     const LiquidInfo info = liquid->AsLiquid();
 
@@ -560,35 +597,40 @@ float TerrainInfo::GetWaterOrGroundLevel(float x, float y, float z, float* pGrou
 }
 
 bool TerrainInfo::IsInLineOfSight(float x1, float y1, float z1, float x2, float y2,
-                                  float z2) const
+                                  float z2, world::terrain::ModelIgnoreFlags ignore) const
 {
     // BAKED collision only. A map with line of sight switched off still has doors and
     // lifts, and Map::IsInLineOfSight asks the dynamic tree separately -- that is the
     // same split the vmap flag always meant, and the reason it is answered here rather
     // than at the Map.
-    if (m_collisionDisables.load(std::memory_order_relaxed) &
-        DisableMgr::COLLISION_DISABLE_LOS)
-    {
-        return true;
-    }
-
-    return m_terrain.IsInLineOfSight(x1, y1, z1, x2, y2, z2);
+    //
+    // THROUGH NearestHitFraction, not straight to the engine: the disable is then applied
+    // in exactly one place, so the sight test and the hit position cannot disagree about
+    // what the segment crosses. `ignore` has to travel with it -- spell line of sight
+    // passes M2 so interior doodads do not block what structural geometry does.
+    return NearestHitFraction(x1, y1, z1, x2, y2, z2, ignore) > 1.0f;
 }
 
 float TerrainInfo::NearestHitFraction(float x1, float y1, float z1, float x2, float y2,
-                                      float z2) const
+                                      float z2,
+                                      world::terrain::ModelIgnoreFlags ignore) const
 {
-    // The same answer as IsInLineOfSight above, in the units Map uses to race the static
-    // and dynamic worlds against each other: nothing baked blocks, so the static side
-    // never wins. Leaving this one out would have made a disabled map report clear sight
-    // and still stop a spell at the wall it just said was not there.
+    // The one place the line-of-sight disable is answered -- IsInLineOfSight above comes
+    // through here. In the units Map uses to race the static and dynamic worlds against
+    // each other: nothing baked blocks, so the static side never wins. Leaving this out
+    // would have made a disabled map report clear sight and still stop a spell at the
+    // wall it just said was not there.
+    //
+    // The CACHED bits, never DisableMgr::IsVMAPDisabledFor: that one reaches its
+    // container through operator[], which inserts when the type is absent, so asking it
+    // from a map-update thread is a write racing `.reload disables` on the world thread.
     if (m_collisionDisables.load(std::memory_order_relaxed) &
         DisableMgr::COLLISION_DISABLE_LOS)
     {
-        return 2.0f;
+        return world::terrain::NO_HIT_FRACTION;
     }
 
-    return m_terrain.NearestHitFraction(x1, y1, z1, x2, y2, z2);
+    return m_terrain.NearestHitFraction(x1, y1, z1, x2, y2, z2, ignore);
 }
 
 TerrainManager::TerrainManager() : m_mutex()
