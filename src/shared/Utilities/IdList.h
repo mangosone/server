@@ -53,8 +53,19 @@ namespace MaNGOS
             {
                 const size_t last = token.find_last_not_of(" \t\r\n\"'");
                 token = token.substr(first, last - first + 1);
-                const long id = std::strtol(token.c_str(), nullptr, 10);
-                if (id > 0)
+                // ZERO IS A MAP. Map 0 is Eastern Kingdoms, so `id > 0` silently dropped
+                // it from the one setting whose entire purpose is naming maps to
+                // force-load -- an administrator who wrote LoadAllGridsOnMaps = "0" got
+                // no grids and no complaint.
+                //
+                // strtol returns 0 both for the token "0" and for a token that is not a
+                // number at all, which is why the guard cannot simply widen to `id >= 0`.
+                // The end pointer separates them: the conversion must have consumed
+                // something and must have consumed ALL of it, so a malformed token is
+                // still rejected rather than silently read as map 0.
+                char* end = nullptr;
+                const long id = std::strtol(token.c_str(), &end, 10);
+                if (end != token.c_str() && *end == '\0' && id >= 0)
                 {
                     ids.push_back(uint32(id));
                 }
