@@ -151,8 +151,14 @@ TEST(ManifestRoundTripsAndIsSha256sumShaped)
     // header or a comment would be friendlier to us and unreadable to it.
     const std::string text = tree.Read(MANIFEST_FILE_NAME);
     CHECK(text.find('\r') == std::string::npos);
-    CHECK(text.find(
-              "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  dbc/Map.dbc\n") == 0);
+    // STARTS WITH, and that is the assertion: `dbc/Map.dbc` sorts before
+    // `tiles/...`, so its line must be the FIRST one, not merely present. The check
+    // below is the one that only asks for presence. `rfind(p, 0) == 0` is how C++17
+    // spells starts_with -- it tries position 0 and nothing else; the C++20 method is
+    // not available under -std=c++17.
+    CHECK(text.rfind(
+              "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  dbc/Map.dbc\n",
+              0) == 0);
     CHECK(text.find(
               "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad  tiles/t_0_32_32.tile\n") !=
           std::string::npos);
