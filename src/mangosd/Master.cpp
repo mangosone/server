@@ -47,21 +47,146 @@
 #endif
 
 #ifdef _WIN32
+#include <windows.h>
 #include "ServiceWin32.h"
 extern int m_ServiceStatus;
 #else
 #include "PosixDaemon.h"
 #endif
 
+#include <algorithm>
 #include <chrono>
 #include <string>
 #include <thread>
 #include <vector>
 
-/// Shortest interval between two world ticks, in milliseconds.
+/// Shortest interval between two housekeeping ticks, in milliseconds. The simulation runs on
+/// its own, finer beat -- see MapUpdateInterval and World::UpdateSimulation.
 #ifndef WORLD_SLEEP_CONST
 #define WORLD_SLEEP_CONST 50
 #endif
+
+#ifdef _WIN32
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
+#endif
+
+namespace
+{
+    /// How often the simulation runs, in milliseconds. MapUpdateInterval is the authority --
+    /// bounded below by 1 so the loop cannot spin, and above by the housekeeping beat, since
+    /// running the maps rarer than the auction timer would be a pointless configuration.
+    uint32 SimulationInterval()
+    {
+        return std::max<uint32>(1u,
+                   std::min<uint32>(WORLD_SLEEP_CONST,
+                                    sWorld.getConfig(CONFIG_UINT32_INTERVAL_MAPUPDATE)));
+    }
+
+    /// Asks the platform for a finer timer while the world loop runs, and gives it back.
+    /// Everywhere but Windows the sleep is already accurate and this is inert.
+    class ScopedTimerResolution
+    {
+        public:
+            explicit ScopedTimerResolution(unsigned ms) : m_ms(ms), m_held(false)
+            {
+#ifdef _WIN32
+                m_held = (timeBeginPeriod(m_ms) == TIMERR_NOERROR);
+                if (!m_held)
+                {
+                    sLog.outError("timeBeginPeriod(%u) refused; world ticks will be quantised "
+                                  "to the default timer granularity", m_ms);
+                }
+#endif
+            }
+
+            ~ScopedTimerResolution()
+            {
+#ifdef _WIN32
+                if (m_held)
+                {
+                    timeEndPeriod(m_ms);
+                }
+#endif
+            }
+
+            ScopedTimerResolution(const ScopedTimerResolution&) = delete;
+            ScopedTimerResolution& operator=(const ScopedTimerResolution&) = delete;
+
+        private:
+            unsigned m_ms;
+            bool     m_held;
+    };
+
+#ifdef _WIN32
+#ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
+#define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 0x00000002
+#endif
+#endif
+
+    /// Waits out the rest of a tick without depending on the process timer resolution --
+    /// a high-resolution waitable timer runs off its own ~1ms source (Win10 1803+) rather
+    /// than the scheduler tick that quantises Sleep(). Falls back to the plain sleep where
+    /// the flag is refused, and is the plain sleep everywhere but Windows.
+    class PreciseSleep
+    {
+        public:
+#ifdef _WIN32
+            PreciseSleep()
+                : m_timer(CreateWaitableTimerExW(
+                              nullptr, nullptr,
+                              CREATE_WAITABLE_TIMER_MANUAL_RESET |
+                              CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                              TIMER_ALL_ACCESS))
+            {
+                if (!m_timer)
+                {
+                    sLog.outError("No high-resolution waitable timer; world ticks stay quantised "
+                                  "to the platform timer granularity");
+                }
+            }
+
+            ~PreciseSleep()
+            {
+                if (m_timer)
+                {
+                    CloseHandle(m_timer);
+                }
+            }
+
+            void Wait(uint32 ms)
+            {
+                LARGE_INTEGER due;
+                due.QuadPart = -static_cast<LONGLONG>(ms) * 10000;  // negative == relative, 100ns
+                if (m_timer && SetWaitableTimerEx(m_timer, &due, 0, nullptr, nullptr, nullptr, 0))
+                {
+                    WaitForSingleObject(m_timer, INFINITE);
+                    return;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+            }
+
+        private:
+            HANDLE m_timer;
+#else
+            PreciseSleep() = default;
+
+            void Wait(uint32 ms)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+            }
+#endif
+
+        public:
+            PreciseSleep(const PreciseSleep&) = delete;
+            PreciseSleep& operator=(const PreciseSleep&) = delete;
+    };
+}
+
+/// How far the measured tick may sit above the target before the status bar calls it out.
+/// Wide enough to absorb ordinary scheduling noise, narrow enough that a sleep rounded up
+/// to a coarse platform timer (15.625ms on Windows, so ~62ms for a 50ms target) shows red.
+#define TICK_SLACK 5
 
 extern uint32 realmID;
 
@@ -296,7 +421,7 @@ void Master::StopServices()
     m_services.clear();
 }
 
-void Master::PublishConsoleStatus(uint32 diff)
+void Master::PublishConsoleStatus(uint32 diff, uint32 diffMax, uint32 tick)
 {
 #ifdef _WIN32
     // Before the early-out below: the window title is owned by the OS rather
@@ -323,22 +448,52 @@ void Master::PublishConsoleStatus(uint32 diff)
                  sWorld.GetQueuedSessionCount() ? MaNGOS::Console::STYLE_WARN
                                                 : MaNGOS::Console::STYLE_NORMAL);
 
-    snprintf(buf, sizeof(buf), "%u ms", diff);
-    ui.SetStatus(2, "Diff", buf, diff > WORLD_SLEEP_CONST ? MaNGOS::Console::STYLE_WARN
-                                                          : MaNGOS::Console::STYLE_SUCCESS);
+    // Both figures are about the simulation beat, not the housekeeping one -- that is the
+    // beat a player feels, so it is the beat worth watching.
+    const uint32 target = SimulationInterval();
+
+    // Last sample AND the worst one in the window. One number cannot tell a loop that sleeps
+    // badly from a loop that works slowly: the sleep is the beat minus the work, so a tick
+    // whose work overruns skips its sleep entirely and drags the mean up while the
+    // instantaneous sample stays near zero. Reading only the sample sent me after the timer
+    // three times over.
+    snprintf(buf, sizeof(buf), "%u/%u ms", diff, diffMax);
+    ui.SetStatus(2, "Diff", buf, diffMax > target ? MaNGOS::Console::STYLE_WARN
+                                                  : MaNGOS::Console::STYLE_SUCCESS);
+
+    // Not the same number as Diff, and the difference is the point: Diff is how long one
+    // update took, Tick is how far apart they actually land. A loop that finishes its work
+    // in 4ms can still tick every 65 if the platform rounds the sleep up to its timer
+    // granularity -- invisible in Diff, and it is the cadence every relayed movement
+    // packet inherits.
+    snprintf(buf, sizeof(buf), "%u ms", tick);
+    ui.SetStatus(3, "Tick", buf, tick > target + TICK_SLACK
+                                     ? MaNGOS::Console::STYLE_WARN
+                                     : MaNGOS::Console::STYLE_SUCCESS);
 
     snprintf(buf, sizeof(buf), "%ud %02u:%02u:%02u", uptime / 86400,
              (uptime / 3600) % 24, (uptime / 60) % 60, uptime % 60);
-    ui.SetStatus(3, "Uptime", buf);
+    ui.SetStatus(4, "Uptime", buf);
 }
 
 void Master::WorldLoop()
 {
-    sLog.outString("World updater started (%dms minimum update interval)",
-                   WORLD_SLEEP_CONST);
+    const uint32 simInterval = SimulationInterval();
+
+    sLog.outString("World updater started (simulation every %ums, housekeeping every %ums)",
+                   simInterval, WORLD_SLEEP_CONST);
+
+    // Both are load-bearing now, not tuning: sleep_for() cannot wake sooner than the platform
+    // timer granularity, 15.625ms by default on Windows, which would round a 10ms simulation
+    // beat up past the 50ms it was meant to replace.
+    ScopedTimerResolution timerRes(1);
+    PreciseSleep sleeper;
 
     uint32 previous = getMSTime();
-    uint32 lastStatus = 0;
+    uint32 lastHousekeeping = previous;
+    uint32 lastStatus = previous;
+    uint32 ticksSinceStatus = 0;
+    uint32 spentMax = 0;
 
     while (!World::IsStopped())
     {
@@ -346,21 +501,39 @@ void Master::WorldLoop()
         ++World::m_worldLoopCounter;
 
         const uint32 current = getMSTime();
-        sWorld.Update(getMSTimeDiff(previous, current));
+        sWorld.UpdateSimulation(getMSTimeDiff(previous, current));
         previous = current;
 
-        const uint32 spent = getMSTimeDiff(current, getMSTime());
-
-        if (getMSTimeDiff(lastStatus, current) >= 1000)
+        // An accumulator, not a tick counter: the simulation beat need not divide
+        // WORLD_SLEEP_CONST, and a slow map update must not drag the auction timers with it.
+        const uint32 sinceHousekeeping = getMSTimeDiff(lastHousekeeping, current);
+        if (sinceHousekeeping >= WORLD_SLEEP_CONST)
         {
-            lastStatus = current;
-            PublishConsoleStatus(spent);
+            sWorld.Update(sinceHousekeeping);
+            lastHousekeeping = current;
         }
 
-        if (spent < WORLD_SLEEP_CONST)
+        const uint32 spent = getMSTimeDiff(current, getMSTime());
+        ++ticksSinceStatus;
+        if (spent > spentMax)
         {
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(WORLD_SLEEP_CONST - spent));
+            spentMax = spent;
+        }
+
+        const uint32 sinceStatus = getMSTimeDiff(lastStatus, current);
+        if (sinceStatus >= 1000)
+        {
+            // Averaged over the reporting window: a single sample is one sleep's rounding
+            // error and says nothing about the cadence.
+            PublishConsoleStatus(spent, spentMax, sinceStatus / ticksSinceStatus);
+            lastStatus = current;
+            ticksSinceStatus = 0;
+            spentMax = 0;
+        }
+
+        if (spent < simInterval)
+        {
+            sleeper.Wait(simInterval - spent);
         }
 
 #ifdef _WIN32

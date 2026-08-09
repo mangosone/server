@@ -49,7 +49,13 @@ class Camera;
 #define CENTER_GRID_OFFSET      (SIZE_OF_GRIDS/2)
 
 #define MIN_GRID_DELAY          (MINUTE*IN_MILLISECONDS)
-#define MIN_MAP_UPDATE_DELAY    50
+
+/// Floor on MapUpdateInterval. Was 50, which was also the world heartbeat, so the simulation
+/// could never beat faster than the housekeeping and every relayed movement packet inherited
+/// that. 10 matches TrinityCore's own default and sits below the median 15ms at which a 2.4.3
+/// client emits movement, so the server is no longer the thing batching packets. Lower buys
+/// nothing a client can send and only burns a core.
+#define MIN_MAP_UPDATE_DELAY    10
 
 #define MAX_NUMBER_OF_CELLS     16
 #define SIZE_OF_GRID_CELL       (SIZE_OF_GRIDS/MAX_NUMBER_OF_CELLS)

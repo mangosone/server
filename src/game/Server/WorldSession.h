@@ -42,9 +42,11 @@
 #include "Item.h"
 
 struct ItemPrototype;
+#include <deque>
 #include <memory>
 #include <ctime>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct AuctionEntry;
@@ -507,7 +509,11 @@ class WorldSession
         {
             m_latency = latency;
         }
-        void SetClientTimeDelay(uint32 delay) { m_clientTimeDelay = delay; }
+        void SetClientTimeDelay(int64 delay) { m_clientTimeDelay = delay; }
+        int64 GetClientTimeDelay() const { return m_clientTimeDelay; }
+        void ResetClientTimeDelay();
+        void PushTimeSyncSample(int64 clockDelta, uint32 roundTrip);
+        void AdjustMovementInfoTime(MovementInfo& mi);
         uint32 getDialogStatus(Player* pPlayer, Object* questgiver, uint32 defstatus);
 
         // Misc
@@ -639,6 +645,14 @@ class WorldSession
         void HandleSetActiveMoverOpcode(WorldPacket& recv_data);
         void HandleMoveNotActiveMoverOpcode(WorldPacket& recv_data);
         void HandleMoveTimeSkippedOpcode(WorldPacket& recv_data);
+
+        /// Shared tail of the forced-state ACKs (root, water walk, hover, feather fall):
+        /// time-adjust, verify and relocate from the pose the client applied the state at.
+        void ApplyStateAck(MovementInfo& movementInfo);
+
+        /// Snap the mover's client back onto the last pose the server accepted, after a
+        /// movement packet was rejected. Rate limited, and a no-op for a boarded mover.
+        void ResyncMover();
 
         void HandleRequestRaidInfoOpcode(WorldPacket& recv_data);
 
@@ -999,7 +1013,10 @@ class WorldSession
         uint32 m_latency;
         uint32 m_Tutorials[8];
         TutorialDataState m_tutorialState;
-        int32 m_clientTimeDelay;
+        int64 m_clientTimeDelay;
+        bool m_clientTimeDelayKnown;
+        std::deque<std::pair<int64, uint32>> m_timeSyncSamples; ///< (clock delta, round trip)
+        uint32 m_lastMoverResync;                           ///< rate limit on ResyncMover()
         ObjectGuid m_npcWatchLastGuid;
 
         // Ping flood tracking now lives exclusively on the world thread and is

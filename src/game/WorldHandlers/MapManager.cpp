@@ -57,6 +57,7 @@
 #include "World.h"
 #include "CellImpl.h"
 #include "ObjectMgr.h"
+#include "SimulationTime.h"
 
 #ifdef ENABLE_ELUNA
 #include "ElunaConfig.h"
@@ -327,6 +328,17 @@ void MapManager::Update(uint32 diff)
         return;
     }
 
+    // Whole beats only, because i_timer.Reset() below KEEPS the remainder. Handing out
+    // GetCurrent() would ship those milliseconds now and count them again next cycle, so
+    // every spline, aura tick and AI timer on every map runs fast by half an interval per
+    // tick -- ~10% at a 50ms beat, which is a taxi flight ending half a minute early.
+    const uint32 elapsed = uint32(i_timer.GetCurrent() - i_timer.GetCurrent() % i_timer.GetInterval());
+
+    // The simulation clock moves HERE and nowhere else, by the number the maps are about to
+    // be handed, before any of them runs. That is what makes an object's elapsed time and
+    // its map's tick two readings of one quantity: there is no second source to drift from.
+    Simulation::Advance(elapsed);
+
     // The world's maps, in parallel, each owning its own grid. A vessel's deck is NOT
     // among them: it belongs to the vessel, which runs it nested inside the tick of the
     // map it sails, once that map has finished with its own containers. There is no second
@@ -340,11 +352,11 @@ void MapManager::Update(uint32 diff)
 
         if (m_updater.activated())
         {
-            m_updater.schedule_update(*iter->second, (uint32)i_timer.GetCurrent());
+            m_updater.schedule_update(*iter->second, elapsed);
         }
         else
         {
-            iter->second->Update((uint32)i_timer.GetCurrent());
+            iter->second->Update(elapsed);
         }
     }
 
@@ -380,7 +392,7 @@ void MapManager::Update(uint32 diff)
         }
 
         // check if map can be unloaded
-        if (pMap->CanUnload((uint32)i_timer.GetCurrent()))
+        if (pMap->CanUnload(elapsed))
         {
             pMap->UnloadAll(true);
             delete pMap;
@@ -393,7 +405,12 @@ void MapManager::Update(uint32 diff)
         }
     }
 
-    i_timer.SetCurrent(0);
+    // Reset(), not SetCurrent(0): Reset keeps the remainder (`_current %= _interval`) so the
+    // beat stays phase-locked to the interval. Dropping it re-quantised every cycle to the
+    // caller's own tick, which is where the alternating 100/101ms grid in the trace came from.
+    // Only valid because `elapsed` above withheld exactly that remainder -- the two together
+    // conserve time. Hand out GetCurrent() here and the carry is spent twice.
+    i_timer.Reset();
 }
 
 /**

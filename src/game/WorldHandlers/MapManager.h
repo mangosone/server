@@ -93,9 +93,12 @@ class MapManager : public MaNGOS::Singleton<MapManager>
             }
         }
 
+        /// MIN_MAP_UPDATE_DELAY is a floor, not a ceiling. This read `if (t > MIN) t = MIN`,
+        /// which crushed every value above the minimum down to it and made the config key a
+        /// no-op in the one direction an admin would ever use it.
         void SetMapUpdateInterval(uint32 t)
         {
-            if (t > MIN_MAP_UPDATE_DELAY)
+            if (t < MIN_MAP_UPDATE_DELAY)
             {
                 t = MIN_MAP_UPDATE_DELAY;
             }

@@ -105,6 +105,7 @@ enum eConfigUInt32Values
     CONFIG_UINT32_INTERVAL_SAVE,
     CONFIG_UINT32_INTERVAL_GRIDCLEAN,
     CONFIG_UINT32_INTERVAL_MAPUPDATE,
+    CONFIG_UINT32_MOVEMENT_PACKET_DELAY,
     CONFIG_UINT32_INTERVAL_CHANGEWEATHER,
     CONFIG_UINT32_PORT_WORLD,
     CONFIG_UINT32_GAME_TYPE,
@@ -263,6 +264,7 @@ enum eConfigFloatValues
     CONFIG_FLOAT_RATE_DROP_ITEM_REFERENCED,
     CONFIG_FLOAT_RATE_DROP_MONEY,
     CONFIG_FLOAT_RATE_XP_KILL,
+    CONFIG_FLOAT_RATE_XP_PETKILL,
     CONFIG_FLOAT_RATE_XP_QUEST,
     CONFIG_FLOAT_RATE_XP_EXPLORE,
     CONFIG_FLOAT_RATE_REPUTATION_GAIN,
@@ -333,6 +335,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL,
     CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GROUP,
     CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GUILD,
+    CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_TRADE,
     CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_AUCTION,
     CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_MAIL,
     CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST,
@@ -665,6 +668,15 @@ class World
             return (m_shutdownState.load(std::memory_order_acquire) & STOP_BIT) != 0;
         }
 
+        /// The simulation beat: maps, and the session mailboxes that feed them. Runs on its
+        /// own cadence, MapUpdateInterval, because this is the only part of the tick a player
+        /// can feel -- a movement packet is drained here and relayed from here, so this
+        /// interval IS the granularity of every other player's position on their screen.
+        void UpdateSimulation(uint32 diff);
+
+        /// The housekeeping beat: auctions, mail, uptime, corpses, events, battlegrounds.
+        /// None of it is latency-sensitive, all of it is either timer-gated already or cheap
+        /// to run at the world heartbeat. Deliberately NOT the same rate as UpdateSimulation.
         void Update(uint32 diff);
 
         void UpdateSessions(uint32 diff);

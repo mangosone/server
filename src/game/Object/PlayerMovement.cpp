@@ -80,8 +80,24 @@
  *
  * @param enable True to root the player; false to unroot them.
  */
+// Every setter below seeds m_movementInfo before it sends, as the Creature equivalents in
+// CreatureMovement.cpp already do: that struct is what WriteMovementInfo puts in create
+// blocks and heartbeats, and until now only the can-fly ACK ever repaired it.
+//
+// MOVEFLAG_ROOT is in movementFlagsMask, so this makes isMoving() true for a rooted player
+// -- but the client echoes ROOT in its own move packets, so that was already true one
+// round trip later. What changes is the size of the window, not the steady state.
 void Player::SetRoot(bool enable)
 {
+    if (enable)
+    {
+        m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
+    }
+    else
+    {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT);
+    }
+
     WorldPacket data(enable ? SMSG_FORCE_MOVE_ROOT : SMSG_FORCE_MOVE_UNROOT, GetPackGUID().size() + 4);
     data << GetPackGUID();
     data << uint32(0);
@@ -95,10 +111,22 @@ void Player::SetRoot(bool enable)
  */
 void Player::SetWaterWalk(bool enable)
 {
+    if (enable)
+    {
+        m_movementInfo.AddMovementFlag(MOVEFLAG_WATERWALKING);
+    }
+    else
+    {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_WATERWALKING);
+    }
+
+    // To the SET, like its four siblings here and like Creature::SetWaterWalk. This was the
+    // one force packet in the file addressed to the owning session alone, so the caster
+    // walked on the water and everybody else watched him swim through it.
     WorldPacket data(enable ? SMSG_MOVE_WATER_WALK : SMSG_MOVE_LAND_WALK, GetPackGUID().size() + 4);
     data << GetPackGUID();
     data << uint32(0);
-    GetSession()->SendPacket(&data);
+    SendMessageToSet(&data, true);
 }
 
 /**
@@ -135,10 +163,12 @@ void Player::SetCanFly(bool enable)
     WorldPacket data;
     if (enable)
     {
+        m_movementInfo.AddMovementFlag(MOVEFLAG_CAN_FLY);
         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
     }
     else
     {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_CAN_FLY);
         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
     }
 
@@ -162,10 +192,12 @@ void Player::SetFeatherFall(bool enable)
     WorldPacket data;
     if (enable)
     {
+        m_movementInfo.AddMovementFlag(MOVEFLAG_SAFE_FALL);
         data.Initialize(SMSG_MOVE_FEATHER_FALL, 8 + 4);
     }
     else
     {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_SAFE_FALL);
         data.Initialize(SMSG_MOVE_NORMAL_FALL, 8 + 4);
     }
 
@@ -190,10 +222,12 @@ void Player::SetHover(bool enable)
     WorldPacket data;
     if (enable)
     {
+        m_movementInfo.AddMovementFlag(MOVEFLAG_HOVER);
         data.Initialize(SMSG_MOVE_SET_HOVER, 8 + 4);
     }
     else
     {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_HOVER);
         data.Initialize(SMSG_MOVE_UNSET_HOVER, 8 + 4);
     }
 

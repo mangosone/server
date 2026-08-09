@@ -61,6 +61,7 @@
 #include "ObjectMgr.h"
 #include "Group.h"
 #include "CinematicFlyover.h"
+#include "Timer.h"
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "World.h"
@@ -76,14 +77,24 @@
 // Warden
 #include "WardenWin.h"
 #include "WardenMac.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <deque>
 #include <memory>
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
+
+namespace
+{
+    const size_t TIME_SYNC_SAMPLE_COUNT = 6;
+    const int64 TIME_SYNC_DEAD_BAND_MS = 25;
+}
 
 /**
  * @brief Helper for Map session filtering
@@ -165,7 +176,9 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
     _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
-    m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0), m_npcWatchLastGuid(),
+    m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0),
+    m_clientTimeDelayKnown(false), m_timeSyncSamples(), m_lastMoverResync(0),
+    m_npcWatchLastGuid(),
     m_pingTracker()
 {
     if (m_link)
@@ -800,7 +813,7 @@ void WorldSession::HandlePingOpcode(WorldPacket& recv_data)
     }
 
     SetLatency(latency);
-    SetClientTimeDelay(0); // recalculated on next movement packet
+    // m_clientTimeDelay comes from CMSG_TIME_SYNC_RESP; do not clear on ping.
 
     WorldPacket packet(SMSG_PONG, 4);
     packet << ping;
@@ -1164,3 +1177,80 @@ void WorldSession::InitWarden(uint16 build, BigNumber* k, std::string const& os)
         _warden->Init(this, k);
     }
 }
+
+void WorldSession::ResetClientTimeDelay()
+{
+    m_clientTimeDelay = 0;
+    m_clientTimeDelayKnown = false;
+    m_timeSyncSamples.clear();
+}
+
+void WorldSession::PushTimeSyncSample(int64 clockDelta, uint32 roundTrip)
+{
+    // TrinityCore's ComputeNewClockDelta without boost. A delta that walks DOWN drags every
+    // observer's copy of this mover backwards in time, hence the filter and the dead band.
+    m_timeSyncSamples.emplace_back(clockDelta, roundTrip);
+    if (m_timeSyncSamples.size() > TIME_SYNC_SAMPLE_COUNT)
+    {
+        m_timeSyncSamples.pop_front();
+    }
+
+    std::vector<uint32> trips;
+    trips.reserve(m_timeSyncSamples.size());
+    double sum = 0.0;
+    double sumSq = 0.0;
+    for (auto const& sample : m_timeSyncSamples)
+    {
+        trips.push_back(sample.second);
+        sum += double(sample.second);
+        sumSq += double(sample.second) * double(sample.second);
+    }
+
+    std::sort(trips.begin(), trips.end());
+    const double count = double(trips.size());
+    const double mean = sum / count;
+    const double deviation = std::sqrt(std::max(0.0, sumSq / count - mean * mean));
+    // <= so the median sample always survives: a filter that can empty has no answer to give.
+    const double cutoff = double(trips[trips.size() / 2]) + deviation;
+
+    int64 total = 0;
+    int64 kept = 0;
+    for (auto const& sample : m_timeSyncSamples)
+    {
+        if (double(sample.second) <= cutoff)
+        {
+            total += sample.first;
+            ++kept;
+        }
+    }
+
+    const int64 filtered = total / kept;
+    int64 step = filtered - m_clientTimeDelay;
+    if (step < 0)
+    {
+        step = -step;
+    }
+
+    if (!m_clientTimeDelayKnown || step > TIME_SYNC_DEAD_BAND_MS)
+    {
+        m_clientTimeDelay = filtered;
+        m_clientTimeDelayKnown = true;
+    }
+}
+
+void WorldSession::AdjustMovementInfoTime(MovementInfo& mi)
+{
+    if (!m_clientTimeDelayKnown)
+    {
+        // Before the first sync the raw value is the client's uptime counter, which no observer
+        // can interpolate against; seed from this packet rather than ship it unmapped.
+        m_clientTimeDelay = int64(getMSTime()) - int64(mi.GetTime());
+        m_clientTimeDelayKnown = true;
+    }
+
+    // Truncation is the point: the low 32 bits are the client's movement clock on the wire.
+    const int64 wire = int64(mi.GetTime()) + m_clientTimeDelay
+                     + int64(sWorld.getConfig(CONFIG_UINT32_MOVEMENT_PACKET_DELAY));
+    mi.UpdateTime(uint32(wire));
+}
+

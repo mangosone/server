@@ -168,12 +168,18 @@ namespace Movement
     /**
      * @brief Stops any creature movement.
      */
-    void MoveSplineInit::Stop()
+    void MoveSplineInit::Stop(bool forceSend /*= false*/)
     {
         MoveSpline& move_spline = *unit.movespline;
 
-        // No need to stop if we are not moving
-        if (move_spline.Finalized())
+        // No need to stop if we are not moving -- UNLESS the caller finalized the spline
+        // itself and is relying on us to tell the client. Unit::InterruptMoving does exactly
+        // that: it calls movespline->_Interrupt(), which sets splineflags.done, and then asks
+        // StopMoving to force a stop. Without this flag that request died right here and the
+        // client was never told, so it flew the rest of the old spline on its own -- the
+        // corpse that keeps sliding, the runner that coasts past where it really stopped,
+        // and the snap back when the next packet finally names the true position.
+        if (move_spline.Finalized() && !forceSend)
         {
             return;
         }
