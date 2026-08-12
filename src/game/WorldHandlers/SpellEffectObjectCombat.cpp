@@ -436,7 +436,11 @@ void Spell::EffectSummonPlayer(SpellEffectIndex /*eff_idx*/)
 
     WorldPacket data(SMSG_SUMMON_REQUEST, 8 + 4 + 4);
     data << m_caster->GetObjectGuid();                      // summoner guid
-    data << uint32(m_caster->GetTerrain()->GetZoneId(m_caster->Where().X(), m_caster->Where().Y(), m_caster->Where().Z()));                  // summoner zone
+    // AREA, not zone. The client names this location in the summon dialog, and it wants
+    // the finer of the two: with the zone it reads "Elwynn Forest" where the summoner is
+    // standing in Goldshire. GetAreaId falls back to the zone where an area has no
+    // sub-area of its own, so nothing is lost by asking for the narrower one.
+    data << uint32(m_caster->GetTerrain()->GetAreaId(m_caster->Where().X(), m_caster->Where().Y(), m_caster->Where().Z()));                  // summoner area
     data << uint32(MAX_PLAYER_SUMMON_DELAY * IN_MILLISECONDS); // auto decline after msecs
     ((Player*)unitTarget)->GetSession()->SendPacket(&data);
 }
