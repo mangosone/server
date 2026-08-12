@@ -507,6 +507,17 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
 
     DETAIL_LOG("PLAYER: Buy bank bag slot, slot number = %u", slot);
 
+    // The DBC offers more slots than the character actually has. 2.4.3 ships twelve
+    // BankBagSlotPrices rows against the seven slots between BANK_SLOT_BAG_START and
+    // BANK_SLOT_BAG_END, and rows 8 to 12 are priced at 999999999 copper -- which is how
+    // Blizzard put them out of reach, and why nobody has hit this. Reach is not the same
+    // as legality: without this the lookup succeeds, the money is taken, and
+    // SetBankBagSlotCount stores a count past the last slot that exists.
+    if (slot > (BANK_SLOT_BAG_END - BANK_SLOT_BAG_START))
+    {
+        return;
+    }
+
     BankBagSlotPricesEntry const* slotEntry = sBankBagSlotPricesStore.LookupEntry(slot);
 
     WorldPacket data(SMSG_BUY_BANK_SLOT_RESULT, 4);
