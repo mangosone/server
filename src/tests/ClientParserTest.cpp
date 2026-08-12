@@ -691,7 +691,7 @@ TEST(WmoGroupKeepsDetailFacesThatAlsoCollide)
     CHECK_EQ(g.tris.size(), size_t(2));
 }
 
-TEST(WmoGroupLiquidUsesWotlkRows)
+TEST(WmoGroupLiquidUsesThisClientsRows)
 {
     struct Expect
     {
@@ -699,14 +699,19 @@ TEST(WmoGroupLiquidUsesWotlkRows)
         uint32_t mogpFlags;
         uint16_t entry;
     };
-    // Legacy codes 0..3 are water/ocean/magma/slime; 3.3.5a's rows for them are
-    // 13/14/19/20, not the 1..4 that 2.4.3 uses.
+    // Legacy codes 0..3 are water/ocean/magma/slime, and the rows they map to are THIS
+    // client's: 1, 2, 3, 4. The previous expectation was 13/14/19/20 with a comment
+    // saying in as many words that those are 3.3.5a's and "not the 1..4 that 2.4.3
+    // uses" -- it named the right rows and then asserted the other ones, so the test
+    // held the baker to a numbering this client does not have. LiquidType.dbc here has
+    // seven rows (1, 2, 3, 4, 21, 41, 61); 13, 14, 19 and 20 are absent, GridMap's
+    // LookupEntry misses them, and every WMO liquid was served as plain water.
     const Expect cases[] = {
-        {0, 0, 13},
-        {0, 0x80000, 14},
-        {1, 0, 14},
-        {2, 0, 19},
-        {3, 0, 20},
+        {0, 0, 1},
+        {0, 0x80000, 2},
+        {1, 0, 2},
+        {2, 0, 3},
+        {3, 0, 4},
     };
 
     for (const Expect& e : cases)
@@ -746,7 +751,7 @@ TEST(WmoGroupLiquidFallsBackToTileNibble)
     WmoGroupData g;
     REQUIRE(ParseWmoGroup(group.b, 0, g) == WmoGroupParse::Loaded);
     REQUIRE(g.hasLiquid);
-    CHECK_EQ(g.liquid.entry, uint16_t(19));
+    CHECK_EQ(g.liquid.entry, uint16_t(3));   // magma, as this client's LiquidType numbers it
 }
 
 TEST(WmoGroupWithoutGeometryOrLiquidIsEmptyNotMalformed)
