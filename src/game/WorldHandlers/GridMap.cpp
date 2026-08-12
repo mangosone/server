@@ -88,6 +88,11 @@ namespace
     // WMO itself carries counts there.
     const uint32 MOGP_FLAG_INTERIOR = 0x2000;
 
+    // The two group flags that say "outdoors". EXTERIOR is the one every core reads;
+    // MOUNT_ALLOWED is the one a 2.4.3 client actually answers with. See IsOutdoorWMO.
+    const uint32 MOGP_FLAG_EXTERIOR = 0x8;
+    const uint32 MOGP_FLAG_MOUNT_ALLOWED = 0x8000;
+
     // MAP_LIQUID_TYPE_* is one bit per family in the order water, ocean, magma, slime.
     // 2.4.3 has no SoundBank column -- that arrives in 3.3.5a -- so the family comes from
     // LiquidType.dbc's Type, which uses a DIFFERENT encoding: 0 magma, 2 slime, 3 water.
@@ -127,7 +132,22 @@ namespace
         // at 0x00100000 -- so the WMO's group flags are the only authority here.
         (void)atEntry;
 
-        bool outdoor = (mogpFlags & 0x8) != 0;
+        // BOTH bits, and on this client the second one is the one that answers.
+        //
+        // WMOAreaTable.Flags is an ALL-ZERO COLUMN in 2.4.3 -- every one of its 16234 rows
+        // carries 0 there -- so neither override below can ever fire. 3.3.5a populates the
+        // same field, of the same 28-field layout, on 1238 rows. Reading EXTERIOR alone
+        // therefore left one bit deciding the whole question, and Orgrimmar is a SINGLE
+        // WMO whose 144 groups are 142 INTERIOR and 2 EXTERIOR: the entire city, open
+        // streets included, answered INDOORS and refused every mount cast in it.
+        //
+        // MOUNT_ALLOWED is where the pre-WotLK client keeps "outdoors for this purpose";
+        // 3.3.5a migrated exactly that information into the WMOAreaTable.Flags & 4 read
+        // below, which is why the bug is invisible from a WotLK core. Measured over the
+        // 6651 groups the two clients share: EXTERIOR|MOUNT_ALLOWED reproduces 3.3.5a's
+        // own outdoor answer for 98.4% of them, EXTERIOR alone for 90.0% -- the latter
+        // calling 663 groups indoors that Blizzard calls outdoors.
+        bool outdoor = (mogpFlags & (MOGP_FLAG_EXTERIOR | MOGP_FLAG_MOUNT_ALLOWED)) != 0;
         if (wmoEntry)
         {
             if (wmoEntry->Flags & 4)
