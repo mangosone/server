@@ -23,7 +23,15 @@ namespace world::terrain
         // rejected tile is silence: no height, no liquid, no collision, no diagnostic
         // beyond the miss. The version is what turns "this map answers nothing" into
         // "this bake is stale, run the extractor".
-        constexpr uint32_t VERSION = 2;
+        //
+        // Version 3 is again the same byte layout, and this time the CONTENT changed
+        // meaning: a WMO group's liquid entry is a 2.4.3 LiquidType.dbc row (1 Water,
+        // 2 Ocean, 3 Magma, 4 Slime) where a version 2 bake wrote 3.3.5a's 13/14/19/20 --
+        // rows this client does not have, which the runtime looked up, missed, and served
+        // as plain water, lava included. A stale tile would parse perfectly and be wrong
+        // in a way nothing reports, so it is refused instead. THIS BUMP REQUIRES A FULL
+        // RE-BAKE before the branch is served.
+        constexpr uint32_t VERSION = 3;
 
         constexpr uint32_t MAX_MODELS = 1u << 20;
         constexpr uint32_t MAX_INSTANCES = 1u << 22;
