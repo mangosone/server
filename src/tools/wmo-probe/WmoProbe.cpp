@@ -22,6 +22,13 @@
 #include "terrain/TileSerializer.hpp"
 #include "terrain/WmoModel.hpp"
 
+// The on-disk mmtile header and the NAV_* bits are the SERVER's declaration, included
+// rather than copied -- the same reason NavMeshBuilder includes them.
+#include "MoveMapSharedDefines.h"
+
+#include "DetourNavMesh.h"
+#include "DetourNavMeshQuery.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -971,6 +978,173 @@ namespace
         std::printf("  that WMO is not placed in this tile\n");
     }
 
+    // --------------------------------------------------------------- the mesh ---
+    /// Runs the SERVER'S OWN query against the baked navmesh: same coordinate order
+    /// (y, z, x), same search extents, same two-stage retry as PathFinder, and the
+    /// filter a given creature would build. "The mesh has water polygons in it" and
+    /// "a swimmer can path across them" are different claims, and only this settles
+    /// the second -- polygons that exist but share no edge answer the first and fail
+    /// the second.
+    void Path(const std::string& mmaps, uint32_t mapId, float x1, float y1, float z1,
+              float x2, float y2, float z2, unsigned short includeFlags)
+    {
+        char name[64];
+        std::snprintf(name, sizeof(name), "%04u.mmap", mapId);
+        std::FILE* f = std::fopen((mmaps + "/" + name).c_str(), "rb");
+        if (!f)
+        {
+            std::printf("no %s in %s\n", name, mmaps.c_str());
+            return;
+        }
+        dtNavMeshParams params{};
+        const bool readParams = std::fread(&params, sizeof(params), 1, f) == 1;
+        std::fclose(f);
+        if (!readParams)
+        {
+            std::printf("cannot read %s\n", name);
+            return;
+        }
+
+        dtNavMesh* mesh = dtAllocNavMesh();
+        if (!mesh || dtStatusFailed(mesh->init(&params)))
+        {
+            std::printf("navmesh init failed\n");
+            return;
+        }
+
+        size_t loaded = 0;
+        for (int tx = 0; tx < 64; ++tx)
+        {
+            for (int ty = 0; ty < 64; ++ty)
+            {
+                std::snprintf(name, sizeof(name), "%04u%02i%02i.mmtile", mapId, tx, ty);
+                std::FILE* tf = std::fopen((mmaps + "/" + name).c_str(), "rb");
+                if (!tf)
+                {
+                    continue;
+                }
+                MmapTileHeader header{};
+                if (std::fread(&header, sizeof(header), 1, tf) != 1)
+                {
+                    std::fclose(tf);
+                    continue;
+                }
+                unsigned char* data =
+                    static_cast<unsigned char*>(dtAlloc(header.size, DT_ALLOC_PERM));
+                if (!data || std::fread(data, header.size, 1, tf) != 1)
+                {
+                    dtFree(data);
+                    std::fclose(tf);
+                    continue;
+                }
+                std::fclose(tf);
+                if (dtStatusFailed(mesh->addTile(data, int(header.size),
+                                                 DT_TILE_FREE_DATA, 0, nullptr)))
+                {
+                    dtFree(data);
+                    continue;
+                }
+                ++loaded;
+            }
+        }
+
+        dtNavMeshQuery* query = dtAllocNavMeshQuery();
+        if (!query || dtStatusFailed(query->init(mesh, 1024)))
+        {
+            std::printf("query init failed\n");
+            return;
+        }
+
+        dtQueryFilter filter;
+        filter.setIncludeFlags(includeFlags);
+        filter.setExcludeFlags(0);
+
+        // PathFinder spells a point (y, z, x); getting this wrong searches the map's
+        // mirror image and every lookup misses for reasons that look like missing tiles.
+        float start[3] = {y1, z1, x1};
+        float end[3] = {y2, z2, x2};
+
+        auto nearest = [&](const float* pt, const char* label)
+        {
+            float extents[3] = {3.0f, 5.0f, 3.0f};
+            float closest[3] = {0.f, 0.f, 0.f};
+            dtPolyRef ref = 0;
+            query->findNearestPoly(pt, extents, &filter, &ref, closest);
+            if (!ref)
+            {
+                extents[1] = 200.0f;   // the retry PathFinder makes
+                query->findNearestPoly(pt, extents, &filter, &ref, closest);
+            }
+            unsigned short flags = 0;
+            unsigned char area = 0;
+            if (ref)
+            {
+                mesh->getPolyFlags(ref, &flags);
+                mesh->getPolyArea(ref, &area);
+            }
+            std::printf("  %-5s poly=%llu area=%s\n", label,
+                        static_cast<unsigned long long>(ref),
+                        area == NAV_GROUND  ? "GROUND"
+                        : area == NAV_WATER ? "WATER"
+                        : area == NAV_MAGMA ? "MAGMA"
+                        : area == NAV_SLIME ? "SLIME"
+                                            : "none");
+            return ref;
+        };
+
+        std::printf("\n=== path (%.1f, %.1f, %.1f) -> (%.1f, %.1f, %.1f), map %u ===\n",
+                    x1, y1, z1, x2, y2, z2, mapId);
+        std::printf("  %zu mmtiles loaded, filter includeFlags=0x%X (%s%s)\n", loaded,
+                    includeFlags, (includeFlags & NAV_GROUND) ? "GROUND " : "",
+                    (includeFlags & NAV_WATER) ? "WATER" : "");
+
+        const dtPolyRef startRef = nearest(start, "start");
+        const dtPolyRef endRef = nearest(end, "end");
+        if (!startRef || !endRef)
+        {
+            std::printf("  no polygon under one of the ends -> the server would give up "
+                        "on the mesh entirely\n");
+            return;
+        }
+
+        dtPolyRef path[256];
+        int count = 0;
+        const dtStatus status =
+            query->findPath(startRef, endRef, start, end, &filter, path, &count, 256);
+
+        std::printf("  findPath: %s%s, %d polygons\n",
+                    dtStatusSucceed(status) ? "success" : "FAILED",
+                    dtStatusDetail(status, DT_PARTIAL_RESULT) ? " (PARTIAL)" : "", count);
+
+        if (count > 0)
+        {
+            std::map<int, int> areas;
+            for (int i = 0; i < count; ++i)
+            {
+                unsigned char area = 0;
+                mesh->getPolyArea(path[i], &area);
+                areas[area]++;
+            }
+            std::printf("  polygons by area:");
+            for (const auto& a : areas)
+            {
+                std::printf("  %s x%d",
+                            a.first == NAV_GROUND  ? "GROUND"
+                            : a.first == NAV_WATER ? "WATER"
+                            : a.first == NAV_MAGMA ? "MAGMA"
+                            : a.first == NAV_SLIME ? "SLIME"
+                                                   : "other",
+                            a.second);
+            }
+            std::printf("\n");
+        }
+        if (count > 0 && path[count - 1] != endRef)
+        {
+            std::printf("  the path STOPS SHORT of the destination -- this is what the "
+                        "server sees as an incomplete path\n");
+        }
+    }
+
     void Usage()
     {
         std::printf(
@@ -992,7 +1166,11 @@ namespace
             "  wmoliquid <tx0> <ty0> <tx1> <ty1> the LiquidType rows WMOs were baked\n"
             "                                    with, over a range of tiles\n"
             "  groups [--root <path>]            one WMO's group flags from the CLIENT,\n"
-            "                                    compared against the bake\n");
+            "                                    compared against the bake\n"
+            "  path <x1> <y1> <z1> <x2> <y2> <z2>  the server's own navmesh query, with\n"
+            "                                    a swimmer's filter (--ground-only for\n"
+            "                                    a creature that cannot swim)\n"
+            "                                    needs --mmaps <dir>\n");
     }
 }
 
@@ -1004,9 +1182,11 @@ int main(int argc, char** argv)
     std::string locale = "enGB";
     std::string root;
     std::string pattern = "*.wmo";
+    std::string mmaps = "mmaps";
     uint32_t mapId = 0;
     int tx = 0, ty = 0;
     bool verbose = false;
+    bool groundOnly = false;
 
     std::vector<std::string> args;
     for (int i = 1; i < argc; ++i)
@@ -1031,7 +1211,9 @@ int main(int argc, char** argv)
             tx = std::atoi(args[++i].c_str());
             ty = std::atoi(args[++i].c_str());
         }
+        else if (a == "--mmaps" && hasValue) { mmaps = args[++i]; }
         else if (a == "--legacy-flags") { g_legacyFlags = true; }
+        else if (a == "--ground-only") { groundOnly = true; }
         else if (a == "-v") { verbose = true; }
         else { break; }
         ++i;
@@ -1071,6 +1253,15 @@ int main(int argc, char** argv)
     else if (mode == "groups")
     {
         Groups(data, locale, pattern, root, tiles, mapId, tx, ty);
+    }
+    else if (mode == "path" && i + 6 < args.size())
+    {
+        // A hunter pet: Creature::CanWalk gives GROUND, Pet::CanSwim gives the rest.
+        const unsigned short flags =
+            groundOnly ? NAV_GROUND
+                       : (unsigned short)(NAV_GROUND | NAV_WATER | NAV_MAGMA | NAV_SLIME);
+        Path(mmaps, mapId, number(i + 1), number(i + 2), number(i + 3), number(i + 4),
+             number(i + 5), number(i + 6), flags);
     }
     else
     {
