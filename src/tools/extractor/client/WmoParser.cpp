@@ -32,12 +32,25 @@ namespace world::terrain
         constexpr size_t MOHD_WMO_ID = 0x20;
         constexpr size_t MOHD_FLAGS = 0x3C;
 
-        // 3.3.5a's canonical WMO liquid rows. They are NOT the 1..4 of 2.4.3: reusing
-        // those here makes every WMO lava pool report as the wrong LiquidType.dbc row.
-        constexpr uint32_t ROW_WATER = 13;
-        constexpr uint32_t ROW_OCEAN = 14;
-        constexpr uint32_t ROW_MAGMA = 19;
-        constexpr uint32_t ROW_SLIME = 20;
+        // 2.4.3's canonical WMO liquid rows, and the warning the old comment carried is
+        // the reason these changed rather than a reason to leave them: a WMO lava pool
+        // written as the wrong LiquidType.dbc row does report as the wrong liquid.
+        //
+        // It was pointing the wrong way. 13/14/19/20 are 3.3.5a's rows, and this client's
+        // LiquidType.dbc holds SEVEN: 1 Water, 2 Ocean, 3 Magma, 4 Slime, plus 21, 41 and
+        // 61. Rows 13, 14, 19 and 20 are simply absent, so GridMap's LiquidFlagsOfRow
+        // looked them up, missed, and fell through to sound bank 0 -- every WMO liquid in
+        // the world, lava and slime included, reported as plain WATER, with no fire damage
+        // and no swim rules of its own. Measured on a full Kalimdor bake: all 77 WMO
+        // liquid groups carried row 13.
+        //
+        // The ADT half of a tile has always written 1..4 (AdtParser's MCLQ path), so this
+        // also ends two numberings meeting inside one file. Both agree with the row ids
+        // GridMap hard-codes (LIQUID_OCEAN_ROW = 2).
+        constexpr uint32_t ROW_WATER = 1;
+        constexpr uint32_t ROW_OCEAN = 2;
+        constexpr uint32_t ROW_MAGMA = 3;
+        constexpr uint32_t ROW_SLIME = 4;
 
         uint32_t CanonicalLiquidEntry(uint32_t entry, uint32_t mogpFlags)
         {
