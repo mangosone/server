@@ -79,6 +79,11 @@ add_subdirectory(tools/extractor)
 # A clean parse is not correct geometry; this is what says whether it is.
 add_subdirectory(tools/height-check)
 
+# Asks the terrain engine the indoor/outdoor and liquid questions the game asks it,
+# and prints what the engine discards on the way to its answer. Correct geometry is
+# still not a correct ANSWER: this is what says which flag, group and table decided.
+add_subdirectory(tools/wmo-probe)
+
 if (BUILD_MANGOSD OR BUILD_REALMD)
     if(WIN32)
         get_filename_component(MYSQL_LIB_DIR ${MySQL_LIBRARIES} DIRECTORY)
