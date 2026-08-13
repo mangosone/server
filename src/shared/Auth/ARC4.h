@@ -54,6 +54,26 @@
  * NOT thread-safe, and it must not be: a stream cipher IS its position in the stream, so
  * two threads sharing one is a protocol error, not a race to be locked away. Each
  * direction of each session owns its own.
+ *
+ * ================== NO INTERNAL DISCARD. DO NOT ADD ONE. ==================
+ *
+ * This is plain ARCFOUR. The keystream starts at byte zero and nothing is thrown away.
+ *
+ * The warning matters because the obvious "improvement" is wrong here. WotLK and later
+ * are documented as using RC4-drop1024, and a reader who knows that will be tempted to
+ * bake the drop into Init. It does not belong to the cipher: where the protocol wants
+ * it, THE CALLER does it -- AuthCrypt keys both directions and then pushes 1024 zero
+ * bytes through UpdateData, visibly, in its own source. Warden uses this same class and
+ * performs no drop at all, so a discard inside Init would be right for one caller and
+ * wrong for the other.
+ *
+ * The failure it would cause is the nasty kind. World traffic would decrypt to garbage
+ * and Warden would break in some different way, and both would present as a protocol
+ * fault -- a client that connects and then cannot read a packet -- rather than as a
+ * crypto one. Nobody would look here.
+ *
+ * Arc4_TheKeystreamStartsAtByteZero exists to say so out loud if it ever happens.
+ * =========================================================================
  */
 class ARC4
 {
