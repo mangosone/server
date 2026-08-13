@@ -30,8 +30,6 @@ set(SRC_GRP_AUTH
   Auth/HMACSHA1.cpp
   Auth/HMACSHA1.h
   Auth/Md5.h
-  Auth/OpenSSLProvider.cpp
-  Auth/OpenSSLProvider.h
   Auth/Sha1.cpp
   Auth/Sha1.h
   Auth/WardenKeyGeneration.h
