@@ -58,6 +58,9 @@ set(SRC_GRP_TESTS
     ${CMAKE_SOURCE_DIR}/src/game/Server/SessionMailbox.cpp
     ByteBufferStressTest.cpp
     CryptoStressTest.cpp
+    # Re-keying, kept out of CryptoStressTest so that file stays the untouched proof
+    # that the in-tree RC4 reproduces the published vector.
+    Arc4RekeyTest.cpp
     # AuthCryptTest is deliberately absent. 2.4.3's packet crypt is a
     # different scheme -- a fixed-length header crypt, four bytes out and six
     # in, with no HMAC-seeded RC4 pair and no continuous keystream -- so the
