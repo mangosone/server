@@ -79,6 +79,48 @@ namespace
 }
 
 /**
+ * THE KEYSTREAM STARTS AT BYTE ZERO. Nothing is discarded inside the cipher.
+ *
+ * WotLK and later are documented as using RC4-drop1024, so a reader who knows that will
+ * eventually be tempted to bake the discard into Init. It does not belong there. Where
+ * the protocol wants a drop, THE CALLER does it -- AuthCrypt keys both directions and
+ * then pushes 1024 zero bytes through UpdateData, in its own source, where it can be
+ * seen. Warden uses this same class and drops nothing, so a discard inside Init would be
+ * right for one caller and wrong for the other.
+ *
+ * The published vector would fail too, but it would fail as a hex mismatch, and whoever
+ * added the drop would spend an afternoon doubting their key schedule. This one fails
+ * with a name that says what happened.
+ *
+ * The stakes: world traffic decrypting to garbage and Warden breaking differently, both
+ * presenting as a protocol fault -- a client that connects and then cannot read a single
+ * packet -- rather than as a crypto one. Nobody would look at the cipher.
+ */
+TEST(Arc4_TheKeystreamStartsAtByteZero)
+{
+    // The keystream the published vector implies: ciphertext XOR "Plaintext".
+    const uint8 expected[] = { 0xbb ^ 'P', 0xf3 ^ 'l', 0x16 ^ 'a', 0xe8 ^ 'i',
+                               0xd9 ^ 'n', 0x40 ^ 't', 0xaf ^ 'e', 0x0a ^ 'x',
+                               0xd3 ^ 't' };
+
+    ARC4 fresh(const_cast<uint8*>(KEY), static_cast<uint8>(sizeof(KEY)));
+    const std::vector<uint8> head = Keystream(fresh, 9);
+    CHECK(Same(head, std::vector<uint8>(expected, expected + sizeof(expected))));
+
+    // The same, through the other constructor and Init -- a discard added to Init only
+    // would slip past a test that used the keying constructor alone.
+    ARC4 keyedLater(static_cast<uint8>(sizeof(KEY)));
+    keyedLater.Init(const_cast<uint8*>(KEY));
+    CHECK(Same(Keystream(keyedLater, 9), head));
+
+    // And it is emphatically not the stream at offset 1024, which is what a baked-in
+    // drop-1024 would hand back instead.
+    ARC4 dropped(const_cast<uint8*>(KEY), static_cast<uint8>(sizeof(KEY)));
+    Keystream(dropped, 1024);
+    CHECK(!Same(Keystream(dropped, 9), head));
+}
+
+/**
  * THE ONE THAT MATTERS.
  *
  * A cipher that has already encrypted a megabyte, then re-keyed, must be
