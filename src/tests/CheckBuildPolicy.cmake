@@ -31,15 +31,24 @@ foreach(REQUIRED_TEXT
   endif()
 endforeach()
 
-# The provider manager is a Meyers singleton in mangos_two and an RAII local in
-# the other three cores. Either spelling is accepted; what is not negotiable is
-# that a failed crypto init leaves through `return 1`. Returning 0 tells a
-# supervisor the process exited cleanly, so nothing restarts it.
-string(REGEX MATCH
-  "if \\(![A-Za-z_:.()]*IsInitialized\\(\\)\\)[^\n]*[\r\n]+[^\n]*\\{[\r\n]+[^\n]*Log::WaitBeforeContinueIfNeed\\(\\);[\r\n]+[^\n]*return 1;"
-  PROVIDER_FAILURE "${MANGOSD_SOURCE}")
-if(NOT PROVIDER_FAILURE)
-  message(FATAL_ERROR "mangosd provider failure must return 1")
+# The provider clause is gone, with the provider it guarded.
+#
+# It required mangosd to leave through `return 1` when the OpenSSL provider manager
+# failed to initialise -- a good rule, because returning 0 tells a supervisor the
+# process exited cleanly and nothing restarts it. There is no longer anything for it to
+# describe: RC4 was the only algorithm this tree fetched from the legacy provider, it is
+# implemented in the tree now, and mangosd performs no fallible crypto init at start-up
+# at all. SHA-1, SHA-256 and the bignum work come from the default provider, which is
+# inside libcrypto and cannot be absent while libcrypto is present.
+#
+# Deleted rather than loosened. A policy that matches nothing is worse than no policy:
+# it passes for the right reason today and for the wrong reason the moment someone
+# reintroduces a start-up check and forgets its exit code.
+string(FIND "${MANGOSD_SOURCE}" "OpenSSLProvider" POSITION)
+if(NOT POSITION EQUAL -1)
+  message(FATAL_ERROR
+    "mangosd reaches for OpenSSLProvider again; if a fallible crypto init is back, so "
+    "must be the rule that it exits with 1")
 endif()
 
 string(FIND "${SRC_CMAKE}" "Upstream realmd passes the *file*" POSITION)
