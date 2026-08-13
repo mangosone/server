@@ -191,6 +191,89 @@ add_custom_command(TARGET mangos-extractor POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/offmesh.txt
         $<TARGET_FILE_DIR:mangos-extractor>)
 
+# The OpenSSL runtime, beside the baker.
+#
+# The baker writes data.manifest, which is SHA-256, which is EVP -- so this tool carries
+# an OpenSSL dependency even though it touches no network and no database. That is
+# invisible until someone copies the tools directory somewhere without the server, runs
+# it, and gets a missing-DLL box instead of a bake. It is the one binary here an END USER
+# runs by hand, which is exactly the audience least equipped to diagnose that.
+#
+# Both libraries, though only one is loaded. `dataintegrity` links the project's OpenSSL
+# interface target, which carries SSL and Crypto together; measured on MSVC 2022 against
+# OpenSSL 3, dumpbin reports the built baker importing libcrypto and NOT libssl -- the
+# linker drops an import nothing references. That is a property of this compiler and this
+# OpenSSL build rather than a guarantee, so libssl travels too: a spare DLL costs a
+# megabyte beside a data set measured in gigabytes, and a missing one costs a bug report
+# from someone who cannot read a dependency walker.
+#
+# The runtime name carries the major version, so match the family rather than pinning
+# one, exactly as realmd does for its own test binary.
+if(WIN32)
+    set(_extractor_openssl_hints)
+    if(OPENSSL_ROOT_DIR)
+        list(APPEND _extractor_openssl_hints
+            "${OPENSSL_ROOT_DIR}" "${OPENSSL_ROOT_DIR}/bin")
+    endif()
+    if(OPENSSL_INCLUDE_DIR)
+        get_filename_component(_extractor_openssl_prefix
+            "${OPENSSL_INCLUDE_DIR}" DIRECTORY)
+        list(APPEND _extractor_openssl_hints
+            "${_extractor_openssl_prefix}" "${_extractor_openssl_prefix}/bin")
+    endif()
+    foreach(_extractor_openssl_lib IN ITEMS
+            ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+        if(_extractor_openssl_lib)
+            get_filename_component(_extractor_openssl_libdir
+                "${_extractor_openssl_lib}" DIRECTORY)
+            list(APPEND _extractor_openssl_hints
+                "${_extractor_openssl_libdir}" "${_extractor_openssl_libdir}/../bin")
+        endif()
+    endforeach()
+
+    find_file(EXTRACTOR_OPENSSL_CRYPTO_DLL
+        NAMES
+            libcrypto-4-x64.dll libcrypto-4.dll
+            libcrypto-3-x64.dll libcrypto-3.dll
+            libcrypto-x64.dll   libcrypto.dll
+        HINTS ${_extractor_openssl_hints})
+
+    find_file(EXTRACTOR_OPENSSL_SSL_DLL
+        NAMES
+            libssl-4-x64.dll libssl-4.dll
+            libssl-3-x64.dll libssl-3.dll
+            libssl-x64.dll   libssl.dll
+        HINTS ${_extractor_openssl_hints})
+
+    set(_extractor_openssl_dlls)
+    foreach(_extractor_openssl_dll IN ITEMS
+            ${EXTRACTOR_OPENSSL_CRYPTO_DLL} ${EXTRACTOR_OPENSSL_SSL_DLL})
+        if(_extractor_openssl_dll)
+            list(APPEND _extractor_openssl_dlls "${_extractor_openssl_dll}")
+        endif()
+    endforeach()
+
+    if(_extractor_openssl_dlls)
+        # Beside the BUILT binary, so the tool runs from the build tree...
+        add_custom_command(TARGET mangos-extractor POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${_extractor_openssl_dlls}
+                $<TARGET_FILE_DIR:mangos-extractor>
+            COMMENT "mangos-extractor: co-locating the OpenSSL runtime")
+
+        # ...and beside the INSTALLED one, which is the copy that gets handed out. A
+        # tools directory that only works next to a server it was never shipped with is
+        # the failure this whole block exists to prevent.
+        install(FILES ${_extractor_openssl_dlls} DESTINATION ${BIN_DIR}/tools)
+    else()
+        # A missing runtime must not fail the configure: it may well be on PATH, and a
+        # server build has no business refusing to configure over a tool's convenience.
+        message(WARNING
+            "OpenSSL runtime DLLs not found; mangos-extractor will rely on them being "
+            "on PATH. Set OPENSSL_ROOT_DIR to have them copied beside the tool.")
+    endif()
+endif()
+
 # A window in front of the baker, Windows only. It SPAWNS mangos-extractor and reads its
 # stdout -- it links nothing of the baker, so the two cannot drift into each other.
 if(WIN32)
