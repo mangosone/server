@@ -5,7 +5,6 @@
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
  * Copyright (C) 2005-2026 MaNGOS <https://www.getmangos.eu>
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,163 +23,117 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/**
- * @file ARC4.cpp
- * @brief Implementation of ARC4 encryption algorithm using OpenSSL
- *
- * This file implements the ARC4 (Alleged RC4) stream cipher for use
- * in the MaNGOS authentication and session encryption system. ARC4
- * is used to encrypt/decrypt game traffic between the server and clients.
- *
- * The implementation uses OpenSSL's EVP interface for the cipher operations
- * and includes proper provider management for OpenSSL 3.x compatibility.
- */
-
 #include "ARC4.h"
-#include "OpenSSLProvider.h"
-#include "Log/Log.h"
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-#include <openssl/provider.h>
-#endif
 
-/**
- * @brief Construct ARC4 cipher with specified key length
- * @param len Key length in bytes
- *
- * Creates an ARC4 cipher context with the specified key length.
- * The key itself is not set in this constructor - use Init() to set it.
- *
- * @note On OpenSSL 3.x, this automatically initializes the legacy provider
- * required for ARC4 support.
- */
-ARC4::ARC4(uint8 len) : m_cipherContext()
+#include <cstring>
+
+namespace
 {
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    // RC4 lives in the legacy provider, so it has to be loaded before EVP_rc4().
-    if (!OpenSSLProviderManager::Instance().IsInitialized())
+    /// The permutation is a byte table, so every index is taken modulo 256 -- which is
+    /// what a uint8 does on its own. Saying so once beats masking at eight call sites.
+    inline void Swap(uint8& a, uint8& b)
     {
-        sLog.outError("ARC4: Failed to initialize OpenSSL providers");
-        return;
-    }
-#endif
-
-    if (!m_cipherContext.IsValid())
-    {
-        sLog.outError("ARC4: Failed to create cipher context");
-        return;
+        const uint8 t = a;
+        a = b;
+        b = t;
     }
 
-    // Checked, not assumed: a loaded provider does not mean the cipher was fetched.
-    if (EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL) != 1)
+    /// A key of zero bytes would divide by zero in the schedule below, and a key longer
+    /// than the permutation cannot be distinguished from its first 256 bytes.
+    inline uint8 UsableKeyLength(uint8 len)
     {
-        sLog.outError("ARC4: Failed to initialize RC4 - is the OpenSSL legacy provider loaded?");
-        return;
-    }
-
-    if (EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len) != 1)
-    {
-        sLog.outError("ARC4: Failed to set the RC4 key length");
-        return;
+        return len ? len : 1;
     }
 }
 
-/**
- * @brief Construct ARC4 cipher with initial key
- * @param seed Pointer to the key bytes
- * @param len Length of the key in bytes
- *
- * Creates an ARC4 cipher context and initializes it with the provided key.
- * The cipher is ready to use for encryption/decryption immediately after
- * construction.
- *
- * @note On OpenSSL 3.x, this automatically initializes the legacy provider
- * required for ARC4 support.
- */
-ARC4::ARC4(uint8 *seed, uint8 len) : m_cipherContext()
+ARC4::ARC4(uint8 len)
+    : m_x(0), m_y(0), m_keyLength(UsableKeyLength(len))
 {
-#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    // RC4 lives in the legacy provider, so it has to be loaded before EVP_rc4().
-    if (!OpenSSLProviderManager::Instance().IsInitialized())
+    // The identity permutation. Not keyed yet: a caller using this constructor has said
+    // it will supply the key through Init, and leaving the state identity means a
+    // forgotten Init produces an obviously wrong stream rather than a plausible one.
+    for (int i = 0; i < 256; ++i)
     {
-        sLog.outError("ARC4: Failed to initialize OpenSSL providers");
-        return;
-    }
-#endif
-
-    if (!m_cipherContext.IsValid())
-    {
-        sLog.outError("ARC4: Failed to create cipher context");
-        return;
-    }
-
-    // Checked, not assumed: a loaded provider does not mean the cipher was fetched.
-    if (EVP_EncryptInit_ex(m_cipherContext.Get(), EVP_rc4(), NULL, NULL, NULL) != 1)
-    {
-        sLog.outError("ARC4: Failed to initialize RC4 - is the OpenSSL legacy provider loaded?");
-        return;
-    }
-
-    if (EVP_CIPHER_CTX_set_key_length(m_cipherContext.Get(), len) != 1)
-    {
-        sLog.outError("ARC4: Failed to set the RC4 key length");
-        return;
-    }
-
-    if (EVP_EncryptInit_ex(m_cipherContext.Get(), NULL, NULL, seed, NULL) != 1)
-    {
-        sLog.outError("ARC4: Failed to seed RC4");
+        m_state[i] = uint8(i);
     }
 }
 
-/**
- * @brief Destructor for ARC4 cipher
- *
- * All cleanup is handled automatically by the RAII wrappers
- * (OpenSSLProviderManager and OpenSSLCipherContext).
- */
+ARC4::ARC4(uint8* seed, uint8 len)
+    : m_x(0), m_y(0), m_keyLength(UsableKeyLength(len))
+{
+    for (int i = 0; i < 256; ++i)
+    {
+        m_state[i] = uint8(i);
+    }
+    Init(seed);
+}
+
 ARC4::~ARC4()
 {
-    // Cleanup is now handled automatically by RAII wrappers
+    // The key schedule is derived from a session secret, so it does not outlive the
+    // object in freed memory waiting to be read back. memset rather than std::fill
+    // because the intent is erasure, and a loop over a member the compiler can see is
+    // dead is a loop the compiler may delete.
+    std::memset(m_state, 0, sizeof(m_state));
+    m_x = 0;
+    m_y = 0;
 }
 
-/**
- * @brief Initialize or re-initialize the cipher with a new key
- * @param seed Pointer to the key bytes
- *
- * Sets or changes the encryption key for the ARC4 cipher.
- * This can be called multiple times to re-key the cipher.
- *
- * @note The key length must match the length specified in the constructor.
- */
-void ARC4::Init(uint8 *seed)
+void ARC4::Init(uint8* seed)
 {
-    if (m_cipherContext.IsValid())
+    if (!seed)
     {
-        EVP_EncryptInit_ex(m_cipherContext.Get(), NULL, NULL, seed, NULL);
-    }
-}
-
-/**
- * @brief Encrypt or decrypt data in-place
- * @param len Length of data to process in bytes
- * @param data Pointer to the data buffer (modified in-place)
- *
- * Processes data using the ARC4 stream cipher. Since ARC4 is a symmetric
- * stream cipher, the same operation is used for both encryption and
- * decryption. The data is modified in-place for efficiency.
- *
- * @warning The cipher must be initialized with a key before calling this.
- * @note The output length will always equal the input length for ARC4.
- */
-void ARC4::UpdateData(int len, uint8 *data)
-{
-    if (!m_cipherContext.IsValid())
-    {
-        sLog.outError("ARC4: Invalid cipher context, cannot update data");
         return;
     }
 
-    int outlen = 0;
-    EVP_EncryptUpdate(m_cipherContext.Get(), data, &outlen, data, len);
-    EVP_EncryptFinal_ex(m_cipherContext.Get(), data, &outlen);
+    // === Key schedule (KSA) ===
+    //
+    // Start from the identity every time. Init is a RE-key as much as a first key --
+    // the packet crypt builds a cipher and seeds it afterwards -- and keying on top of
+    // a used permutation would produce a stream that depends on how much traffic had
+    // gone before it.
+    for (int i = 0; i < 256; ++i)
+    {
+        m_state[i] = uint8(i);
+    }
+
+    uint8 j = 0;
+    for (int i = 0; i < 256; ++i)
+    {
+        j = uint8(j + m_state[i] + seed[i % m_keyLength]);
+        Swap(m_state[i], m_state[j]);
+    }
+
+    // A stream cipher is its position in the stream, so a re-key rewinds it. Forgetting
+    // this is the classic way to make a cipher that decrypts the first session and
+    // nothing after it.
+    m_x = 0;
+    m_y = 0;
+}
+
+void ARC4::UpdateData(int len, uint8* data)
+{
+    if (len <= 0 || !data)
+    {
+        return;
+    }
+
+    // === Pseudo-random generation (PRGA) ===
+    //
+    // Kept in locals and written back once: the two indices are read and written for
+    // every byte, and leaving them as members makes the compiler reload them through
+    // `this` each time in case `data` aliases the object.
+    uint8 x = m_x;
+    uint8 y = m_y;
+
+    for (int n = 0; n < len; ++n)
+    {
+        x = uint8(x + 1);
+        y = uint8(y + m_state[x]);
+        Swap(m_state[x], m_state[y]);
+        data[n] ^= m_state[uint8(m_state[x] + m_state[y])];
+    }
+
+    m_x = x;
+    m_y = y;
 }
