@@ -94,7 +94,6 @@
 #include "GitRevision.h"
 #include "UpdateTime.h"
 #include "GameTime.h"
-#include "WardenCheckMgr.h"
 #include "SystemConfig.h"
 #include <iostream>
 #ifdef ENABLE_ELUNA

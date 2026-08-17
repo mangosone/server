@@ -13,12 +13,12 @@
 #include "SharedDefines.h"
 #include "World.h"
 #include "WorldSession.h"
+#include "WorldGatewayAccount.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif
 
-#include <cstring>
 #include <memory>
 #include <openssl/crypto.h>
 #include <string>
@@ -33,7 +33,6 @@ struct AccountRow final : proto::AuthContext
     uint8 expansion = 0;
     time_t muteTime = 0;
     LocaleConstant locale = LOCALE_enUS;
-    std::string os;
     BigNumber sessionKey;
 };
 
@@ -93,7 +92,6 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
         "`a`.`expansion`, "
         "`a`.`mutetime`, "
         "`a`.`locale`, "
-        "`a`.`os`, "
         "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
         "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), "
         "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) "
@@ -105,14 +103,13 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
         return Rejected(proto::AuthStatus::UnknownAccount);
 
     Field const* fields = result->Fetch();
-    if (fields[11].GetUInt32() || fields[12].GetUInt32())
+    AccountRestriction const restriction =
+        EvaluateAccountRestriction(fields, request.peerAddress);
+    if (restriction == AccountRestriction::Banned)
         return Rejected(proto::AuthStatus::Banned);
 
-    if (fields[4].GetBool()
-        && std::strcmp(fields[3].GetString(), request.peerAddress.c_str()) != 0)
-    {
+    if (restriction == AccountRestriction::LockedAddressMismatch)
         return Rejected(proto::AuthStatus::Failed);
-    }
 
     uint32 security = fields[1].GetUInt16();
     if (security > SEC_ADMINISTRATOR)
@@ -122,12 +119,6 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
     if (allowedAccountType > SEC_PLAYER && AccountTypes(security) < allowedAccountType)
         return Rejected(proto::AuthStatus::Unavailable);
 
-    std::string const os = fields[10].GetString();
-    bool const wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED)
-        || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED);
-    if (wardenActive && os != "Win" && os != "OSX")
-        return Rejected(proto::AuthStatus::Reject);
-
     auto row = std::make_shared<AccountRow>();
     row->id = fields[0].GetUInt32();
     row->security = AccountTypes(security);
@@ -136,7 +127,6 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
     row->muteTime = time_t(fields[8].GetUInt64());
     uint8 const locale = fields[9].GetUInt8();
     row->locale = locale >= MAX_LOCALE ? LOCALE_enUS : LocaleConstant(locale);
-    row->os = os;
     row->sessionKey.SetHexStr(fields[2].GetString());
 
     BigNumber verifier;
@@ -180,11 +170,6 @@ proto::SessionId WorldGateway::Attach(const proto::AuthRequest& request,
     WorldPacket addonSource(CMSG_AUTH_SESSION, request.addonData.size());
     if (!request.addonData.empty())
         addonSource.append(request.addonData.data(), request.addonData.size());
-
-    bool const wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED)
-        || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED);
-    if (wardenActive)
-        session->InitWarden(uint16(request.build), &account->sessionKey, account->os);
 
     WorldPacket addonResponse;
     if (sAddOnHandler.BuildAddonPacket(&addonSource, &addonResponse))
