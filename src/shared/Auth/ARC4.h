@@ -63,14 +63,13 @@
  * are documented as using RC4-drop1024, and a reader who knows that will be tempted to
  * bake the drop into Init. It does not belong to the cipher: where the protocol wants
  * it, THE CALLER does it -- AuthCrypt keys both directions and then pushes 1024 zero
- * bytes through UpdateData, visibly, in its own source. Warden uses this same class and
- * performs no drop at all, so a discard inside Init would be right for one caller and
- * wrong for the other.
+ * bytes through UpdateData, visibly, in its own source. The cipher must remain caller-
+ * neutral: a discard inside Init would change every caller and double-apply any discard
+ * already owned by the protocol layer.
  *
  * The failure it would cause is the nasty kind. World traffic would decrypt to garbage
- * and Warden would break in some different way, and both would present as a protocol
- * fault -- a client that connects and then cannot read a packet -- rather than as a
- * crypto one. Nobody would look here.
+ * and present as a protocol fault -- a client that connects and then cannot read a
+ * packet -- rather than as a crypto one. Nobody would look here.
  *
  * Arc4_TheKeystreamStartsAtByteZero exists to say so out loud if it ever happens.
  * =========================================================================

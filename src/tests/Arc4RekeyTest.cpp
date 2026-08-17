@@ -85,16 +85,16 @@ namespace
  * eventually be tempted to bake the discard into Init. It does not belong there. Where
  * the protocol wants a drop, THE CALLER does it -- AuthCrypt keys both directions and
  * then pushes 1024 zero bytes through UpdateData, in its own source, where it can be
- * seen. Warden uses this same class and drops nothing, so a discard inside Init would be
- * right for one caller and wrong for the other.
+ * seen. The cipher must remain caller-neutral: a discard inside Init would change every
+ * caller and double-apply any discard already owned by the protocol layer.
  *
  * The published vector would fail too, but it would fail as a hex mismatch, and whoever
  * added the drop would spend an afternoon doubting their key schedule. This one fails
  * with a name that says what happened.
  *
- * The stakes: world traffic decrypting to garbage and Warden breaking differently, both
- * presenting as a protocol fault -- a client that connects and then cannot read a single
- * packet -- rather than as a crypto one. Nobody would look at the cipher.
+ * The stakes: world traffic decrypting to garbage and presenting as a protocol fault --
+ * a client that connects and then cannot read a single packet -- rather than as a crypto
+ * one. Nobody would look at the cipher.
  */
 TEST(Arc4_TheKeystreamStartsAtByteZero)
 {
