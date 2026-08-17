@@ -34,7 +34,8 @@ enum class AccountRestriction
 {
     None,
     Banned,
-    LockedAddressMismatch
+    LockedAddressMismatch,
+    UnsupportedOperatingSystem
 };
 
 AccountRestriction EvaluateAccountRestriction(

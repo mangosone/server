@@ -40,9 +40,10 @@ enum AccountFieldIndex
     ACCOUNT_EXPANSION = 7,
     ACCOUNT_MUTE_TIME = 8,
     ACCOUNT_LOCALE = 9,
-    ACCOUNT_BANNED = 10,
-    IP_BANNED = 11,
-    ACCOUNT_FIELD_COUNT = 12
+    ACCOUNT_OPERATING_SYSTEM = 10,
+    ACCOUNT_BANNED = 11,
+    IP_BANNED = 12,
+    ACCOUNT_FIELD_COUNT = 13
 };
 }
 
@@ -57,6 +58,11 @@ AccountRestriction EvaluateAccountRestriction(
     {
         return AccountRestriction::LockedAddressMismatch;
     }
+
+    std::string const operatingSystem =
+        fields[ACCOUNT_OPERATING_SYSTEM].GetCppString();
+    if (operatingSystem != "Win" && operatingSystem != "OSX")
+        return AccountRestriction::UnsupportedOperatingSystem;
 
     return AccountRestriction::None;
 }

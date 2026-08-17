@@ -29,40 +29,57 @@
 
 namespace
 {
-void SetClearRow(Field (&fields)[12])
+void SetClearRow(Field (&fields)[13])
 {
     for (Field& field : fields)
         field.SetValue("0");
 
     fields[3].SetValue("192.0.2.10");
+    fields[10].SetValue("Win");
 }
 }
 
-TEST(WorldGatewayAccount_account_ban_is_post_strip_field_ten)
+TEST(WorldGatewayAccount_account_ban_follows_restored_os_field)
 {
-    Field fields[12];
-    SetClearRow(fields);
-    fields[10].SetValue("1");
-    CHECK_EQ(int(EvaluateAccountRestriction(fields, "192.0.2.10")),
-             int(AccountRestriction::Banned));
-}
-
-TEST(WorldGatewayAccount_ip_ban_is_post_strip_field_eleven)
-{
-    Field fields[12];
+    Field fields[13];
     SetClearRow(fields);
     fields[11].SetValue("1");
     CHECK_EQ(int(EvaluateAccountRestriction(fields, "192.0.2.10")),
              int(AccountRestriction::Banned));
 }
 
+TEST(WorldGatewayAccount_ip_ban_follows_restored_os_field)
+{
+    Field fields[13];
+    SetClearRow(fields);
+    fields[12].SetValue("1");
+    CHECK_EQ(int(EvaluateAccountRestriction(fields, "192.0.2.10")),
+             int(AccountRestriction::Banned));
+}
+
 TEST(WorldGatewayAccount_locked_account_rejects_a_different_address)
 {
-    Field fields[12];
+    Field fields[13];
     SetClearRow(fields);
     fields[4].SetValue("1");
     CHECK_EQ(int(EvaluateAccountRestriction(fields, "198.51.100.20")),
              int(AccountRestriction::LockedAddressMismatch));
     CHECK_EQ(int(EvaluateAccountRestriction(fields, "192.0.2.10")),
              int(AccountRestriction::None));
+}
+
+TEST(WorldGatewayAccount_only_shipped_client_operating_systems_are_admitted)
+{
+    Field fields[13];
+    SetClearRow(fields);
+    CHECK_EQ(int(EvaluateAccountRestriction(fields, "192.0.2.10")),
+             int(AccountRestriction::None));
+
+    fields[10].SetValue("OSX");
+    CHECK_EQ(int(EvaluateAccountRestriction(fields, "192.0.2.10")),
+             int(AccountRestriction::None));
+
+    fields[10].SetValue("Linux");
+    CHECK(EvaluateAccountRestriction(fields, "192.0.2.10") !=
+          AccountRestriction::None);
 }

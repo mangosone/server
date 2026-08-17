@@ -92,6 +92,7 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
         "`a`.`expansion`, "
         "`a`.`mutetime`, "
         "`a`.`locale`, "
+        "`a`.`os`, "
         "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
         "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), "
         "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) "
@@ -110,6 +111,9 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
 
     if (restriction == AccountRestriction::LockedAddressMismatch)
         return Rejected(proto::AuthStatus::Failed);
+
+    if (restriction == AccountRestriction::UnsupportedOperatingSystem)
+        return Rejected(proto::AuthStatus::Reject);
 
     uint32 security = fields[1].GetUInt16();
     if (security > SEC_ADMINISTRATOR)
