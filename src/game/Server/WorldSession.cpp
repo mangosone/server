@@ -35,7 +35,6 @@
  * - Character management
  * - Movement and action handling
  * - Chat and social interactions
- * - Warden anti-cheat integration
  *
  * The session filters packets based on thread safety and context:
  * - Map::Update() context: Only process thread-safe packets
@@ -74,9 +73,6 @@
 #include "playerbot.h"
 #endif
 
-// Warden
-#include "WardenWin.h"
-#include "WardenMac.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -173,7 +169,7 @@ WorldSession::WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
     LookingForGroup_auto_join(false), LookingForGroup_auto_add(false), m_muteTime(mute_time),
     _player(NULL), m_link(std::move(link)),
     m_mailbox(mailbox ? std::move(mailbox) : std::make_shared<SessionMailbox>()),
-    _security(sec), _accountId(id), m_expansion(expansion), _warden(NULL), _build(0), _logoutTime(0),
+    _security(sec), _accountId(id), m_expansion(expansion), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_clientTimeDelay(0),
@@ -204,12 +200,6 @@ WorldSession::~WorldSession()
     {
         m_link->Close();
         m_link.reset();
-    }
-
-    // Warden
-    if (_warden)
-    {
-        delete _warden;
     }
 
 }
@@ -476,12 +466,6 @@ bool WorldSession::Update(PacketFilter& updater)
         m_link.reset();
     }
 
-    // Warden
-    if (m_link && !m_link->IsClosed() && _warden)
-    {
-        _warden->Update();
-    }
-
     // check if we are safe to proceed with logout
     // logout procedure should happen only in World::UpdateSessions() method!!!
     if (updater.ProcessLogout())
@@ -491,12 +475,6 @@ bool WorldSession::Update(PacketFilter& updater)
         if (!m_link || (ShouldLogOut(currTime) && !m_playerLoading))
         {
             LogoutPlayer(true);
-        }
-
-        // Warden
-        if (m_link && GetPlayer() && _warden)
-        {
-            _warden->Update();
         }
 
         if (!m_link)
@@ -1155,29 +1133,6 @@ void WorldSession::SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit)
     SendPacket(&data);
 }
 
-/**
- * @brief Initializes Warden for the authenticated client platform.
- *
- * @param build The client build number.
- * @param k The session key material.
- * @param os The reported client operating system.
- */
-void WorldSession::InitWarden(uint16 build, BigNumber* k, std::string const& os)
-{
-    _build = build;
-
-    if (os == "Win" && sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED))
-    {
-        _warden = new WardenWin();
-        _warden->Init(this, k);
-    }
-    else if (os == "OSX" && sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED))
-    {
-        _warden = new WardenMac();
-        _warden->Init(this, k);
-    }
-}
-
 void WorldSession::ResetClientTimeDelay()
 {
     m_clientTimeDelay = 0;
@@ -1253,4 +1208,3 @@ void WorldSession::AdjustMovementInfoTime(MovementInfo& mi)
                      + int64(sWorld.getConfig(CONFIG_UINT32_MOVEMENT_PACKET_DELAY));
     mi.UpdateTime(uint32(wire));
 }
-

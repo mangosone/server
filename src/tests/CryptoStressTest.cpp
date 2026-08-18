@@ -156,8 +156,8 @@ TEST(Crypto_hmac_sha1_rfc2202_vector)
 TEST(Crypto_incremental_hashing_matches_one_shot)
 {
     // Feeding a digest in pieces must equal feeding it whole. This is the
-    // property Warden and the login proof both rely on, since both build their
-    // input from several appends.
+    // property authentication and legacy-protocol code rely on when building
+    // inputs from several appends.
     std::mt19937 rng(0x51A1u);
     std::uniform_int_distribution<int> byteDist(0, 255);
     std::uniform_int_distribution<size_t> chunkDist(1, 37);
@@ -306,30 +306,4 @@ TEST(Crypto_arc4_matches_the_published_vector)
     ARC4 rc4(key, static_cast<uint8>(sizeof(key)));
     rc4.UpdateData(sizeof(data), data);
     CHECK_HEX(data, sizeof(data), "bbf316e8d940af0ad3");
-}
-
-TEST(Crypto_warden_module_id_is_stable)
-{
-    // Warden identifies a client module by the MD5 of its compressed image. The
-    // same input must always give the same id -- this is the call that moved off
-    // the deprecated MD5_* API, and a wrong id makes the client refuse the
-    // module with nothing useful logged.
-    std::vector<uint8> module(64 * 1024);
-    for (size_t i = 0; i < module.size(); ++i)
-    {
-        module[i] = uint8((i * 7u) ^ 0xA5u);
-    }
-
-    Md5Hash first;
-    first.UpdateData(module.data(), module.size());
-    first.Finalize();
-    const std::string a = ToHex(first.GetDigest(), 16);
-
-    Md5Hash second;
-    second.UpdateData(module.data(), module.size());
-    second.Finalize();
-    const std::string b = ToHex(second.GetDigest(), 16);
-
-    CHECK(a == b);
-    CHECK_EQ(int(a.size()), 32);
 }

@@ -32,7 +32,6 @@ set(SRC_GRP_AUTH
   Auth/Md5.h
   Auth/Sha1.cpp
   Auth/Sha1.h
-  Auth/WardenKeyGeneration.h
 )
 source_group("Auth" FILES ${SRC_GRP_AUTH})
 
