@@ -52,6 +52,12 @@ set(SRC_GRP_TESTS
     PlacementTest.cpp
     GeometryMathTest.cpp
     DataIntegrityTest.cpp
+    WardenCryptoContextTest.cpp
+    WardenModuleCatalogTest.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenProtocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenCryptoContext.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/Warden/WardenModuleWinData.cpp
     # Compiled in, not linked from `game`: game.lib pulls the whole server, down to the
     # database globals that only mangosd defines. These three know nothing of it.
     ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers/DynamicCollision.cpp
@@ -84,6 +90,7 @@ add_executable(mangos_tests ${SRC_GRP_TESTS})
 
 target_include_directories(mangos_tests
     PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/game/Warden
         ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers
         ${CMAKE_SOURCE_DIR}/src/game/Server)
 
