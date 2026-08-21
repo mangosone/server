@@ -35,6 +35,7 @@
 #include "Common/Locales.h"
 #include <list>
 #include "SessionProtocolPolicy.h"
+#include "WardenConfiguration.h"
 #include "Auth/BigNumber.h"
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
@@ -74,6 +75,12 @@ struct OpcodeHandler;
 namespace proto
 {
 class IClientLink;
+}
+
+namespace warden
+{
+struct AdmissionData;
+class WardenServer;
 }
 
 /**
@@ -269,6 +276,10 @@ class WorldSession
         WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
                      std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
                      uint8 expansion, time_t mute_time, LocaleConstant locale);
+        WorldSession(uint32 id, std::shared_ptr<proto::IClientLink> link,
+                     std::shared_ptr<SessionMailbox> mailbox, AccountTypes sec,
+                     uint8 expansion, time_t mute_time, LocaleConstant locale,
+                     warden::AdmissionData&& admission);
 
         /**
          * @brief Destructor
@@ -307,6 +318,7 @@ class WorldSession
         void SendPacket(WorldPacket const* packet);
         void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
         void SendPendingAddonInfo();
+        void OnAuthenticatedAdmission();
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, const std::string& name, DeclinedName* declinedName);
@@ -494,6 +506,10 @@ class WorldSession
         int GetSessionDbLocaleIndex() const
         {
             return m_sessionDbLocaleIndex;
+        }
+        std::string const& GetClientLocale() const
+        {
+            return m_clientLocale;
         }
         const char* GetMangosString(int32 entry) const;
 
@@ -985,6 +1001,13 @@ class WorldSession
         /// Shared queue used by the network gateway without exposing this session.
         std::shared_ptr<SessionMailbox> m_mailbox;
         std::unique_ptr<WorldPacket> m_pendingAddonInfo;
+        std::unique_ptr<warden::AdmissionData> m_pendingWardenAdmission;
+        std::unique_ptr<warden::WardenServer> m_warden;
+        warden::WardenConfiguration m_wardenConfiguration;
+        uint32 m_wardenBuild = 0;
+        std::string m_clientPlatform;
+        std::string m_clientLocale;
+        bool m_wardenAdmissionHandled;
         std::string m_Address;
 
         AccountTypes _security;

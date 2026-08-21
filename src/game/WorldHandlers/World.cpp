@@ -366,6 +366,7 @@ World::AddSession_(WorldSession* s)
     packet << uint8(s->Expansion());                        // 0 - normal, 1 - TBC. Must be set in database manually for each account.
     s->SendPacket(&packet);
     s->SendPendingAddonInfo();
+    s->OnAuthenticatedAdmission();
 
     UpdateMaxSessionCounters();
 

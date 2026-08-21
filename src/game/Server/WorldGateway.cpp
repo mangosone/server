@@ -14,13 +14,15 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "WorldGatewayAccount.h"
+#include "WardenProtocol.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif
 
-#include <memory>
 #include <openssl/crypto.h>
+#include <algorithm>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -34,6 +36,8 @@ struct AccountRow final : proto::AuthContext
     time_t muteTime = 0;
     LocaleConstant locale = LOCALE_enUS;
     BigNumber sessionKey;
+    std::string platform;
+    std::string clientLocale;
 };
 
 void EnsureDbThreadRegistered()
@@ -96,7 +100,8 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
         "(SELECT 1 FROM `account_banned` WHERE `id` = `a`.`id` AND `active` = 1 "
         "AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`) LIMIT 1), "
         "(SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) "
-        "AND `ip` = '%s' LIMIT 1) "
+        "AND `ip` = '%s' LIMIT 1), "
+        "`a`.`client_locale` "
         "FROM `account` AS `a` WHERE `a`.`username` = '%s'",
         safeAddress.c_str(), safeAccount.c_str()));
 
@@ -132,6 +137,8 @@ proto::AuthLookup WorldGateway::LookupAccount(const proto::AuthRequest& request)
     uint8 const locale = fields[9].GetUInt8();
     row->locale = locale >= MAX_LOCALE ? LOCALE_enUS : LocaleConstant(locale);
     row->sessionKey.SetHexStr(fields[2].GetString());
+    row->platform = ReadWardenPlatformHint(fields);
+    row->clientLocale = ReadWardenClientLocale(fields);
 
     BigNumber verifier;
     BigNumber salt;
@@ -167,8 +174,23 @@ proto::SessionId WorldGateway::Attach(const proto::AuthRequest& request,
         safeAddress.c_str(), account->id);
 
     auto mailbox = std::make_shared<SessionMailbox>();
+
+    warden::AdmissionData admission;
+    admission.build = request.build;
+    admission.platform = account->platform;
+    admission.clientLocale = account->clientLocale;
+    uint8* const sessionKeyBytes = account->sessionKey.AsByteArray(40);
+    std::copy(sessionKeyBytes,
+        sessionKeyBytes + admission.sessionKey.size(),
+        admission.sessionKey.begin());
+    // BigNumber owns this serialization buffer. Cleanse it immediately after
+    // custody transfers; never delete or free the returned pointer.
+    OPENSSL_cleanse(sessionKeyBytes, admission.sessionKey.size());
+    admission.available = true;
+
     auto session = std::make_unique<WorldSession>(account->id, link, mailbox,
-        account->security, account->expansion, account->muteTime, account->locale);
+        account->security, account->expansion, account->muteTime,
+        account->locale, std::move(admission));
     session->LoadTutorialsData();
 
     WorldPacket addonSource(CMSG_AUTH_SESSION, request.addonData.size());
