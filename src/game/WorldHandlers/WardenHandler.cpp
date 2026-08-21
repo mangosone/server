@@ -25,8 +25,24 @@
 
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#include "WardenServer.h"
 
 void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
 {
+    // The outer opcode is one encrypted transport. Inner commands remain the
+    // state machine's responsibility and never become separate handlers.
+    size_t const unread = recvData.wpos() - recvData.rpos();
+    if (m_warden)
+    {
+        warden::ByteView const body =
+        {
+            unread ? recvData.contents() + recvData.rpos() : nullptr,
+            unread
+        };
+        m_warden->HandleEncrypted(body);
+    }
+
+    // Consume exactly once even when this identity has no supported profile.
     recvData.rfinish();
+    FinalizeWardenDisengagement();
 }

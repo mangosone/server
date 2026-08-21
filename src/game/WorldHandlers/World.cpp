@@ -2087,7 +2087,7 @@ void World::UpdateSimulation(uint32 diff)
 /**
  * @brief Updates all active sessions and integrates newly queued ones.
  */
-void World::UpdateSessions(uint32 /*diff*/)
+void World::UpdateSessions(uint32 diff)
 {
     ///- Add new sessions
     WorldSession* sess;
@@ -2110,6 +2110,12 @@ void World::UpdateSessions(uint32 /*diff*/)
             RemoveQueuedSession(pSession);
             m_sessions.erase(itr);
             delete pSession;
+        }
+        else
+        {
+            // Drain queued Warden replies before charging their deadline. The
+            // state machine exempts a transition created during this update.
+            pSession->UpdateWarden(diff);
         }
     }
 }

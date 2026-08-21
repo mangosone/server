@@ -47,6 +47,7 @@ struct ItemPrototype;
 #include <memory>
 #include <ctime>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -80,6 +81,10 @@ class IClientLink;
 namespace warden
 {
 struct AdmissionData;
+struct WardenEvidenceBatch;
+struct WardenLifecycleEvent;
+struct WardenPolicyDecision;
+class WardenEnforcementPolicy;
 class WardenServer;
 }
 
@@ -319,6 +324,8 @@ class WorldSession
         void SetPendingAddonInfo(std::unique_ptr<WorldPacket> packet);
         void SendPendingAddonInfo();
         void OnAuthenticatedAdmission();
+        void StartWardenBootstrap();
+        void UpdateWarden(uint32 diffMs);
         void SendNotification(const char* format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(int32 string_id, ...);
         void SendPetNameInvalid(uint32 error, const std::string& name, DeclinedName* declinedName);
@@ -983,6 +990,20 @@ class WorldSession
         void HandlePingOpcode(WorldPacket& recv_data);
         void HandleKeepAliveOpcode(WorldPacket& recv_data);
     private:
+        void HandleWardenLifecycle(
+            warden::WardenLifecycleEvent const& event);
+        void HandleWardenEvidenceBatch(
+            warden::WardenEvidenceBatch const& batch);
+        void ApplyWardenPolicyDecisions(
+            std::vector<warden::WardenPolicyDecision> const& decisions);
+        void RequestWardenDisengagement();
+        void FinalizeWardenDisengagement();
+        bool m_wardenDisengagementRequested = false;
+        void PersistWardenAudit(
+            warden::WardenPolicyDecision const& decision);
+        void PersistWardenIncidentAndKick(
+            warden::WardenPolicyDecision const& decision);
+
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
         bool VerifyMovementInfo(MovementInfo const& movementInfo, ObjectGuid const& guid) const;
@@ -1003,10 +1024,14 @@ class WorldSession
         std::unique_ptr<WorldPacket> m_pendingAddonInfo;
         std::unique_ptr<warden::AdmissionData> m_pendingWardenAdmission;
         std::unique_ptr<warden::WardenServer> m_warden;
+        std::unique_ptr<warden::WardenEnforcementPolicy> m_wardenPolicy;
         warden::WardenConfiguration m_wardenConfiguration;
         uint32 m_wardenBuild = 0;
         std::string m_clientPlatform;
         std::string m_clientLocale;
+        uint64 m_wardenAggressiveUntil = 0;
+        bool m_wardenAggressive = false;
+        std::unordered_set<uint64> m_wardenLoggedAnomalies;
         bool m_wardenAdmissionHandled;
         std::string m_Address;
 

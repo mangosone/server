@@ -330,6 +330,10 @@ void WorldSession::HandleCharEnum(QueryResult* result)
     data.put<uint8>(0, num);
 
     SendPacket(&data);
+
+    // Begin module negotiation at character selection after authenticated
+    // admission. Start is idempotent and never gates character login.
+    StartWardenBootstrap();
 }
 
 /**
@@ -687,6 +691,9 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
         sLog.outError("Player tryes to login again, AccountId = %d", GetAccountId());
         return;
     }
+
+    // Safety net for clients that skip or race character enumeration.
+    StartWardenBootstrap();
 
     m_playerLoading = true;
 
@@ -1218,5 +1225,4 @@ void WorldSession::HandleShowingCloakOpcode(WorldPacket & /*recv_data*/)
     DEBUG_LOG("CMSG_SHOWING_CLOAK for %s", _player->GetName());
     _player->ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK);
 }
-
 
