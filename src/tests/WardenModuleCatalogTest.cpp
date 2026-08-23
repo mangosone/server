@@ -22,11 +22,35 @@
 
 #include "TestHarness.h"
 
+#include "WardenCheckCatalogLoader.h"
+#include "WardenCheckFixtures.h"
 #include "WardenModuleCatalog.h"
 
 #include <algorithm>
 #include <utility>
 #include <vector>
+
+namespace
+{
+warden::WardenCheckCatalog BuildCheckCatalog(
+    std::vector<warden::WardenCheckRowInput> const& rows)
+{
+    warden::WardenCheckCatalogBuilder builder;
+    warden::WardenCheckDiagnostic diagnostic;
+    for (warden::WardenCheckRowInput const& row : rows)
+    {
+        if (builder.Add(row, diagnostic) !=
+            warden::CheckCatalogValidation::Valid)
+            return {};
+    }
+
+    warden::WardenCheckCatalog catalog;
+    if (builder.Build(catalog, diagnostic) !=
+        warden::CheckCatalogValidation::Valid)
+        return {};
+    return catalog;
+}
+}
 
 TEST(WardenCatalog_selects_only_the_exact_8606_windows_build)
 {
@@ -47,6 +71,38 @@ TEST(WardenCatalog_enumerates_one_validated_profile)
     CHECK_EQ(profiles[0]->build, uint32(8606));
     CHECK_STR(profiles[0]->platform, "Win");
     CHECK(catalog.Validate(*profiles[0]) == warden::ModuleValidation::Valid);
+}
+
+TEST(WardenCatalog_coverage_requires_every_supported_locale_both_directions)
+{
+    warden::WardenModuleCatalog modules;
+    std::vector<warden::WardenCheckRowInput> rows =
+        warden::test::InitialWardenRows();
+    warden::WardenCheckCatalog full = BuildCheckCatalog(rows);
+    REQUIRE(full.TotalRows() == 32u);
+    CHECK(warden::ValidateWardenCatalogCoverage(full, modules) ==
+        warden::WardenCheckCatalogLoadFailure::None);
+
+    rows.erase(std::remove_if(rows.begin(), rows.end(),
+        [](warden::WardenCheckRowInput const& row)
+        {
+            return row.localeHex == "7A68434E";
+        }), rows.end());
+    warden::WardenCheckCatalog missingLocale = BuildCheckCatalog(rows);
+    REQUIRE(missingLocale.TotalRows() == 28u);
+    CHECK(warden::ValidateWardenCatalogCoverage(missingLocale, modules) ==
+        warden::WardenCheckCatalogLoadFailure::ModuleWithoutProfile);
+
+    rows = warden::test::InitialWardenRows();
+    for (warden::WardenCheckRowInput& row : rows)
+    {
+        if (row.localeHex == "7A68434E")
+            row.localeHex = "65734D58";
+    }
+    warden::WardenCheckCatalog unexpectedLocale = BuildCheckCatalog(rows);
+    REQUIRE(unexpectedLocale.TotalRows() == 32u);
+    CHECK(warden::ValidateWardenCatalogCoverage(unexpectedLocale, modules) ==
+        warden::WardenCheckCatalogLoadFailure::ProfileWithoutModule);
 }
 
 TEST(WardenCatalog_exact_tbc_module_identity_and_keys_are_custody_pinned)

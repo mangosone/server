@@ -91,6 +91,9 @@ struct ModuleProfile
     Key16 clientKeySeed;
     Key16 serverKeySeed;
     ModuleInitializationProfile initialization;
+    // Exact client locales whose database check profiles must all be present
+    // before this module can be published for strict admission.
+    std::vector<std::string> requiredCheckLocales;
 };
 
 /** Selects and validates immutable, custody-pinned delivered modules. */

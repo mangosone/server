@@ -26,6 +26,8 @@
 #include "WardenCheckCatalog.h"
 #include "WardenModuleCatalog.h"
 
+#include <algorithm>
+
 namespace warden
 {
 /** Startup failure categories safe to expose without catalogue payloads. */
@@ -44,30 +46,27 @@ enum class WardenCheckCatalogLoadFailure : uint8
 /** Returns a stable operator-facing label for a startup failure category. */
 char const* ToString(WardenCheckCatalogLoadFailure failure);
 
-/** Ensures every check profile has a module and every module has checks. */
+/** Ensures module and check profiles cover the same exact client identities. */
 inline WardenCheckCatalogLoadFailure ValidateWardenCatalogCoverage(
     WardenCheckCatalog const& checks, WardenModuleCatalog const& modules)
 {
     for (WardenCheckProfile const& profile : checks.Profiles())
     {
-        if (!modules.Find(profile.key.build, profile.key.platform))
+        ModuleProfile const* module =
+            modules.Find(profile.key.build, profile.key.platform);
+        if (!module || std::find(module->requiredCheckLocales.begin(),
+            module->requiredCheckLocales.end(), profile.key.locale) ==
+                module->requiredCheckLocales.end())
             return WardenCheckCatalogLoadFailure::ProfileWithoutModule;
     }
 
     for (ModuleProfile const* module : modules.Profiles())
     {
-        bool found = false;
-        for (WardenCheckProfile const& profile : checks.Profiles())
+        for (std::string const& locale : module->requiredCheckLocales)
         {
-            if (profile.key.build == module->build &&
-                profile.key.platform == module->platform)
-            {
-                found = true;
-                break;
-            }
+            if (!checks.Find(module->build, module->platform, locale))
+                return WardenCheckCatalogLoadFailure::ModuleWithoutProfile;
         }
-        if (!found)
-            return WardenCheckCatalogLoadFailure::ModuleWithoutProfile;
     }
     return WardenCheckCatalogLoadFailure::None;
 }

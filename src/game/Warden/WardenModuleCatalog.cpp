@@ -27,6 +27,7 @@
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 
@@ -84,7 +85,8 @@ warden::ModuleProfile const ModuleWin8606 =
             0x00349850,
             0x01
         }
-    }
+    },
+    {"enUS", "enGB", "deDE", "esES", "frFR", "koKR", "ruRU", "zhCN"}
 };
 
 std::array<warden::ModuleProfile const*, 1> const ModuleProfiles =
@@ -131,6 +133,17 @@ ModuleValidation WardenModuleCatalog::Validate(ModuleProfile const& profile) con
         !initialization.archive.readRva || !initialization.archive.closeRva ||
         !initialization.lua.callbackRva || !initialization.timing.callbackRva)
         return ModuleValidation::InvalidInitialization;
+
+    if (profile.requiredCheckLocales.empty())
+        return ModuleValidation::InvalidInitialization;
+    for (auto locale = profile.requiredCheckLocales.begin();
+        locale != profile.requiredCheckLocales.end(); ++locale)
+    {
+        if (locale->size() != 4u ||
+            std::find(profile.requiredCheckLocales.begin(), locale, *locale) !=
+                locale)
+            return ModuleValidation::InvalidInitialization;
+    }
 
     ModuleId md5{};
     Digest32 sha256{};
