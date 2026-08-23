@@ -684,6 +684,7 @@ void WorldSession::ApplyWardenPolicyDecisions(
             case warden::WardenPolicyAction::None:
                 break;
             case warden::WardenPolicyAction::QueueConfirmation:
+            {
                 if (m_warden &&
                     m_warden->QueueConfirmation(decision.checkId))
                 {
@@ -701,7 +702,18 @@ void WorldSession::ApplyWardenPolicyDecisions(
                     decision.checkId, warden::ToString(decision.checkType));
                 DrainWardenPendingConfirmations();
                 RequestWardenDisengagement();
+                bool const enforcing =
+                    m_wardenConfiguration.enforcementMode !=
+                        warden::WardenEnforcementMode::Observe;
+                if (enforcing)
+                {
+                    sLog.outError("Warden confirmation scheduling failed; "
+                        "closing the enforcing client link for account %u "
+                        "without recording an incident.", GetAccountId());
+                    KickPlayer();
+                }
                 return;
+            }
             case warden::WardenPolicyAction::ConfirmationCleared:
                 DEBUG_LOG("Warden %s confirmation cleared for account %u "
                     "(check %u).", warden::ToString(decision.checkType),
@@ -927,7 +939,9 @@ void WorldSession::StartWardenBootstrap()
 
 void WorldSession::UpdateWarden(uint32 diffMs)
 {
-    if (!m_warden)
+    // UpdateSessions charges Warden before reaping closed links. Never turn an
+    // ordinary disconnect into a protocol failure or operational audit row.
+    if (!m_warden || !m_link || m_link->IsClosed())
         return;
 
     uint64 const now = static_cast<uint64>(GameTime::GetGameTime());

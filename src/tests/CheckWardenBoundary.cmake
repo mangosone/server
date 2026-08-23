@@ -74,6 +74,7 @@ read_code("${GAME_ROOT}/Warden/WardenEnforcementPolicy.h" POLICY_HEADER)
 read_code("${GAME_ROOT}/Warden/WardenServer.cpp" WARDEN_SERVER_CPP)
 read_code("${GAME_ROOT}/Warden/WardenServer.h" WARDEN_SERVER_HEADER)
 read_code("${SOURCE_ROOT}/src/mangosd/Master.cpp" MASTER_CPP)
+file(READ "${SOURCE_ROOT}/cmake/MangosParams.cmake" MANGOS_PARAMS)
 file(READ "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
     MANGOSD_CONFIG)
 file(STRINGS "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
@@ -180,7 +181,8 @@ foreach(REQUIRED_TEXT IN ITEMS
     "repeated, confirmed, actionable Warden check mismatches"
     "Protocol/lifecycle failures close enforcing sessions without an incident"
     "\\(build,platform,locale\\) profile in `warden_checks`"
-    "explicitly opt in to unsupported unprofiled clients")
+    "explicitly opt in to unsupported unprofiled clients"
+    "Operational failures append a non-incident `warden_audit` row with `check_id = 0`")
     if(NOT MANGOSD_CONFIG MATCHES "${REQUIRED_TEXT}")
         message(FATAL_ERROR
             "Warden boundary: distributed config is missing ${REQUIRED_TEXT}")
@@ -205,6 +207,9 @@ if(NOT MANGOSD_CONFIG MATCHES
     message(FATAL_ERROR
         "Warden boundary: distributed config must explain mandatory catalogue startup loading")
 endif()
+require_count("${MANGOS_PARAMS}"
+    "set\\(MANGOS_WORLD_VER[ \\t]+2026082300\\)" 1
+    "Warden security-default change must advance the distributed config version")
 require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*=[ \\t]*std::move[ \\t]*\\([ \\t]*admission\\.clientLocale[ \\t]*\\)" 1
     "session must preserve the unfallbacked client locale exactly once")
@@ -385,29 +390,77 @@ if(LIFECYCLE_OPERATIONAL_AUDIT_AT EQUAL -1 OR
         "Warden boundary: lifecycle failure must audit, classify, tear down, then conditionally close")
 endif()
 
+math(EXPR POLICY_APPLY_LENGTH "${DRAIN_BEGIN} - ${POLICY_APPLY_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${POLICY_APPLY_BEGIN}
+    ${POLICY_APPLY_LENGTH} POLICY_APPLY_BODY)
+string(FIND "${POLICY_APPLY_BODY}"
+    "case warden::WardenPolicyAction::QueueConfirmation:"
+    POLICY_QUEUE_BEGIN)
+string(FIND "${POLICY_APPLY_BODY}"
+    "case warden::WardenPolicyAction::ConfirmationCleared:"
+    POLICY_QUEUE_END)
+if(POLICY_QUEUE_BEGIN EQUAL -1 OR POLICY_QUEUE_END EQUAL -1 OR
+    POLICY_QUEUE_END LESS_EQUAL POLICY_QUEUE_BEGIN)
+    message(FATAL_ERROR
+        "Warden boundary: cannot locate queue-confirmation failure path")
+endif()
+math(EXPR POLICY_QUEUE_LENGTH "${POLICY_QUEUE_END} - ${POLICY_QUEUE_BEGIN}")
+string(SUBSTRING "${POLICY_APPLY_BODY}" ${POLICY_QUEUE_BEGIN}
+    ${POLICY_QUEUE_LENGTH} POLICY_QUEUE_BODY)
+require_count("${POLICY_QUEUE_BODY}"
+    "DrainWardenPendingConfirmations[ \\t]*\\(" 1
+    "queue-confirmation failure must drain pending audit identities")
+require_count("${POLICY_QUEUE_BODY}"
+    "m_wardenConfiguration\\.enforcementMode" 1
+    "queue-confirmation failure must read the session enforcement mode once")
+require_count("${POLICY_QUEUE_BODY}"
+    "warden::WardenEnforcementMode::Observe" 1
+    "queue-confirmation failure must distinguish Observe mode")
+require_count("${POLICY_QUEUE_BODY}" "if[ \\t]*\\([ \\t]*enforcing[ \\t]*\\)" 1
+    "queue-confirmation failure must gate the close on enforcing mode")
+require_count("${POLICY_QUEUE_BODY}" "RequestWardenDisengagement[ \\t]*\\(" 1
+    "queue-confirmation failure must request deferred teardown")
+require_count("${POLICY_QUEUE_BODY}" "KickPlayer[ \\t]*\\(" 1
+    "queue-confirmation failure must close enforcing sessions")
+string(FIND "${POLICY_QUEUE_BODY}" "DrainWardenPendingConfirmations()"
+    POLICY_QUEUE_DRAIN_AT)
+string(FIND "${POLICY_QUEUE_BODY}" "RequestWardenDisengagement()"
+    POLICY_QUEUE_DISENGAGE_AT)
+string(FIND "${POLICY_QUEUE_BODY}" "KickPlayer()" POLICY_QUEUE_KICK_AT)
+if(POLICY_QUEUE_DRAIN_AT EQUAL -1 OR POLICY_QUEUE_DISENGAGE_AT EQUAL -1 OR
+    POLICY_QUEUE_KICK_AT EQUAL -1 OR
+    POLICY_QUEUE_DISENGAGE_AT LESS_EQUAL POLICY_QUEUE_DRAIN_AT OR
+    POLICY_QUEUE_KICK_AT LESS_EQUAL POLICY_QUEUE_DISENGAGE_AT)
+    message(FATAL_ERROR
+        "Warden boundary: queue failure must audit, tear down, then conditionally close")
+endif()
+
 require_count("${POLICY_HEADER}"
     "(^|[^A-Za-z0-9_])Kick([^A-Za-z0-9_]|$)" 1
     "policy must expose one non-incident session-close action")
 require_count("${POLICY_HEADER}" "EvaluateLifecycle" 1
     "policy must expose one lifecycle classification seam")
-require_count("${POLICY_CPP}" "WardenPolicyAction::Kick" 1
-    "only lifecycle classification may emit the session-close action")
+require_count("${POLICY_CPP}" "WardenPolicyAction::Kick" 2
+    "lifecycle and confirmation-contract classification may close enforcing sessions")
 string(FIND "${POLICY_CPP}"
     "WardenEnforcementPolicy::AbortPendingConfirmations()" POLICY_ABORT_BEGIN)
+string(FIND "${POLICY_CPP}"
+    "WardenEnforcementPolicy::EvaluateLifecycle(" POLICY_LIFECYCLE_BEGIN)
 string(FIND "${POLICY_CPP}"
     "WardenEnforcementPolicy::ConfirmationContractViolation()"
     POLICY_CONTRACT_BEGIN)
 string(FIND "${POLICY_CPP}"
     "uint64 WardenEnforcementPolicy::AuditKey(" POLICY_CONTRACT_END)
-if(POLICY_ABORT_BEGIN EQUAL -1 OR POLICY_CONTRACT_BEGIN EQUAL -1 OR
-    POLICY_CONTRACT_END EQUAL -1 OR
-    POLICY_CONTRACT_BEGIN LESS_EQUAL POLICY_ABORT_BEGIN OR
+if(POLICY_ABORT_BEGIN EQUAL -1 OR POLICY_LIFECYCLE_BEGIN EQUAL -1 OR
+    POLICY_CONTRACT_BEGIN EQUAL -1 OR POLICY_CONTRACT_END EQUAL -1 OR
+    POLICY_LIFECYCLE_BEGIN LESS_EQUAL POLICY_ABORT_BEGIN OR
+    POLICY_CONTRACT_BEGIN LESS_EQUAL POLICY_LIFECYCLE_BEGIN OR
     POLICY_CONTRACT_END LESS_EQUAL POLICY_CONTRACT_BEGIN)
     message(FATAL_ERROR
         "Warden boundary: cannot locate ordered policy failure helpers")
 endif()
 math(EXPR POLICY_ABORT_LENGTH
-    "${POLICY_CONTRACT_BEGIN} - ${POLICY_ABORT_BEGIN}")
+    "${POLICY_LIFECYCLE_BEGIN} - ${POLICY_ABORT_BEGIN}")
 string(SUBSTRING "${POLICY_CPP}" ${POLICY_ABORT_BEGIN}
     ${POLICY_ABORT_LENGTH} POLICY_ABORT_BODY)
 require_count("${POLICY_ABORT_BODY}"
@@ -419,7 +472,8 @@ require_count("${POLICY_ABORT_BODY}"
 require_count("${POLICY_ABORT_BODY}"
     "m_pendingConfirmations\\.clear[ \\t]*\\(" 1
     "aborted confirmation identities must be cleared exactly once")
-if(POLICY_ABORT_BODY MATCHES "PersistAndKick|Disengage")
+if(POLICY_ABORT_BODY MATCHES
+    "PersistAndKick|Disengage|WardenPolicyAction::Kick")
     message(FATAL_ERROR
         "Warden boundary: aborting pending confirmations must only audit")
 endif()
@@ -431,11 +485,17 @@ string(FIND "${POLICY_CONTRACT_BODY}" "AbortPendingConfirmations()"
     POLICY_CONTRACT_ABORT_AT)
 string(FIND "${POLICY_CONTRACT_BODY}" "WardenPolicyAction::Disengage"
     POLICY_CONTRACT_DISENGAGE_AT)
+string(FIND "${POLICY_CONTRACT_BODY}" "WardenPolicyAction::Kick"
+    POLICY_CONTRACT_KICK_AT)
 if(POLICY_CONTRACT_ABORT_AT EQUAL -1 OR
     POLICY_CONTRACT_DISENGAGE_AT EQUAL -1 OR
-    POLICY_CONTRACT_DISENGAGE_AT LESS_EQUAL POLICY_CONTRACT_ABORT_AT)
+    POLICY_CONTRACT_KICK_AT EQUAL -1 OR
+    POLICY_CONTRACT_DISENGAGE_AT LESS_EQUAL POLICY_CONTRACT_ABORT_AT OR
+    POLICY_CONTRACT_KICK_AT LESS_EQUAL POLICY_CONTRACT_ABORT_AT OR
+    NOT POLICY_CONTRACT_BODY MATCHES
+        "m_mode[ \\t]*==[ \\t]*WardenEnforcementMode::Observe")
     message(FATAL_ERROR
-        "Warden boundary: contract failure must audit pending identities before disengagement")
+        "Warden boundary: contract failure must audit before mode-specific close or disengagement")
 endif()
 
 if(WARDEN_SERVER_HEADER MATCHES "m_transitionedSinceUpdate" OR
@@ -512,12 +572,16 @@ string(SUBSTRING "${SESSION_CPP}" ${WARDEN_UPDATE_BEGIN}
     ${WARDEN_UPDATE_LENGTH} WARDEN_UPDATE_BODY)
 string(FIND "${WARDEN_UPDATE_BODY}"
     "m_warden->Update(eligible, diffMs)" WARDEN_UPDATE_CALL_AT)
+string(FIND "${WARDEN_UPDATE_BODY}"
+    "!m_link || m_link->IsClosed()" WARDEN_LINK_GUARD_AT)
 string(FIND "${WARDEN_UPDATE_BODY}" "FinalizeWardenDisengagement()"
     WARDEN_UPDATE_FINALIZE_AT)
-if(WARDEN_UPDATE_CALL_AT EQUAL -1 OR WARDEN_UPDATE_FINALIZE_AT EQUAL -1 OR
+if(WARDEN_LINK_GUARD_AT EQUAL -1 OR WARDEN_UPDATE_CALL_AT EQUAL -1 OR
+    WARDEN_UPDATE_FINALIZE_AT EQUAL -1 OR
+    WARDEN_UPDATE_CALL_AT LESS_EQUAL WARDEN_LINK_GUARD_AT OR
     WARDEN_UPDATE_FINALIZE_AT LESS_EQUAL WARDEN_UPDATE_CALL_AT)
     message(FATAL_ERROR
-        "Warden boundary: update wrapper must finalize teardown after Update returns")
+        "Warden boundary: update wrapper must reject closed links before updating and finalizing")
 endif()
 require_count("${WARDEN_UPDATE_BODY}" "FinalizeWardenDisengagement[ \\t]*\\(" 1
     "update wrapper must finalize deferred teardown exactly once")

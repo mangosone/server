@@ -133,7 +133,8 @@ WardenEnforcementPolicy::ConfirmationContractViolation()
 {
     std::vector<WardenPolicyDecision> decisions =
         AbortPendingConfirmations();
-    decisions.push_back({WardenPolicyAction::Disengage});
+    decisions.push_back({m_mode == WardenEnforcementMode::Observe ?
+        WardenPolicyAction::Disengage : WardenPolicyAction::Kick});
     return decisions;
 }
 

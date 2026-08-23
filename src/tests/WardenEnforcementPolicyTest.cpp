@@ -401,7 +401,9 @@ TEST(WardenEnforcementPolicy_confirmation_contract_checks_id_type_and_class)
             CHECK(decisions[0].outcome ==
                 warden::WardenCheckOutcome::Unavailable);
             CHECK(decisions[1].action ==
-                warden::WardenPolicyAction::Disengage);
+                (mode == warden::WardenEnforcementMode::Observe ?
+                    warden::WardenPolicyAction::Disengage :
+                    warden::WardenPolicyAction::Kick));
             CHECK(policy.AbortPendingConfirmations().empty());
         }
     }
@@ -435,12 +437,14 @@ TEST(WardenEnforcementPolicy_confirmation_contract_requires_exactly_one_item)
             CHECK(decisions[0].outcome ==
                 warden::WardenCheckOutcome::Unavailable);
             CHECK(decisions[1].action ==
-                warden::WardenPolicyAction::Disengage);
+                (mode == warden::WardenEnforcementMode::Observe ?
+                    warden::WardenPolicyAction::Disengage :
+                    warden::WardenPolicyAction::Kick));
         }
     }
 }
 
-TEST(WardenEnforcementPolicy_invalid_matched_confirmation_is_audited_before_disengage)
+TEST(WardenEnforcementPolicy_invalid_confirmation_audits_before_mode_close)
 {
     for (warden::WardenEnforcementMode mode :
         {warden::WardenEnforcementMode::Observe,
@@ -468,7 +472,9 @@ TEST(WardenEnforcementPolicy_invalid_matched_confirmation_is_audited_before_dise
         CHECK(decisions[0].outcome ==
             warden::WardenCheckOutcome::Unavailable);
         CHECK(decisions[1].action ==
-            warden::WardenPolicyAction::Disengage);
+            (mode == warden::WardenEnforcementMode::Observe ?
+                warden::WardenPolicyAction::Disengage :
+                warden::WardenPolicyAction::Kick));
         CHECK(policy.AbortPendingConfirmations().empty());
     }
 }

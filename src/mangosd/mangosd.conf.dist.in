@@ -270,6 +270,10 @@ CleanCharacterDB                  = 1
 #        catalogue even in Observe mode; malformed or empty data stops mangosd
 #        before sessions can run with an ambiguous protection state.
 #
+#    Operational failures append a non-incident `warden_audit` row with `check_id = 0`.
+#        Query that sentinel to measure Warden shed rate; the exact failure
+#        reason remains in the server log and never enters incident policy.
+#
 #    Warden.EnforcementMode
 #        Response to repeated, confirmed, actionable Warden check mismatches.
 #        Protocol/lifecycle failures close enforcing sessions without an incident;
