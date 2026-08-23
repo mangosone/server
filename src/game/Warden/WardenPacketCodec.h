@@ -32,6 +32,7 @@
 
 namespace warden
 {
+/** Transactional plaintext decode result; failures publish no partial output. */
 enum class DecodeStatus : uint8
 {
     Ok,
@@ -43,6 +44,7 @@ enum class DecodeStatus : uint8
     CryptoFailure
 };
 
+/** Transactional plaintext encode result. */
 enum class EncodeStatus : uint8
 {
     Ok,
@@ -51,6 +53,7 @@ enum class EncodeStatus : uint8
     CryptoFailure
 };
 
+/** Worst-case request/result sizes derived without emitting a packet. */
 struct WardenCheckPlanBudget
 {
     size_t stringCount = 0;
@@ -59,6 +62,7 @@ struct WardenCheckPlanBudget
     size_t maximumResultBytes = 0;
 };
 
+/** Structural failure returned by the shared plan preflight. */
 enum class CheckPlanValidation : uint8
 {
     Valid,
@@ -75,24 +79,28 @@ enum class CheckPlanValidation : uint8
     TransportResultBodyTooLarge
 };
 
+/** Timing response normalized to stability plus the private client tick. */
 struct TimingResult
 {
     bool stable = false;
     uint32 clientTick = 0;
 };
 
+/** Delivered-module status byte for MPQ reads. */
 enum class MpqResultStatus : uint8
 {
     Success = 0,
     Unavailable = 1
 };
 
+/** Private decoded archive digest, cleansed after evidence classification. */
 struct MpqResult
 {
     MpqResultStatus status = MpqResultStatus::Unavailable;
     Digest20 digest{};
 };
 
+/** Delivered-module status byte for Lua lookups. */
 enum class LuaResultStatus : uint8
 {
     Success = 0,
@@ -106,6 +114,7 @@ struct LuaResult
     std::string text;
 };
 
+/** Delivered-module status byte for guarded process-memory reads. */
 enum class MemResultStatus : uint8
 {
     Success = 0,
@@ -122,11 +131,13 @@ struct MemResult
 using CheckResult =
     std::variant<TimingResult, MpqResult, LuaResult, MemResult>;
 
+/** Ordered private results matching one retained CheckPlan. */
 struct CheckBatchResult
 {
     std::vector<CheckResult> checks;
 };
 
+/** Strictly shaped bootstrap command decoded before state validation. */
 struct ClientMessage
 {
     ClientCommand command = ClientCommand::ModuleMissing;
@@ -136,8 +147,11 @@ struct ClientMessage
 
 // These functions encode/decode the plaintext inner Warden command. Transport
 // encryption and the outer SMSG/CMSG_WARDEN_DATA packet belong to other layers.
+/** Encodes the exact module identity/key/size negotiation body. */
 Bytes EncodeModuleUse(ModuleProfile const& profile);
+/** Encodes one bounded encrypted-module transfer chunk. */
 Bytes EncodeModuleCache(ByteView chunk);
+/** Encodes the module's exact 16-byte hash challenge. */
 Bytes EncodeHashRequest(ModuleProfile const& profile);
 // Encodes all three adjacent command-3 records into one body. Output remains
 // unchanged if profile validation or folded SHA-1 construction fails.
@@ -147,6 +161,7 @@ EncodeStatus EncodeCheckRequest(ModuleProfile const& profile,
     CheckPlan const& plan, Bytes& output);
 CheckPlanValidation InspectCheckPlan(CheckPlan const& plan,
     WardenCheckPlanBudget& budget);
+/** Stable non-secret label for plan validation diagnostics. */
 char const* ToString(CheckPlanValidation validation);
 
 // Parses exactly the pending ordered plan and publishes no partial result.

@@ -157,31 +157,6 @@ struct CheckPlanAnalysis
     std::vector<std::string> strings;
 };
 
-bool IsLegalDefinitionClass(warden::WardenCheckType type,
-    warden::WardenEvidenceClass evidenceClass)
-{
-    switch (type)
-    {
-        case warden::WardenCheckType::Timing:
-            return evidenceClass ==
-                warden::WardenEvidenceClass::ProtocolHealth;
-        case warden::WardenCheckType::Mpq:
-            return evidenceClass ==
-                    warden::WardenEvidenceClass::IntegrityInvariant ||
-                evidenceClass == warden::WardenEvidenceClass::Corroboration;
-        case warden::WardenCheckType::Lua:
-            return evidenceClass ==
-                warden::WardenEvidenceClass::Corroboration;
-        case warden::WardenCheckType::Mem:
-            return evidenceClass ==
-                    warden::WardenEvidenceClass::IntegrityInvariant ||
-                evidenceClass ==
-                    warden::WardenEvidenceClass::ThreatSignature ||
-                evidenceClass == warden::WardenEvidenceClass::Corroboration;
-    }
-    return false;
-}
-
 warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
     CheckPlanAnalysis& output)
 {
@@ -260,7 +235,8 @@ warden::CheckPlanValidation AnalyzeCheckPlan(warden::CheckPlan const& plan,
             return warden::CheckPlanValidation::DuplicateCheckId;
         warden::WardenCheckType const type =
             warden::GetWardenCheckType(definition);
-        if (!IsLegalDefinitionClass(type, definition.evidenceClass))
+        if (!warden::IsLegalWardenEvidenceClass(type,
+                definition.evidenceClass))
             return warden::CheckPlanValidation::InvalidDefinition;
 
         if (auto const* timing = std::get_if<warden::TimingCheckProfile>(

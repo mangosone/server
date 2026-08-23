@@ -41,6 +41,7 @@ using Key16 = std::array<uint8, 16>;
 using Digest20 = std::array<uint8, 20>;
 using Digest32 = std::array<uint8, 32>;
 
+/** Non-owning immutable byte span used at codec boundaries. */
 struct ByteView
 {
     // Non-owning view used at codec boundaries; size may be zero with null data.
@@ -59,6 +60,7 @@ enum class ClientCommand : uint8
     ModuleFailed = 5
 };
 
+/** Plaintext commands emitted by the server inside Warden transport. */
 enum class ServerCommand : uint8
 {
     ModuleUse = 0,
@@ -68,6 +70,7 @@ enum class ServerCommand : uint8
     HashRequest = 5
 };
 
+/** Observable bootstrap/check state owned by one WardenServer. */
 enum class WardenState : uint8
 {
     AwaitingModuleStatus,
@@ -78,6 +81,7 @@ enum class WardenState : uint8
     Failed
 };
 
+/** Terminal operational failures; none of these is cheating evidence. */
 enum class WardenFailure : uint8
 {
     None,
@@ -93,6 +97,7 @@ enum class WardenFailure : uint8
     SendFailure
 };
 
+/** Bounded transport and deadline controls normalized before session use. */
 struct WardenLimits
 {
     // Each waiting state receives a new cumulative deadline. Update calls
@@ -116,6 +121,7 @@ struct AdmissionData
     AdmissionData& operator=(AdmissionData&& other) noexcept;
     ~AdmissionData();
 
+    /** Explicitly cleanses the sole owned copy of the authenticated key. */
     void Clear();
 
     uint32 build = 0;

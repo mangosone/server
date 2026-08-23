@@ -80,6 +80,7 @@ class IClientLink;
 
 namespace warden
 {
+enum class WardenFailure : uint8;
 struct AdmissionData;
 struct WardenEvidenceBatch;
 struct WardenLifecycleEvent;
@@ -990,17 +991,29 @@ class WorldSession
         void HandlePingOpcode(WorldPacket& recv_data);
         void HandleKeepAliveOpcode(WorldPacket& recv_data);
     private:
+        // Warden callbacks cross from the pure protocol/state machine into the
+        // account, persistence, logging, and connection policy owned here.
         void HandleWardenLifecycle(
             warden::WardenLifecycleEvent const& event);
         void HandleWardenEvidenceBatch(
             warden::WardenEvidenceBatch const& batch);
         void ApplyWardenPolicyDecisions(
             std::vector<warden::WardenPolicyDecision> const& decisions);
+        // Converts abandoned confirmations into non-actionable Unavailable
+        // audit rows before any lifecycle path destroys policy ownership.
+        void DrainWardenPendingConfirmations();
+        // Observer callbacks request teardown; the outer entry-point wrapper
+        // performs it after WardenServer has returned and cannot self-delete.
         void RequestWardenDisengagement();
         void FinalizeWardenDisengagement();
         bool m_wardenDisengagementRequested = false;
+        // Confirmed non-actionable check evidence.
         void PersistWardenAudit(
             warden::WardenPolicyDecision const& decision);
+        // Session-level protocol/lifecycle shed, never enforcement evidence.
+        void PersistWardenOperationalAudit(
+            warden::WardenFailure failure);
+        // Confirmed actionable evidence; durable write is attempted before kick.
         void PersistWardenIncidentAndKick(
             warden::WardenPolicyDecision const& decision);
 

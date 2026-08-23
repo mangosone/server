@@ -28,6 +28,7 @@
 
 namespace warden
 {
+/** Startup failure categories safe to expose without catalogue payloads. */
 enum class WardenCheckCatalogLoadFailure : uint8
 {
     None,
@@ -40,8 +41,10 @@ enum class WardenCheckCatalogLoadFailure : uint8
     PublicationFailed
 };
 
+/** Returns a stable operator-facing label for a startup failure category. */
 char const* ToString(WardenCheckCatalogLoadFailure failure);
 
+/** Ensures every check profile has a module and every module has checks. */
 inline WardenCheckCatalogLoadFailure ValidateWardenCatalogCoverage(
     WardenCheckCatalog const& checks, WardenModuleCatalog const& modules)
 {
@@ -73,6 +76,7 @@ inline WardenCheckCatalogLoadFailure ValidateWardenCatalogCoverage(
 class WardenCheckCatalogLoader
 {
 public:
+    /** Validates the complete DB snapshot before atomically publishing it. */
     bool LoadAndPublish() const;
 };
 }

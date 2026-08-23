@@ -674,8 +674,7 @@ TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)
 {
     auto expire = [](Harness& harness)
     {
-        // Every waiting state was created by Start or a client packet in the
-        // preceding world update, so consume its fresh-transition exemption.
+        // A zero-length update is harmless in every waiting state.
         harness.server->Update(false, 0);
         harness.server->Update(false, 12000);
         harness.server->Update(false, 17999);
@@ -702,22 +701,17 @@ TEST(WardenServer_deadlines_are_cumulative_in_each_waiting_state)
     expire(hash);
 }
 
-TEST(WardenServer_new_deadline_does_not_inherit_pre_transition_elapsed_time)
+TEST(WardenServer_new_deadline_charges_every_subsequent_update_interval)
 {
     Harness harness;
     REQUIRE(StartAndReadModuleUse(harness));
 
-    // Model the end of the world tick that emitted MODULE_USE, then process a
-    // valid queued response before the next elapsed interval is charged.
+    // WorldSession charges the old state before dispatching a queued response;
+    // every later call therefore represents time owned by the new state.
     harness.server->Update(false, 0);
     harness.SendClient(ModuleOk());
     REQUIRE(harness.server->GetState() == warden::WardenState::AwaitingHash);
 
-    // This interval began before MODULE_OK created the hash deadline. It must
-    // not expire that new state, but the next complete unanswered deadline
-    // must still be cumulative and terminal.
-    harness.server->Update(false, 30000);
-    REQUIRE(harness.server->GetState() == warden::WardenState::AwaitingHash);
     harness.server->Update(false, 29999);
     CHECK(harness.server->GetState() != warden::WardenState::Failed);
     harness.server->Update(false, 1);

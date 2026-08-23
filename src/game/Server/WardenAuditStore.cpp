@@ -37,6 +37,8 @@ bool WardenAuditStore::Record(WardenAuditContext const& context) const
     if (!IsValidWardenAuditContext(context))
         return false;
 
+    // Copy and escape identity tokens locally; the asynchronous statement must
+    // never retain references into a WorldSession that may already be ending.
     std::string safePlatform = context.clientPlatform;
     std::string safeLocale = context.clientLocale;
     LoginDatabase.escape_string(safePlatform);

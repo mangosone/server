@@ -36,12 +36,14 @@
 
 namespace warden
 {
+/** Durable outcome permitted to contribute to enforcement history. */
 enum class WardenIncidentOutcome : uint8
 {
     Mismatch = 1,
     HistoricalUnavailable = 2
 };
 
+/** Secret-free identity for one confirmed actionable mismatch. */
 struct WardenIncidentContext
 {
     uint32 accountId = 0;
@@ -55,6 +57,7 @@ struct WardenIncidentContext
     WardenIncidentOutcome outcome = WardenIncidentOutcome::Mismatch;
 };
 
+/** Database-clock view of one account's rolling incident window. */
 struct WardenIncidentWindowState
 {
     uint32 recentCount = 0;
@@ -62,6 +65,7 @@ struct WardenIncidentWindowState
     uint64 databaseNow = 0;
 };
 
+/** Distinguishes a failed write from a committed row with unknown summary. */
 enum class WardenIncidentWriteStatus : uint8
 {
     Failed,
@@ -69,6 +73,7 @@ enum class WardenIncidentWriteStatus : uint8
     CommittedStateUnavailable
 };
 
+/** Result returned after the transaction and optional summary reload. */
 struct WardenIncidentWriteResult
 {
     WardenIncidentWriteStatus status = WardenIncidentWriteStatus::Failed;
@@ -135,12 +140,9 @@ inline bool IsValidWardenIncidentContext(
         }
         return true;
     };
-    bool const legalActionablePair =
-        (context.checkType == WardenCheckType::Mpq &&
-            context.evidenceClass ==
-                WardenEvidenceClass::IntegrityInvariant) ||
-        (context.checkType == WardenCheckType::Mem &&
-            IsActionableEvidenceClass(context.evidenceClass));
+    bool const legalActionablePair = IsLegalWardenEvidenceClass(
+            context.checkType, context.evidenceClass) &&
+        IsActionableEvidenceClass(context.evidenceClass);
 
     return context.accountId != 0 && context.checkId != 0 &&
         context.clientBuild != 0 && context.clientBuild <= 0xFFFFu &&
@@ -211,10 +213,12 @@ class WardenIncidentStore
 public:
     static WardenIncidentStore& Instance();
 
+    /** Loads recent committed incidents using one authoritative DB clock. */
     std::optional<WardenIncidentWindowState> Load(uint32 accountId,
         uint32 incidentWindowSeconds,
         uint32 aggressiveThreshold) const;
 
+    /** Persists before punishment and atomically applies the ban threshold. */
     WardenIncidentWriteResult Record(WardenIncidentContext const& context,
         WardenConfiguration const& configuration) const;
 };

@@ -19,6 +19,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 function(read_code PATH OUTPUT)
+    # Assertions operate on code, not wording inside comments. This keeps the
+    # guard stable while production documentation is expanded.
     file(STRINGS "${PATH}" RAW_LINES)
     set(IN_BLOCK OFF)
     set(CODE_ONLY "")
@@ -78,6 +80,8 @@ file(STRINGS "${SOURCE_ROOT}/src/mangosd/mangosd.conf.dist.in"
     MANGOSD_ACTIVE_EXACT_PROFILE
     REGEX "^[ \\t]*Warden\\.RequireExactProfile[ \\t]*=")
 
+# One grouped outer-opcode handler owns ingress, consumption, and deferred
+# teardown; inner commands remain private to WardenServer.
 require_count("${WARDEN_HANDLER}" "m_warden->HandleEncrypted[ \\t]*\\(" 1
     "grouped handler must forward ingress exactly once")
 require_count("${WARDEN_HANDLER}" "rfinish[ \\t]*\\(" 1
@@ -89,6 +93,8 @@ if(WARDEN_HANDLER MATCHES "(^|[^A-Za-z0-9_])switch[ \\t]*\\(")
     message(FATAL_ERROR "Warden boundary: grouped handler contains inner-command dispatch")
 endif()
 
+# Charge elapsed time to the state that owned it before a queued reply can
+# advance the state machine and replace its deadline.
 require_count("${WORLD_CPP}" "UpdateWarden[ \\t]*\\([ \\t]*diff[ \\t]*\\)" 1
     "World::UpdateSessions must own exactly one deadline update")
 string(FIND "${WORLD_CPP}" "void World::UpdateSessions(uint32 diff)"
@@ -109,9 +115,9 @@ string(FIND "${UPDATE_SESSIONS_BODY}" "pSession->UpdateWarden(diff)"
 string(FIND "${UPDATE_SESSIONS_BODY}" "pSession->Update(updater)"
     PACKET_UPDATE_AT)
 if(WARDEN_CLOCK_AT EQUAL -1 OR PACKET_UPDATE_AT EQUAL -1 OR
-    PACKET_UPDATE_AT GREATER_EQUAL WARDEN_CLOCK_AT)
+    WARDEN_CLOCK_AT GREATER_EQUAL PACKET_UPDATE_AT)
     message(FATAL_ERROR
-        "Warden boundary: queued packets must be processed before Warden elapsed time is charged")
+        "Warden boundary: elapsed time must be charged before packet handlers can reset a deadline")
 endif()
 require_count("${WORLD_CPP}" "OnAuthenticatedAdmission[ \\t]*\\(" 1
     "immediate AUTH_OK path must admit exactly once")
@@ -139,6 +145,8 @@ require_count("${SESSION_CPP}"
     "session adapter must consume normalized Warden evidence exactly once")
 require_count("${SESSION_CPP}" "m_warden->QueueConfirmation[ \\t]*\\(" 1
     "session policy must own one isolated confirmation path")
+# Admission must preserve the authenticated string locale independently of the
+# numeric DBC fallback and document its fail-open/strict-profile policy.
 require_count("${SESSION_CPP}" "IsWardenEnforcementProfile[ \\t]*\\(" 1
     "session enforcement must use the exact-profile predicate")
 require_count("${SESSION_CPP}" "ClassifyWardenProfile[ \\t]*\\(" 1
@@ -155,11 +163,11 @@ if(SESSION_CPP MATCHES "m_clientLocale\\.c_str[ \\t]*\\(")
         "Warden boundary: raw authenticated locale bytes must not reach logs")
 endif()
 require_count("${WORLD_CONFIG}"
-    "Warden\\.RequireExactProfile\"[ \\t]*,[ \\t]*false" 1
-    "exact-profile admission must default to fail-open in world configuration")
+    "Warden\\.RequireExactProfile\"[ \\t]*,[ \\t]*true" 1
+    "exact-profile admission must default to fail-closed in world configuration")
 require_count("${MANGOSD_ACTIVE_EXACT_PROFILE}"
-    "Warden\\.RequireExactProfile[ \\t]*=[ \\t]*0" 1
-    "distributed exact-profile admission must have one active fail-open setting")
+    "Warden\\.RequireExactProfile[ \\t]*=[ \\t]*1" 1
+    "distributed exact-profile admission must have one active fail-closed setting")
 foreach(EXACT_PROFILE IN ITEMS
     "8606/Win/enUS" "8606/Win/enGB" "8606/Win/deDE" "8606/Win/esES"
     "8606/Win/frFR" "8606/Win/koKR" "8606/Win/ruRU" "8606/Win/zhCN")
@@ -170,9 +178,9 @@ foreach(EXACT_PROFILE IN ITEMS
 endforeach()
 foreach(REQUIRED_TEXT IN ITEMS
     "repeated, confirmed, actionable Warden check mismatches"
-    "Protocol/lifecycle failures disengage Warden without punishment"
+    "Protocol/lifecycle failures close enforcing sessions without an incident"
     "\\(build,platform,locale\\) profile in `warden_checks`"
-    "admit unprofiled clients without Warden enforcement")
+    "explicitly opt in to unsupported unprofiled clients")
     if(NOT MANGOSD_CONFIG MATCHES "${REQUIRED_TEXT}")
         message(FATAL_ERROR
             "Warden boundary: distributed config is missing ${REQUIRED_TEXT}")
@@ -192,9 +200,15 @@ if(NOT MANGOSD_CONFIG MATCHES
     message(FATAL_ERROR
         "Warden boundary: distributed config must explain opt-in strict-profile rejection")
 endif()
+if(NOT MANGOSD_CONFIG MATCHES
+    "Catalogue loading is mandatory at startup in every enforcement mode")
+    message(FATAL_ERROR
+        "Warden boundary: distributed config must explain mandatory catalogue startup loading")
+endif()
 require_count("${SESSION_CPP}"
     "m_clientLocale[ \\t]*=[ \\t]*std::move[ \\t]*\\([ \\t]*admission\\.clientLocale[ \\t]*\\)" 1
     "session must preserve the unfallbacked client locale exactly once")
+
 require_count("${SESSION_CPP}"
     "admission\\.clientLocale" 1
     "Warden profile selection must use the authenticated exact client locale")
@@ -216,6 +230,34 @@ if(SESSION_CPP MATCHES "clientTick|checksum|decrypted|packet body")
         "Warden boundary: session observability must not expose timing internals")
 endif()
 
+string(FIND "${SESSION_CPP}" "WorldSession::~WorldSession()"
+    SESSION_DESTRUCTOR_BEGIN)
+string(FIND "${SESSION_CPP}" "void WorldSession::SizeError("
+    SESSION_DESTRUCTOR_END)
+if(SESSION_DESTRUCTOR_BEGIN EQUAL -1 OR SESSION_DESTRUCTOR_END EQUAL -1 OR
+    SESSION_DESTRUCTOR_END LESS_EQUAL SESSION_DESTRUCTOR_BEGIN)
+    message(FATAL_ERROR
+        "Warden boundary: cannot locate WorldSession destructor")
+endif()
+math(EXPR SESSION_DESTRUCTOR_LENGTH
+    "${SESSION_DESTRUCTOR_END} - ${SESSION_DESTRUCTOR_BEGIN}")
+string(SUBSTRING "${SESSION_CPP}" ${SESSION_DESTRUCTOR_BEGIN}
+    ${SESSION_DESTRUCTOR_LENGTH} SESSION_DESTRUCTOR_BODY)
+require_count("${SESSION_DESTRUCTOR_BODY}"
+    "DrainWardenPendingConfirmations[ \t]*\\(" 1
+    "session destruction must drain pending Warden confirmations exactly once")
+string(FIND "${SESSION_DESTRUCTOR_BODY}"
+    "DrainWardenPendingConfirmations()" DESTRUCTOR_DRAIN_AT)
+string(FIND "${SESSION_DESTRUCTOR_BODY}" "m_wardenPolicy.reset()"
+    DESTRUCTOR_POLICY_RESET_AT)
+if(DESTRUCTOR_DRAIN_AT EQUAL -1 OR DESTRUCTOR_POLICY_RESET_AT EQUAL -1 OR
+    DESTRUCTOR_POLICY_RESET_AT LESS_EQUAL DESTRUCTOR_DRAIN_AT)
+    message(FATAL_ERROR
+        "Warden boundary: session destruction must audit pending confirmations before clearing policy")
+endif()
+
+# Lifecycle and enforcement helpers are kept in a fixed ownership order so the
+# source-range checks below cannot accidentally inspect unrelated functions.
 string(FIND "${SESSION_CPP}"
     "void WorldSession::HandleWardenLifecycle(" LIFECYCLE_BEGIN)
 string(FIND "${SESSION_CPP}"
@@ -223,26 +265,34 @@ string(FIND "${SESSION_CPP}"
 string(FIND "${SESSION_CPP}"
     "void WorldSession::ApplyWardenPolicyDecisions(" POLICY_APPLY_BEGIN)
 string(FIND "${SESSION_CPP}"
+    "void WorldSession::DrainWardenPendingConfirmations()" DRAIN_BEGIN)
+string(FIND "${SESSION_CPP}"
     "void WorldSession::RequestWardenDisengagement()" DISENGAGE_BEGIN)
 string(FIND "${SESSION_CPP}"
     "void WorldSession::FinalizeWardenDisengagement()" FINALIZE_BEGIN)
 string(FIND "${SESSION_CPP}"
     "void WorldSession::PersistWardenAudit(" AUDIT_BEGIN)
 string(FIND "${SESSION_CPP}"
+    "void WorldSession::PersistWardenOperationalAudit("
+    OPERATIONAL_AUDIT_BEGIN)
+string(FIND "${SESSION_CPP}"
     "void WorldSession::PersistWardenIncidentAndKick(" PERSIST_BEGIN)
 string(FIND "${SESSION_CPP}"
     "void WorldSession::StartWardenBootstrap()" WARDEN_START_BEGIN)
 if(LIFECYCLE_BEGIN EQUAL -1 OR EVIDENCE_BEGIN EQUAL -1 OR
-    POLICY_APPLY_BEGIN EQUAL -1 OR DISENGAGE_BEGIN EQUAL -1 OR
-    FINALIZE_BEGIN EQUAL -1 OR AUDIT_BEGIN EQUAL -1 OR
+    POLICY_APPLY_BEGIN EQUAL -1 OR DRAIN_BEGIN EQUAL -1 OR
+    DISENGAGE_BEGIN EQUAL -1 OR FINALIZE_BEGIN EQUAL -1 OR
+    AUDIT_BEGIN EQUAL -1 OR OPERATIONAL_AUDIT_BEGIN EQUAL -1 OR
     PERSIST_BEGIN EQUAL -1 OR
     WARDEN_START_BEGIN EQUAL -1 OR
     EVIDENCE_BEGIN LESS_EQUAL LIFECYCLE_BEGIN OR
     POLICY_APPLY_BEGIN LESS_EQUAL EVIDENCE_BEGIN OR
-    DISENGAGE_BEGIN LESS_EQUAL POLICY_APPLY_BEGIN OR
+    DRAIN_BEGIN LESS_EQUAL POLICY_APPLY_BEGIN OR
+    DISENGAGE_BEGIN LESS_EQUAL DRAIN_BEGIN OR
     FINALIZE_BEGIN LESS_EQUAL DISENGAGE_BEGIN OR
     AUDIT_BEGIN LESS_EQUAL FINALIZE_BEGIN OR
-    PERSIST_BEGIN LESS_EQUAL AUDIT_BEGIN OR
+    OPERATIONAL_AUDIT_BEGIN LESS_EQUAL AUDIT_BEGIN OR
+    PERSIST_BEGIN LESS_EQUAL OPERATIONAL_AUDIT_BEGIN OR
     WARDEN_START_BEGIN LESS_EQUAL PERSIST_BEGIN)
     message(FATAL_ERROR
         "Warden boundary: cannot locate ordered session enforcement helpers")
@@ -258,58 +308,90 @@ string(FIND "${SESSION_HEADER}" "void HandleWardenEvidenceBatch("
     HEADER_EVIDENCE_BEGIN)
 string(FIND "${SESSION_HEADER}" "void ApplyWardenPolicyDecisions("
     HEADER_POLICY_APPLY_BEGIN)
+string(FIND "${SESSION_HEADER}" "void DrainWardenPendingConfirmations()"
+    HEADER_DRAIN_BEGIN)
 string(FIND "${SESSION_HEADER}" "void RequestWardenDisengagement()"
     HEADER_DISENGAGE_BEGIN)
 string(FIND "${SESSION_HEADER}" "void FinalizeWardenDisengagement()"
     HEADER_FINALIZE_BEGIN)
 string(FIND "${SESSION_HEADER}" "void PersistWardenAudit("
     HEADER_AUDIT_BEGIN)
+string(FIND "${SESSION_HEADER}" "void PersistWardenOperationalAudit("
+    HEADER_OPERATIONAL_AUDIT_BEGIN)
 string(FIND "${SESSION_HEADER}" "void PersistWardenIncidentAndKick("
     HEADER_PERSIST_BEGIN)
 if(HEADER_WARDEN_START_BEGIN EQUAL -1 OR HEADER_WARDEN_UPDATE_BEGIN EQUAL -1 OR
     HEADER_LIFECYCLE_BEGIN EQUAL -1 OR HEADER_EVIDENCE_BEGIN EQUAL -1 OR
-    HEADER_POLICY_APPLY_BEGIN EQUAL -1 OR HEADER_DISENGAGE_BEGIN EQUAL -1 OR
+    HEADER_POLICY_APPLY_BEGIN EQUAL -1 OR HEADER_DRAIN_BEGIN EQUAL -1 OR
+    HEADER_DISENGAGE_BEGIN EQUAL -1 OR
     HEADER_FINALIZE_BEGIN EQUAL -1 OR HEADER_AUDIT_BEGIN EQUAL -1 OR
+    HEADER_OPERATIONAL_AUDIT_BEGIN EQUAL -1 OR
     HEADER_PERSIST_BEGIN EQUAL -1 OR
     HEADER_WARDEN_UPDATE_BEGIN LESS_EQUAL HEADER_WARDEN_START_BEGIN OR
     HEADER_LIFECYCLE_BEGIN LESS_EQUAL HEADER_WARDEN_UPDATE_BEGIN OR
     HEADER_EVIDENCE_BEGIN LESS_EQUAL HEADER_LIFECYCLE_BEGIN OR
     HEADER_POLICY_APPLY_BEGIN LESS_EQUAL HEADER_EVIDENCE_BEGIN OR
-    HEADER_DISENGAGE_BEGIN LESS_EQUAL HEADER_POLICY_APPLY_BEGIN OR
+    HEADER_DRAIN_BEGIN LESS_EQUAL HEADER_POLICY_APPLY_BEGIN OR
+    HEADER_DISENGAGE_BEGIN LESS_EQUAL HEADER_DRAIN_BEGIN OR
     HEADER_FINALIZE_BEGIN LESS_EQUAL HEADER_DISENGAGE_BEGIN OR
     HEADER_AUDIT_BEGIN LESS_EQUAL HEADER_FINALIZE_BEGIN OR
-    HEADER_PERSIST_BEGIN LESS_EQUAL HEADER_AUDIT_BEGIN)
+    HEADER_OPERATIONAL_AUDIT_BEGIN LESS_EQUAL HEADER_AUDIT_BEGIN OR
+    HEADER_PERSIST_BEGIN LESS_EQUAL HEADER_OPERATIONAL_AUDIT_BEGIN)
     message(FATAL_ERROR
         "Warden boundary: session header must preserve enforcement helper order")
 endif()
 
+# Terminal operational failures audit first. Observe mode disengages; enforcing
+# modes close the link without ever creating a cheating incident or ban.
 math(EXPR LIFECYCLE_LENGTH "${EVIDENCE_BEGIN} - ${LIFECYCLE_BEGIN}")
 string(SUBSTRING "${SESSION_CPP}" ${LIFECYCLE_BEGIN} ${LIFECYCLE_LENGTH}
     LIFECYCLE_BODY)
 if(LIFECYCLE_BODY MATCHES
-    "KickPlayer|WardenIncidentStore|Record[ \\t]*\\(|m_wardenEnforcementClosed")
+    "WardenIncidentStore|PersistWardenIncidentAndKick|m_wardenEnforcementClosed")
     message(FATAL_ERROR
-        "Warden boundary: lifecycle failure must never punish or persist an incident")
+        "Warden boundary: lifecycle failure must never persist an incident")
 endif()
-require_count("${LIFECYCLE_BODY}" "AbortPendingConfirmations[ \\t]*\\(" 1
+require_count("${LIFECYCLE_BODY}"
+    "PersistWardenOperationalAudit[ \\t]*\\([ \\t]*event\\.failure" 1
+    "terminal lifecycle failure must persist one non-punitive operational audit")
+require_count("${LIFECYCLE_BODY}"
+    "DrainWardenPendingConfirmations[ \\t]*\\(" 1
     "lifecycle failure must drain pending confirmations exactly once")
 require_count("${LIFECYCLE_BODY}" "RequestWardenDisengagement[ \\t]*\\(" 1
-    "lifecycle failure must request non-punitive disengagement exactly once")
-string(FIND "${LIFECYCLE_BODY}" "AbortPendingConfirmations()"
-    LIFECYCLE_ABORT_AT)
+    "lifecycle failure must request deferred teardown exactly once")
+require_count("${LIFECYCLE_BODY}"
+    "m_wardenPolicy->EvaluateLifecycle[ \\t]*\\([ \\t]*event[ \\t]*\\)" 1
+    "lifecycle failure must classify enforcing-session closure exactly once")
+require_count("${LIFECYCLE_BODY}" "KickPlayer[ \\t]*\\(" 1
+    "lifecycle failure must contain one enforcing-session close path")
+string(FIND "${LIFECYCLE_BODY}"
+    "PersistWardenOperationalAudit(event.failure)"
+    LIFECYCLE_OPERATIONAL_AUDIT_AT)
+string(FIND "${LIFECYCLE_BODY}" "DrainWardenPendingConfirmations()"
+    LIFECYCLE_DRAIN_AT)
+string(FIND "${LIFECYCLE_BODY}"
+    "m_wardenPolicy->EvaluateLifecycle(event)" LIFECYCLE_POLICY_AT)
 string(FIND "${LIFECYCLE_BODY}" "RequestWardenDisengagement()"
     LIFECYCLE_DISENGAGE_AT)
-if(LIFECYCLE_ABORT_AT EQUAL -1 OR LIFECYCLE_DISENGAGE_AT EQUAL -1 OR
-    LIFECYCLE_DISENGAGE_AT LESS_EQUAL LIFECYCLE_ABORT_AT)
+string(FIND "${LIFECYCLE_BODY}" "KickPlayer()" LIFECYCLE_KICK_AT)
+if(LIFECYCLE_OPERATIONAL_AUDIT_AT EQUAL -1 OR
+    LIFECYCLE_DRAIN_AT EQUAL -1 OR LIFECYCLE_POLICY_AT EQUAL -1 OR
+    LIFECYCLE_DISENGAGE_AT EQUAL -1 OR LIFECYCLE_KICK_AT EQUAL -1 OR
+    LIFECYCLE_DRAIN_AT LESS_EQUAL LIFECYCLE_OPERATIONAL_AUDIT_AT OR
+    LIFECYCLE_POLICY_AT LESS_EQUAL LIFECYCLE_DRAIN_AT OR
+    LIFECYCLE_DISENGAGE_AT LESS_EQUAL LIFECYCLE_POLICY_AT OR
+    LIFECYCLE_KICK_AT LESS_EQUAL LIFECYCLE_DISENGAGE_AT)
     message(FATAL_ERROR
-        "Warden boundary: lifecycle failure must audit pending identities before disengagement")
+        "Warden boundary: lifecycle failure must audit, classify, tear down, then conditionally close")
 endif()
 
-if(POLICY_HEADER MATCHES "WardenPolicyAction::Kick|EvaluateLifecycle" OR
-    POLICY_CPP MATCHES "WardenPolicyAction::Kick|EvaluateLifecycle")
-    message(FATAL_ERROR
-        "Warden boundary: policy must not expose lifecycle punishment actions")
-endif()
+require_count("${POLICY_HEADER}"
+    "(^|[^A-Za-z0-9_])Kick([^A-Za-z0-9_]|$)" 1
+    "policy must expose one non-incident session-close action")
+require_count("${POLICY_HEADER}" "EvaluateLifecycle" 1
+    "policy must expose one lifecycle classification seam")
+require_count("${POLICY_CPP}" "WardenPolicyAction::Kick" 1
+    "only lifecycle classification may emit the session-close action")
 string(FIND "${POLICY_CPP}"
     "WardenEnforcementPolicy::AbortPendingConfirmations()" POLICY_ABORT_BEGIN)
 string(FIND "${POLICY_CPP}"
@@ -356,11 +438,11 @@ if(POLICY_CONTRACT_ABORT_AT EQUAL -1 OR
         "Warden boundary: contract failure must audit pending identities before disengagement")
 endif()
 
-require_count("${WARDEN_SERVER_HEADER}" "m_transitionedSinceUpdate" 1
-    "Warden server must own one transition-clock latch")
-require_count("${WARDEN_SERVER_CPP}"
-    "uint32 const elapsedMs[ \\t]*=[ \\t]*m_transitionedSinceUpdate[ \\t]*\\?[ \\t]*0[ \\t]*:[ \\t]*diffMs" 1
-    "Warden update must suppress one elapsed charge after a state transition")
+if(WARDEN_SERVER_HEADER MATCHES "m_transitionedSinceUpdate" OR
+    WARDEN_SERVER_CPP MATCHES "m_transitionedSinceUpdate")
+    message(FATAL_ERROR
+        "Warden boundary: state transitions must not suppress elapsed deadline charging")
+endif()
 
 math(EXPR ENFORCEMENT_LENGTH "${WARDEN_START_BEGIN} - ${EVIDENCE_BEGIN}")
 string(SUBSTRING "${SESSION_CPP}" ${EVIDENCE_BEGIN} ${ENFORCEMENT_LENGTH}
@@ -485,8 +567,8 @@ if(REJECT_CLEAR_AT EQUAL -1 OR REJECT_KICK_AT EQUAL -1 OR
     message(FATAL_ERROR
         "Warden boundary: strict rejection must cleanse, close, and terminate admission in order")
 endif()
-require_count("${SESSION_ADMISSION_BODY}" "KickPlayer[ \\t]*\\(" 1
-    "authenticated admission must contain only the opt-in strict-profile kick")
+require_count("${SESSION_ADMISSION_BODY}" "KickPlayer[ \\t]*\\(" 2
+    "authenticated admission must contain strict-profile and creation-failure closes")
 require_count("${PROFILE_REJECT_BODY}" "KickPlayer[ \\t]*\\(" 1
     "strict-profile rejection must own the admission kick")
 if(SESSION_ADMISSION_BODY MATCHES
@@ -508,10 +590,15 @@ string(SUBSTRING "${SESSION_ADMISSION_BODY}" ${NULL_SERVER_BEGIN}
     ${NULL_SERVER_LENGTH} NULL_SERVER_BODY)
 if(NOT NULL_SERVER_BODY MATCHES "sLog\\.outError[ \\t]*\\(" OR
     NOT NULL_SERVER_BODY MATCHES "return[ \\t]*;" OR
-    NULL_SERVER_BODY MATCHES "KickPlayer|WardenIncidentStore|BanAccount")
+    NULL_SERVER_BODY MATCHES "WardenIncidentStore|BanAccount")
     message(FATAL_ERROR
-        "Warden boundary: creation failure must log and admit without punishment")
+        "Warden boundary: creation failure must log without recording an incident or ban")
 endif()
+require_count("${NULL_SERVER_BODY}"
+    "disposition[ \\t]*==[ \\t]*warden::WardenProfileDisposition::Enforce" 1
+    "exact-profile creation failure must distinguish enforcing sessions")
+require_count("${NULL_SERVER_BODY}" "KickPlayer[ \\t]*\\(" 1
+    "exact-profile creation failure must close enforcing sessions")
 
 require_count("${CHARACTER_HANDLER}" "StartWardenBootstrap[ \\t]*\\(" 2
     "character list and player login must each schedule bootstrap once")

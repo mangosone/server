@@ -63,10 +63,14 @@ class WardenManager
 {
 public:
     WardenManager() = default;
+    /** Process-wide owner of immutable module and check snapshots. */
     static WardenManager& Instance();
+    /** Replaces the complete check snapshot only after startup validation. */
     bool PublishCheckCatalog(
         std::shared_ptr<WardenCheckCatalog const> catalog);
+    /** Reports whether startup published a usable immutable snapshot. */
     bool HasPublishedCheckCatalog() const;
+    /** Resolves an exact build/platform/locale check profile without fallback. */
     WardenCheckProfile const* FindCheckProfile(uint32 build,
         std::string const& platform, std::string const& locale) const;
 

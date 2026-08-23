@@ -41,6 +41,7 @@ struct WardenEvidence
     uint32 clientTick = 0;
 };
 
+/** Final policy class after an exact isolated confirmation response. */
 enum class WardenConfirmedDisposition : uint8
 {
     Invalid,
@@ -49,7 +50,9 @@ enum class WardenConfirmedDisposition : uint8
     Incident
 };
 
+/** True only for typed non-health outcomes requiring one confirmation. */
 bool NeedsConfirmation(WardenEvidence const& evidence);
+/** Maps confirmed evidence to clear, audit, incident, or invalid. */
 WardenConfirmedDisposition ClassifyConfirmedEvidence(
     WardenEnforcementMode mode, WardenEvidence const& evidence);
 
@@ -61,6 +64,7 @@ struct WardenEvidenceBatch
     std::vector<WardenEvidence> evidence;
 };
 
+/** Stable labels safe for logs; no raw result data is returned. */
 char const* ToString(WardenCheckType type);
 char const* ToString(WardenEvidenceClass evidenceClass);
 char const* ToString(WardenCheckOutcome outcome);

@@ -31,6 +31,7 @@
 
 namespace warden
 {
+/** Custody or shape failure found before a module can enter a session. */
 enum class ModuleValidation : uint8
 {
     Valid,
@@ -66,6 +67,7 @@ struct TimingInitializationProfile
     uint8 install = 0;
 };
 
+/** The three adjacent command-3 records required by the delivered module. */
 struct ModuleInitializationProfile
 {
     ArchiveInitializationProfile archive;
@@ -73,6 +75,7 @@ struct ModuleInitializationProfile
     TimingInitializationProfile timing;
 };
 
+/** Exact build/platform module bytes, keys, hashes, and host callbacks. */
 struct ModuleProfile
 {
     // Host callbacks are exact-build contracts even if another client can load

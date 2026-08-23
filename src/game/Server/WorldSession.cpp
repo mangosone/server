@@ -250,6 +250,9 @@ WorldSession::~WorldSession()
         m_pendingWardenAdmission->Clear();
         m_pendingWardenAdmission.reset();
     }
+    // A disconnect can race the isolated confirmation response. Preserve its
+    // exact identity as non-actionable Unavailable before policy disappears.
+    DrainWardenPendingConfirmations();
     m_warden.reset();
     m_wardenPolicy.reset();
     m_mailbox->Close();
@@ -478,10 +481,21 @@ void WorldSession::OnAuthenticatedAdmission()
 
     if (!server)
     {
-        sLog.outError("Warden could not create an exact-profile session for "
-            "account %u (build %u; platform %s; locale %s); admission remains "
-            "open without enforcement.", GetAccountId(), m_wardenBuild,
-            logPlatform.c_str(), logLocale.c_str());
+        if (disposition == warden::WardenProfileDisposition::Enforce)
+        {
+            sLog.outError("Warden could not create an exact-profile session "
+                "for account %u (build %u; platform %s; locale %s); closing "
+                "the enforcing client link.", GetAccountId(), m_wardenBuild,
+                logPlatform.c_str(), logLocale.c_str());
+            KickPlayer();
+        }
+        else
+        {
+            sLog.outError("Warden could not create an observed exact-profile "
+                "session for account %u (build %u; platform %s; locale %s); "
+                "admission remains open without enforcement.", GetAccountId(),
+                m_wardenBuild, logPlatform.c_str(), logLocale.c_str());
+        }
         return;
     }
 
@@ -506,15 +520,14 @@ void WorldSession::HandleWardenLifecycle(
     if (event.state != warden::WardenState::Failed)
         return;
 
-    sLog.outError("Warden protocol failed for account %u (build %u): %s; "
-        "disengaging without punishment.", GetAccountId(), m_wardenBuild,
-        warden::ToString(event.failure));
+    sLog.outError("Warden protocol failed for account %u (build %u): %s.",
+        GetAccountId(), m_wardenBuild, warden::ToString(event.failure));
+    PersistWardenOperationalAudit(event.failure);
+    warden::WardenPolicyDecision lifecycle;
     if (m_wardenPolicy)
     {
-        // Persist pending identities before the outer wrapper clears policy
-        // and crypto state. A lifecycle failure is never cheating evidence.
-        ApplyWardenPolicyDecisions(
-            m_wardenPolicy->AbortPendingConfirmations());
+        DrainWardenPendingConfirmations();
+        lifecycle = m_wardenPolicy->EvaluateLifecycle(event);
     }
     else
     {
@@ -522,6 +535,13 @@ void WorldSession::HandleWardenLifecycle(
             "%u; no enforcement action taken.", GetAccountId());
     }
     RequestWardenDisengagement();
+    if (lifecycle.action == warden::WardenPolicyAction::Kick)
+    {
+        sLog.outError("Warden lifecycle enforcement is closing the client "
+            "link for account %u without recording an incident.",
+            GetAccountId());
+        KickPlayer();
+    }
 }
 
 void WorldSession::HandleWardenEvidenceBatch(
@@ -679,14 +699,7 @@ void WorldSession::ApplyWardenPolicyDecisions(
                     "account %u (check %u; type %s); auditing pending "
                     "metadata and disengaging.", GetAccountId(),
                     decision.checkId, warden::ToString(decision.checkType));
-                if (m_wardenPolicy)
-                {
-                    for (warden::WardenPolicyDecision const& audit :
-                        m_wardenPolicy->AbortPendingConfirmations())
-                    {
-                        PersistWardenAudit(audit);
-                    }
-                }
+                DrainWardenPendingConfirmations();
                 RequestWardenDisengagement();
                 return;
             case warden::WardenPolicyAction::ConfirmationCleared:
@@ -706,7 +719,29 @@ void WorldSession::ApplyWardenPolicyDecisions(
                     GetAccountId());
                 RequestWardenDisengagement();
                 return;
+            case warden::WardenPolicyAction::Kick:
+                sLog.outError("Warden policy is closing the client link for "
+                    "account %u without recording an incident.",
+                    GetAccountId());
+                RequestWardenDisengagement();
+                KickPlayer();
+                return;
         }
+    }
+}
+
+void WorldSession::DrainWardenPendingConfirmations()
+{
+    if (!m_wardenPolicy)
+        return;
+
+    // Abort returns only non-actionable Unavailable audit decisions. Keeping
+    // the persistence adapter here lets lifecycle and destructor paths share
+    // the same invariant without granting policy access to the database.
+    for (warden::WardenPolicyDecision const& audit :
+        m_wardenPolicy->AbortPendingConfirmations())
+    {
+        PersistWardenAudit(audit);
     }
 }
 
@@ -767,6 +802,43 @@ void WorldSession::PersistWardenAudit(
             warden::ToString(decision.checkType),
             warden::ToString(decision.evidenceClass),
             warden::ToString(decision.outcome));
+    }
+}
+
+void WorldSession::PersistWardenOperationalAudit(
+    warden::WardenFailure failure)
+{
+    if (failure == warden::WardenFailure::None)
+    {
+        sLog.outError("Warden rejected an empty operational failure for "
+            "account %u; no audit written.", GetAccountId());
+        return;
+    }
+
+    // check_id zero is the Realm schema's reserved session-level sentinel.
+    // Timing/ProtocolHealth/Unavailable distinguishes an operational shed from
+    // a failed client check and therefore cannot enter incident enforcement.
+    warden::WardenAuditContext context;
+    context.accountId = GetAccountId();
+    context.realmId = realmID;
+    context.clientBuild = m_wardenBuild;
+    context.clientPlatform = m_clientPlatform;
+    context.clientLocale = m_clientLocale;
+    context.checkId = 0;
+    context.checkType = warden::WardenCheckType::Timing;
+    context.evidenceClass = warden::WardenEvidenceClass::ProtocolHealth;
+    context.outcome = warden::WardenAuditOutcome::Unavailable;
+    if (warden::WardenAuditStore::Instance().Record(context))
+    {
+        sLog.outString("Warden operational audit queued for account %u "
+            "(failure %s); no enforcement action taken.", GetAccountId(),
+            warden::ToString(failure));
+    }
+    else
+    {
+        sLog.outError("Warden operational audit enqueue failed for account "
+            "%u (failure %s); no enforcement action taken.", GetAccountId(),
+            warden::ToString(failure));
     }
 }
 

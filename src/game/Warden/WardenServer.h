@@ -80,12 +80,17 @@ public:
     // in-world eligibility fact to the pure recurring-check planner.
     void Update(bool eligible, uint32 diffMs);
 
+    /** Current state exposed for tests and the session wrapper only. */
     WardenState GetState() const;
+    /** Terminal reason, or None before failure. */
     WardenFailure GetFailure() const;
+    /** Number of bounded module transfers attempted by this session. */
     uint8 GetTransferCount() const;
 
     // These are scheduling controls only; punishment remains outside Warden.
+    /** Requests one planner-owned isolated non-health confirmation. */
     bool QueueConfirmation(uint32 checkId);
+    /** Changes planner cadence without granting it enforcement authority. */
     void SetAggressive(bool aggressive);
 
 private:
@@ -113,9 +118,6 @@ private:
     std::optional<CheckPlan> m_pendingPlan;
     uint8 m_transferCount = 0;
     bool m_started = false;
-    // An external packet/start transition happened after the previous world
-    // update. The next update must not charge that new state for earlier time.
-    bool m_transitionedSinceUpdate = false;
 };
 }
 

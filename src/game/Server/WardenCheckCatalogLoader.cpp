@@ -114,6 +114,8 @@ char const* ToString(WardenCheckCatalogLoadFailure failure)
 
 bool WardenCheckCatalogLoader::LoadAndPublish() const
 {
+    // Pin the expected row count before reading the ordered snapshot. A change
+    // between queries is detected instead of publishing a torn catalogue.
     std::unique_ptr<QueryResult> count(WorldDatabase.Query(
         "SELECT COUNT(*) FROM `warden_checks`"));
     if (!count)
@@ -145,6 +147,8 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
         return false;
     }
 
+    // Keep SQL values at their full database width until the builder validates
+    // every narrowing conversion and family-specific field contract.
     WardenCheckCatalogBuilder builder;
     WardenCheckDiagnostic diagnostic;
     uint64 loadedRows = 0;
@@ -181,6 +185,8 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
         return false;
     }
 
+    // All remaining work is performed on a private candidate. The manager's
+    // active immutable snapshot remains untouched if any preflight fails.
     WardenCheckCatalog candidate;
     if (builder.Build(candidate, diagnostic) != CheckCatalogValidation::Valid)
     {
@@ -197,6 +203,8 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
         return false;
     }
 
+    // Pre-encode the initial and every possible confirmation shape so an
+    // operator cannot publish a profile that fails only after a player logs in.
     for (WardenCheckProfile const& profile : candidate.Profiles())
     {
         std::string const platform = SafeToken(profile.key.platform);
@@ -226,6 +234,7 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
         }
     }
 
+    // Publish once, after database, module-coverage, and wire-budget checks.
     auto mutableSnapshot =
         std::make_shared<WardenCheckCatalog>(std::move(candidate));
     std::shared_ptr<WardenCheckCatalog const> snapshot = mutableSnapshot;

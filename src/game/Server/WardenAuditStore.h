@@ -31,12 +31,18 @@
 
 namespace warden
 {
+/** Durable, non-punitive classification stored in Realm. */
 enum class WardenAuditOutcome : uint8
 {
     Mismatch = 1,
     Unavailable = 2
 };
 
+/**
+ * Secret-free audit row. A zero checkId is reserved for a session-level
+ * operational failure and is valid only as Timing/ProtocolHealth/Unavailable;
+ * it can never represent check evidence or feed the incident policy.
+ */
 struct WardenAuditContext
 {
     uint32 accountId = 0;
@@ -75,37 +81,33 @@ inline bool IsValidWardenAuditContext(WardenAuditContext const& context)
         }
         return true;
     };
-    auto legalPair = [](WardenCheckType type,
-        WardenEvidenceClass evidenceClass)
-    {
-        if (type == WardenCheckType::Mpq)
-        {
-            return evidenceClass == WardenEvidenceClass::IntegrityInvariant ||
-                evidenceClass == WardenEvidenceClass::Corroboration;
-        }
-        if (type == WardenCheckType::Lua)
-            return evidenceClass == WardenEvidenceClass::Corroboration;
-        if (type == WardenCheckType::Mem)
-            return evidenceClass != WardenEvidenceClass::ProtocolHealth &&
-                uint32(evidenceClass) <=
-                    uint32(WardenEvidenceClass::Corroboration);
-        return false;
-    };
+    bool const operationalFailure = context.checkId == 0 &&
+        context.checkType == WardenCheckType::Timing &&
+        context.evidenceClass == WardenEvidenceClass::ProtocolHealth &&
+        context.outcome == WardenAuditOutcome::Unavailable;
+    bool const checkEvidence = context.checkId != 0 &&
+        context.checkType != WardenCheckType::Timing &&
+        IsLegalWardenEvidenceClass(context.checkType,
+            context.evidenceClass) &&
+        (context.outcome == WardenAuditOutcome::Mismatch ||
+            context.outcome == WardenAuditOutcome::Unavailable);
 
-    return context.accountId != 0 && context.checkId != 0 &&
+    return context.accountId != 0 &&
         context.clientBuild != 0 && context.clientBuild <= 0xFFFFu &&
         validToken(context.clientPlatform, 1, 4) &&
         validToken(context.clientLocale, 4, 4) &&
-        legalPair(context.checkType, context.evidenceClass) &&
-        (context.outcome == WardenAuditOutcome::Mismatch ||
-            context.outcome == WardenAuditOutcome::Unavailable);
+        (operationalFailure || checkEvidence);
 }
 
-/** Best-effort append-only storage for confirmed non-actionable findings. */
+/**
+ * Best-effort append-only storage for confirmed non-actionable findings and
+ * session-level operational disengagements. Record never enforces policy.
+ */
 class WardenAuditStore
 {
 public:
     static WardenAuditStore& Instance();
+    /** Validates and asynchronously appends one secret-free Realm row. */
     bool Record(WardenAuditContext const& context) const;
 };
 }

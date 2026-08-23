@@ -244,7 +244,7 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_WARDEN_ENFORCEMENT_MODE,
         "Warden.EnforcementMode", 2);
     setConfig(CONFIG_BOOL_WARDEN_REQUIRE_EXACT_PROFILE,
-        "Warden.RequireExactProfile", false);
+        "Warden.RequireExactProfile", true);
     setConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MIN,
         "Warden.CheckIntervalMin", 30);
     setConfig(CONFIG_UINT32_WARDEN_CHECK_INTERVAL_MAX,

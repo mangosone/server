@@ -138,25 +138,6 @@ bool IsKnownType(uint32 type)
         type == static_cast<uint32>(warden::WardenCheckType::Mem);
 }
 
-bool IsLegalEvidenceClass(warden::WardenCheckType type,
-    warden::WardenEvidenceClass evidenceClass)
-{
-    switch (type)
-    {
-        case warden::WardenCheckType::Timing:
-            return evidenceClass == warden::WardenEvidenceClass::ProtocolHealth;
-        case warden::WardenCheckType::Mpq:
-            return evidenceClass ==
-                    warden::WardenEvidenceClass::IntegrityInvariant ||
-                evidenceClass == warden::WardenEvidenceClass::Corroboration;
-        case warden::WardenCheckType::Lua:
-            return evidenceClass == warden::WardenEvidenceClass::Corroboration;
-        case warden::WardenCheckType::Mem:
-            return evidenceClass != warden::WardenEvidenceClass::ProtocolHealth;
-    }
-    return false;
-}
-
 struct MemExpectationRange
 {
     uint32 address = 0;
@@ -187,6 +168,28 @@ bool OverlappingExpectedBytesAgree(MemExpectationRange const& left,
 }
 namespace warden
 {
+bool IsLegalWardenEvidenceClass(WardenCheckType type,
+    WardenEvidenceClass evidenceClass)
+{
+    // Keep this exhaustive rather than accepting a numeric range: future
+    // classes must be reviewed against every check family before they load.
+    switch (type)
+    {
+        case WardenCheckType::Timing:
+            return evidenceClass == WardenEvidenceClass::ProtocolHealth;
+        case WardenCheckType::Mpq:
+            return evidenceClass == WardenEvidenceClass::IntegrityInvariant ||
+                evidenceClass == WardenEvidenceClass::Corroboration;
+        case WardenCheckType::Lua:
+            return evidenceClass == WardenEvidenceClass::Corroboration;
+        case WardenCheckType::Mem:
+            return evidenceClass == WardenEvidenceClass::IntegrityInvariant ||
+                evidenceClass == WardenEvidenceClass::ThreatSignature ||
+                evidenceClass == WardenEvidenceClass::Corroboration;
+    }
+    return false;
+}
+
 uint32 GetWardenCheckId(WardenCheckDefinition const& definition)
 {
     return std::visit([](auto const& payload)
@@ -247,6 +250,8 @@ uint32 WardenCheckCatalog::EnabledRows() const
 CheckCatalogValidation WardenCheckCatalogBuilder::Add(
     WardenCheckRowInput const& input, WardenCheckDiagnostic& diagnostic)
 {
+    // Decode into temporary byte buffers first. A malformed later column must
+    // not leave a partially staged row or silently truncate SQL-width values.
     Bytes platformBytes;
     Bytes localeBytes;
     Bytes moduleBytes;
@@ -301,7 +306,7 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Add(
     WardenCheckType const type = static_cast<WardenCheckType>(input.type);
     WardenEvidenceClass const evidenceClass =
         static_cast<WardenEvidenceClass>(input.evidenceClass);
-    if (!IsLegalEvidenceClass(type, evidenceClass))
+    if (!IsLegalWardenEvidenceClass(type, evidenceClass))
         return SetDiagnostic(diagnostic,
             CheckCatalogValidation::IllegalTypeEvidenceClass,
             key, input.checkId);
@@ -309,6 +314,8 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Add(
     WardenCheckDefinition definition;
     definition.sortOrder = static_cast<uint16>(input.sortOrder);
     definition.evidenceClass = evidenceClass;
+    // Each family owns a disjoint set of SQL columns. Rejecting stray values
+    // prevents an operator typo from becoming hidden, ambiguous check state.
     switch (type)
     {
         case WardenCheckType::Timing:
@@ -421,6 +428,8 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
         return SetDiagnostic(diagnostic, CheckCatalogValidation::EmptyCatalog,
             WardenProfileKey(), 0);
 
+    // Work on a private sorted copy; output changes only after every profile
+    // passes identity, cardinality, and expectation-consistency validation.
     std::vector<PendingRow> rows = m_rows;
     std::sort(rows.begin(), rows.end(),
         [](PendingRow const& left, PendingRow const& right)
@@ -445,8 +454,12 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
         WardenCheckProfile profile;
         profile.key = rows[begin].key;
         profile.totalRows = static_cast<uint32>(end - begin);
+        // Disabled rows still reserve identity and order so toggling them later
+        // cannot reveal a latent duplicate that startup previously accepted.
         std::set<uint32> checkIds;
         std::set<uint16> sortOrders;
+        // A single request must have one expectation within an exact profile;
+        // otherwise identical client input could classify two different ways.
         std::map<std::string, Digest20> mpqExpectations;
         std::map<std::string, std::string> luaExpectations;
         std::map<std::string, std::vector<MemExpectationRange>> memExpectations;
@@ -561,6 +574,8 @@ CheckCatalogValidation WardenCheckCatalogBuilder::Build(
         begin = end;
     }
 
+    // Atomic publication boundary: callers retain their prior snapshot on any
+    // failure above and receive the complete candidate only here.
     output = std::move(candidate);
     diagnostic = WardenCheckDiagnostic();
     return CheckCatalogValidation::Valid;

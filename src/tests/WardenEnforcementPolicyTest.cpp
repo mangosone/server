@@ -23,6 +23,7 @@
 #include "TestHarness.h"
 
 #include "WardenEnforcementPolicy.h"
+#include "WardenServer.h"
 
 #include <initializer_list>
 #include <utility>
@@ -515,5 +516,49 @@ TEST(WardenEnforcementPolicy_lifecycle_abort_drains_pending_metadata_without_pun
         CHECK(sawMpq);
         CHECK(sawMem);
         CHECK(policy.AbortPendingConfirmations().empty());
+    }
+}
+
+TEST(WardenEnforcementPolicy_lifecycle_failure_closes_only_enforcing_modes)
+{
+    warden::WardenLifecycleEvent const failed
+    {
+        warden::WardenState::Failed,
+        warden::WardenFailure::DeadlineExpired,
+        0
+    };
+    warden::WardenLifecycleEvent const ready
+    {
+        warden::WardenState::ModuleReady,
+        warden::WardenFailure::None,
+        0
+    };
+
+    for (warden::WardenEnforcementMode mode :
+        {warden::WardenEnforcementMode::Observe,
+            warden::WardenEnforcementMode::Kick,
+            warden::WardenEnforcementMode::KickAndBan})
+    {
+        warden::WardenEnforcementPolicy policy(mode);
+        auto queued = policy.EvaluateBatch(Batch(
+            warden::CheckPlanPurpose::Recurring,
+            {Evidence(3, warden::WardenCheckType::Mem,
+                warden::WardenEvidenceClass::ThreatSignature,
+                warden::WardenCheckOutcome::Mismatch)}));
+        REQUIRE(queued.size() == 1u);
+
+        CHECK(policy.EvaluateLifecycle(failed).action ==
+            (mode == warden::WardenEnforcementMode::Observe ?
+                warden::WardenPolicyAction::None :
+                warden::WardenPolicyAction::Kick));
+        CHECK(policy.EvaluateLifecycle(ready).action ==
+            warden::WardenPolicyAction::None);
+
+        // Lifecycle classification must not erase the identity before the
+        // session adapter persists its non-actionable abandonment audit.
+        auto const audits = policy.AbortPendingConfirmations();
+        REQUIRE(audits.size() == 1u);
+        CHECK(audits[0].action == warden::WardenPolicyAction::PersistAudit);
+        CHECK_EQ(audits[0].checkId, uint32(3));
     }
 }

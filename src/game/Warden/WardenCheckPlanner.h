@@ -49,9 +49,13 @@ public:
         std::vector<WardenCheckDefinition> checks = {},
         WardenRandomRange randomRange = {});
 
+    /** Produces at most one plan and never advances while one is outstanding. */
     std::optional<CheckPlan> Update(bool eligible, uint32 diffMs);
+    /** Queues one exact non-health identity for the next isolated request. */
     bool QueueConfirmation(uint32 checkId);
+    /** Completes only the currently outstanding request identifier. */
     void Complete(CheckPlan const& plan);
+    /** Switches cadence and actionable-only selection without enforcing. */
     void SetAggressive(bool aggressive);
 
 private:

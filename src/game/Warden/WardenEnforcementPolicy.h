@@ -32,6 +32,8 @@
 
 namespace warden
 {
+struct WardenLifecycleEvent;
+
 /** A secret-free instruction for the session-level enforcement adapter. */
 enum class WardenPolicyAction : uint8
 {
@@ -40,9 +42,11 @@ enum class WardenPolicyAction : uint8
     ConfirmationCleared,
     PersistAudit,
     PersistAndKick,
-    Disengage
+    Disengage,
+    Kick
 };
 
+/** One secret-free action for the session persistence/enforcement adapter. */
 struct WardenPolicyDecision
 {
     WardenPolicyAction action = WardenPolicyAction::None;
@@ -61,12 +65,17 @@ class WardenEnforcementPolicy
 public:
     explicit WardenEnforcementPolicy(WardenEnforcementMode mode);
 
+    /** Classifies one validated batch and updates confirmation ownership. */
     std::vector<WardenPolicyDecision> EvaluateBatch(
         WardenEvidenceBatch const& batch);
 
-    // A lifecycle failure cannot establish cheating. Preserve only the exact
-    // pending confirmation identities as non-actionable Unavailable audits;
-    // the session owns the subsequent non-punitive disengagement.
+    /** Closes failed enforcing sessions without creating cheating evidence. */
+    WardenPolicyDecision EvaluateLifecycle(
+        WardenLifecycleEvent const& event) const;
+
+    // A lifecycle failure cannot establish cheating. Preserve the exact
+    // pending confirmation identities as non-actionable Unavailable audits
+    // before the session applies its separately classified close policy.
     std::vector<WardenPolicyDecision> AbortPendingConfirmations();
 
 private:

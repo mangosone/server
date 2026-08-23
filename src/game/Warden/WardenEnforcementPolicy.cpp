@@ -22,6 +22,8 @@
 
 #include "WardenEnforcementPolicy.h"
 
+#include "WardenServer.h"
+
 namespace warden
 {
 WardenEnforcementPolicy::WardenEnforcementPolicy(
@@ -112,6 +114,18 @@ WardenEnforcementPolicy::AbortPendingConfirmations()
     }
     m_pendingConfirmations.clear();
     return decisions;
+}
+
+WardenPolicyDecision WardenEnforcementPolicy::EvaluateLifecycle(
+    WardenLifecycleEvent const& event) const
+{
+    if (event.state != WardenState::Failed ||
+        m_mode == WardenEnforcementMode::Observe)
+        return {};
+
+    // Closing the connection preserves enforcement availability without
+    // treating a protocol or infrastructure failure as cheating evidence.
+    return {WardenPolicyAction::Kick};
 }
 
 std::vector<WardenPolicyDecision>

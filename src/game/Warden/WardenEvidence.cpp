@@ -24,31 +24,6 @@
 
 namespace
 {
-bool IsLegalIdentity(warden::WardenCheckType type,
-    warden::WardenEvidenceClass evidenceClass)
-{
-    switch (type)
-    {
-        case warden::WardenCheckType::Timing:
-            return evidenceClass ==
-                warden::WardenEvidenceClass::ProtocolHealth;
-        case warden::WardenCheckType::Mpq:
-            return evidenceClass ==
-                    warden::WardenEvidenceClass::IntegrityInvariant ||
-                evidenceClass == warden::WardenEvidenceClass::Corroboration;
-        case warden::WardenCheckType::Lua:
-            return evidenceClass ==
-                warden::WardenEvidenceClass::Corroboration;
-        case warden::WardenCheckType::Mem:
-            return evidenceClass ==
-                    warden::WardenEvidenceClass::IntegrityInvariant ||
-                evidenceClass ==
-                    warden::WardenEvidenceClass::ThreatSignature ||
-                evidenceClass == warden::WardenEvidenceClass::Corroboration;
-    }
-    return false;
-}
-
 bool IsNonHealthType(warden::WardenCheckType type)
 {
     return type == warden::WardenCheckType::Mpq ||
@@ -61,7 +36,8 @@ namespace warden
 bool NeedsConfirmation(WardenEvidence const& evidence)
 {
     return evidence.checkId != 0 && IsNonHealthType(evidence.checkType) &&
-        IsLegalIdentity(evidence.checkType, evidence.evidenceClass) &&
+        IsLegalWardenEvidenceClass(evidence.checkType,
+            evidence.evidenceClass) &&
         (evidence.outcome == WardenCheckOutcome::Mismatch ||
             evidence.outcome == WardenCheckOutcome::Unavailable);
 }
@@ -70,9 +46,12 @@ WardenConfirmedDisposition ClassifyConfirmedEvidence(
     WardenEnforcementMode mode, WardenEvidence const& evidence)
 {
     if (!evidence.checkId || !IsNonHealthType(evidence.checkType) ||
-        !IsLegalIdentity(evidence.checkType, evidence.evidenceClass))
+        !IsLegalWardenEvidenceClass(evidence.checkType,
+            evidence.evidenceClass))
         return WardenConfirmedDisposition::Invalid;
 
+    // Resolve operational and non-actionable outcomes before consulting mode:
+    // enforcement may never promote Unavailable or corroboration to incident.
     if (evidence.outcome == WardenCheckOutcome::Match)
         return WardenConfirmedDisposition::Cleared;
     if (evidence.outcome == WardenCheckOutcome::Unavailable)

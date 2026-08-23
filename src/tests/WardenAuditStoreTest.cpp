@@ -75,6 +75,25 @@ TEST(WardenAuditContext_accepts_complete_legal_nonactionable_evidence)
     CHECK(warden::IsValidWardenAuditContext(context));
 }
 
+TEST(WardenAuditContext_accepts_only_the_reserved_operational_shape)
+{
+    warden::WardenAuditContext context = ValidContext();
+    context.checkId = 0;
+    context.checkType = warden::WardenCheckType::Timing;
+    context.evidenceClass = warden::WardenEvidenceClass::ProtocolHealth;
+    context.outcome = warden::WardenAuditOutcome::Unavailable;
+    CHECK(warden::IsValidWardenAuditContext(context));
+
+    context.outcome = warden::WardenAuditOutcome::Mismatch;
+    CHECK(!warden::IsValidWardenAuditContext(context));
+    context.outcome = warden::WardenAuditOutcome::Unavailable;
+    context.checkType = warden::WardenCheckType::Mem;
+    CHECK(!warden::IsValidWardenAuditContext(context));
+    context.checkType = warden::WardenCheckType::Timing;
+    context.evidenceClass = warden::WardenEvidenceClass::Corroboration;
+    CHECK(!warden::IsValidWardenAuditContext(context));
+}
+
 TEST(WardenAuditContext_rejects_invalid_identity_tokens_and_enums)
 {
     warden::WardenAuditContext context = ValidContext();

@@ -47,6 +47,9 @@ namespace warden
 WardenConfigurationNormalization NormalizeWardenConfiguration(
     WardenRawConfiguration const& raw)
 {
+    // Start from reviewed defaults, then replace each independent logical
+    // group only when the whole group is safe. One bad interval must not erase
+    // a valid enforcement or threshold choice.
     WardenConfigurationNormalization result;
     result.value.requireExactProfile = raw.requireExactProfile;
 
@@ -85,6 +88,8 @@ WardenConfigurationNormalization NormalizeWardenConfiguration(
             WardenConfigurationCorrection::AggressiveInterval);
     }
 
+    // Aggressive mode must begin before the permanent-ban threshold; equal or
+    // reversed values would skip the intended staged response.
     if (raw.aggressiveThreshold > 0 &&
         raw.aggressiveThreshold < raw.banThreshold)
     {

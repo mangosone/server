@@ -39,6 +39,7 @@ enum class CheckPlanPurpose : uint8
     Confirmation
 };
 
+/** Immutable ordered request contract retained until its matching response. */
 struct CheckPlan
 {
     uint32 requestId = 0;

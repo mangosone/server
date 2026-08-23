@@ -73,6 +73,41 @@ std::vector<warden::WardenCheckRowInput> FirstProfileRows()
 }
 }
 
+TEST(WardenCheckCatalog_type_evidence_class_contract_is_canonical)
+{
+    using warden::WardenCheckType;
+    using warden::WardenEvidenceClass;
+
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Timing,
+        WardenEvidenceClass::ProtocolHealth));
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Mpq,
+        WardenEvidenceClass::IntegrityInvariant));
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Mpq,
+        WardenEvidenceClass::Corroboration));
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Lua,
+        WardenEvidenceClass::Corroboration));
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Mem,
+        WardenEvidenceClass::IntegrityInvariant));
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Mem,
+        WardenEvidenceClass::ThreatSignature));
+    CHECK(warden::IsLegalWardenEvidenceClass(WardenCheckType::Mem,
+        WardenEvidenceClass::Corroboration));
+
+    CHECK(!warden::IsLegalWardenEvidenceClass(WardenCheckType::Timing,
+        WardenEvidenceClass::IntegrityInvariant));
+    CHECK(!warden::IsLegalWardenEvidenceClass(WardenCheckType::Mpq,
+        WardenEvidenceClass::ThreatSignature));
+    CHECK(!warden::IsLegalWardenEvidenceClass(WardenCheckType::Lua,
+        WardenEvidenceClass::IntegrityInvariant));
+    CHECK(!warden::IsLegalWardenEvidenceClass(WardenCheckType::Mem,
+        WardenEvidenceClass::ProtocolHealth));
+    CHECK(!warden::IsLegalWardenEvidenceClass(
+        static_cast<WardenCheckType>(0xFF),
+        WardenEvidenceClass::Corroboration));
+    CHECK(!warden::IsLegalWardenEvidenceClass(WardenCheckType::Mem,
+        static_cast<WardenEvidenceClass>(0xFF)));
+}
+
 TEST(WardenCheckCatalog_decodes_and_selects_eight_exact_8606_profiles)
 {
     warden::WardenCheckCatalogBuilder builder;

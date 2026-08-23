@@ -50,7 +50,7 @@ TEST(WardenConfiguration_defaults_match_approved_production_policy)
     auto const result = warden::NormalizeWardenConfiguration(raw);
 
     CHECK_EQ(uint32(result.value.enforcementMode), uint32(2));
-    CHECK(!result.value.requireExactProfile);
+    CHECK(result.value.requireExactProfile);
     CHECK_EQ(result.value.normalMinSeconds, uint32(30));
     CHECK_EQ(result.value.normalMaxSeconds, uint32(60));
     CHECK_EQ(result.value.aggressiveMinSeconds, uint32(10));

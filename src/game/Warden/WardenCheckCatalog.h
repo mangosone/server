@@ -31,6 +31,7 @@
 
 namespace warden
 {
+/** Fail-closed reason returned while decoding or assembling catalogue rows. */
 enum class CheckCatalogValidation : uint8
 {
     Valid,
@@ -62,6 +63,7 @@ enum class CheckCatalogValidation : uint8
     MissingNonHealth
 };
 
+/** Inner delivered-module command byte for each supported check family. */
 enum class WardenCheckType : uint8
 {
     Timing = 0x57,
@@ -70,6 +72,7 @@ enum class WardenCheckType : uint8
     Mem = 0xF3
 };
 
+/** Trust role assigned by operators to one exact check definition. */
 enum class WardenEvidenceClass : uint8
 {
     ProtocolHealth = 0,
@@ -78,6 +81,7 @@ enum class WardenEvidenceClass : uint8
     Corroboration = 3
 };
 
+/** Normalized result class after raw client data is compared privately. */
 enum class WardenCheckOutcome : uint8
 {
     Match = 0,
@@ -86,6 +90,13 @@ enum class WardenCheckOutcome : uint8
     Stable = 3,
     Unstable = 4
 };
+
+/**
+ * Canonical type/class contract shared by catalogue, codec, evidence, and
+ * persistence validation. Unknown enum values always fail closed.
+ */
+bool IsLegalWardenEvidenceClass(WardenCheckType type,
+    WardenEvidenceClass evidenceClass);
 
 /** Immutable identity for the transport-health check. */
 struct TimingCheckProfile
@@ -131,11 +142,16 @@ struct WardenCheckDefinition
     WardenCheckPayload payload;
 };
 
+/** Extracts the shared identity from the active payload alternative. */
 uint32 GetWardenCheckId(WardenCheckDefinition const& definition);
+/** Resolves the payload alternative to its exact inner command family. */
 WardenCheckType GetWardenCheckType(WardenCheckDefinition const& definition);
+/** True only for evidence allowed to reach incident enforcement. */
 bool IsActionableEvidenceClass(WardenEvidenceClass evidenceClass);
+/** Timing health is never eligible for isolated confirmation. */
 bool IsConfirmationEligible(WardenCheckDefinition const& definition);
 
+/** Exact authenticated identity used for profile selection without fallback. */
 struct WardenProfileKey
 {
     uint32 build = 0;
@@ -185,10 +201,14 @@ struct WardenCheckDiagnostic
 class WardenCheckCatalog
 {
 public:
+    /** Finds an exact profile; no locale, platform, or build fallback exists. */
     WardenCheckProfile const* Find(uint32 build,
         std::string const& platform, std::string const& locale) const;
+    /** Returns the immutable canonical profile ordering. */
     std::vector<WardenCheckProfile> const& Profiles() const;
+    /** Counts every source row, including disabled rows. */
     uint32 TotalRows() const;
+    /** Counts definitions eligible for publication and planning. */
     uint32 EnabledRows() const;
 
 private:
@@ -203,8 +223,10 @@ private:
 class WardenCheckCatalogBuilder
 {
 public:
+    /** Validates and stages one full-width SQL projection without narrowing. */
     CheckCatalogValidation Add(WardenCheckRowInput const& input,
         WardenCheckDiagnostic& diagnostic);
+    /** Atomically publishes complete profiles or leaves output unchanged. */
     CheckCatalogValidation Build(WardenCheckCatalog& output,
         WardenCheckDiagnostic& diagnostic);
 
@@ -220,6 +242,7 @@ private:
     std::vector<PendingRow> m_rows;
 };
 
+/** Stable startup-diagnostic label for a validation result. */
 char const* ToString(CheckCatalogValidation validation);
 }
 
