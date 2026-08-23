@@ -530,14 +530,21 @@ endif()
 math(EXPR PERSIST_LENGTH "${WARDEN_START_BEGIN} - ${PERSIST_BEGIN}")
 string(SUBSTRING "${SESSION_CPP}" ${PERSIST_BEGIN} ${PERSIST_LENGTH}
     PERSIST_BODY)
+string(FIND "${PERSIST_BODY}" "DrainWardenPendingConfirmations()"
+    INCIDENT_DRAIN_AT)
 string(FIND "${PERSIST_BODY}" "WardenIncidentStore::Instance().Record"
     INCIDENT_RECORD_AT)
 string(FIND "${PERSIST_BODY}" "KickPlayer()" INCIDENT_KICK_AT)
-if(INCIDENT_RECORD_AT EQUAL -1 OR INCIDENT_KICK_AT EQUAL -1 OR
+if(INCIDENT_DRAIN_AT EQUAL -1 OR INCIDENT_RECORD_AT EQUAL -1 OR
+    INCIDENT_KICK_AT EQUAL -1 OR
+    INCIDENT_RECORD_AT LESS_EQUAL INCIDENT_DRAIN_AT OR
     INCIDENT_KICK_AT LESS_EQUAL INCIDENT_RECORD_AT)
     message(FATAL_ERROR
-        "Warden boundary: confirmed incident must persist before link close")
+        "Warden boundary: confirmed incident must drain other confirmations, persist, then close")
 endif()
+require_count("${PERSIST_BODY}"
+    "DrainWardenPendingConfirmations[ \\t]*\\(" 1
+    "terminal incident must audit every other pending confirmation")
 require_count("${PERSIST_BODY}" "KickPlayer[ \\t]*\\(" 1
     "confirmed violation must request one idempotent link close")
 

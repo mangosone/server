@@ -857,6 +857,11 @@ void WorldSession::PersistWardenOperationalAudit(
 void WorldSession::PersistWardenIncidentAndKick(
     warden::WardenPolicyDecision const& decision)
 {
+    // A confirmed mismatch removes only its own pending identity. Preserve the
+    // audit trail for every other in-flight confirmation before terminal
+    // disengagement destroys the policy snapshot.
+    DrainWardenPendingConfirmations();
+
     std::optional<warden::WardenIncidentOutcome> const outcome =
         warden::ToIncidentOutcome(decision.outcome);
     if (!outcome)
