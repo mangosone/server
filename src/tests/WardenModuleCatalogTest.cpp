@@ -79,30 +79,45 @@ TEST(WardenCatalog_coverage_requires_every_supported_locale_both_directions)
     std::vector<warden::WardenCheckRowInput> rows =
         warden::test::InitialWardenRows();
     warden::WardenCheckCatalog full = BuildCheckCatalog(rows);
-    REQUIRE(full.TotalRows() == 32u);
+    REQUIRE(full.TotalRows() == 36u);
+    warden::ModuleProfile const* module = modules.Find(8606, "Win");
+    REQUIRE(module != nullptr);
+    CHECK(std::find(module->requiredCheckLocales.begin(),
+        module->requiredCheckLocales.end(), "zhTW") !=
+        module->requiredCheckLocales.end());
     CHECK(warden::ValidateWardenCatalogCoverage(full, modules) ==
         warden::WardenCheckCatalogLoadFailure::None);
 
     rows.erase(std::remove_if(rows.begin(), rows.end(),
         [](warden::WardenCheckRowInput const& row)
         {
-            return row.localeHex == "7A68434E";
+            return row.localeHex == "7A685457";
         }), rows.end());
     warden::WardenCheckCatalog missingLocale = BuildCheckCatalog(rows);
-    REQUIRE(missingLocale.TotalRows() == 28u);
-    CHECK(warden::ValidateWardenCatalogCoverage(missingLocale, modules) ==
+    REQUIRE(missingLocale.TotalRows() == 32u);
+    warden::WardenProfileKey missingProfile;
+    CHECK(warden::ValidateWardenCatalogCoverage(missingLocale, modules,
+        &missingProfile) ==
         warden::WardenCheckCatalogLoadFailure::ModuleWithoutProfile);
+    CHECK_EQ(missingProfile.build, uint32(8606));
+    CHECK_STR(missingProfile.platform, "Win");
+    CHECK_STR(missingProfile.locale, "zhTW");
 
     rows = warden::test::InitialWardenRows();
     for (warden::WardenCheckRowInput& row : rows)
     {
-        if (row.localeHex == "7A68434E")
+        if (row.localeHex == "7A685457")
             row.localeHex = "65734D58";
     }
     warden::WardenCheckCatalog unexpectedLocale = BuildCheckCatalog(rows);
-    REQUIRE(unexpectedLocale.TotalRows() == 32u);
-    CHECK(warden::ValidateWardenCatalogCoverage(unexpectedLocale, modules) ==
+    REQUIRE(unexpectedLocale.TotalRows() == 36u);
+    warden::WardenProfileKey unexpectedProfile;
+    CHECK(warden::ValidateWardenCatalogCoverage(unexpectedLocale, modules,
+        &unexpectedProfile) ==
         warden::WardenCheckCatalogLoadFailure::ProfileWithoutModule);
+    CHECK_EQ(unexpectedProfile.build, uint32(8606));
+    CHECK_STR(unexpectedProfile.platform, "Win");
+    CHECK_STR(unexpectedProfile.locale, "esMX");
 }
 
 TEST(WardenCatalog_exact_tbc_module_identity_and_keys_are_custody_pinned)

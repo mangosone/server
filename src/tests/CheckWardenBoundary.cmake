@@ -752,6 +752,12 @@ endif()
 require_count("${CATALOG_LOADER}"
     "SELECT COUNT\\(\\*\\) FROM `warden_checks`" 1
     "catalogue loader must perform one explicit emptiness query")
+require_count("${CATALOG_LOADER}"
+    "Deploy matching server and world database Warden" 1
+    "coverage failures must identify the paired server/database deployment")
+require_count("${CATALOG_LOADER}"
+    "revisions together while mangosd is stopped" 1
+    "coverage failures must give the safe deployment boundary")
 foreach(BINARY_FIELD IN ITEMS platform locale module request expected)
     require_count("${CATALOG_LOADER}"
         "HEX\\(`${BINARY_FIELD}`\\)" 1
@@ -794,8 +800,9 @@ set(FORBIDDEN_CHECK_CONTENT
     "7AD1756C8A4BD449698A98FDC58775EE2F0FBD6E"
     "FF75C74BDCF685D3ED6A7E00DCAF5DA54E75F436"
     "3D71F5D1E2BB4147FD6E2587C0D7E0167180DAC0"
+    "41602044B1EA722C6798036AF787D8E9DD508A6A"
     "4F4B4159" "4F6B6179" "4F4B" "41636570746172"
-    "ED9995EC9DB8" "D09ED09A" "E7A1AEE5AE9A"
+    "ED9995EC9DB8" "D09ED09A" "E7A1AEE5AE9A" "E7A2BAE5AE9A"
     "B9EC18E100E88687F7FFE821FBFFFF68CCDDBB00B9B3120000BA18CBBB00E8BDFCFFFFA3D018E100"
     "2952208" "0X002D0C10"
     "0X44[ \\t]*,[ \\t]*0X42[ \\t]*,[ \\t]*0X46[ \\t]*,[ \\t]*0X69"
@@ -805,6 +812,7 @@ set(FORBIDDEN_CHECK_CONTENT
     "0XED[ \\t]*,[ \\t]*0X99[ \\t]*,[ \\t]*0X95[ \\t]*,[ \\t]*0XEC"
     "0XD0[ \\t]*,[ \\t]*0X9E[ \\t]*,[ \\t]*0XD0[ \\t]*,[ \\t]*0X9A"
     "0XE7[ \\t]*,[ \\t]*0XA1[ \\t]*,[ \\t]*0XAE[ \\t]*,[ \\t]*0XE5"
+    "0XE7[ \\t]*,[ \\t]*0XA2[ \\t]*,[ \\t]*0XBA[ \\t]*,[ \\t]*0XE5"
     "0XB9[ \\t]*,[ \\t]*0XEC[ \\t]*,[ \\t]*0X18[ \\t]*,[ \\t]*0XE1")
 foreach(SOURCE IN LISTS WARDEN_SOURCES)
     read_code("${SOURCE}" WARDEN_CODE)

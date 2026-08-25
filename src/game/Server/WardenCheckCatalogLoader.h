@@ -48,8 +48,12 @@ char const* ToString(WardenCheckCatalogLoadFailure failure);
 
 /** Ensures module and check profiles cover the same exact client identities. */
 inline WardenCheckCatalogLoadFailure ValidateWardenCatalogCoverage(
-    WardenCheckCatalog const& checks, WardenModuleCatalog const& modules)
+    WardenCheckCatalog const& checks, WardenModuleCatalog const& modules,
+    WardenProfileKey* mismatch = nullptr)
 {
+    if (mismatch)
+        *mismatch = {};
+
     for (WardenCheckProfile const& profile : checks.Profiles())
     {
         ModuleProfile const* module =
@@ -57,7 +61,11 @@ inline WardenCheckCatalogLoadFailure ValidateWardenCatalogCoverage(
         if (!module || std::find(module->requiredCheckLocales.begin(),
             module->requiredCheckLocales.end(), profile.key.locale) ==
                 module->requiredCheckLocales.end())
+        {
+            if (mismatch)
+                *mismatch = profile.key;
             return WardenCheckCatalogLoadFailure::ProfileWithoutModule;
+        }
     }
 
     for (ModuleProfile const* module : modules.Profiles())
@@ -65,7 +73,11 @@ inline WardenCheckCatalogLoadFailure ValidateWardenCatalogCoverage(
         for (std::string const& locale : module->requiredCheckLocales)
         {
             if (!checks.Find(module->build, module->platform, locale))
+            {
+                if (mismatch)
+                    *mismatch = {module->build, module->platform, locale};
                 return WardenCheckCatalogLoadFailure::ModuleWithoutProfile;
+            }
         }
     }
     return WardenCheckCatalogLoadFailure::None;

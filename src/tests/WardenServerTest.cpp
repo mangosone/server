@@ -1095,7 +1095,7 @@ TEST(WardenServer_combined_lua_match_is_classified_without_text_evidence)
     CHECK_EQ(harness.evidenceEvents.size(), 3u);
 }
 
-TEST(WardenServer_all_eight_locale_content_vectors_report_ordered_matches)
+TEST(WardenServer_all_nine_locale_content_vectors_report_ordered_matches)
 {
     struct ProfileVector
     {
@@ -1111,7 +1111,8 @@ TEST(WardenServer_all_eight_locale_content_vectors_report_ordered_matches)
         {"frFR", "021E004549DD06010403020100C7C50539F79BD77E28A6328CB13FCFFA596F1F7B00024F4B"},
         {"koKR", "022200902BFEF10104030201007AD1756C8A4BD449698A98FDC58775EE2F0FBD6E0006ED9995EC9DB8"},
         {"ruRU", "02200005A6208B010403020100FF75C74BDCF685D3ED6A7E00DCAF5DA54E75F4360004D09ED09A"},
-        {"zhCN", "022200100690200104030201003D71F5D1E2BB4147FD6E2587C0D7E0167180DAC00006E7A1AEE5AE9A"}
+        {"zhCN", "022200100690200104030201003D71F5D1E2BB4147FD6E2587C0D7E0167180DAC00006E7A1AEE5AE9A"},
+        {"zhTW", "022200D4E5EFE901040302010041602044B1EA722C6798036AF787D8E9DD508A6A0006E7A2BAE5AE9A"}
     };
 
     for (ProfileVector const& vector : vectors)

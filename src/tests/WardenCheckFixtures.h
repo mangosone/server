@@ -79,11 +79,11 @@ inline void AppendInitialProfile(std::vector<WardenCheckRowInput>& rows,
     rows.push_back(bootstrap);
 }
 
-/** Exact database rows intended for the eight evidenced TBC locale profiles. */
+/** Exact database rows intended for the nine evidenced TBC locale profiles. */
 inline std::vector<WardenCheckRowInput> InitialWardenRows()
 {
     std::vector<WardenCheckRowInput> rows;
-    rows.reserve(32);
+    rows.reserve(36);
     AppendInitialProfile(rows, 8606, "656E5553",
         "D65D59D2E57792A13E8EDF78A574B8F81D0D3CF0", "4F6B6179");
     AppendInitialProfile(rows, 8606, "656E4742",
@@ -100,6 +100,8 @@ inline std::vector<WardenCheckRowInput> InitialWardenRows()
         "FF75C74BDCF685D3ED6A7E00DCAF5DA54E75F436", "D09ED09A");
     AppendInitialProfile(rows, 8606, "7A68434E",
         "3D71F5D1E2BB4147FD6E2587C0D7E0167180DAC0", "E7A1AEE5AE9A");
+    AppendInitialProfile(rows, 8606, "7A685457",
+        "41602044B1EA722C6798036AF787D8E9DD508A6A", "E7A2BAE5AE9A");
     return rows;
 }
 
