@@ -86,7 +86,8 @@ warden::ModuleProfile const ModuleWin8606 =
             0x01
         }
     },
-    {"enUS", "enGB", "deDE", "esES", "frFR", "koKR", "ruRU", "zhCN"}
+    {"enUS", "enGB", "deDE", "esES", "frFR", "koKR", "ruRU", "zhCN",
+        "zhTW"}
 };
 
 std::array<warden::ModuleProfile const*, 1> const ModuleProfiles =

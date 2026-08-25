@@ -108,7 +108,7 @@ TEST(WardenCheckCatalog_type_evidence_class_contract_is_canonical)
         static_cast<WardenEvidenceClass>(0xFF)));
 }
 
-TEST(WardenCheckCatalog_decodes_and_selects_eight_exact_8606_profiles)
+TEST(WardenCheckCatalog_decodes_and_selects_nine_exact_8606_profiles)
 {
     warden::WardenCheckCatalogBuilder builder;
     warden::WardenCheckDiagnostic diagnostic;
@@ -122,9 +122,9 @@ TEST(WardenCheckCatalog_decodes_and_selects_eight_exact_8606_profiles)
     warden::WardenCheckCatalog catalog;
     REQUIRE(builder.Build(catalog, diagnostic) ==
         warden::CheckCatalogValidation::Valid);
-    CHECK_EQ(catalog.TotalRows(), uint32(32));
-    CHECK_EQ(catalog.EnabledRows(), uint32(32));
-    CHECK_EQ(catalog.Profiles().size(), size_t(8));
+    CHECK_EQ(catalog.TotalRows(), uint32(36));
+    CHECK_EQ(catalog.EnabledRows(), uint32(36));
+    CHECK_EQ(catalog.Profiles().size(), size_t(9));
 
     struct ExpectedProfile
     {
@@ -132,7 +132,7 @@ TEST(WardenCheckCatalog_decodes_and_selects_eight_exact_8606_profiles)
         char const* mpqSha1;
         char const* luaText;
     };
-    std::array<ExpectedProfile, 8> const expectedProfiles =
+    std::array<ExpectedProfile, 9> const expectedProfiles =
     {{
         {"enUS", "d65d59d2e57792a13e8edf78a574b8f81d0d3cf0",
             "4f6b6179"},
@@ -149,7 +149,9 @@ TEST(WardenCheckCatalog_decodes_and_selects_eight_exact_8606_profiles)
         {"ruRU", "ff75c74bdcf685d3ed6a7e00dcaf5da54e75f436",
             "d09ed09a"},
         {"zhCN", "3d71f5d1e2bb4147fd6e2587c0d7e0167180dac0",
-            "e7a1aee5ae9a"}
+            "e7a1aee5ae9a"},
+        {"zhTW", "41602044b1ea722c6798036af787d8e9dd508a6a",
+            "e7a2bae5ae9a"}
     }};
 
     for (ExpectedProfile const& expected : expectedProfiles)
@@ -607,12 +609,12 @@ TEST(WardenCheckCatalog_enforces_complete_profiles_and_atomic_build)
 
     warden::WardenCheckCatalog unchanged =
         warden::test::BuildInitialWardenCatalog();
-    REQUIRE(unchanged.TotalRows() == 32u);
+    REQUIRE(unchanged.TotalRows() == 36u);
     rows = FirstProfileRows();
     rows[2].checkId = rows[1].checkId;
     CHECK(BuildRows(rows, unchanged) ==
         warden::CheckCatalogValidation::DuplicateId);
-    CHECK_EQ(unchanged.TotalRows(), uint32(32));
+    CHECK_EQ(unchanged.TotalRows(), uint32(36));
     CHECK(unchanged.Find(8606, "Win", "zhCN") != nullptr);
 }
 

@@ -87,6 +87,18 @@ void LogLoadFailure(warden::WardenCheckCatalogLoadFailure failure,
         diagnostic.profile.build, platform.c_str(), locale.c_str(),
         diagnostic.checkId, warden::ToString(diagnostic.validation));
 }
+
+void LogCoverageFailure(warden::WardenCheckCatalogLoadFailure failure,
+    warden::WardenProfileKey const& profile)
+{
+    std::string const platform = SafeToken(profile.platform);
+    std::string const locale = SafeToken(profile.locale);
+    sLog.outError("Warden catalogue load failed: %s (build %u; platform %s; "
+        "locale %s). Deploy matching server and world database Warden "
+        "revisions together while mangosd is stopped.",
+        warden::ToString(failure), profile.build, platform.c_str(),
+        locale.c_str());
+}
 }
 
 namespace warden
@@ -195,11 +207,12 @@ bool WardenCheckCatalogLoader::LoadAndPublish() const
     }
 
     WardenModuleCatalog modules;
+    WardenProfileKey coverageMismatch;
     WardenCheckCatalogLoadFailure const coverage =
-        ValidateWardenCatalogCoverage(candidate, modules);
+        ValidateWardenCatalogCoverage(candidate, modules, &coverageMismatch);
     if (coverage != WardenCheckCatalogLoadFailure::None)
     {
-        LogLoadFailure(coverage);
+        LogCoverageFailure(coverage, coverageMismatch);
         return false;
     }
 
